@@ -1,3 +1,5 @@
+namespace HockeySim.Domain;
+
 public class Team
 {
     public Guid Id { get; set; } = Guid.NewGuid();

@@ -1,3 +1,5 @@
+namespace HockeySim.Domain;
+
 public class Player
 {
     // player identification values

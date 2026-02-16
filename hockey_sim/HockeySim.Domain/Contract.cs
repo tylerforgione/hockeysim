@@ -1,3 +1,5 @@
+namespace HockeySim.Domain;
+
 public class Contract
 {
     public int Term { get; set; }

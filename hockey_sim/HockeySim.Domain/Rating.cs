@@ -1,5 +1,8 @@
+namespace HockeySim.Domain;
+
 public enum Rating
 {
+    // skater ratings
     Skating,
     ShotPower,
     ShotAccuracy,
@@ -11,6 +14,7 @@ public enum Rating
     ShotBlocking,
     StickChecking,
 
+    // goalie ratings
     GoalieReflex,
     GoaliePositioning,
     GoalieReboundControl,
