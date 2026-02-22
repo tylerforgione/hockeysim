@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="HockeySim.Domain/HockeySim.Domain.csproj" />
+  <Project Path="HockeySim.Management/HockeySim.Management.csproj" />
+  <Project Path="HockeySim/HockeySim.csproj" />
+</Solution>
