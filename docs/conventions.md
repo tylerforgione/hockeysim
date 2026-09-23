@@ -1,53 +1,57 @@
-# Code Conventions
+# Code conventions
 
-## Naming
+## Naming and layout
 
-See the [config file](../.editorconfig) for naming practices.
+Use [.editorconfig](../.editorconfig) for naming and formatting preferences.
+Namespaces follow the owning project and folder. Follow the feature-oriented
+layout in [architecture](architecture.md).
 
-## Types 
+## Types and methods
 
 - Prefer explicit domain types when primitives would obscure meaning.
-- Use `var` when the type is obvious from the right-hand side.
-- Nullable reference types are enabled.
-- Prefer immutable types where appropriate.
+- Use `var` when the type is obvious from the right-hand side, such as
+  `var player = new Player(...)`; use an explicit type otherwise.
+- Nullable reference types are enabled. Model optional data deliberately.
+- Prefer immutable types where appropriate. Protect Domain invariants through
+  controlled operations and avoid exposing mutable state that bypasses them.
+- Give methods one clear responsibility, use guard clauses, and keep public
+  interfaces small. Extract a named operation when it clarifies responsibility.
+- Use informative method names. An unwieldy name is a reason to reconsider the
+  responsibility, not to hide essential intent in a comment.
 
-## Methods
+## Comments and documentation
 
-- Methods should have one clear responsibility
-    - If methods do too many things at once, think of using a helper
-- Prefer guards over nested conditionals
-- Keep public APIs small
-- Method names should be informative, describing what the method does
-    - If the name is too long, think of using a comment or about whether your function does too much
+Explain non-obvious intent, business rules, constraints, and tradeoffs where
+readers need that context, even when the code is short. Use enough lines to
+explain clearly; avoid narrating obvious code. Keep larger architecture
+tradeoffs in ADRs and link them where useful.
 
-## Comments
+Remove obsolete code rather than commenting it out; Git preserves its history.
+Use TODOs only for a clearly defined next step, linking its issue when one exists.
 
-Comments are not a necessity. They should only be used if a method is complicated or long. Comments should rarely be longer than one line. Emall explanations of how the method works should be avoided unless it needs to be clarified (e.g: multiple methods that do a similar thing two different ways).
+Use XML documentation for public interfaces whose intent is not obvious,
+complex domain behavior, and non-obvious parameters or return values.
 
-Easily readable methods do not need comments; they should be understood by their name and the code within them. Variables should also not require comments.
+## Validation and exceptions
 
-Within a method, comments can explain what a piece of code does. Not every line needs a comment, and the comment should not be longer than the code. 
+Validate inputs at system entry points and enforce invariants in Domain.
+Use domain-specific exceptions where appropriate. Catch exceptions when there
+is meaningful handling; do not catch them only to ignore them.
 
-Do not leave any code commented out. That is what GitHub is for.
+## Enforcement
 
-Use TODOs when there is a clearly defined plan for what needs to be implemented next.
+Compiler warnings, including nullable warnings, are errors. The pinned SDK's
+.NET 10 default analyzer rules and explicitly configured warning-level style
+rules run during builds. `dotnet format` checks formatting and warning-level
+style/analyzer diagnostics; advisory suggestions remain informational.
 
-## XML Documentation
-
-Use XML documentation for:
-- Public APIs where intent is not obvious
-- Complex domain behavior
-- Non-obvious parameters/return values
-
-## Exceptions
-
-- Do not catch exceptions only to ignore them
-- Use domain-specific exceptions when appropriate
-- Validate arguments at system boundaries
+Change enforced rules deliberately in a PR. Avoid broad suppressions to make a
+check pass; explain any narrowly justified exception near its configuration.
+See [testing](testing.md) for the exact validation commands.
 
 ## Tests
 
-- Test observable behaviour, not implementation details
-- Test names should clearly describe what is being tested
-- All new features should include tests for that new feature
-- Bug fixes should include a regression test
+Test observable behavior rather than implementation details. Names should
+clearly describe the behavior under test. New features include tests, and bug
+fixes include regression tests. The project layout, test scope, and coverage
+policy are in [testing](testing.md).

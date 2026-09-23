@@ -1,7 +1,11 @@
 # Issue tracker: GitHub
 
 Issues and specs live in GitHub Issues for `tylerforgione/hockeysim`.
-Use the `gh` CLI from this clone; it infers the repository from the remote.
+Prefer the `gh` CLI from this clone; it infers the repository from the remote.
+If `gh` is unavailable, use authenticated GitHub connector tools, explicitly
+targeting `tylerforgione/hockeysim`. The same issue, labeling, PR, and review
+policies apply to either tool. Read [Git workflow](../git-workflow.md) for when
+issues are required and what agents may publish.
 
 ## Conventions
 

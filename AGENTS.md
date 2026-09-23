@@ -1,16 +1,28 @@
-## Agent skills
+# Working in HockeySim
 
-### Issue tracker
+## Explore and change code
 
-Issues and specs live in GitHub Issues. Read `docs/agents/issue-tracker.md`
-before tracker operations.
+- Before exploring, read [domain guidance](docs/agents/domain.md), then
+  [architecture](docs/architecture.md). The existing application is provisional
+  scaffolding; architecture distinguishes current and planned projects.
+- Before changing code or dependencies, read [conventions](docs/conventions.md)
+  and [technology stack](docs/tech-stack.md), including dependency approval policy.
+- Before adding tests or validating changes, read [testing](docs/testing.md).
+  Report the commands actually run and distinguish missing tests from passing tests.
 
-### Triage labels
+## Issues and delivery
 
-Use the five default triage labels. Read `docs/agents/triage-labels.md`
-before assigning triage labels.
+- Before starting substantive implementation or performing branch, commit, PR,
+  or merge operations, read [Git workflow](docs/git-workflow.md). It defines issue
+  requirements, agent autonomy, and mandatory maintainer review of agent PRs.
+- Before tracker operations, read [issue tracker](docs/agents/issue-tracker.md).
+  Issues and specs live in GitHub Issues.
+- Before assigning triage labels, read [triage labels](docs/agents/triage-labels.md).
+  Use the five documented labels.
 
-### Domain docs
+## Keep decisions current
 
-Use a single-context layout. Read `docs/agents/domain.md` before exploring
-the codebase.
+When work changes an established responsibility or dependency direction, discuss
+the change before implementation and update the relevant documentation. Record
+resolved domain terminology in `CONTEXT.md` and consequential architecture
+tradeoffs in `docs/adr/`, following the single-context layout.
