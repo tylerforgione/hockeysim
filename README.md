@@ -1,0 +1,3 @@
+[![build](https://github.com/tylerforgione/hockeysim/actions/workflows/build-validation.yml/badge.svg)](https://github.com/tylerforgione/hockeysim/actions/workflows/build-validation.yml)
+[![build and test](https://github.com/tylerforgione/hockeysim/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/tylerforgione/hockeysim/actions/workflows/build-and-test.yml)
+[![CodeQL](https://github.com/tylerforgione/hockeysim/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/tylerforgione/hockeysim/actions/workflows/codeql-analysis.yml)
