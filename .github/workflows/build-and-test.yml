@@ -1,37 +1,52 @@
-name: build and test
+name: Validate
 
 on:
   push:
+    branches: [main]
   pull_request:
-    branches: [ main ]
-    paths:
-    - '**.cs'
-    - '**.csproj'
+    branches: [main]
+  workflow_dispatch:
 
-env:
-  DOTNET_VERSION: '6.0.401' # The .NET SDK version to use
+permissions:
+  contents: read
 
 jobs:
-  build-and-test:
+  format:
+    name: Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - run: dotnet restore HockeySim.slnx
+      - run: dotnet format HockeySim.slnx --verify-no-changes --no-restore --severity warn
 
-    name: build-and-test-${{matrix.os}}
+  build-and-test:
+    name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
-
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Install dependencies
-      run: dotnet restore
-      
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
-    
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - run: dotnet restore HockeySim.slnx
+      - run: dotnet build HockeySim.slnx --configuration Release --no-restore
+      - name: Test each project
+        if: hashFiles('tests/**/*.Tests.csproj') != ''
+        shell: pwsh
+        run: |
+          $testProjects = Get-ChildItem tests -Recurse -Filter *.Tests.csproj
+          foreach ($project in $testProjects) {
+            dotnet test --project $project.FullName --configuration Release --no-build --no-restore --minimum-expected-tests 1
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Report pending test scaffolding
+        if: hashFiles('tests/**/*.Tests.csproj') == ''
+        shell: pwsh
+        run: |
+          "No test projects exist yet. Only restore and build were validated; application tests and coverage are pending. See docs/testing.md." >> $env:GITHUB_STEP_SUMMARY
