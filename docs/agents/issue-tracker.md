@@ -7,6 +7,44 @@ targeting `tylerforgione/hockeysim`. The same issue, labeling, PR, and review
 policies apply to either tool. Read [Git workflow](../git-workflow.md) for when
 issues are required and what agents may publish.
 
+## Authentication and project access
+
+Check the active GitHub CLI account and token scopes with:
+
+```sh
+gh auth status --json hosts
+```
+
+In a restricted agent environment, `gh repo view` may initially report
+`error connecting to api.github.com` because outbound network access is blocked.
+That error alone does not mean the token is invalid. Retry the same read-only
+command with network access or the environment's escalation mechanism:
+
+```sh
+gh repo view tylerforgione/hockeysim \
+  --json nameWithOwner,url,viewerPermission,isPrivate
+```
+
+List the owner's projects with:
+
+```sh
+gh project list --owner tylerforgione --format json --limit 100
+```
+
+To verify which Projects v2 boards are linked to this repository, query the
+repository connection directly:
+
+```sh
+gh api graphql -f query='query {
+  repository(owner: "tylerforgione", name: "hockeysim") {
+    projectsV2(first: 100) {
+      totalCount
+      nodes { number title url closed }
+    }
+  }
+}'
+```
+
 ## Conventions
 
 - Create: `gh issue create --title "..." --body-file <path>`.
