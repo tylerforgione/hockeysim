@@ -49,11 +49,27 @@ public sealed class Team
         Lineup = lineup;
     }
 
+    public void SetLineup(Lineup lineup)
+    {
+        ArgumentNullException.ThrowIfNull(lineup);
+
+        var rosterIds = _roster.Select(player => player.Id).ToHashSet();
+        if (lineup.DressedPlayers.Any(player => !rosterIds.Contains(player.Id)))
+        {
+            throw new ArgumentException(
+                "Every dressed player must be on the roster",
+                nameof(lineup)
+            );
+        }
+
+        Lineup = lineup;
+    }
+
     public TeamId Id { get; }
 
     public string Name { get; }
 
     public IReadOnlyList<Player> Roster => _roster;
 
-    public Lineup Lineup { get; }
+    public Lineup Lineup { get; private set; }
 }
