@@ -1,6 +1,8 @@
 using HockeySim.Domain;
+using HockeySim.Management.Lineups;
+using HockeySim.Management.NewGame;
 
-namespace HockeySim.Management.NewGame;
+namespace HockeySim.Management.GameManagement;
 
 /// <summary>
 /// Owns the current game world and exposes controlled commands and immutable snapshots.
@@ -53,4 +55,52 @@ public sealed class GameManager
 
     private League GetLeague() =>
         _league ?? throw new InvalidOperationException("Start a new game before requesting game state.");
+
+    private Team GetManagedTeam()
+    {
+        return GetLeague().Teams.Single(team => team.Id == _managedTeamId);
+    }
+
+    public GameSnapshot SetLineup(SetLineupCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(command.ForwardLines);
+        ArgumentNullException.ThrowIfNull(command.DefencePairs);
+
+        var team = GetManagedTeam();
+        var rosterById = team.Roster.ToDictionary(player => player.Id);
+
+        Player Resolve(PlayerId id)
+        {
+            if (!rosterById.TryGetValue(id, out var player))
+            {
+                throw new ArgumentException(
+                    $"Player '{id}' does not belong to the managed team's roster.",
+                    nameof(command)
+                );
+            }
+
+            return player;
+        }
+
+        var forwardLines = command.ForwardLines.Select(selection => new ForwardLine(
+            Resolve(selection.LeftWingId),
+            Resolve(selection.CentreId),
+            Resolve(selection.RightWingId)
+        )).ToList();
+
+        var defencePairs = command.DefencePairs.Select(selection => new DefencePair(
+            Resolve(selection.LeftDefenceId),
+            Resolve(selection.RightDefenceId)
+        )).ToList();
+
+        var starter = Resolve(command.StartingGoalieId);
+        var backup = Resolve(command.BackupGoalieId);
+
+        var lineup = new Lineup(forwardLines, defencePairs, starter, backup);
+
+        team.SetLineup(lineup);
+
+        return CreateSnapshot();
+    }
 }
