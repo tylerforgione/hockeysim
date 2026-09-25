@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\HockeySim.Domain\HockeySim.Domain.csproj" />
     <ProjectReference Include="..\HockeySim.Management\HockeySim.Management.csproj" />
   </ItemGroup>
 

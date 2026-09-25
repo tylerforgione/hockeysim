@@ -1,22 +1,59 @@
+using System.Collections.ObjectModel;
+
 namespace HockeySim.Domain;
 
-public class Team
+public sealed class Team
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public string Name { get; set; } = "";
+    public const int RequiredRosterSize = 23;
 
-    // roster
-    public List<Player> Roster { get; set; } = new();
-    public List<List<Player>> ForwardLines { get; set; } = new();
-    public List<List<Player>> DefencePairs { get; set; } = new();
-    public List<Player> Goalies { get; set; } = new();
+    private readonly ReadOnlyCollection<Player> _roster;
 
-    // standings data
-    public int Wins { get; set; }
-    public int Losses { get; set; }
-    public int OTLosses { get; set; }
-    public int SOLosses { get; set; }
-    public int Points => Wins * 2 + (OTLosses + SOLosses);
-    public int GoalsFor { get; set; }
-    public int GoalsAgainst { get; set; }
+    public Team(TeamId id, string name, IEnumerable<Player> roster, Lineup lineup)
+    {
+        if (id.Value == Guid.Empty)
+        {
+            throw new ArgumentException("A team identity cannot be empty.", nameof(id));
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(roster);
+        ArgumentNullException.ThrowIfNull(lineup);
+
+        var rosterList = roster.ToList();
+        if (rosterList.Count != RequiredRosterSize)
+        {
+            throw new ArgumentException(
+                $"A team roster must contain exactly {RequiredRosterSize} players.",
+                nameof(roster));
+        }
+
+        if (rosterList.Select(player => player.Id).Distinct().Count() != rosterList.Count)
+        {
+            throw new ArgumentException("Player identities must be unique within a roster.", nameof(roster));
+        }
+
+        if (rosterList.Select(player => player.Number).Distinct().Count() != rosterList.Count)
+        {
+            throw new ArgumentException("Player numbers must be unique within a roster.", nameof(roster));
+        }
+
+        var rosterIds = rosterList.Select(player => player.Id).ToHashSet();
+        if (lineup.DressedPlayers.Any(player => !rosterIds.Contains(player.Id)))
+        {
+            throw new ArgumentException("Every dressed player must belong to the team roster.", nameof(lineup));
+        }
+
+        Id = id;
+        Name = name;
+        _roster = rosterList.AsReadOnly();
+        Lineup = lineup;
+    }
+
+    public TeamId Id { get; }
+
+    public string Name { get; }
+
+    public IReadOnlyList<Player> Roster => _roster;
+
+    public Lineup Lineup { get; }
 }
