@@ -104,7 +104,7 @@ public sealed class NewGameTests
         Assert.Equal(23, team.Roster.Select(player => player.Number).Distinct().Count());
         Assert.Equal(5, team.Roster.Count(player => player.Position == Position.Center));
         Assert.Equal(9, team.Roster.Count(player => player.Position == Position.Wing));
-        Assert.Equal(7, team.Roster.Count(player => player.Position == Position.Defense));
+        Assert.Equal(7, team.Roster.Count(player => player.Position == Position.Defence));
         Assert.Equal(2, team.Roster.Count(player => player.Position == Position.Goalie));
 
         Assert.All(team.Roster, player =>
@@ -117,7 +117,7 @@ public sealed class NewGameTests
         });
 
         Assert.Equal(4, team.Lineup.ForwardLines.Count);
-        Assert.Equal(3, team.Lineup.DefensePairs.Count);
+        Assert.Equal(3, team.Lineup.DefencePairs.Count);
         Assert.Equal(20, team.Lineup.DressedPlayerIds.Count);
         Assert.Equal(20, team.Lineup.DressedPlayerIds.Distinct().Count());
 
@@ -128,10 +128,10 @@ public sealed class NewGameTests
             Assert.Equal(Position.Center, rosterById[line.CenterId].Position);
             Assert.Equal(Position.Wing, rosterById[line.RightWingId].Position);
         });
-        Assert.All(team.Lineup.DefensePairs, pair =>
+        Assert.All(team.Lineup.DefencePairs, pair =>
         {
-            Assert.Equal(Position.Defense, rosterById[pair.LeftDefenseId].Position);
-            Assert.Equal(Position.Defense, rosterById[pair.RightDefenseId].Position);
+            Assert.Equal(Position.Defence, rosterById[pair.LeftDefenceId].Position);
+            Assert.Equal(Position.Defence, rosterById[pair.RightDefenceId].Position);
         });
         Assert.Equal(Position.Goalie, rosterById[team.Lineup.StartingGoalieId].Position);
         Assert.Equal(Position.Goalie, rosterById[team.Lineup.BackupGoalieId].Position);

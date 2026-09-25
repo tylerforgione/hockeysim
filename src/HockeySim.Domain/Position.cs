@@ -4,6 +4,6 @@ public enum Position
 {
     Center,
     Wing,
-    Defense,
+    Defence,
     Goalie,
 }

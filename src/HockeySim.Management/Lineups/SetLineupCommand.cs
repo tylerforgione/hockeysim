@@ -4,7 +4,7 @@ namespace HockeySim.Management.Lineups;
 
 public sealed record SetLineupCommand(
     IReadOnlyList<ForwardLineSelection> ForwardLines,
-    IReadOnlyList<DefensePairSelection> DefensePairs,
+    IReadOnlyList<DefencePairSelection> DefencePairs,
     PlayerId StartingGoalieId,
     PlayerId BackupGoalieId
 );

@@ -185,18 +185,18 @@ public sealed class PlayerSnapshot
 public sealed class LineupSnapshot
 {
     private readonly ReadOnlyCollection<ForwardLineSnapshot> _forwardLines;
-    private readonly ReadOnlyCollection<DefensePairSnapshot> _defensePairs;
+    private readonly ReadOnlyCollection<DefencePairSnapshot> _defencePairs;
     private readonly ReadOnlyCollection<PlayerId> _dressedPlayerIds;
 
     private LineupSnapshot(
         IReadOnlyList<ForwardLineSnapshot> forwardLines,
-        IReadOnlyList<DefensePairSnapshot> defensePairs,
+        IReadOnlyList<DefencePairSnapshot> defencePairs,
         PlayerId startingGoalieId,
         PlayerId backupGoalieId,
         IReadOnlyList<PlayerId> dressedPlayerIds)
     {
         _forwardLines = new ReadOnlyCollection<ForwardLineSnapshot>(forwardLines.ToList());
-        _defensePairs = new ReadOnlyCollection<DefensePairSnapshot>(defensePairs.ToList());
+        _defencePairs = new ReadOnlyCollection<DefencePairSnapshot>(defencePairs.ToList());
         StartingGoalieId = startingGoalieId;
         BackupGoalieId = backupGoalieId;
         _dressedPlayerIds = new ReadOnlyCollection<PlayerId>(dressedPlayerIds.ToList());
@@ -204,7 +204,7 @@ public sealed class LineupSnapshot
 
     public IReadOnlyList<ForwardLineSnapshot> ForwardLines => _forwardLines;
 
-    public IReadOnlyList<DefensePairSnapshot> DefensePairs => _defensePairs;
+    public IReadOnlyList<DefencePairSnapshot> DefencePairs => _defencePairs;
 
     public PlayerId StartingGoalieId { get; }
 
@@ -215,7 +215,7 @@ public sealed class LineupSnapshot
     internal static LineupSnapshot Create(Lineup lineup) =>
         new(
             lineup.ForwardLines.Select(ForwardLineSnapshot.Create).ToList(),
-            lineup.DefensePairs.Select(DefensePairSnapshot.Create).ToList(),
+            lineup.DefencePairs.Select(DefencePairSnapshot.Create).ToList(),
             lineup.StartingGoalie.Id,
             lineup.BackupGoalie.Id,
             lineup.DressedPlayers.Select(player => player.Id).ToList());
@@ -230,8 +230,8 @@ public sealed record ForwardLineSnapshot(
         new(line.LeftWing.Id, line.Center.Id, line.RightWing.Id);
 }
 
-public sealed record DefensePairSnapshot(PlayerId LeftDefenseId, PlayerId RightDefenseId)
+public sealed record DefencePairSnapshot(PlayerId LeftDefenceId, PlayerId RightDefenceId)
 {
-    internal static DefensePairSnapshot Create(DefensePair pair) =>
-        new(pair.LeftDefense.Id, pair.RightDefense.Id);
+    internal static DefencePairSnapshot Create(DefencePair pair) =>
+        new(pair.LeftDefence.Id, pair.RightDefence.Id);
 }

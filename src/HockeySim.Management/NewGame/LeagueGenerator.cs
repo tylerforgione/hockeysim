@@ -6,7 +6,7 @@ internal static class LeagueGenerator
 {
     private const int CenterCount = 5;
     private const int WingCount = 9;
-    private const int DefenseCount = 7;
+    private const int DefenceCount = 7;
     private const int GoalieCount = 2;
 
     public static League Create(int seasonYear, ControlledRandom random)
@@ -49,21 +49,21 @@ internal static class LeagueGenerator
 
         AddPlayers(players, Position.Center, CenterCount, numbers, random);
         AddPlayers(players, Position.Wing, WingCount, numbers, random);
-        AddPlayers(players, Position.Defense, DefenseCount, numbers, random);
+        AddPlayers(players, Position.Defence, DefenceCount, numbers, random);
         AddPlayers(players, Position.Goalie, GoalieCount, numbers, random);
 
         var centers = players.Where(player => player.Position == Position.Center).ToList();
         var wings = players.Where(player => player.Position == Position.Wing).ToList();
-        var defensePlayers = players.Where(player => player.Position == Position.Defense).ToList();
+        var defencePlayers = players.Where(player => player.Position == Position.Defence).ToList();
         var goalies = players.Where(player => player.Position == Position.Goalie).ToList();
 
         var forwardLines = Enumerable.Range(0, Lineup.RequiredForwardLineCount)
             .Select(index => new ForwardLine(wings[index * 2], centers[index], wings[(index * 2) + 1]))
             .ToList();
-        var defensePairs = Enumerable.Range(0, Lineup.RequiredDefensePairCount)
-            .Select(index => new DefensePair(defensePlayers[index * 2], defensePlayers[(index * 2) + 1]))
+        var defencePairs = Enumerable.Range(0, Lineup.RequiredDefencePairCount)
+            .Select(index => new DefencePair(defencePlayers[index * 2], defencePlayers[(index * 2) + 1]))
             .ToList();
-        var lineup = new Lineup(forwardLines, defensePairs, goalies[0], goalies[1]);
+        var lineup = new Lineup(forwardLines, defencePairs, goalies[0], goalies[1]);
 
         return new Team(new TeamId(random.NextGuid()), name, players, lineup);
     }
