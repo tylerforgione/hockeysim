@@ -41,15 +41,15 @@ public sealed class PlayerTests
     public void ForwardLineRejectsAPlayerInTheWrongPosition()
     {
         var wing = CreatePlayer(CreateRatings(), Position.Wing, 1);
-        var center = CreatePlayer(CreateRatings(), Position.Center, 2);
+        var centre = CreatePlayer(CreateRatings(), Position.Centre, 2);
         var goalie = CreatePlayer(CreateRatings(), Position.Goalie, 3);
 
-        Assert.Throws<ArgumentException>(() => new ForwardLine(wing, center, goalie));
+        Assert.Throws<ArgumentException>(() => new ForwardLine(wing, centre, goalie));
     }
 
     private static Player CreatePlayer(
         IReadOnlyDictionary<Rating, RatingScore> ratings,
-        Position position = Position.Center,
+        Position position = Position.Centre,
         int number = 12) =>
         new(
             new PlayerId(Guid.Parse($"00000000-0000-0000-0000-{number:D12}")),

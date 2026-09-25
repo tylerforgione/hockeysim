@@ -102,7 +102,7 @@ public sealed class NewGameTests
         Assert.Equal(23, team.Roster.Count);
         Assert.Equal(23, team.Roster.Select(player => player.Id).Distinct().Count());
         Assert.Equal(23, team.Roster.Select(player => player.Number).Distinct().Count());
-        Assert.Equal(5, team.Roster.Count(player => player.Position == Position.Center));
+        Assert.Equal(5, team.Roster.Count(player => player.Position == Position.Centre));
         Assert.Equal(9, team.Roster.Count(player => player.Position == Position.Wing));
         Assert.Equal(7, team.Roster.Count(player => player.Position == Position.Defence));
         Assert.Equal(2, team.Roster.Count(player => player.Position == Position.Goalie));
@@ -125,7 +125,7 @@ public sealed class NewGameTests
         Assert.All(team.Lineup.ForwardLines, line =>
         {
             Assert.Equal(Position.Wing, rosterById[line.LeftWingId].Position);
-            Assert.Equal(Position.Center, rosterById[line.CenterId].Position);
+            Assert.Equal(Position.Centre, rosterById[line.CentreId].Position);
             Assert.Equal(Position.Wing, rosterById[line.RightWingId].Position);
         });
         Assert.All(team.Lineup.DefencePairs, pair =>

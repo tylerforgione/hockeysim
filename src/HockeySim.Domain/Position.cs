@@ -2,7 +2,7 @@ namespace HockeySim.Domain;
 
 public enum Position
 {
-    Center,
+    Centre,
     Wing,
     Defence,
     Goalie,

@@ -4,7 +4,7 @@ namespace HockeySim.Management.NewGame;
 
 internal static class LeagueGenerator
 {
-    private const int CenterCount = 5;
+    private const int CentreCount = 5;
     private const int WingCount = 9;
     private const int DefenceCount = 7;
     private const int GoalieCount = 2;
@@ -47,18 +47,18 @@ internal static class LeagueGenerator
         var numbers = CreatePlayerNumbers(random);
         var players = new List<Player>(Team.RequiredRosterSize);
 
-        AddPlayers(players, Position.Center, CenterCount, numbers, random);
+        AddPlayers(players, Position.Centre, CentreCount, numbers, random);
         AddPlayers(players, Position.Wing, WingCount, numbers, random);
         AddPlayers(players, Position.Defence, DefenceCount, numbers, random);
         AddPlayers(players, Position.Goalie, GoalieCount, numbers, random);
 
-        var centers = players.Where(player => player.Position == Position.Center).ToList();
+        var centres = players.Where(player => player.Position == Position.Centre).ToList();
         var wings = players.Where(player => player.Position == Position.Wing).ToList();
         var defencePlayers = players.Where(player => player.Position == Position.Defence).ToList();
         var goalies = players.Where(player => player.Position == Position.Goalie).ToList();
 
         var forwardLines = Enumerable.Range(0, Lineup.RequiredForwardLineCount)
-            .Select(index => new ForwardLine(wings[index * 2], centers[index], wings[(index * 2) + 1]))
+            .Select(index => new ForwardLine(wings[index * 2], centres[index], wings[(index * 2) + 1]))
             .ToList();
         var defencePairs = Enumerable.Range(0, Lineup.RequiredDefencePairCount)
             .Select(index => new DefencePair(defencePlayers[index * 2], defencePlayers[(index * 2) + 1]))

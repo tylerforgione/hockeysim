@@ -223,11 +223,11 @@ public sealed class LineupSnapshot
 
 public sealed record ForwardLineSnapshot(
     PlayerId LeftWingId,
-    PlayerId CenterId,
+    PlayerId CentreId,
     PlayerId RightWingId)
 {
     internal static ForwardLineSnapshot Create(ForwardLine line) =>
-        new(line.LeftWing.Id, line.Center.Id, line.RightWing.Id);
+        new(line.LeftWing.Id, line.Centre.Id, line.RightWing.Id);
 }
 
 public sealed record DefencePairSnapshot(PlayerId LeftDefenceId, PlayerId RightDefenceId)
