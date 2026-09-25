@@ -9,13 +9,11 @@ Linux. Matches are simulated independently of their presentation.
 
 ## Status
 
-The repository contains provisional Domain and Management code and a console
-placeholder for Desktop. Simulation, Infrastructure, the Avalonia shell, and
-test projects are planned, not scaffolded. Current behavior and public types
-are not a compatibility contract.
-
-This foundation establishes documentation and build configuration. There are
-no application tests or coverage results yet; CI reports that explicitly.
+The repository contains a headless new-game workflow that creates a reproducible
+32-team fictional league, protects Domain invariants, and exposes read-only
+Management snapshots. Domain and Management behavior tests run with coverage in
+CI. Desktop remains a console placeholder; Simulation, Infrastructure, and the
+Avalonia shell are planned, not scaffolded.
 
 ## Development
 

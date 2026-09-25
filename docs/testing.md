@@ -2,14 +2,11 @@
 
 ## Current status
 
-No test projects have been scaffolded. CI currently validates restore, build,
-and formatting and explicitly reports the absence of application tests and
-coverage. A successful build is not evidence that game behavior was tested.
-
-The first test-project change must add executable tests, the compatible xUnit v3
-and Microsoft.Testing.Platform packages, and coverage reporting. Add each test
-project to `HockeySim.slnx` so solution builds include it. Do not add placeholder
-passing tests to disguise missing behavior coverage.
+Domain and Management test projects use xUnit v3 with
+Microsoft.Testing.Platform. They cover generated-world invariants, managed-team
+selection, reproducibility, snapshot isolation, and focused Domain validation.
+Simulation, Infrastructure, and Desktop tests remain pending with their projects
+or concrete behavior.
 
 ## Test organization
 
@@ -48,10 +45,11 @@ dotnet build HockeySim.slnx --configuration Release --no-restore
 dotnet format HockeySim.slnx --verify-no-changes --no-restore --severity warn
 ```
 
-Once test projects exist, run each one against the Release build. For example:
+Run each test project against the Release build:
 
 ```sh
 dotnet test --project tests/HockeySim.Domain.Tests/HockeySim.Domain.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
+dotnet test --project tests/HockeySim.Management.Tests/HockeySim.Management.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
 ```
 
 This is the native .NET 10 Microsoft.Testing.Platform command shape selected in
@@ -78,10 +76,10 @@ Formatting failures, build warnings/errors, and test failures must block merge.
 that still needs configuring. Informational style suggestions are not promoted
 to errors indiscriminately.
 
-Report code coverage once test projects and an MTP-compatible coverage extension
-exist. Add collection and CI report/artifact publication in the same change as
-the first tests. There is no percentage gate: review meaningful behavior and
-edge cases, including critical invariants, persistence, and reproducibility.
+CI collects a Cobertura report from each test project with the
+Microsoft.Testing.Platform coverage extension and publishes the reports as a
+per-platform artifact. There is no percentage gate: review meaningful behavior
+and edge cases, including critical invariants, persistence, and reproducibility.
 Revisit a threshold only after a useful baseline exists.
 
 ## Evidence in PRs

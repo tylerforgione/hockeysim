@@ -6,7 +6,7 @@
 | SDK | Exact stable version in `global.json`; no roll-forward or previews | Configured for local development and CI |
 | Desktop | Avalonia on Windows, macOS, and Linux | Selected; shell and packaging not scaffolded |
 | Presentation | MVVM with `CommunityToolkit.Mvvm` | Selected; no package reference yet |
-| Tests | xUnit v3; .NET 10's Microsoft.Testing.Platform runner | Runner selected in `global.json`; projects and packages pending |
+| Tests | xUnit v3; .NET 10's Microsoft.Testing.Platform runner | Domain and Management test projects configured with coverage |
 | Dependency wiring | Constructor injection, manually composed at Desktop startup | Policy for future implementation |
 | Persistence | Separate Infrastructure project; versioned local saves | Storage technology deferred |
 
@@ -17,8 +17,8 @@
   implicit usings, warning policy, and analyzer settings. Keep exceptions explicit
   in the project that needs them.
 - `Directory.Packages.props` owns NuGet package versions. Projects declare their
-  package references without local versions. Add entries when approved packages
-  are first used; this foundation has no package dependencies to populate yet.
+  package references without local versions. It currently pins the approved
+  xUnit v3 and Microsoft Testing Platform coverage packages used by tests.
 - `.editorconfig` owns C# naming and formatting preferences.
 
 Discuss a new runtime dependency with the maintainer before relying on it,
@@ -33,7 +33,7 @@ Dependabot maintains the exact SDK pin.
 | --- | --- |
 | Save format and storage technology | First persistence feature, with realistic save size, history, and query needs |
 | Stable-release save compatibility | Before the first stable release |
-| Concrete Avalonia/test package versions and coverage extension | Scaffolding the relevant projects; verify compatible stable versions together |
+| Concrete Avalonia package versions | Desktop scaffolding; verify compatible stable versions together |
 | OS minimum versions and native packaging | Desktop scaffolding/release work, before claiming distributable support |
 
 The three-OS build matrix checks portability of the current code. It does not
