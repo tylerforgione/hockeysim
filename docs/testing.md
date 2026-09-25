@@ -64,8 +64,8 @@ Re-run validation when fixes change the relevant code or configuration.
 ## CI and coverage
 
 The [validation workflow](../.github/workflows/build-and-test.yml) runs on every
-PR to `main`, including configuration and documentation changes, and on pushes
-to `main`. It checks formatting once and builds/tests on all three operating
+branch push and every PR to `main`, including configuration and documentation
+changes. It checks formatting once and builds/tests on all three operating
 systems. Test commands run each discovered `tests/**/*.Tests.csproj` against the
 Release build; a project omitted from the solution cannot silently count as a
 successful solution test run. CodeQL analyzes the normal PR checkout using an
