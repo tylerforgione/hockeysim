@@ -86,12 +86,12 @@ collections. Namespaces follow the owning project and folder.
 
 ## Current implementation
 
-Only Domain, Management, and Desktop exist today. Desktop is a console
-placeholder and directly references Domain and Management. Management's player
-generator and team factory currently declare the Domain namespace. Mutable
-Domain collections and wall-clock random seeding also predate this design.
+Domain, Management, and Desktop exist today. Domain protects generated-world
+invariants through validated construction and read-only collections. Management
+owns a headless new-game workflow, controlled random state, managed-team
+selection, and read-only snapshots. Fictional names are kept separate from the
+league and roster rules that use them.
 
-This is provisional scaffolding. Future scoped feature work may replace it;
-accidental behavior is not a compatibility requirement. The foundation pass
-does not change application code or add the planned projects. Until they exist,
-the diagram is the target architecture, not a claim about current references.
+Desktop remains a console placeholder and references Management for future
+startup composition. Simulation and Infrastructure have not been scaffolded;
+until they exist, the related parts of the diagram remain target architecture.

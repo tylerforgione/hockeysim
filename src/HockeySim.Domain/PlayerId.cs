@@ -1,0 +1,6 @@
+namespace HockeySim.Domain;
+
+public readonly record struct PlayerId(Guid Value)
+{
+    public override string ToString() => Value.ToString("D");
+}
