@@ -108,7 +108,7 @@ public sealed class TeamSnapshot
 {
     private readonly ReadOnlyCollection<PlayerSnapshot> _roster;
 
-    private readonly IReadOnlyCollection<PlayerId> _scratchedPlayerIds;
+    public IReadOnlyList<PlayerId> _scratchedPlayerIds;
 
     private TeamSnapshot(
         TeamId id,
