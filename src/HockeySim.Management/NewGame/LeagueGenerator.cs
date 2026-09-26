@@ -5,9 +5,9 @@ namespace HockeySim.Management.NewGame;
 internal static class LeagueGenerator
 {
     private const int CentreCount = 5;
-    private const int WingCount = 9;
+    private const int WingCount = 8;
     private const int DefenceCount = 7;
-    private const int GoalieCount = 2;
+    private const int GoalieCount = 3;
 
     public static League Create(int seasonYear, ControlledRandom random)
     {

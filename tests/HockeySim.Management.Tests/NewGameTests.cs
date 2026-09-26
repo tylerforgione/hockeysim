@@ -1,5 +1,6 @@
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
+using HockeySim.Management.GameManagement.Snapshots;
 using HockeySim.Management.NewGame;
 
 using Xunit;

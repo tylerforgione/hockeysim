@@ -1,4 +1,5 @@
 using HockeySim.Domain;
+using HockeySim.Management.GameManagement.Snapshots;
 using HockeySim.Management.Lineups;
 using HockeySim.Management.NewGame;
 

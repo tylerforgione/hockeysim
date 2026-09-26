@@ -1,8 +1,9 @@
 using System.Collections.ObjectModel;
 
 using HockeySim.Domain;
+using HockeySim.Management.NewGame;
 
-namespace HockeySim.Management.NewGame;
+namespace HockeySim.Management.GameManagement.Snapshots;
 
 public sealed class GameSnapshot
 {
@@ -107,16 +108,22 @@ public sealed class TeamSnapshot
 {
     private readonly ReadOnlyCollection<PlayerSnapshot> _roster;
 
+    private readonly IReadOnlyCollection<PlayerId> _scratchedPlayerIds;
+
     private TeamSnapshot(
         TeamId id,
         string name,
         IReadOnlyList<PlayerSnapshot> roster,
+        IReadOnlyList<PlayerId> scratchedPlayerIds,
         LineupSnapshot lineup)
     {
         Id = id;
         Name = name;
         _roster = new ReadOnlyCollection<PlayerSnapshot>(roster.ToList());
         Lineup = lineup;
+        _scratchedPlayerIds = new ReadOnlyCollection<PlayerId>(
+            scratchedPlayerIds.ToList()
+        );
     }
 
     public TeamId Id { get; }
@@ -127,12 +134,23 @@ public sealed class TeamSnapshot
 
     public LineupSnapshot Lineup { get; }
 
-    internal static TeamSnapshot Create(Team team) =>
-        new(
+    internal static TeamSnapshot Create(Team team)
+    {
+        var dressedPlayerIds = team.Lineup.DressedPlayers.Select(
+            player => player.Id
+        ).ToHashSet();
+
+        var scratchedPlayerIds = team.Roster.Where(
+            player => !dressedPlayerIds.Contains(player.Id)
+        ).Select(player => player.Id).ToList();
+
+        return new(
             team.Id,
             team.Name,
             team.Roster.Select(PlayerSnapshot.Create).ToList(),
+            scratchedPlayerIds,
             LineupSnapshot.Create(team.Lineup));
+    }
 }
 
 public sealed class PlayerSnapshot
