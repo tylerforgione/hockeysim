@@ -105,9 +105,9 @@ public sealed class NewGameTests
         Assert.Equal(23, team.Roster.Select(player => player.Id).Distinct().Count());
         Assert.Equal(23, team.Roster.Select(player => player.Number).Distinct().Count());
         Assert.Equal(5, team.Roster.Count(player => player.Position == Position.Centre));
-        Assert.Equal(9, team.Roster.Count(player => player.Position == Position.Wing));
+        Assert.Equal(8, team.Roster.Count(player => player.Position == Position.Wing));
         Assert.Equal(7, team.Roster.Count(player => player.Position == Position.Defence));
-        Assert.Equal(2, team.Roster.Count(player => player.Position == Position.Goalie));
+        Assert.Equal(3, team.Roster.Count(player => player.Position == Position.Goalie));
 
         Assert.All(team.Roster, player =>
         {
@@ -122,6 +122,11 @@ public sealed class NewGameTests
         Assert.Equal(3, team.Lineup.DefencePairs.Count);
         Assert.Equal(20, team.Lineup.DressedPlayerIds.Count);
         Assert.Equal(20, team.Lineup.DressedPlayerIds.Distinct().Count());
+        Assert.Equal(3, team.ScratchedPlayerIds.Count);
+        Assert.Empty(team.Lineup.DressedPlayerIds.Intersect(team.ScratchedPlayerIds));
+        Assert.Equal(
+            team.Roster.Select(player => player.Id).ToHashSet(),
+            team.Lineup.DressedPlayerIds.Concat(team.ScratchedPlayerIds).ToHashSet());
 
         var rosterById = team.Roster.ToDictionary(player => player.Id);
         Assert.All(team.Lineup.ForwardLines, line =>
@@ -137,6 +142,9 @@ public sealed class NewGameTests
         });
         Assert.Equal(Position.Goalie, rosterById[team.Lineup.StartingGoalieId].Position);
         Assert.Equal(Position.Goalie, rosterById[team.Lineup.BackupGoalieId].Position);
+        Assert.Equal(1, team.ScratchedPlayerIds.Count(id => rosterById[id].Position == Position.Centre));
+        Assert.Equal(1, team.ScratchedPlayerIds.Count(id => rosterById[id].Position == Position.Defence));
+        Assert.Equal(1, team.ScratchedPlayerIds.Count(id => rosterById[id].Position == Position.Goalie));
     }
 
     private static string CreateFingerprint(GameSnapshot snapshot) =>
