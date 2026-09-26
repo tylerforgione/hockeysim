@@ -37,7 +37,7 @@ public sealed class Team
             throw new ArgumentException("Player numbers must be unique within a roster.", nameof(roster));
         }
 
-        if (!DressedPlayersAreOnRoster(lineup))
+        if (!DressedPlayersAreOnRoster(rosterList, lineup))
         {
             throw new ArgumentException("Every dressed player must belong to the team roster.", nameof(lineup));
         }
@@ -52,7 +52,7 @@ public sealed class Team
     {
         ArgumentNullException.ThrowIfNull(lineup);
 
-        if (!DressedPlayersAreOnRoster(lineup))
+        if (!DressedPlayersAreOnRoster(_roster, lineup))
         {
             throw new ArgumentException("Every dressed player must belong to the team roster.", nameof(lineup));
         }
@@ -60,15 +60,10 @@ public sealed class Team
         Lineup = lineup;
     }
 
-    private bool DressedPlayersAreOnRoster(Lineup lineup)
+    private bool DressedPlayersAreOnRoster(IEnumerable<Player> roster, Lineup lineup)
     {
-        var rosterIds = _roster.Select(player => player.Id).ToHashSet();
-        if (lineup.DressedPlayers.Any(player => !rosterIds.Contains(player.Id)))
-        {
-            return false;
-        }
-
-        return true;
+        var rosterIds = roster.Select(player => player.Id).ToHashSet();
+        return lineup.DressedPlayers.All(player => rosterIds.Contains(player.Id));
     }
 
     public TeamId Id { get; }
