@@ -112,6 +112,40 @@ public sealed class LineupTests
             foreignLineup));
     }
 
+    [Fact]
+    public void SetLineupRejectsADifferentPlayerInstanceWithARosterPlayerIdentity()
+    {
+        var roster = CreateRoster();
+        var originalLineup = CreateLineup(roster);
+        var team = new Team(
+            new TeamId(Guid.Parse("10000000-0000-0000-0000-000000000001")),
+            "Test Team",
+            roster,
+            originalLineup);
+        var scratchedCentre = roster.Last(player => player.Position == Position.Centre);
+        var centreClonePlayingWing = new Player(
+            scratchedCentre.Id,
+            scratchedCentre.FirstName,
+            scratchedCentre.LastName,
+            Position.Wing,
+            scratchedCentre.Age,
+            scratchedCentre.Number,
+            scratchedCentre.Ratings);
+        var forwardLines = originalLineup.ForwardLines.ToList();
+        forwardLines[0] = new ForwardLine(
+            centreClonePlayingWing,
+            forwardLines[0].Centre,
+            forwardLines[0].RightWing);
+        var lineupWithClone = new Lineup(
+            forwardLines,
+            originalLineup.DefencePairs,
+            originalLineup.StartingGoalie,
+            originalLineup.BackupGoalie);
+
+        Assert.Throws<ArgumentException>(() => team.SetLineup(lineupWithClone));
+        Assert.Same(originalLineup, team.Lineup);
+    }
+
     private static IReadOnlyList<Player> CreateRoster()
     {
         var positions = Enumerable.Repeat(Position.Centre, 5)

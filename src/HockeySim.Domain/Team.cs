@@ -62,8 +62,8 @@ public sealed class Team
 
     private bool DressedPlayersAreOnRoster(IEnumerable<Player> roster, Lineup lineup)
     {
-        var rosterIds = roster.Select(player => player.Id).ToHashSet();
-        return lineup.DressedPlayers.All(player => rosterIds.Contains(player.Id));
+        var rosterPlayers = roster.ToHashSet(ReferenceEqualityComparer.Instance);
+        return lineup.DressedPlayers.All(rosterPlayers.Contains);
     }
 
     public TeamId Id { get; }
