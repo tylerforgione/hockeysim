@@ -5,21 +5,21 @@ namespace HockeySim.Domain;
 public sealed class Lineup
 {
     public const int RequiredForwardLineCount = 4;
-    public const int RequiredDefensePairCount = 3;
+    public const int RequiredDefencePairCount = 3;
     public const int RequiredDressedPlayerCount = 20;
 
     private readonly ReadOnlyCollection<ForwardLine> _forwardLines;
-    private readonly ReadOnlyCollection<DefensePair> _defensePairs;
+    private readonly ReadOnlyCollection<DefencePair> _defencePairs;
     private readonly ReadOnlyCollection<Player> _dressedPlayers;
 
     public Lineup(
         IEnumerable<ForwardLine> forwardLines,
-        IEnumerable<DefensePair> defensePairs,
+        IEnumerable<DefencePair> defencePairs,
         Player startingGoalie,
         Player backupGoalie)
     {
         ArgumentNullException.ThrowIfNull(forwardLines);
-        ArgumentNullException.ThrowIfNull(defensePairs);
+        ArgumentNullException.ThrowIfNull(defencePairs);
         ArgumentNullException.ThrowIfNull(startingGoalie);
         ArgumentNullException.ThrowIfNull(backupGoalie);
 
@@ -31,12 +31,12 @@ public sealed class Lineup
                 nameof(forwardLines));
         }
 
-        var defensePairList = defensePairs.ToList();
-        if (defensePairList.Count != RequiredDefensePairCount)
+        var defencePairList = defencePairs.ToList();
+        if (defencePairList.Count != RequiredDefencePairCount)
         {
             throw new ArgumentException(
-                $"A lineup must contain exactly {RequiredDefensePairCount} defense pairs.",
-                nameof(defensePairs));
+                $"A lineup must contain exactly {RequiredDefencePairCount} defence pairs.",
+                nameof(defencePairs));
         }
 
         if (startingGoalie.Position != Position.Goalie || backupGoalie.Position != Position.Goalie)
@@ -46,7 +46,7 @@ public sealed class Lineup
 
         var dressedPlayers = forwardLineList
             .SelectMany(line => line.Players)
-            .Concat(defensePairList.SelectMany(pair => pair.Players))
+            .Concat(defencePairList.SelectMany(pair => pair.Players))
             .Append(startingGoalie)
             .Append(backupGoalie)
             .ToList();
@@ -59,7 +59,7 @@ public sealed class Lineup
         }
 
         _forwardLines = forwardLineList.AsReadOnly();
-        _defensePairs = defensePairList.AsReadOnly();
+        _defencePairs = defencePairList.AsReadOnly();
         StartingGoalie = startingGoalie;
         BackupGoalie = backupGoalie;
         _dressedPlayers = dressedPlayers.AsReadOnly();
@@ -67,7 +67,7 @@ public sealed class Lineup
 
     public IReadOnlyList<ForwardLine> ForwardLines => _forwardLines;
 
-    public IReadOnlyList<DefensePair> DefensePairs => _defensePairs;
+    public IReadOnlyList<DefencePair> DefencePairs => _defencePairs;
 
     public Player StartingGoalie { get; }
 

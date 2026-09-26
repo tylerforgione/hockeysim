@@ -1,8 +1,9 @@
 using System.Collections.ObjectModel;
 
 using HockeySim.Domain;
+using HockeySim.Management.NewGame;
 
-namespace HockeySim.Management.NewGame;
+namespace HockeySim.Management.GameManagement.Snapshots;
 
 public sealed class GameSnapshot
 {
@@ -107,16 +108,22 @@ public sealed class TeamSnapshot
 {
     private readonly ReadOnlyCollection<PlayerSnapshot> _roster;
 
+    private readonly ReadOnlyCollection<PlayerId> _scratchedPlayerIds;
+
     private TeamSnapshot(
         TeamId id,
         string name,
         IReadOnlyList<PlayerSnapshot> roster,
+        IReadOnlyList<PlayerId> scratchedPlayerIds,
         LineupSnapshot lineup)
     {
         Id = id;
         Name = name;
         _roster = new ReadOnlyCollection<PlayerSnapshot>(roster.ToList());
         Lineup = lineup;
+        _scratchedPlayerIds = new ReadOnlyCollection<PlayerId>(
+            scratchedPlayerIds.ToList()
+        );
     }
 
     public TeamId Id { get; }
@@ -125,14 +132,27 @@ public sealed class TeamSnapshot
 
     public IReadOnlyList<PlayerSnapshot> Roster => _roster;
 
+    public IReadOnlyList<PlayerId> ScratchedPlayerIds => _scratchedPlayerIds;
+
     public LineupSnapshot Lineup { get; }
 
-    internal static TeamSnapshot Create(Team team) =>
-        new(
+    internal static TeamSnapshot Create(Team team)
+    {
+        var dressedPlayerIds = team.Lineup.DressedPlayers.Select(
+            player => player.Id
+        ).ToHashSet();
+
+        var scratchedPlayerIds = team.Roster.Where(
+            player => !dressedPlayerIds.Contains(player.Id)
+        ).Select(player => player.Id).ToList();
+
+        return new(
             team.Id,
             team.Name,
             team.Roster.Select(PlayerSnapshot.Create).ToList(),
+            scratchedPlayerIds,
             LineupSnapshot.Create(team.Lineup));
+    }
 }
 
 public sealed class PlayerSnapshot
@@ -185,18 +205,18 @@ public sealed class PlayerSnapshot
 public sealed class LineupSnapshot
 {
     private readonly ReadOnlyCollection<ForwardLineSnapshot> _forwardLines;
-    private readonly ReadOnlyCollection<DefensePairSnapshot> _defensePairs;
+    private readonly ReadOnlyCollection<DefencePairSnapshot> _defencePairs;
     private readonly ReadOnlyCollection<PlayerId> _dressedPlayerIds;
 
     private LineupSnapshot(
         IReadOnlyList<ForwardLineSnapshot> forwardLines,
-        IReadOnlyList<DefensePairSnapshot> defensePairs,
+        IReadOnlyList<DefencePairSnapshot> defencePairs,
         PlayerId startingGoalieId,
         PlayerId backupGoalieId,
         IReadOnlyList<PlayerId> dressedPlayerIds)
     {
         _forwardLines = new ReadOnlyCollection<ForwardLineSnapshot>(forwardLines.ToList());
-        _defensePairs = new ReadOnlyCollection<DefensePairSnapshot>(defensePairs.ToList());
+        _defencePairs = new ReadOnlyCollection<DefencePairSnapshot>(defencePairs.ToList());
         StartingGoalieId = startingGoalieId;
         BackupGoalieId = backupGoalieId;
         _dressedPlayerIds = new ReadOnlyCollection<PlayerId>(dressedPlayerIds.ToList());
@@ -204,7 +224,7 @@ public sealed class LineupSnapshot
 
     public IReadOnlyList<ForwardLineSnapshot> ForwardLines => _forwardLines;
 
-    public IReadOnlyList<DefensePairSnapshot> DefensePairs => _defensePairs;
+    public IReadOnlyList<DefencePairSnapshot> DefencePairs => _defencePairs;
 
     public PlayerId StartingGoalieId { get; }
 
@@ -215,7 +235,7 @@ public sealed class LineupSnapshot
     internal static LineupSnapshot Create(Lineup lineup) =>
         new(
             lineup.ForwardLines.Select(ForwardLineSnapshot.Create).ToList(),
-            lineup.DefensePairs.Select(DefensePairSnapshot.Create).ToList(),
+            lineup.DefencePairs.Select(DefencePairSnapshot.Create).ToList(),
             lineup.StartingGoalie.Id,
             lineup.BackupGoalie.Id,
             lineup.DressedPlayers.Select(player => player.Id).ToList());
@@ -223,15 +243,15 @@ public sealed class LineupSnapshot
 
 public sealed record ForwardLineSnapshot(
     PlayerId LeftWingId,
-    PlayerId CenterId,
+    PlayerId CentreId,
     PlayerId RightWingId)
 {
     internal static ForwardLineSnapshot Create(ForwardLine line) =>
-        new(line.LeftWing.Id, line.Center.Id, line.RightWing.Id);
+        new(line.LeftWing.Id, line.Centre.Id, line.RightWing.Id);
 }
 
-public sealed record DefensePairSnapshot(PlayerId LeftDefenseId, PlayerId RightDefenseId)
+public sealed record DefencePairSnapshot(PlayerId LeftDefenceId, PlayerId RightDefenceId)
 {
-    internal static DefensePairSnapshot Create(DefensePair pair) =>
-        new(pair.LeftDefense.Id, pair.RightDefense.Id);
+    internal static DefencePairSnapshot Create(DefencePair pair) =>
+        new(pair.LeftDefence.Id, pair.RightDefence.Id);
 }

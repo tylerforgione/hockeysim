@@ -39,5 +39,6 @@ See [testing](docs/testing.md) for the test setup and future execution commands.
 - [Coding conventions](docs/conventions.md)
 - [Testing and validation](docs/testing.md)
 - [Git, issue, and PR workflow](docs/git-workflow.md)
+- [Deferred game-design decisions](docs/deferred.md)
 - [Domain vocabulary](CONTEXT.md) and [architecture decisions](docs/adr/)
 - [Agent instructions](AGENTS.md)

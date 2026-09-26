@@ -37,8 +37,7 @@ public sealed class Team
             throw new ArgumentException("Player numbers must be unique within a roster.", nameof(roster));
         }
 
-        var rosterIds = rosterList.Select(player => player.Id).ToHashSet();
-        if (lineup.DressedPlayers.Any(player => !rosterIds.Contains(player.Id)))
+        if (!DressedPlayersAreOnRoster(rosterList, lineup))
         {
             throw new ArgumentException("Every dressed player must belong to the team roster.", nameof(lineup));
         }
@@ -49,11 +48,29 @@ public sealed class Team
         Lineup = lineup;
     }
 
+    public void SetLineup(Lineup lineup)
+    {
+        ArgumentNullException.ThrowIfNull(lineup);
+
+        if (!DressedPlayersAreOnRoster(_roster, lineup))
+        {
+            throw new ArgumentException("Every dressed player must belong to the team roster.", nameof(lineup));
+        }
+
+        Lineup = lineup;
+    }
+
+    private bool DressedPlayersAreOnRoster(IEnumerable<Player> roster, Lineup lineup)
+    {
+        var rosterPlayers = roster.ToHashSet(ReferenceEqualityComparer.Instance);
+        return lineup.DressedPlayers.All(rosterPlayers.Contains);
+    }
+
     public TeamId Id { get; }
 
     public string Name { get; }
 
     public IReadOnlyList<Player> Roster => _roster;
 
-    public Lineup Lineup { get; }
+    public Lineup Lineup { get; private set; }
 }
