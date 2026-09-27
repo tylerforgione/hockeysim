@@ -1,0 +1,166 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lines="using:HockeySim.Desktop.Lines"
+             x:Class="HockeySim.Desktop.Lines.LinesPageView"
+             x:DataType="lines:LinesPageViewModel">
+  <UserControl.DataTemplates>
+    <DataTemplate x:DataType="lines:PlayerOptionViewModel">
+      <Grid ColumnDefinitions="34,*">
+        <TextBlock Classes="cell muted" Text="{Binding Number}" />
+        <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" />
+      </Grid>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock.slot-row-label">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </UserControl.Styles>
+
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Classes="panel" Margin="0,8,0,0" Padding="12,8">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock x:Name="LineupError"
+                     Classes="error"
+                     Text="{Binding ErrorMessage}"
+                     IsVisible="{Binding HasError}"
+                     TextWrapping="Wrap" />
+          <TextBlock Classes="success"
+                     Text="{Binding StatusMessage}"
+                     IsVisible="{Binding !HasError}" />
+          <TextBlock Classes="warning"
+                     Text="You have unsaved lineup changes."
+                     IsVisible="{Binding HasChanges}" />
+        </StackPanel>
+        <Button Grid.Column="1"
+                Classes="secondary"
+                Content="Revert"
+                Command="{Binding RevertCommand}" />
+        <Button x:Name="SaveLineupButton"
+                Grid.Column="2"
+                Classes="primary"
+                Content="Save lineup"
+                Command="{Binding SaveCommand}" />
+      </Grid>
+    </Border>
+
+    <Grid ColumnDefinitions="*,280" ColumnSpacing="8">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="8">
+          <Border Classes="panel">
+            <StackPanel>
+              <Border Classes="panel-header">
+                <TextBlock Classes="panel-title" Text="FORWARD LINES" />
+              </Border>
+              <Grid ColumnDefinitions="72,*,*,*" ColumnSpacing="8" Margin="12,8,12,2">
+                <TextBlock Grid.Column="1" Classes="label" Text="LEFT WING" />
+                <TextBlock Grid.Column="2" Classes="label" Text="CENTRE" />
+                <TextBlock Grid.Column="3" Classes="label" Text="RIGHT WING" />
+              </Grid>
+              <ItemsControl x:Name="ForwardLinesList" ItemsSource="{Binding ForwardLines}" Margin="12,0,12,10">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="lines:ForwardLineRowViewModel">
+                    <Grid ColumnDefinitions="72,*,*,*" ColumnSpacing="8" Margin="0,3">
+                      <TextBlock Classes="slot-row-label" Text="{Binding Label}" />
+                      <ComboBox Grid.Column="1"
+                                ItemsSource="{Binding LeftWing.Options}"
+                                SelectedItem="{Binding LeftWing.SelectedPlayer}" />
+                      <ComboBox Grid.Column="2"
+                                ItemsSource="{Binding Centre.Options}"
+                                SelectedItem="{Binding Centre.SelectedPlayer}" />
+                      <ComboBox Grid.Column="3"
+                                ItemsSource="{Binding RightWing.Options}"
+                                SelectedItem="{Binding RightWing.SelectedPlayer}" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+
+          <Grid ColumnDefinitions="2*,*" ColumnSpacing="8">
+            <Border Classes="panel">
+              <StackPanel>
+                <Border Classes="panel-header">
+                  <TextBlock Classes="panel-title" Text="DEFENCE PAIRS" />
+                </Border>
+                <Grid ColumnDefinitions="72,*,*" ColumnSpacing="8" Margin="12,8,12,2">
+                  <TextBlock Grid.Column="1" Classes="label" Text="LEFT DEFENCE" />
+                  <TextBlock Grid.Column="2" Classes="label" Text="RIGHT DEFENCE" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding DefencePairs}" Margin="12,0,12,10">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="lines:DefencePairRowViewModel">
+                      <Grid ColumnDefinitions="72,*,*" ColumnSpacing="8" Margin="0,3">
+                        <TextBlock Classes="slot-row-label" Text="{Binding Label}" />
+                        <ComboBox Grid.Column="1"
+                                  ItemsSource="{Binding LeftDefence.Options}"
+                                  SelectedItem="{Binding LeftDefence.SelectedPlayer}" />
+                        <ComboBox Grid.Column="2"
+                                  ItemsSource="{Binding RightDefence.Options}"
+                                  SelectedItem="{Binding RightDefence.SelectedPlayer}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Classes="panel">
+              <StackPanel>
+                <Border Classes="panel-header">
+                  <TextBlock Classes="panel-title" Text="GOALIES" />
+                </Border>
+                <StackPanel Margin="12,8,12,10" Spacing="4">
+                  <TextBlock Classes="label" Text="STARTER" />
+                  <ComboBox x:Name="StartingGoalieSelector"
+                            ItemsSource="{Binding StartingGoalie.Options}"
+                            SelectedItem="{Binding StartingGoalie.SelectedPlayer}" />
+                  <TextBlock Classes="label" Text="BACKUP" Margin="0,6,0,0" />
+                  <ComboBox ItemsSource="{Binding BackupGoalie.Options}"
+                            SelectedItem="{Binding BackupGoalie.SelectedPlayer}" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+
+      <Border Grid.Column="1" Classes="panel">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Classes="panel-header">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Classes="panel-title" Text="SCRATCHES" />
+              <Border Grid.Column="1" Classes="pill muted">
+                <TextBlock Text="{Binding Scratches.Count}" />
+              </Border>
+            </Grid>
+          </Border>
+          <TextBlock DockPanel.Dock="Bottom"
+                     Classes="caption"
+                     Margin="12,10"
+                     TextWrapping="Wrap"
+                     Text="Players not dressed for the next match. Choosing a player who is already in the lineup swaps the two players." />
+          <ItemsControl x:Name="ScratchesList" ItemsSource="{Binding Scratches}" Margin="0,4">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="lines:PlayerOptionViewModel">
+                <Grid ColumnDefinitions="36,*,Auto" Height="26" Margin="12,0">
+                  <TextBlock Classes="cell muted" Text="{Binding Number}" />
+                  <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" />
+                  <Border Grid.Column="2" Classes="position">
+                    <TextBlock Text="{Binding PositionAbbreviation}" />
+                  </Border>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</UserControl>

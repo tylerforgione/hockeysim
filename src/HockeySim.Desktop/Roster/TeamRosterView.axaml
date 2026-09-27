@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:players="using:HockeySim.Desktop.Players"
+             xmlns:roster="using:HockeySim.Desktop.Roster"
+             x:Class="HockeySim.Desktop.Roster.TeamRosterView"
+             x:DataType="roster:TeamRosterViewModel">
+  <!-- Header and row templates share each table's ColumnDefinitions so columns align. -->
+  <Grid ColumnDefinitions="*,280" ColumnSpacing="8">
+    <Grid RowDefinitions="*,Auto" RowSpacing="8">
+      <Border Classes="panel">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Classes="panel-header">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Classes="panel-title" Text="SKATERS" />
+              <TextBlock Grid.Column="1" Classes="caption" VerticalAlignment="Center" Text="{Binding Skaters.Count, StringFormat='{}{0} players'}" />
+            </Grid>
+          </Border>
+          <Border DockPanel.Dock="Top" Classes="table-header">
+            <Grid ColumnDefinitions="36,*,36,38,64,38,38,38,38,38,38,38,38,38,38">
+              <TextBlock Text="#" />
+              <TextBlock Grid.Column="1" Text="NAME" />
+              <TextBlock Grid.Column="2" Text="POS" HorizontalAlignment="Center" />
+              <TextBlock Grid.Column="3" Text="AGE" HorizontalAlignment="Center" />
+              <TextBlock Grid.Column="4" Text="LINEUP" />
+              <TextBlock Grid.Column="5" Text="SKA" HorizontalAlignment="Center" ToolTip.Tip="Skating" />
+              <TextBlock Grid.Column="6" Text="SHP" HorizontalAlignment="Center" ToolTip.Tip="Shot power" />
+              <TextBlock Grid.Column="7" Text="SHA" HorizontalAlignment="Center" ToolTip.Tip="Shot accuracy" />
+              <TextBlock Grid.Column="8" Text="PUC" HorizontalAlignment="Center" ToolTip.Tip="Puck control" />
+              <TextBlock Grid.Column="9" Text="PAS" HorizontalAlignment="Center" ToolTip.Tip="Passing" />
+              <TextBlock Grid.Column="10" Text="OFF" HorizontalAlignment="Center" ToolTip.Tip="Offensive awareness" />
+              <TextBlock Grid.Column="11" Text="DEF" HorizontalAlignment="Center" ToolTip.Tip="Defensive awareness" />
+              <TextBlock Grid.Column="12" Text="CHK" HorizontalAlignment="Center" ToolTip.Tip="Checking" />
+              <TextBlock Grid.Column="13" Text="BLK" HorizontalAlignment="Center" ToolTip.Tip="Shot blocking" />
+              <TextBlock Grid.Column="14" Text="STK" HorizontalAlignment="Center" ToolTip.Tip="Stick checking" />
+            </Grid>
+          </Border>
+          <ListBox x:Name="SkatersTable"
+                   Classes="table"
+                   ItemsSource="{Binding Skaters}"
+                   SelectedItem="{Binding SelectedSkater}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="roster:PlayerRowViewModel">
+                <Grid ColumnDefinitions="36,*,36,38,64,38,38,38,38,38,38,38,38,38,38">
+                  <TextBlock Classes="cell muted" Text="{Binding Number}" />
+                  <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                  <Border Grid.Column="2" Classes="position"><TextBlock Text="{Binding Position}" /></Border>
+                  <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Age}" />
+                  <TextBlock Grid.Column="4" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
+                  <TextBlock Grid.Column="5" Classes="rating" Text="{Binding Skating}" Foreground="{Binding Skating, Converter={StaticResource RatingBrush}}" />
+                  <TextBlock Grid.Column="6" Classes="rating" Text="{Binding ShotPower}" Foreground="{Binding ShotPower, Converter={StaticResource RatingBrush}}" />
+                  <TextBlock Grid.Column="7" Classes="rating" Text="{Binding ShotAccuracy}" Foreground="{Binding ShotAccuracy, Converter={StaticResource RatingBrush}}" />
+                  <TextBlock Grid.Column="8" Classes="rating" Text="{Binding PuckControl}" Foreground="{Binding PuckControl, Converter={StaticResource RatingBrush}}" />
+                  <TextBlock Grid.Column="9" Classes="rating" Text="{Binding Passing}" Foreground="{Binding Passing, Converter={StaticResource RatingBrush}}" />
+                  <TextBlock Grid.Column="10" Classes="rating" Text="{Binding OffensiveAwareness}" Foreground="{Binding OffensiveAwareness, Converter={StaticResource RatingBrush}}" />
+                  <TextBlock Grid.Column="11" Classes="rating" Text="{Binding DefensiveAwareness}" Foreground="{Binding DefensiveAwareness, Converter={StaticResource RatingBrush}}" />
+                  <TextBlock Grid.Column="12" Classes="rating" Text="{Binding Checking}" Foreground="{Binding Checking, Converter={StaticResource RatingBrush}}" />
+                  <TextBlock Grid.Column="13" Classes="rating" Text="{Binding ShotBlocking}" Foreground="{Binding ShotBlocking, Converter={StaticResource RatingBrush}}" />
+                  <TextBlock Grid.Column="14" Classes="rating" Text="{Binding StickChecking}" Foreground="{Binding StickChecking, Converter={StaticResource RatingBrush}}" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+
+      <Border Grid.Row="1" Classes="panel">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Classes="panel-header">
+            <TextBlock Classes="panel-title" Text="GOALIES" />
+          </Border>
+          <Border DockPanel.Dock="Top" Classes="table-header">
+            <Grid ColumnDefinitions="36,*,38,64,38,38,38">
+              <TextBlock Text="#" />
+              <TextBlock Grid.Column="1" Text="NAME" />
+              <TextBlock Grid.Column="2" Text="AGE" HorizontalAlignment="Center" />
+              <TextBlock Grid.Column="3" Text="LINEUP" />
+              <TextBlock Grid.Column="4" Text="REF" HorizontalAlignment="Center" ToolTip.Tip="Reflexes" />
+              <TextBlock Grid.Column="5" Text="POS" HorizontalAlignment="Center" ToolTip.Tip="Positioning" />
+              <TextBlock Grid.Column="6" Text="REB" HorizontalAlignment="Center" ToolTip.Tip="Rebound control" />
+            </Grid>
+          </Border>
+          <ListBox x:Name="GoaliesTable"
+                   Classes="table"
+                   ItemsSource="{Binding Goalies}"
+                   SelectedItem="{Binding SelectedGoalie}"
+                   ScrollViewer.VerticalScrollBarVisibility="Disabled">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="roster:PlayerRowViewModel">
+                <Grid ColumnDefinitions="36,*,38,64,38,38,38">
+                  <TextBlock Classes="cell muted" Text="{Binding Number}" />
+                  <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                  <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Age}" />
+                  <TextBlock Grid.Column="3" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
+                  <TextBlock Grid.Column="4" Classes="rating" Text="{Binding GoalieReflex}" Foreground="{Binding GoalieReflex, Converter={StaticResource RatingBrush}}" />
+                  <TextBlock Grid.Column="5" Classes="rating" Text="{Binding GoaliePositioning}" Foreground="{Binding GoaliePositioning, Converter={StaticResource RatingBrush}}" />
+                  <TextBlock Grid.Column="6" Classes="rating" Text="{Binding GoalieReboundControl}" Foreground="{Binding GoalieReboundControl, Converter={StaticResource RatingBrush}}" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+    </Grid>
+
+    <Border Grid.Column="1" Classes="panel">
+      <players:PlayerDetailView x:Name="PlayerDetail"
+                                DataContext="{Binding SelectedPlayer}" />
+    </Border>
+  </Grid>
+</UserControl>

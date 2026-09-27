@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:inbox="using:HockeySim.Desktop.Inbox"
+             x:Class="HockeySim.Desktop.Inbox.InboxPageView"
+             x:DataType="inbox:InboxPageViewModel">
+  <Grid ColumnDefinitions="360,*" ColumnSpacing="8">
+    <Border Classes="panel">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="panel-header">
+          <TextBlock Classes="panel-title" Text="MESSAGES" />
+        </Border>
+        <ListBox x:Name="MessagesList"
+                 Classes="table tall"
+                 ItemsSource="{Binding Messages}"
+                 SelectedItem="{Binding SelectedMessage}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="inbox:InboxMessageViewModel">
+              <Grid ColumnDefinitions="10,*" RowDefinitions="Auto,Auto,Auto">
+                <Ellipse Width="6"
+                         Height="6"
+                         VerticalAlignment="Center"
+                         HorizontalAlignment="Left"
+                         Fill="{DynamicResource TeamSecondaryBrush}"
+                         IsVisible="{Binding IsUnread}" />
+                <Grid Grid.Column="1" ColumnDefinitions="*,Auto">
+                  <TextBlock Classes="cell"
+                             Text="{Binding SenderName}"
+                             FontWeight="SemiBold" />
+                  <TextBlock Grid.Column="1" Classes="caption" Text="{Binding SenderRole}" />
+                </Grid>
+                <TextBlock Grid.Row="1"
+                           Grid.Column="1"
+                           Classes="cell"
+                           Classes.muted="{Binding !IsUnread}"
+                           Classes.strong="{Binding IsUnread}"
+                           Text="{Binding Subject}" />
+                <TextBlock Grid.Row="2"
+                           Grid.Column="1"
+                           Classes="caption cell"
+                           Text="{Binding Preview}" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <Border Grid.Column="1" Classes="panel">
+      <Grid>
+        <TextBlock Classes="caption"
+                   Text="Select a message to read it."
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   IsVisible="{Binding !HasSelectedMessage}" />
+        <DockPanel IsVisible="{Binding HasSelectedMessage}">
+          <Border DockPanel.Dock="Top"
+                  Background="{DynamicResource SurfaceRaisedBrush}"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="0,0,0,1"
+                  Padding="16,12">
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+              <Border Grid.RowSpan="2" Classes="badge" Width="40" Height="40">
+                <TextBlock Text="{Binding SelectedMessage.SenderInitials}" FontSize="13" />
+              </Border>
+              <TextBlock x:Name="MessageSubject"
+                         Grid.Column="1"
+                         Text="{Binding SelectedMessage.Subject}"
+                         FontSize="17"
+                         FontWeight="SemiBold" />
+              <TextBlock Grid.Row="1" Grid.Column="1" Classes="caption">
+                <Run Text="From" />
+                <Run Text="{Binding SelectedMessage.SenderName}" Foreground="{DynamicResource PrimaryTextBrush}" />
+                <Run Text="·" />
+                <Run Text="{Binding SelectedMessage.SenderRole}" />
+              </TextBlock>
+            </Grid>
+          </Border>
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <SelectableTextBlock Text="{Binding SelectedMessage.Body}"
+                                 TextWrapping="Wrap"
+                                 LineHeight="21"
+                                 MaxWidth="720"
+                                 HorizontalAlignment="Left"
+                                 Margin="16,14" />
+          </ScrollViewer>
+        </DockPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>
