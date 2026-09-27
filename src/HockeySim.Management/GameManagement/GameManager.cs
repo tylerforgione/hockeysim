@@ -14,6 +14,12 @@ public sealed class GameManager
     private TeamId _managedTeamId;
     private RandomState _randomState;
 
+    public NewGameOptionsSnapshot GetNewGameOptions() =>
+        NewGameOptionsSnapshot.Create(
+            FictionalLeagueData.Conferences
+                .SelectMany(conference => conference.Divisions)
+                .SelectMany(division => division.TeamNames));
+
     public GameSnapshot StartNewGame(NewGameCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);

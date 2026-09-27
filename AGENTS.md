@@ -39,3 +39,4 @@ When delegating work to a subagent:
   - there is evidence that the subagent is stuck or has failed.
 - Do not use status checks merely to determine whether a subagent has finished.
 - Prefer doing other independent work while subagents are running. If there is no other work, wait for their completion rather than polling them.
+- Subagents report their own completion. Treat completion as event-driven, not polling-driven: after spawning a subagent, do not call status/wait/check operations repeatedly to discover whether it has finished.

@@ -12,6 +12,19 @@ public sealed class NewGameTests
     private const string InitialManagedTeam = "Halifax Mariners";
 
     [Fact]
+    public void NewGameOptionsExposeEveryAvailableTeamWithoutMutableState()
+    {
+        var options = new GameManager().GetNewGameOptions();
+        var teamNames = Assert.IsAssignableFrom<IList<string>>(options.TeamNames);
+
+        Assert.Equal(32, teamNames.Count);
+        Assert.Equal(32, teamNames.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Contains(InitialManagedTeam, teamNames);
+        Assert.Contains("Seattle Evergreens", teamNames);
+        Assert.Throws<NotSupportedException>(() => teamNames.Clear());
+    }
+
+    [Fact]
     public void StartNewGameCreatesAValidInspectableWorld()
     {
         var snapshot = StartGame(12345);

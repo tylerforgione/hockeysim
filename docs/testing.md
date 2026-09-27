@@ -2,11 +2,11 @@
 
 ## Current status
 
-Domain and Management test projects use xUnit v3 with
+Domain, Management, and Desktop test projects use xUnit v3 with
 Microsoft.Testing.Platform. They cover generated-world invariants, managed-team
-selection, reproducibility, snapshot isolation, and focused Domain validation.
-Simulation, Infrastructure, and Desktop tests remain pending with their projects
-or concrete behavior.
+selection, reproducibility, snapshot isolation, focused Domain validation,
+new-game view-model behavior, and selected headless Avalonia bindings.
+Simulation and Infrastructure tests remain pending with their projects.
 
 ## Test organization
 
@@ -49,6 +49,7 @@ Run each test project against the Release build:
 
 ```sh
 dotnet test --project tests/HockeySim.Domain.Tests/HockeySim.Domain.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
+dotnet test --project tests/HockeySim.Desktop.Tests/HockeySim.Desktop.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
 dotnet test --project tests/HockeySim.Management.Tests/HockeySim.Management.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
 ```
 

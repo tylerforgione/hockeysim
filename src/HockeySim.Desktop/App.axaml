@@ -1,0 +1,71 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="HockeySim.Desktop.App"
+             RequestedThemeVariant="Dark">
+  <Application.Styles>
+    <FluentTheme />
+
+    <Style Selector="TextBlock.eyebrow">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="LetterSpacing" Value="1.8" />
+    </Style>
+
+    <Style Selector="TextBlock.heading">
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+      <Setter Property="FontSize" Value="36" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="LineHeight" Value="42" />
+    </Style>
+
+    <Style Selector="TextBlock.muted">
+      <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.label">
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="Padding" Value="28" />
+    </Style>
+
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Foreground" Value="#04101C" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="20,13" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+    </Style>
+
+    <Style Selector="TextBox, ComboBox">
+      <Setter Property="MinHeight" Value="44" />
+      <Setter Property="FontSize" Value="14" />
+    </Style>
+  </Application.Styles>
+
+  <Application.Resources>
+    <SolidColorBrush x:Key="AppBackgroundBrush">#07111F</SolidColorBrush>
+    <SolidColorBrush x:Key="SidebarBrush">#0A1727</SolidColorBrush>
+    <SolidColorBrush x:Key="CardBrush">#101F31</SolidColorBrush>
+    <SolidColorBrush x:Key="CardBorderBrush">#233A52</SolidColorBrush>
+    <SolidColorBrush x:Key="AccentBrush">#65D9F3</SolidColorBrush>
+    <SolidColorBrush x:Key="AccentHoverBrush">#91E7FA</SolidColorBrush>
+    <SolidColorBrush x:Key="PrimaryTextBrush">#F4F8FC</SolidColorBrush>
+    <SolidColorBrush x:Key="SecondaryTextBrush">#9EB0C3</SolidColorBrush>
+    <SolidColorBrush x:Key="SuccessBrush">#79E2B2</SolidColorBrush>
+    <SolidColorBrush x:Key="ErrorBrush">#FF9D9D</SolidColorBrush>
+  </Application.Resources>
+</Application>

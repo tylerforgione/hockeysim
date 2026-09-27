@@ -92,6 +92,8 @@ owns a headless new-game workflow, controlled random state, managed-team
 selection, and read-only snapshots. Fictional names are kept separate from the
 league and roster rules that use them.
 
-Desktop remains a console placeholder and references Management for future
-startup composition. Simulation and Infrastructure have not been scaffolded;
-until they exist, the related parts of the diagram remain target architecture.
+Desktop contains an Avalonia shell and a feature-oriented new-game screen. It
+wires a Management game manager at startup, sends a new-game command, and renders
+the resulting read-only snapshot. Team browsing and lineup views remain pending.
+Simulation and Infrastructure have not been scaffolded; until they exist, the
+related parts of the diagram remain target architecture.

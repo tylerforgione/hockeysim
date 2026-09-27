@@ -4,9 +4,9 @@
 | --- | --- | --- |
 | Language/runtime | C# on .NET 10 | Configured centrally |
 | SDK | Exact stable version in `global.json`; no roll-forward or previews | Configured for local development and CI |
-| Desktop | Avalonia on Windows, macOS, and Linux | Selected; shell and packaging not scaffolded |
-| Presentation | MVVM with `CommunityToolkit.Mvvm` | Selected; no package reference yet |
-| Tests | xUnit v3; .NET 10's Microsoft.Testing.Platform runner | Domain and Management test projects configured with coverage |
+| Desktop | Avalonia on Windows, macOS, and Linux | Source-run shell and new-game screen scaffolded; packaging deferred |
+| Presentation | MVVM with `CommunityToolkit.Mvvm` | Configured for feature-oriented view models |
+| Tests | xUnit v3; .NET 10's Microsoft.Testing.Platform runner | Domain, Management, and Desktop test projects configured with coverage |
 | Dependency wiring | Constructor injection, manually composed at Desktop startup | Policy for future implementation |
 | Persistence | Separate Infrastructure project; versioned local saves | Storage technology deferred |
 
@@ -33,7 +33,6 @@ Dependabot maintains the exact SDK pin.
 | --- | --- |
 | Save format and storage technology | First persistence feature, with realistic save size, history, and query needs |
 | Stable-release save compatibility | Before the first stable release |
-| Concrete Avalonia package versions | Desktop scaffolding; verify compatible stable versions together |
 | OS minimum versions and native packaging | Desktop scaffolding/release work, before claiming distributable support |
 
 The three-OS build matrix checks portability of the current code. It does not

@@ -1,0 +1,170 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewModels="using:HockeySim.Desktop.NewGame"
+             x:Class="HockeySim.Desktop.NewGame.NewGameView"
+             x:DataType="viewModels:NewGameViewModel"
+             Background="{DynamicResource AppBackgroundBrush}">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="48,42" Spacing="28" MaxWidth="920" HorizontalAlignment="Stretch">
+      <StackPanel Spacing="8">
+        <TextBlock Text="NEW CAREER" Classes="eyebrow" />
+        <TextBlock Text="Build your hockey world" Classes="heading" />
+        <TextBlock MaxWidth="680"
+                   HorizontalAlignment="Left"
+                   Classes="muted"
+                   FontSize="15"
+                   LineHeight="22"
+                   TextWrapping="Wrap"
+                   Text="Choose the season, lock in a repeatable world seed, and take control of one of 32 fictional clubs." />
+      </StackPanel>
+
+      <Grid ColumnDefinitions="3*,2*" ColumnSpacing="22">
+        <Border Grid.Column="0" Classes="card">
+          <StackPanel Spacing="22">
+            <StackPanel Spacing="5">
+              <TextBlock Text="League setup" FontSize="20" FontWeight="Bold" />
+              <TextBlock Text="These choices create a complete league and opening lineup." Classes="muted" FontSize="13" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+              <StackPanel Grid.Column="0" Spacing="7">
+                <TextBlock Text="Season year" Classes="label" />
+                <TextBox Text="{Binding SeasonYear}"
+                         MaxLength="4"
+                         PlaceholderText="2026" />
+              </StackPanel>
+
+              <StackPanel Grid.Column="1" Spacing="7">
+                <TextBlock Text="World seed" Classes="label" />
+                <TextBox Text="{Binding WorldSeed}"
+                         MaxLength="20"
+                         PlaceholderText="Any whole number" />
+              </StackPanel>
+            </Grid>
+
+            <StackPanel Spacing="7">
+              <TextBlock Text="Team to manage" Classes="label" />
+              <ComboBox x:Name="TeamPicker"
+                        ItemsSource="{Binding TeamNames}"
+                        SelectedItem="{Binding SelectedTeamName}" />
+              <TextBlock Text="You can browse every club later, but only your team can be edited."
+                         Classes="muted"
+                         FontSize="12"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border IsVisible="{Binding HasError}"
+                    Background="#2D2028"
+                    BorderBrush="#69404A"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="12">
+              <TextBlock Text="{Binding ErrorMessage}"
+                         Foreground="{DynamicResource ErrorBrush}"
+                         FontSize="13"
+                         TextWrapping="Wrap" />
+            </Border>
+
+            <Button x:Name="CreateGameButton"
+                    Classes="primary"
+                    Command="{Binding CreateGameCommand}"
+                    Content="Create league" />
+          </StackPanel>
+        </Border>
+
+        <Border Grid.Column="1" Classes="card">
+          <Grid>
+            <StackPanel IsVisible="{Binding IsSetupPreviewVisible}" Spacing="22">
+              <Border Width="72"
+                      Height="72"
+                      HorizontalAlignment="Left"
+                      CornerRadius="36"
+                      Background="#172F45">
+                <TextBlock Text="●"
+                           Foreground="{DynamicResource AccentBrush}"
+                           FontSize="36"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+              </Border>
+
+              <StackPanel Spacing="7">
+                <TextBlock Text="One seed. One world." FontSize="20" FontWeight="Bold" />
+                <TextBlock Classes="muted"
+                           FontSize="13"
+                           LineHeight="20"
+                           TextWrapping="Wrap"
+                           Text="Using the same season and seed recreates the same clubs, players, ratings, and opening lineups." />
+              </StackPanel>
+
+              <Border BorderBrush="{DynamicResource CardBorderBrush}"
+                      BorderThickness="0,1,0,0"
+                      Padding="0,18,0,0">
+                <StackPanel Spacing="12">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <TextBlock Text="32" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" />
+                    <TextBlock Grid.Column="1" Text="clubs across four divisions" Classes="muted" FontSize="12" />
+                  </Grid>
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <TextBlock Text="736" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" />
+                    <TextBlock Grid.Column="1" Text="generated players" Classes="muted" FontSize="12" />
+                  </Grid>
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <TextBlock Text="20" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" />
+                    <TextBlock Grid.Column="1" Text="dressed players per club" Classes="muted" FontSize="12" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+
+            <StackPanel x:Name="SuccessPanel"
+                        IsVisible="{Binding IsGameCreated}"
+                        Spacing="22">
+              <Border Width="72"
+                      Height="72"
+                      HorizontalAlignment="Left"
+                      CornerRadius="36"
+                      Background="#173A35">
+                <TextBlock Text="✓"
+                           Foreground="{DynamicResource SuccessBrush}"
+                           FontSize="34"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+              </Border>
+
+              <StackPanel Spacing="7">
+                <TextBlock Text="League created" Foreground="{DynamicResource SuccessBrush}" Classes="eyebrow" />
+                <TextBlock Text="{Binding CreatedTeamName}"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{Binding CreatedSeason}" Classes="muted" />
+              </StackPanel>
+
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <Border Grid.Column="0" Background="#0B1928" CornerRadius="8" Padding="12">
+                  <StackPanel Spacing="3">
+                    <TextBlock Text="{Binding CreatedTeamCount}" FontSize="20" FontWeight="Bold" />
+                    <TextBlock Text="TEAMS" Classes="muted" FontSize="10" />
+                  </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="#0B1928" CornerRadius="8" Padding="12">
+                  <StackPanel Spacing="3">
+                    <TextBlock Text="{Binding CreatedPlayerCount}" FontSize="20" FontWeight="Bold" />
+                    <TextBlock Text="PLAYERS" Classes="muted" FontSize="10" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+
+              <TextBlock Text="The next page can now use the Management snapshot to populate the team hub."
+                         Classes="muted"
+                         FontSize="12"
+                         LineHeight="18"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+        </Border>
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
