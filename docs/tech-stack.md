@@ -4,7 +4,7 @@
 | --- | --- | --- |
 | Language/runtime | C# on .NET 10 | Configured centrally |
 | SDK | Exact stable version in `global.json`; no roll-forward or previews | Configured for local development and CI |
-| Desktop | Avalonia on Windows, macOS, and Linux | Source-run shell and new-game screen scaffolded; packaging deferred |
+| Desktop | Avalonia on Windows, macOS, and Linux | Source-run new-game flow and in-game team-management shell (home, inbox, roster, lines, league teams); packaging deferred |
 | Presentation | MVVM with `CommunityToolkit.Mvvm` | Configured for feature-oriented view models |
 | Tests | xUnit v3; .NET 10's Microsoft.Testing.Platform runner | Domain, Management, and Desktop test projects configured with coverage |
 | Dependency wiring | Constructor injection, manually composed at Desktop startup | Policy for future implementation |
