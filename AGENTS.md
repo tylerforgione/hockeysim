@@ -20,9 +20,29 @@
 - Before assigning triage labels, read [triage labels](docs/agents/triage-labels.md).
   Use the five documented labels.
 
+## Work notes
+
+- At the start of work on a branch, and again at every handoff, read and update
+  the branch's [work notes](docs/agents/work-notes.md) in the gitignored
+  `.agents/branches/<branch-name>.md`.
+
 ## Keep decisions current
 
 When work changes an established responsibility or dependency direction, discuss
 the change before implementation and update the relevant documentation. Record
 resolved domain terminology in `CONTEXT.md` and consequential architecture
 tradeoffs in `docs/adr/`, following the single-context layout.
+
+## Subagents
+
+When delegating work to a subagent:
+
+- Do not repeatedly poll or query the subagent for status while it is working.
+- After delegation, allow the subagent to run independently and report completion through the normal subagent completion mechanism.
+- Only check on a running subagent if:
+  - its result is required before other work can proceed and no completion notification has arrived after a reasonable amount of time;
+  - you need to provide new information or change its task; or
+  - there is evidence that the subagent is stuck or has failed.
+- Do not use status checks merely to determine whether a subagent has finished.
+- Prefer doing other independent work while subagents are running. If there is no other work, wait for their completion rather than polling them.
+- Subagents report their own completion. Treat completion as event-driven, not polling-driven: after spawning a subagent, do not call status/wait/check operations repeatedly to discover whether it has finished.

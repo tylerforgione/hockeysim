@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:theme="using:HockeySim.Desktop.Theme">
+  <!--
+    Team identity. These default to the NHL's black, silver, and white until the user's team
+    colours replace them at runtime, so always reference them with DynamicResource.
+  -->
+  <SolidColorBrush x:Key="TeamPrimaryBrush">#000000</SolidColorBrush>
+  <SolidColorBrush x:Key="OnTeamPrimaryBrush">#FFFFFF</SolidColorBrush>
+  <SolidColorBrush x:Key="TeamSecondaryBrush">#A2AAAD</SolidColorBrush>
+  <SolidColorBrush x:Key="OnTeamSecondaryBrush">#000000</SolidColorBrush>
+
+  <!-- Neutral surfaces carry the layout and never change with the team. -->
+  <SolidColorBrush x:Key="AppBackgroundBrush">#101215</SolidColorBrush>
+  <SolidColorBrush x:Key="SunkenBrush">#0B0D0F</SolidColorBrush>
+  <SolidColorBrush x:Key="SurfaceBrush">#181B1F</SolidColorBrush>
+  <SolidColorBrush x:Key="SurfaceRaisedBrush">#20242A</SolidColorBrush>
+  <SolidColorBrush x:Key="RowAltBrush">#1C1F24</SolidColorBrush>
+  <SolidColorBrush x:Key="HoverBrush">#272C33</SolidColorBrush>
+  <SolidColorBrush x:Key="SelectedBrush">#2F363E</SolidColorBrush>
+  <SolidColorBrush x:Key="BorderBrush">#2A2F36</SolidColorBrush>
+  <SolidColorBrush x:Key="BorderStrongBrush">#3E454E</SolidColorBrush>
+  <SolidColorBrush x:Key="PrimaryTextBrush">#E8EBEE</SolidColorBrush>
+  <SolidColorBrush x:Key="SecondaryTextBrush">#98A1AB</SolidColorBrush>
+  <SolidColorBrush x:Key="DisabledTextBrush">#565E67</SolidColorBrush>
+
+  <!-- State. -->
+  <SolidColorBrush x:Key="PositiveBrush">#56B881</SolidColorBrush>
+  <SolidColorBrush x:Key="WarningBrush">#E2B04A</SolidColorBrush>
+  <SolidColorBrush x:Key="NegativeBrush">#E06464</SolidColorBrush>
+  <SolidColorBrush x:Key="ErrorBrush">#E06464</SolidColorBrush>
+
+  <!-- Rating tiers, applied through RatingBrushConverter. -->
+  <SolidColorBrush x:Key="RatingEliteBrush">#4FC27E</SolidColorBrush>
+  <SolidColorBrush x:Key="RatingGoodBrush">#A7CF5B</SolidColorBrush>
+  <SolidColorBrush x:Key="RatingAverageBrush">#E2C04A</SolidColorBrush>
+  <SolidColorBrush x:Key="RatingWeakBrush">#E58B4B</SolidColorBrush>
+  <SolidColorBrush x:Key="RatingPoorBrush">#E06464</SolidColorBrush>
+
+  <theme:RatingBrushConverter x:Key="RatingBrush" />
+</ResourceDictionary>

@@ -86,12 +86,24 @@ collections. Namespaces follow the owning project and folder.
 
 ## Current implementation
 
-Only Domain, Management, and Desktop exist today. Desktop is a console
-placeholder and directly references Domain and Management. Management's player
-generator and team factory currently declare the Domain namespace. Mutable
-Domain collections and wall-clock random seeding also predate this design.
+Domain, Management, and Desktop exist today. Domain protects generated-world
+invariants through validated construction and read-only collections. Management
+owns a headless new-game workflow, controlled random state, managed-team
+selection, and read-only snapshots. Fictional names are kept separate from the
+league and roster rules that use them.
 
-This is provisional scaffolding. Future scoped feature work may replace it;
-accidental behavior is not a compatibility requirement. The foundation pass
-does not change application code or add the planned projects. Until they exist,
-the diagram is the target architecture, not a claim about current references.
+Management also delivers inbox messages to the user. New-game messages are
+derived from the generated managed team, so they never describe state the game
+does not hold; selecting a different managed team replaces them with messages
+for that team. Marking a message read is a Management command.
+
+Desktop wires a Management game manager at startup. After the new-game screen
+starts a game, a `GameSession` forwards commands (lineup changes, reading
+messages) to Management and publishes each resulting snapshot to the in-game
+shell's feature pages: home, inbox, roster, lines, and league teams. Only the
+managed team's lineup is editable, and Management validates every change.
+Colours and control styles live in `HockeySim.Desktop/Theme/`; team identity
+colours are dynamic resources so a chosen team's colours can replace the
+league defaults later.
+Simulation and Infrastructure have not been scaffolded; until they exist, the
+related parts of the diagram remain target architecture.

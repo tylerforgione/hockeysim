@@ -1,0 +1,29 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:game="using:HockeySim.Desktop.Game"
+        xmlns:main="using:HockeySim.Desktop.Main"
+        xmlns:newGame="using:HockeySim.Desktop.NewGame"
+        xmlns:startup="using:HockeySim.Desktop.Startup"
+        x:Class="HockeySim.Desktop.Main.MainWindow"
+        x:DataType="main:MainWindowViewModel"
+        Title="HockeySim"
+        Width="1440"
+        Height="900"
+        MinWidth="1200"
+        MinHeight="760"
+        Background="{DynamicResource AppBackgroundBrush}"
+        WindowStartupLocation="CenterScreen">
+  <Window.DataTemplates>
+    <DataTemplate x:DataType="startup:StartupViewModel">
+      <startup:StartupView />
+    </DataTemplate>
+    <DataTemplate x:DataType="newGame:NewGameViewModel">
+      <newGame:NewGameView />
+    </DataTemplate>
+    <DataTemplate x:DataType="game:GameShellViewModel">
+      <game:GameShellView />
+    </DataTemplate>
+  </Window.DataTemplates>
+
+  <ContentControl Content="{Binding CurrentScreen}" />
+</Window>
