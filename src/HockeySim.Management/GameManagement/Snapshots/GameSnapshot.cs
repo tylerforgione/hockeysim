@@ -1,17 +1,25 @@
 using System.Collections.ObjectModel;
 
 using HockeySim.Domain;
+using HockeySim.Management.Inbox;
 using HockeySim.Management.NewGame;
 
 namespace HockeySim.Management.GameManagement.Snapshots;
 
 public sealed class GameSnapshot
 {
-    private GameSnapshot(LeagueSnapshot league, TeamId managedTeamId, RandomState randomState)
+    private readonly ReadOnlyCollection<InboxMessageSnapshot> _inbox;
+
+    private GameSnapshot(
+        LeagueSnapshot league,
+        TeamId managedTeamId,
+        RandomState randomState,
+        IReadOnlyList<InboxMessageSnapshot> inbox)
     {
         League = league;
         ManagedTeamId = managedTeamId;
         RandomState = randomState;
+        _inbox = new ReadOnlyCollection<InboxMessageSnapshot>(inbox.ToList());
     }
 
     public LeagueSnapshot League { get; }
@@ -23,8 +31,21 @@ public sealed class GameSnapshot
     /// </summary>
     public RandomState RandomState { get; }
 
-    internal static GameSnapshot Create(League league, TeamId managedTeamId, RandomState randomState) =>
-        new(LeagueSnapshot.Create(league), managedTeamId, randomState);
+    /// <summary>
+    /// Gets the messages delivered to the user, newest first.
+    /// </summary>
+    public IReadOnlyList<InboxMessageSnapshot> Inbox => _inbox;
+
+    internal static GameSnapshot Create(
+        League league,
+        TeamId managedTeamId,
+        RandomState randomState,
+        InboxMessages inbox) =>
+        new(
+            LeagueSnapshot.Create(league),
+            managedTeamId,
+            randomState,
+            inbox.Messages.Select(InboxMessageSnapshot.Create).ToList());
 }
 
 public sealed class LeagueSnapshot
