@@ -1,6 +1,9 @@
 ## Link to issue
 
-- <!-- Link the issue. For small documentation/maintenance work without an issue, say so. -->
+Closes #
+<!-- One "Closes #N" line per issue this PR completes, including each finished
+sub-issue of a parent. Merging into main closes only issues named with a
+keyword. For small documentation/maintenance work without an issue, say so. -->
 
 ## Changes
 
