@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using HockeySim.Desktop.Players;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.NewGame;
 
@@ -14,7 +15,7 @@ public sealed partial class NewGameViewModel : ObservableObject
     private const int InitialSeasonYear = 2026;
     private const int MaximumGameNameLength = 80;
     private readonly GameManager _gameManager;
-    private readonly Action _gameCreated;
+    private readonly Action<string> _gameCreated;
     private readonly Action _showStartup;
 
     [ObservableProperty]
@@ -22,32 +23,25 @@ public sealed partial class NewGameViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedTeamDisplayName))]
+    [NotifyPropertyChangedFor(nameof(SelectedTeamInitials))]
+    [NotifyPropertyChangedFor(nameof(SelectedTeamDivision))]
+    [NotifyPropertyChangedFor(nameof(HasSelectedTeam))]
     private string? _selectedTeamName;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasError))]
     private string? _errorMessage;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsSetupVisible))]
-    private bool _isGameCreated;
-
-    [ObservableProperty]
-    private string _createdGameName = string.Empty;
-
-    [ObservableProperty]
-    private string _createdTeamName = string.Empty;
-
     public NewGameViewModel(
         GameManager gameManager,
         Action? showStartup = null,
-        Action? gameCreated = null)
+        Action<string>? gameCreated = null)
     {
         ArgumentNullException.ThrowIfNull(gameManager);
 
         _gameManager = gameManager;
         _showStartup = showStartup ?? (() => { });
-        _gameCreated = gameCreated ?? (() => { });
+        _gameCreated = gameCreated ?? (_ => { });
 
         var options = gameManager.GetNewGameOptions();
         Conferences = options.Conferences
@@ -65,9 +59,35 @@ public sealed partial class NewGameViewModel : ObservableObject
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
-    public bool IsSetupVisible => !IsGameCreated;
-
     public string SelectedTeamDisplayName => SelectedTeamName ?? "No team selected";
+
+    public bool HasSelectedTeam => SelectedTeamName is not null;
+
+    public string SelectedTeamInitials => SelectedTeamName is null ? "?" : PlayerDisplay.TeamInitials(SelectedTeamName);
+
+    public string SelectedTeamDivision
+    {
+        get
+        {
+            foreach (var conference in Conferences)
+            {
+                var division = conference.Divisions.FirstOrDefault(
+                    division => division.Teams.Any(team => team.Name == SelectedTeamName));
+                if (division is not null)
+                {
+                    return $"{division.Name} · {conference.Name}";
+                }
+            }
+
+            return "Choose a club from the league";
+        }
+    }
+
+    public string SeasonLabel => $"{PlayerDisplay.FormatSeason(InitialSeasonYear)} season";
+
+    public string LeagueSummary =>
+        $"{Conferences.Sum(conference => conference.Divisions.Sum(division => division.Teams.Count))} teams · "
+        + $"{Conferences.Count} conferences · {Conferences.Sum(conference => conference.Divisions.Count)} divisions";
 
     [RelayCommand]
     private void Back()
@@ -79,7 +99,6 @@ public sealed partial class NewGameViewModel : ObservableObject
     private void CreateGame()
     {
         ErrorMessage = null;
-        IsGameCreated = false;
 
         var normalizedGameName = GameName.Trim();
         if (normalizedGameName.Length == 0)
@@ -102,23 +121,20 @@ public sealed partial class NewGameViewModel : ObservableObject
 
         try
         {
-            var snapshot = _gameManager.StartNewGame(
+            _gameManager.StartNewGame(
                 new NewGameCommand(
                     InitialSeasonYear,
                     CreateRandomState(),
                     SelectedTeamName));
-            var managedTeam = snapshot.League.Teams.Single(team => team.Id == snapshot.ManagedTeamId);
-
-            GameName = normalizedGameName;
-            CreatedGameName = normalizedGameName;
-            CreatedTeamName = managedTeam.Name;
-            IsGameCreated = true;
-            _gameCreated();
         }
         catch (ArgumentException exception)
         {
             ErrorMessage = exception.Message;
+            return;
         }
+
+        GameName = normalizedGameName;
+        _gameCreated(normalizedGameName);
     }
 
     private void SelectTeam(string teamName)

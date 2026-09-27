@@ -11,9 +11,11 @@ Linux. Matches are simulated independently of their presentation.
 
 The repository contains a headless new-game workflow that creates a reproducible
 32-team fictional league, protects Domain invariants, and exposes read-only
-Management snapshots. The Avalonia desktop application currently provides the
-new-game setup screen; team browsing and lineup management remain in progress.
-Simulation and Infrastructure have not yet been scaffolded.
+Management snapshots. The Avalonia desktop application provides new-game setup
+and an in-game shell with a home dashboard, an inbox, the managed team's roster
+and lineup editor, and read-only browsing of every team's roster. Advancing
+days, schedules, and standings are not implemented yet. Simulation and
+Infrastructure have not yet been scaffolded.
 
 ## Development
 

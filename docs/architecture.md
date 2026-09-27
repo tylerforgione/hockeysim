@@ -92,8 +92,17 @@ owns a headless new-game workflow, controlled random state, managed-team
 selection, and read-only snapshots. Fictional names are kept separate from the
 league and roster rules that use them.
 
-Desktop contains an Avalonia shell and a feature-oriented new-game screen. It
-wires a Management game manager at startup, sends a new-game command, and renders
-the resulting read-only snapshot. Team browsing and lineup views remain pending.
+Management also delivers inbox messages to the user. New-game messages are
+derived from the generated managed team, so they never describe state the game
+does not hold. Marking a message read is a Management command.
+
+Desktop wires a Management game manager at startup. After the new-game screen
+starts a game, a `GameSession` forwards commands (lineup changes, reading
+messages) to Management and publishes each resulting snapshot to the in-game
+shell's feature pages: home, inbox, roster, lines, and league teams. Only the
+managed team's lineup is editable, and Management validates every change.
+Colours and control styles live in `HockeySim.Desktop/Theme/`; team identity
+colours are dynamic resources so a chosen team's colours can replace the
+league defaults later.
 Simulation and Infrastructure have not been scaffolded; until they exist, the
 related parts of the diagram remain target architecture.

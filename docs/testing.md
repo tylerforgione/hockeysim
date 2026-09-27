@@ -5,7 +5,9 @@
 Domain, Management, and Desktop test projects use xUnit v3 with
 Microsoft.Testing.Platform. They cover generated-world invariants, managed-team
 selection, reproducibility, snapshot isolation, focused Domain validation,
-new-game view-model behavior, and selected headless Avalonia bindings.
+inbox messages, new-game and in-game view-model behavior (navigation, lineup
+editing, team browsing, player detail), and a headless Avalonia walkthrough
+from the startup menu through every available in-game page.
 Simulation and Infrastructure tests remain pending with their projects.
 
 ## Test organization

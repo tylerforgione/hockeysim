@@ -4,159 +4,146 @@
              x:Class="HockeySim.Desktop.NewGame.NewGameView"
              x:DataType="viewModels:NewGameViewModel"
              Background="{DynamicResource AppBackgroundBrush}">
-  <Grid>
-    <Grid IsVisible="{Binding IsSetupVisible}" RowDefinitions="72,*,Auto">
-      <Border Grid.Row="0"
-              BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="0,0,0,1"
-              Padding="32,0">
-        <Grid ColumnDefinitions="Auto,*,Auto">
-          <Button Classes="secondary"
-                  Content="BACK"
-                  Command="{Binding BackCommand}"
-                  VerticalAlignment="Center" />
-          <TextBlock Grid.Column="1"
-                     Text="NEW GAME"
-                     Classes="title"
-                     HorizontalAlignment="Center"
-                     VerticalAlignment="Center" />
-          <TextBlock Grid.Column="2"
-                     Text="CREATE A CAREER"
-                     Classes="muted"
-                     FontSize="11"
-                     LetterSpacing="1.2"
-                     VerticalAlignment="Center" />
-        </Grid>
-      </Border>
+  <DockPanel>
+    <Border DockPanel.Dock="Top"
+            Background="{DynamicResource TeamPrimaryBrush}"
+            BorderBrush="{DynamicResource TeamSecondaryBrush}"
+            BorderThickness="0,0,0,3"
+            Height="56"
+            Padding="12,0">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+        <Button Classes="chrome"
+                Content="‹  Back"
+                VerticalAlignment="Center"
+                Command="{Binding BackCommand}" />
+        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+          <TextBlock Text="New Game"
+                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
+                     FontSize="16"
+                     FontWeight="Bold" />
+          <TextBlock Text="Name your career and choose a club to manage"
+                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
+                     Opacity="0.7"
+                     FontSize="11" />
+        </StackPanel>
+      </Grid>
+    </Border>
 
-      <ScrollViewer Grid.Row="1"
-                    HorizontalScrollBarVisibility="Disabled"
-                    VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="42,28,42,24" Spacing="24">
-          <Grid ColumnDefinitions="2*,3*" ColumnSpacing="32">
-            <StackPanel Grid.Column="0" Spacing="8">
-              <TextBlock Text="GAME NAME" Classes="section" />
+    <Border DockPanel.Dock="Bottom"
+            Background="{DynamicResource SunkenBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="16,10">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+        <TextBlock Classes="error"
+                   Text="{Binding ErrorMessage}"
+                   IsVisible="{Binding HasError}"
+                   TextWrapping="Wrap"
+                   VerticalAlignment="Center" />
+        <Button x:Name="CreateGameButton"
+                Grid.Column="1"
+                Classes="primary"
+                Padding="24,8"
+                Content="Start Career"
+                Command="{Binding CreateGameCommand}" />
+      </Grid>
+    </Border>
+
+    <Grid Margin="12" ColumnDefinitions="300,*" ColumnSpacing="8">
+      <Border Classes="panel" VerticalAlignment="Top">
+        <StackPanel>
+          <Border Classes="panel-header">
+            <TextBlock Classes="panel-title" Text="CAREER" />
+          </Border>
+          <StackPanel Margin="12" Spacing="14">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="label" Text="GAME NAME" />
               <TextBox x:Name="GameNameTextBox"
                        Text="{Binding GameName}"
                        MaxLength="80"
-                       PlaceholderText="Enter a name" />
+                       PlaceholderText="e.g. Halifax Dynasty" />
             </StackPanel>
-            <StackPanel Grid.Column="1" Spacing="8">
-              <TextBlock Text="SELECTED TEAM" Classes="section" />
-              <Border Height="42"
+
+            <StackPanel Spacing="6">
+              <TextBlock Classes="label" Text="CLUB" />
+              <Border Background="{DynamicResource SunkenBrush}"
                       BorderBrush="{DynamicResource BorderBrush}"
                       BorderThickness="1"
-                      Padding="12,0">
-                <TextBlock Text="{Binding SelectedTeamDisplayName}"
-                           VerticalAlignment="Center" />
+                      CornerRadius="2"
+                      Padding="10">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                  <Border Classes="badge" Width="40" Height="40">
+                    <TextBlock Text="{Binding SelectedTeamInitials}" FontSize="13" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                    <TextBlock Text="{Binding SelectedTeamDisplayName}"
+                               FontWeight="SemiBold"
+                               Classes.muted="{Binding !HasSelectedTeam}"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Classes="caption" Text="{Binding SelectedTeamDivision}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
               </Border>
             </StackPanel>
-          </Grid>
 
-          <TextBlock Text="SELECT A TEAM" Classes="section" />
+            <StackPanel Spacing="4">
+              <TextBlock Classes="label" Text="LEAGUE" />
+              <TextBlock Text="Fictional league" FontWeight="SemiBold" />
+              <TextBlock Classes="caption" Text="{Binding LeagueSummary}" />
+              <TextBlock Classes="caption" Text="{Binding SeasonLabel}" />
+            </StackPanel>
 
-          <ItemsControl x:Name="ConferencesList" ItemsSource="{Binding Conferences}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <UniformGrid Columns="2" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="viewModels:ConferenceOptionViewModel">
-                <Border Margin="0,0,18,0"
-                        BorderBrush="{DynamicResource BorderBrush}"
-                        BorderThickness="1"
-                        Background="{DynamicResource PanelBrush}">
-                  <StackPanel>
-                    <Border Padding="14,11"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="0,0,0,1">
-                      <TextBlock Text="{Binding Name}"
-                                 FontSize="17"
-                                 FontWeight="Bold"
-                                 LetterSpacing="1" />
-                    </Border>
-
-                    <ItemsControl ItemsSource="{Binding Divisions}" Margin="12">
-                      <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                          <UniformGrid Columns="2" />
-                        </ItemsPanelTemplate>
-                      </ItemsControl.ItemsPanel>
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="viewModels:DivisionOptionViewModel">
-                          <StackPanel Margin="0,0,12,0" Spacing="5">
-                            <TextBlock Text="{Binding Name}"
-                                       Classes="muted"
-                                       FontSize="12"
-                                       FontWeight="Bold"
-                                       Margin="10,2,0,4" />
-                            <ItemsControl ItemsSource="{Binding Teams}">
-                              <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="viewModels:TeamOptionViewModel">
-                                  <Button Classes="team"
-                                          Classes.selected="{Binding IsSelected}"
-                                          Content="{Binding Name}"
-                                          Command="{Binding SelectCommand}" />
-                                </DataTemplate>
-                              </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                          </StackPanel>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                  </StackPanel>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+            <TextBlock Classes="caption"
+                       TextWrapping="Wrap"
+                       Text="Every club starts with a generated 23-player roster and a provisional lineup. You can change lines once your career begins." />
+          </StackPanel>
         </StackPanel>
-      </ScrollViewer>
-
-      <Border Grid.Row="2"
-              BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="0,1,0,0"
-              Background="{DynamicResource PanelBrush}"
-              Padding="32,16">
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-          <TextBlock Text="{Binding ErrorMessage}"
-                     IsVisible="{Binding HasError}"
-                     Foreground="{DynamicResource ErrorBrush}"
-                     TextWrapping="Wrap"
-                     VerticalAlignment="Center" />
-          <Button x:Name="CreateGameButton"
-                  Grid.Column="1"
-                  Classes="action"
-                  Content="CREATE GAME"
-                  Command="{Binding CreateGameCommand}" />
-        </Grid>
       </Border>
-    </Grid>
 
-    <Grid IsVisible="{Binding IsGameCreated}" Margin="64">
-      <StackPanel Width="520"
-                  HorizontalAlignment="Center"
-                  VerticalAlignment="Center"
-                  Spacing="18">
-        <TextBlock Text="GAME CREATED"
-                   Classes="title"
-                   HorizontalAlignment="Center" />
-        <Border Height="1" Background="{DynamicResource BorderBrush}" />
-        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="12">
-          <TextBlock Text="GAME" Classes="muted" FontWeight="Bold" />
-          <TextBlock Grid.Column="1" Text="{Binding CreatedGameName}" FontWeight="Bold" />
-          <TextBlock Grid.Row="1" Text="TEAM" Classes="muted" FontWeight="Bold" />
-          <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CreatedTeamName}" FontWeight="Bold" />
-        </Grid>
-        <TextBlock Text="The game world is ready. Team management is the next screen to be implemented."
-                   Classes="muted"
-                   TextAlignment="Center"
-                   TextWrapping="Wrap" />
-        <Button Classes="secondary"
-                Content="RETURN TO MAIN MENU"
-                Command="{Binding BackCommand}"
-                HorizontalAlignment="Center" />
-      </StackPanel>
+      <ItemsControl x:Name="ConferencesList" Grid.Column="1" ItemsSource="{Binding Conferences}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Columns="2" ColumnSpacing="8" VerticalAlignment="Top" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="viewModels:ConferenceOptionViewModel">
+            <Border Classes="panel">
+              <StackPanel>
+                <Border Classes="panel-header">
+                  <TextBlock Classes="panel-title" Text="{Binding Name}" />
+                </Border>
+                <ItemsControl ItemsSource="{Binding Divisions}" Margin="0,4,0,8">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <UniformGrid Columns="2" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="viewModels:DivisionOptionViewModel">
+                      <StackPanel>
+                        <TextBlock Classes="label" Text="{Binding Name}" Margin="12,8,12,4" />
+                        <ItemsControl ItemsSource="{Binding Teams}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:TeamOptionViewModel">
+                              <Button Classes="list-item"
+                                      Classes.selected="{Binding IsSelected}"
+                                      Height="30"
+                                      Padding="12,0"
+                                      Content="{Binding Name}"
+                                      Command="{Binding SelectCommand}" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
     </Grid>
-  </Grid>
+  </DockPanel>
 </UserControl>

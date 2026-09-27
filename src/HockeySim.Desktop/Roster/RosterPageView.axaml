@@ -1,0 +1,7 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:roster="using:HockeySim.Desktop.Roster"
+             x:Class="HockeySim.Desktop.Roster.RosterPageView"
+             x:DataType="roster:RosterPageViewModel">
+  <roster:TeamRosterView DataContext="{Binding Roster}" />
+</UserControl>

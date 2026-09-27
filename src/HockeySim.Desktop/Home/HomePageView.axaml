@@ -1,0 +1,186 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:game="using:HockeySim.Desktop.Game"
+             xmlns:home="using:HockeySim.Desktop.Home"
+             x:Class="HockeySim.Desktop.Home.HomePageView"
+             x:DataType="home:HomePageViewModel">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <Grid RowDefinitions="Auto,*" RowSpacing="8">
+      <ItemsControl ItemsSource="{Binding Tiles}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Rows="1" ColumnSpacing="8" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="home:SummaryTileViewModel">
+            <Border Classes="panel" Padding="12,8">
+              <StackPanel Spacing="0">
+                <TextBlock Classes="label" Text="{Binding Label}" />
+                <TextBlock Classes="stat" Text="{Binding Value}" />
+                <TextBlock Classes="caption" Text="{Binding Caption}" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Grid Grid.Row="1" ColumnDefinitions="3*,2*" ColumnSpacing="8">
+        <StackPanel Spacing="8">
+          <Border Classes="panel">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="panel-header">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Classes="panel-title" Text="INBOX" />
+                  <Button Grid.Column="1"
+                          Classes="link"
+                          Content="Open inbox ›"
+                          Command="{Binding NavigateCommand}"
+                          CommandParameter="{x:Static game:ShellPage.Inbox}" />
+                </Grid>
+              </Border>
+              <ItemsControl x:Name="InboxPreviewList" ItemsSource="{Binding InboxPreview}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="home:InboxPreviewViewModel">
+                    <Button Classes="list-item" Command="{Binding OpenCommand}" Padding="10,7">
+                      <Grid ColumnDefinitions="12,160,*">
+                        <Ellipse Width="6"
+                                 Height="6"
+                                 HorizontalAlignment="Left"
+                                 Fill="{DynamicResource TeamSecondaryBrush}"
+                                 IsVisible="{Binding Message.IsUnread}" />
+                        <StackPanel Grid.Column="1">
+                          <TextBlock Classes="cell" Text="{Binding Message.SenderName}" FontWeight="SemiBold" />
+                          <TextBlock Classes="caption" Text="{Binding Message.SenderRole}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                          <TextBlock Classes="cell"
+                                     Classes.strong="{Binding Message.IsUnread}"
+                                     Text="{Binding Message.Subject}" />
+                          <TextBlock Classes="caption cell" Text="{Binding Message.Preview}" />
+                        </StackPanel>
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DockPanel>
+          </Border>
+
+          <Border Classes="panel">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="panel-header">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Classes="panel-title" Text="CURRENT LINEUP" />
+                  <Button Grid.Column="1"
+                          Classes="link"
+                          Content="Edit lines ›"
+                          Command="{Binding NavigateCommand}"
+                          CommandParameter="{x:Static game:ShellPage.Lines}" />
+                </Grid>
+              </Border>
+              <ItemsControl ItemsSource="{Binding LineupSummary}" Margin="0,4">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="home:LineupSummaryRowViewModel">
+                    <Grid ColumnDefinitions="44,*" Height="24" Margin="12,0">
+                      <TextBlock Classes="cell label" Text="{Binding Unit}" />
+                      <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Players}" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DockPanel>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Spacing="8">
+          <Border Classes="panel">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="panel-header">
+                <TextBlock Classes="panel-title" Text="NEXT MATCH" />
+              </Border>
+              <StackPanel Margin="12,10" Spacing="2">
+                <TextBlock Text="Schedule not yet released" FontWeight="SemiBold" />
+                <TextBlock Classes="caption"
+                           TextWrapping="Wrap"
+                           Text="The league will publish the regular-season schedule before opening night." />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+
+          <Border Classes="panel">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="panel-header">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Classes="panel-title" Text="{Binding DivisionTitle}" />
+                  <TextBlock Grid.Column="1" Classes="caption" VerticalAlignment="Center" Text="Preseason" />
+                </Grid>
+              </Border>
+              <Border DockPanel.Dock="Top" Classes="table-header">
+                <Grid ColumnDefinitions="*,32,32,32,36,36">
+                  <TextBlock Text="TEAM" />
+                  <TextBlock Grid.Column="1" Text="GP" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="W" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Text="L" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="4" Text="OTL" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="5" Text="PTS" HorizontalAlignment="Center" />
+                </Grid>
+              </Border>
+              <ItemsControl x:Name="DivisionStandingsList" ItemsSource="{Binding DivisionStandings}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="home:StandingRowViewModel">
+                    <Border Classes="standing-row" Classes.managed="{Binding IsManaged}" Height="24" Padding="8,0">
+                      <Grid ColumnDefinitions="*,32,32,32,36,36">
+                        <TextBlock Classes="cell" Classes.strong="{Binding IsManaged}" Text="{Binding TeamName}" />
+                        <TextBlock Grid.Column="1" Classes="cell-center" Text="{Binding GamesPlayed}" />
+                        <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Wins}" />
+                        <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Losses}" />
+                        <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding OvertimeLosses}" />
+                        <TextBlock Grid.Column="5" Classes="cell-center strong" Text="{Binding Points}" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DockPanel>
+          </Border>
+
+          <Border Classes="panel">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="panel-header">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Classes="panel-title" Text="TEAM RATING LEADERS" />
+                  <Button Grid.Column="1"
+                          Classes="link"
+                          Content="Roster ›"
+                          Command="{Binding NavigateCommand}"
+                          CommandParameter="{x:Static game:ShellPage.Roster}" />
+                </Grid>
+              </Border>
+              <ItemsControl ItemsSource="{Binding RatingLeaders}" Margin="0,4">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="home:RatingLeaderViewModel">
+                    <Button Classes="list-item" Command="{Binding OpenCommand}" Height="26" Padding="12,0">
+                      <Grid ColumnDefinitions="150,*,28,32">
+                        <TextBlock Classes="cell muted" Text="{Binding RatingName}" />
+                        <TextBlock Grid.Column="1" Classes="cell" Text="{Binding PlayerName}" />
+                        <Border Grid.Column="2" Classes="position">
+                          <TextBlock Text="{Binding Position}" />
+                        </Border>
+                        <TextBlock Grid.Column="3"
+                                   Classes="rating"
+                                   HorizontalAlignment="Right"
+                                   Text="{Binding Value}"
+                                   Foreground="{Binding Value, Converter={StaticResource RatingBrush}}" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DockPanel>
+          </Border>
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </ScrollViewer>
+</UserControl>
