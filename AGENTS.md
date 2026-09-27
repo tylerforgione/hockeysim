@@ -20,6 +20,12 @@
 - Before assigning triage labels, read [triage labels](docs/agents/triage-labels.md).
   Use the five documented labels.
 
+## Work notes
+
+- At the start of work on a branch, and again at every handoff, read and update
+  the branch's [work notes](docs/agents/work-notes.md) in the gitignored
+  `.agents/branches/<branch-name>.md`.
+
 ## Keep decisions current
 
 When work changes an established responsibility or dependency direction, discuss
