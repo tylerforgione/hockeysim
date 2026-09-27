@@ -480,3 +480,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Local agent notes: desktop UI style guide
+.agents/ui-style.md
+.agents/screenshots/

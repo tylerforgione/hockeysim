@@ -4,57 +4,75 @@
              x:Class="HockeySim.Desktop.Startup.StartupView"
              x:DataType="viewModels:StartupViewModel"
              Background="{DynamicResource AppBackgroundBrush}">
-  <Grid Margin="64" RowDefinitions="3*,4*,Auto">
-    <Border Grid.Row="0"
-            MinHeight="180"
+  <Grid ColumnDefinitions="380,*">
+    <Border Background="{DynamicResource SunkenBrush}"
             BorderBrush="{DynamicResource BorderBrush}"
-            BorderThickness="1"
-            Background="{DynamicResource PanelBrush}">
-      <StackPanel HorizontalAlignment="Center"
-                  VerticalAlignment="Center"
-                  Spacing="8">
-        <TextBlock Text="HOCKEYSIM"
-                   Foreground="{DynamicResource PrimaryTextBrush}"
-                   FontSize="48"
-                   FontWeight="Bold"
-                   LetterSpacing="5" />
-        <Border Height="1"
-                Width="190"
-                Background="{DynamicResource BorderBrush}" />
-      </StackPanel>
+            BorderThickness="0,0,1,0">
+      <DockPanel Margin="40,48,32,28">
+        <StackPanel DockPanel.Dock="Top" Spacing="6">
+          <TextBlock Text="HOCKEYSIM"
+                     FontSize="30"
+                     FontWeight="Black"
+                     LetterSpacing="3" />
+          <Border Height="3" Width="56" HorizontalAlignment="Left" Background="{DynamicResource TeamSecondaryBrush}" />
+          <TextBlock Classes="caption" Text="Hockey management simulation" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <TextBlock DockPanel.Dock="Bottom" Classes="caption" FontSize="11" Text="Pre-release build" />
+
+        <StackPanel VerticalAlignment="Center" Spacing="2" Margin="-12,0,0,0">
+          <Button x:Name="ContinueMenuButton"
+                  Classes="menu"
+                  Content="Continue"
+                  Command="{Binding ContinueCommand}" />
+          <Button x:Name="NewGameMenuButton"
+                  Classes="menu"
+                  Content="New Game"
+                  Command="{Binding ShowNewGameCommand}" />
+          <Button Classes="menu"
+                  Content="Load Game"
+                  IsEnabled="False"
+                  ToolTip.ShowOnDisabled="True"
+                  ToolTip.Tip="Saving and loading are not available yet." />
+          <Button Classes="menu"
+                  Content="Options"
+                  IsEnabled="False"
+                  ToolTip.ShowOnDisabled="True"
+                  ToolTip.Tip="Options are not available yet." />
+          <Border Classes="divider" Margin="12,8" />
+          <Button x:Name="ExitMenuButton"
+                  Classes="menu"
+                  Content="Exit"
+                  Command="{Binding ExitCommand}" />
+        </StackPanel>
+      </DockPanel>
     </Border>
 
-    <StackPanel Grid.Row="1"
-                Width="360"
-                Margin="0,38,0,20"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Spacing="2">
-      <Button x:Name="ContinueMenuButton"
-              Classes="menu"
-              Content="CONTINUE"
-              Command="{Binding ContinueCommand}" />
-      <Button x:Name="NewGameMenuButton"
-              Classes="menu"
-              Content="NEW GAME"
-              Command="{Binding ShowNewGameCommand}" />
-      <Button Classes="menu" Content="LOAD GAME" IsEnabled="False" />
-      <Button Classes="menu" Content="OPTIONS" IsEnabled="False" />
-      <Button x:Name="ExitMenuButton"
-              Classes="menu"
-              Content="EXIT"
-              Command="{Binding ExitCommand}" />
-    </StackPanel>
-
-    <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
-      <TextBlock Text="SINGLE-PLAYER HOCKEY MANAGEMENT"
-                 Classes="muted"
-                 FontSize="11"
-                 LetterSpacing="1.2" />
-      <TextBlock Grid.Column="1"
-                 Text="PRE-RELEASE"
-                 Classes="muted"
-                 FontSize="11" />
-    </Grid>
+    <Border Grid.Column="1" Background="{DynamicResource TeamPrimaryBrush}" ClipToBounds="True">
+      <Grid>
+        <!-- Rink markings as a quiet backdrop. -->
+        <Canvas Width="900" Height="420" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.14">
+          <Border Width="900" Height="420" CornerRadius="160" BorderThickness="3" BorderBrush="{DynamicResource OnTeamPrimaryBrush}" />
+          <Border Canvas.Left="449" Width="3" Height="420" Background="{DynamicResource OnTeamPrimaryBrush}" />
+          <Border Canvas.Left="290" Width="3" Height="420" Background="{DynamicResource TeamSecondaryBrush}" />
+          <Border Canvas.Left="607" Width="3" Height="420" Background="{DynamicResource TeamSecondaryBrush}" />
+          <Ellipse Canvas.Left="370" Canvas.Top="130" Width="160" Height="160" StrokeThickness="3" Stroke="{DynamicResource OnTeamPrimaryBrush}" />
+          <Ellipse Canvas.Left="95" Canvas.Top="65" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource OnTeamPrimaryBrush}" />
+          <Ellipse Canvas.Left="95" Canvas.Top="245" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource OnTeamPrimaryBrush}" />
+          <Ellipse Canvas.Left="695" Canvas.Top="65" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource OnTeamPrimaryBrush}" />
+          <Ellipse Canvas.Left="695" Canvas.Top="245" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource OnTeamPrimaryBrush}" />
+        </Canvas>
+        <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="48" Spacing="6">
+          <TextBlock Text="Build a contender."
+                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
+                     FontSize="34"
+                     FontWeight="Bold" />
+          <TextBlock Text="Set your lines, read your scouts, and manage a franchise through a full season."
+                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
+                     Opacity="0.7"
+                     FontSize="15" />
+        </StackPanel>
+      </Grid>
+    </Border>
   </Grid>
 </UserControl>

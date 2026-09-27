@@ -3,100 +3,32 @@
              x:Class="HockeySim.Desktop.App"
              RequestedThemeVariant="Dark">
   <Application.Styles>
-    <FluentTheme />
-
-    <Style Selector="TextBlock.title">
-      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
-      <Setter Property="FontSize" Value="30" />
-      <Setter Property="FontWeight" Value="Bold" />
-      <Setter Property="LetterSpacing" Value="2" />
-    </Style>
-
-    <Style Selector="TextBlock.muted">
-      <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
-    </Style>
-
-    <Style Selector="TextBlock.section">
-      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
-      <Setter Property="FontSize" Value="14" />
-      <Setter Property="FontWeight" Value="Bold" />
-      <Setter Property="LetterSpacing" Value="1.5" />
-    </Style>
-
-    <Style Selector="Button.menu">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="0" />
-      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
-      <Setter Property="FontSize" Value="27" />
-      <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="HorizontalContentAlignment" Value="Left" />
-      <Setter Property="Padding" Value="14,9" />
-    </Style>
-
-    <Style Selector="Button.menu:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
-    </Style>
-
-    <Style Selector="Button.menu:disabled">
-      <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}" />
-      <Setter Property="Opacity" Value="1" />
-    </Style>
-
-    <Style Selector="Button.team">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-      <Setter Property="BorderThickness" Value="0,0,0,1" />
-      <Setter Property="CornerRadius" Value="0" />
-      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
-      <Setter Property="HorizontalContentAlignment" Value="Left" />
-      <Setter Property="Padding" Value="10,7" />
-    </Style>
-
-    <Style Selector="Button.team:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
-    </Style>
-
-    <Style Selector="Button.team.selected">
-      <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryTextBrush}" />
-      <Setter Property="FontWeight" Value="Bold" />
-    </Style>
-
-    <Style Selector="Button.action">
-      <Setter Property="Background" Value="{DynamicResource PrimaryTextBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource AppBackgroundBrush}" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="0" />
-      <Setter Property="FontWeight" Value="Bold" />
-      <Setter Property="Padding" Value="22,11" />
-    </Style>
-
-    <Style Selector="Button.secondary">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="0" />
-      <Setter Property="Padding" Value="16,9" />
-    </Style>
-
-    <Style Selector="TextBox">
-      <Setter Property="MinHeight" Value="42" />
-      <Setter Property="FontSize" Value="14" />
-      <Setter Property="CornerRadius" Value="0" />
-    </Style>
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <!-- Keeps Fluent's built-in controls (focus rings, scroll bars, pop-ups) on the app palette. -->
+        <ColorPaletteResources x:Key="Dark"
+                               Accent="#A2AAAD"
+                               AltHigh="#101215"
+                               AltMedium="#181B1F"
+                               AltMediumLow="#181B1F"
+                               AltLow="#181B1F"
+                               ChromeMedium="#20242A"
+                               ChromeMediumLow="#181B1F"
+                               ChromeLow="#20242A"
+                               ChromeAltLow="#E8EBEE"
+                               BaseHigh="#E8EBEE"
+                               RegionColor="#101215"
+                               ErrorText="#E06464" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
+    <StyleInclude Source="avares://HockeySim.Desktop/Theme/Controls.axaml" />
   </Application.Styles>
 
   <Application.Resources>
-    <SolidColorBrush x:Key="AppBackgroundBrush">#090909</SolidColorBrush>
-    <SolidColorBrush x:Key="PanelBrush">#121212</SolidColorBrush>
-    <SolidColorBrush x:Key="HoverBrush">#222222</SolidColorBrush>
-    <SolidColorBrush x:Key="SelectedBrush">#303030</SolidColorBrush>
-    <SolidColorBrush x:Key="BorderBrush">#4A4A4A</SolidColorBrush>
-    <SolidColorBrush x:Key="PrimaryTextBrush">#F2F2F2</SolidColorBrush>
-    <SolidColorBrush x:Key="SecondaryTextBrush">#A5A5A5</SolidColorBrush>
-    <SolidColorBrush x:Key="DisabledTextBrush">#555555</SolidColorBrush>
-    <SolidColorBrush x:Key="ErrorBrush">#E3A0A0</SolidColorBrush>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://HockeySim.Desktop/Theme/Palette.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
   </Application.Resources>
 </Application>
