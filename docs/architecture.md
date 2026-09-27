@@ -94,7 +94,8 @@ league and roster rules that use them.
 
 Management also delivers inbox messages to the user. New-game messages are
 derived from the generated managed team, so they never describe state the game
-does not hold. Marking a message read is a Management command.
+does not hold; selecting a different managed team replaces them with messages
+for that team. Marking a message read is a Management command.
 
 Desktop wires a Management game manager at startup. After the new-game screen
 starts a game, a `GameSession` forwards commands (lineup changes, reading

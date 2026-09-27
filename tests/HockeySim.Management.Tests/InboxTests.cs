@@ -94,6 +94,39 @@ public sealed class InboxTests
     }
 
     [Fact]
+    public void SelectingAnotherTeamReplacesTheWelcomeMessagesWithOnesForThatTeam()
+    {
+        var manager = new GameManager();
+        var initial = StartGame(manager);
+        manager.MarkInboxMessageRead(initial.Inbox[0].Id);
+        var newTeam = initial.League.Teams.Single(team => team.Name == "Seattle Evergreens");
+        var rosterById = newTeam.Roster.ToDictionary(player => player.Id);
+
+        var updated = manager.SelectManagedTeam(newTeam.Id);
+
+        var lineupNote = updated.Inbox.Single(message => message.SenderRole == InboxSenderRole.AssistantGeneralManager);
+        var captainMessage = updated.Inbox.Single(message => message.SenderRole == InboxSenderRole.Captain);
+        Assert.Equal(initial.Inbox.Count, updated.Inbox.Count);
+        Assert.All(updated.Inbox, message => Assert.False(message.IsRead));
+        Assert.Contains(newTeam.Name, updated.Inbox[0].Subject);
+        Assert.DoesNotContain(ManagedTeamName, updated.Inbox[0].Subject);
+        Assert.Contains(FullName(rosterById[newTeam.Lineup.StartingGoalieId]), lineupNote.Body);
+        Assert.Contains(newTeam.Roster, player => FullName(player) == captainMessage.SenderName);
+    }
+
+    [Fact]
+    public void ReselectingTheManagedTeamKeepsTheCurrentInbox()
+    {
+        var manager = new GameManager();
+        var initial = StartGame(manager);
+        manager.MarkInboxMessageRead(initial.Inbox[0].Id);
+
+        var updated = manager.SelectManagedTeam(initial.ManagedTeamId);
+
+        Assert.True(updated.Inbox[0].IsRead);
+    }
+
+    [Fact]
     public void InboxSnapshotCannotBeMutated()
     {
         var inbox = Assert.IsAssignableFrom<IList<InboxMessageSnapshot>>(StartGame(new GameManager()).Inbox);

@@ -55,12 +55,20 @@ public sealed class GameManager
     public GameSnapshot SelectManagedTeam(TeamId teamId)
     {
         var league = GetLeague();
-        if (league.Teams.All(team => team.Id != teamId))
+        var managedTeam = league.Teams.SingleOrDefault(team => team.Id == teamId)
+            ?? throw new ArgumentException("The selected team does not exist in the current league.", nameof(teamId));
+
+        if (teamId == _managedTeamId)
         {
-            throw new ArgumentException("The selected team does not exist in the current league.", nameof(teamId));
+            return CreateSnapshot();
         }
 
+        // The welcome messages describe the managed club, so a new club gets its own set.
+        var inbox = new InboxMessages();
+        NewGameMessages.Deliver(inbox, managedTeam, league.SeasonYear);
+
         _managedTeamId = teamId;
+        _inbox = inbox;
         return CreateSnapshot();
     }
 
