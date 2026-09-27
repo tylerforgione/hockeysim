@@ -21,7 +21,7 @@ public sealed class App : Application
             var gameManager = new GameManager();
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(gameManager),
+                DataContext = new MainWindowViewModel(gameManager, () => desktop.Shutdown()),
             };
         }
 

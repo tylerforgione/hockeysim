@@ -1,4 +1,5 @@
-using System.Globalization;
+using System.Buffers.Binary;
+using System.Security.Cryptography;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -10,16 +11,17 @@ namespace HockeySim.Desktop.NewGame;
 
 public sealed partial class NewGameViewModel : ObservableObject
 {
-    private const int MaximumSeasonYear = 9999;
+    private const int InitialSeasonYear = 2026;
+    private const int MaximumGameNameLength = 80;
     private readonly GameManager _gameManager;
+    private readonly Action _gameCreated;
+    private readonly Action _showStartup;
 
     [ObservableProperty]
-    private string _seasonYear = "2026";
+    private string _gameName = string.Empty;
 
     [ObservableProperty]
-    private string _worldSeed = "2026";
-
-    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedTeamDisplayName))]
     private string? _selectedTeamName;
 
     [ObservableProperty]
@@ -27,35 +29,51 @@ public sealed partial class NewGameViewModel : ObservableObject
     private string? _errorMessage;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsSetupPreviewVisible))]
+    [NotifyPropertyChangedFor(nameof(IsSetupVisible))]
     private bool _isGameCreated;
+
+    [ObservableProperty]
+    private string _createdGameName = string.Empty;
 
     [ObservableProperty]
     private string _createdTeamName = string.Empty;
 
-    [ObservableProperty]
-    private string _createdSeason = string.Empty;
-
-    [ObservableProperty]
-    private int _createdTeamCount;
-
-    [ObservableProperty]
-    private int _createdPlayerCount;
-
-    public NewGameViewModel(GameManager gameManager)
+    public NewGameViewModel(
+        GameManager gameManager,
+        Action? showStartup = null,
+        Action? gameCreated = null)
     {
         ArgumentNullException.ThrowIfNull(gameManager);
 
         _gameManager = gameManager;
-        TeamNames = gameManager.GetNewGameOptions().TeamNames;
-        _selectedTeamName = TeamNames.FirstOrDefault();
+        _showStartup = showStartup ?? (() => { });
+        _gameCreated = gameCreated ?? (() => { });
+
+        var options = gameManager.GetNewGameOptions();
+        Conferences = options.Conferences
+            .Select(conference => new ConferenceOptionViewModel(
+                conference.Name,
+                conference.Divisions.Select(division => new DivisionOptionViewModel(
+                    division.Name,
+                    division.TeamNames.Select(teamName => new TeamOptionViewModel(teamName, SelectTeam))
+                        .ToList()))
+                    .ToList()))
+            .ToList();
     }
 
-    public IReadOnlyList<string> TeamNames { get; }
+    public IReadOnlyList<ConferenceOptionViewModel> Conferences { get; }
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
-    public bool IsSetupPreviewVisible => !IsGameCreated;
+    public bool IsSetupVisible => !IsGameCreated;
+
+    public string SelectedTeamDisplayName => SelectedTeamName ?? "No team selected";
+
+    [RelayCommand]
+    private void Back()
+    {
+        _showStartup();
+    }
 
     [RelayCommand]
     private void CreateGame()
@@ -63,40 +81,111 @@ public sealed partial class NewGameViewModel : ObservableObject
         ErrorMessage = null;
         IsGameCreated = false;
 
-        if (!int.TryParse(SeasonYear, NumberStyles.None, CultureInfo.InvariantCulture, out var seasonYear)
-            || seasonYear is < 1 or > MaximumSeasonYear)
+        var normalizedGameName = GameName.Trim();
+        if (normalizedGameName.Length == 0)
         {
-            ErrorMessage = $"Enter a season year from 1 to {MaximumSeasonYear}.";
+            ErrorMessage = "Enter a name for this game.";
             return;
         }
 
-        if (!ulong.TryParse(WorldSeed, NumberStyles.None, CultureInfo.InvariantCulture, out var seed))
+        if (normalizedGameName.Length > MaximumGameNameLength)
         {
-            ErrorMessage = "Enter a whole-number world seed from 0 to 18,446,744,073,709,551,615.";
+            ErrorMessage = $"Game names cannot be longer than {MaximumGameNameLength} characters.";
             return;
         }
 
         if (string.IsNullOrWhiteSpace(SelectedTeamName))
         {
-            ErrorMessage = "Choose the team you want to manage.";
+            ErrorMessage = "Select the team you want to manage.";
             return;
         }
 
         try
         {
             var snapshot = _gameManager.StartNewGame(
-                new NewGameCommand(seasonYear, new RandomState(seed), SelectedTeamName));
+                new NewGameCommand(
+                    InitialSeasonYear,
+                    CreateRandomState(),
+                    SelectedTeamName));
             var managedTeam = snapshot.League.Teams.Single(team => team.Id == snapshot.ManagedTeamId);
 
+            GameName = normalizedGameName;
+            CreatedGameName = normalizedGameName;
             CreatedTeamName = managedTeam.Name;
-            CreatedSeason = $"{snapshot.League.SeasonYear} season";
-            CreatedTeamCount = snapshot.League.Teams.Count;
-            CreatedPlayerCount = snapshot.League.Teams.Sum(team => team.Roster.Count);
             IsGameCreated = true;
+            _gameCreated();
         }
         catch (ArgumentException exception)
         {
             ErrorMessage = exception.Message;
         }
+    }
+
+    private void SelectTeam(string teamName)
+    {
+        SelectedTeamName = teamName;
+        ErrorMessage = null;
+
+        foreach (var team in Conferences
+            .SelectMany(conference => conference.Divisions)
+            .SelectMany(division => division.Teams))
+        {
+            team.IsSelected = string.Equals(team.Name, teamName, StringComparison.Ordinal);
+        }
+    }
+
+    private static RandomState CreateRandomState()
+    {
+        Span<byte> bytes = stackalloc byte[sizeof(ulong)];
+        RandomNumberGenerator.Fill(bytes);
+        return new RandomState(BinaryPrimitives.ReadUInt64LittleEndian(bytes));
+    }
+}
+
+public sealed class ConferenceOptionViewModel
+{
+    public ConferenceOptionViewModel(string name, IReadOnlyList<DivisionOptionViewModel> divisions)
+    {
+        Name = name;
+        Divisions = divisions;
+    }
+
+    public string Name { get; }
+
+    public IReadOnlyList<DivisionOptionViewModel> Divisions { get; }
+}
+
+public sealed class DivisionOptionViewModel
+{
+    public DivisionOptionViewModel(string name, IReadOnlyList<TeamOptionViewModel> teams)
+    {
+        Name = name;
+        Teams = teams;
+    }
+
+    public string Name { get; }
+
+    public IReadOnlyList<TeamOptionViewModel> Teams { get; }
+}
+
+public sealed partial class TeamOptionViewModel : ObservableObject
+{
+    private readonly Action<string> _selectTeam;
+
+    [ObservableProperty]
+    private bool _isSelected;
+
+    public TeamOptionViewModel(string name, Action<string> selectTeam)
+    {
+        Name = name;
+        _selectTeam = selectTeam;
+    }
+
+    public string Name { get; }
+
+    [RelayCommand]
+    private void Select()
+    {
+        _selectTeam(Name);
     }
 }

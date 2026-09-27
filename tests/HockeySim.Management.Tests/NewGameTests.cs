@@ -16,12 +16,21 @@ public sealed class NewGameTests
     {
         var options = new GameManager().GetNewGameOptions();
         var teamNames = Assert.IsAssignableFrom<IList<string>>(options.TeamNames);
+        var conferences = Assert.IsAssignableFrom<IList<NewGameConferenceSnapshot>>(
+            options.Conferences);
 
         Assert.Equal(32, teamNames.Count);
         Assert.Equal(32, teamNames.Distinct(StringComparer.OrdinalIgnoreCase).Count());
         Assert.Contains(InitialManagedTeam, teamNames);
         Assert.Contains("Seattle Evergreens", teamNames);
+        Assert.Equal(2, conferences.Count);
+        Assert.All(conferences, conference =>
+        {
+            Assert.Equal(2, conference.Divisions.Count);
+            Assert.All(conference.Divisions, division => Assert.Equal(8, division.TeamNames.Count));
+        });
         Assert.Throws<NotSupportedException>(() => teamNames.Clear());
+        Assert.Throws<NotSupportedException>(() => conferences.Clear());
     }
 
     [Fact]

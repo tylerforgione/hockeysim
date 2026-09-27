@@ -17,8 +17,11 @@ public sealed class GameManager
     public NewGameOptionsSnapshot GetNewGameOptions() =>
         NewGameOptionsSnapshot.Create(
             FictionalLeagueData.Conferences
-                .SelectMany(conference => conference.Divisions)
-                .SelectMany(division => division.TeamNames));
+                .Select(conference => NewGameConferenceSnapshot.Create(
+                    conference.Name,
+                    conference.Divisions.Select(division => NewGameDivisionSnapshot.Create(
+                        division.Name,
+                        division.TeamNames)))));
 
     public GameSnapshot StartNewGame(NewGameCommand command)
     {

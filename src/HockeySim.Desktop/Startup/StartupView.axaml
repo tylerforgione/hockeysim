@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewModels="using:HockeySim.Desktop.Startup"
+             x:Class="HockeySim.Desktop.Startup.StartupView"
+             x:DataType="viewModels:StartupViewModel"
+             Background="{DynamicResource AppBackgroundBrush}">
+  <Grid Margin="64" RowDefinitions="3*,4*,Auto">
+    <Border Grid.Row="0"
+            MinHeight="180"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1"
+            Background="{DynamicResource PanelBrush}">
+      <StackPanel HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Spacing="8">
+        <TextBlock Text="HOCKEYSIM"
+                   Foreground="{DynamicResource PrimaryTextBrush}"
+                   FontSize="48"
+                   FontWeight="Bold"
+                   LetterSpacing="5" />
+        <Border Height="1"
+                Width="190"
+                Background="{DynamicResource BorderBrush}" />
+      </StackPanel>
+    </Border>
+
+    <StackPanel Grid.Row="1"
+                Width="360"
+                Margin="0,38,0,20"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Spacing="2">
+      <Button x:Name="ContinueMenuButton"
+              Classes="menu"
+              Content="CONTINUE"
+              Command="{Binding ContinueCommand}" />
+      <Button x:Name="NewGameMenuButton"
+              Classes="menu"
+              Content="NEW GAME"
+              Command="{Binding ShowNewGameCommand}" />
+      <Button Classes="menu" Content="LOAD GAME" IsEnabled="False" />
+      <Button Classes="menu" Content="OPTIONS" IsEnabled="False" />
+      <Button x:Name="ExitMenuButton"
+              Classes="menu"
+              Content="EXIT"
+              Command="{Binding ExitCommand}" />
+    </StackPanel>
+
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+      <TextBlock Text="SINGLE-PLAYER HOCKEY MANAGEMENT"
+                 Classes="muted"
+                 FontSize="11"
+                 LetterSpacing="1.2" />
+      <TextBlock Grid.Column="1"
+                 Text="PRE-RELEASE"
+                 Classes="muted"
+                 FontSize="11" />
+    </Grid>
+  </Grid>
+</UserControl>
