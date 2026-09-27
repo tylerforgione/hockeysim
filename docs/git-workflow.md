@@ -64,6 +64,13 @@ explain why a maintenance PR has none), describe the final changes, and provide
 reproducible validation evidence. Keep the title and body aligned with the final
 scope. List material limitations, including unavailable native-platform checks.
 
+Link issues with a closing keyword on its own line, such as `Closes #6`, so
+merging into `main` closes them. Name every issue the PR completes: closing a
+parent issue does not close its sub-issues, a bare link closes nothing, and
+`Closes #6, #7` closes only #6. List only sub-issues that are actually finished;
+leave the rest open. The HockeySim project's "Item closed" workflow then moves
+closed issues to Done.
+
 Run the checks in [testing](testing.md). Formatting violations, build
 warnings/errors, and failing tests block merge. Coverage is reported without a
 percentage threshold once the test projects exist.
