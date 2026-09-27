@@ -17,3 +17,19 @@ A group of hockey players competing together, with a roster and lineup.
 **Match**:
 An individual hockey contest between two teams, distinct from the overall
 management game.
+
+**Managed team**:
+The one team the user controls. Only its lineup can be changed by the user;
+other teams are read-only.
+
+**Lineup**:
+A team's dressed players for a match: four forward lines (left wing, centre,
+right wing), three defence pairs, a starting goalie, and a backup goalie.
+
+**Scratch**:
+A rostered player who is not dressed in the current lineup.
+
+**Inbox message**:
+A message delivered to the user from someone in the game world, such as the
+owner, staff, or a player. Messages describe real game state and can be marked
+read.

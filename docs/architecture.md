@@ -92,6 +92,18 @@ owns a headless new-game workflow, controlled random state, managed-team
 selection, and read-only snapshots. Fictional names are kept separate from the
 league and roster rules that use them.
 
-Desktop remains a console placeholder and references Management for future
-startup composition. Simulation and Infrastructure have not been scaffolded;
-until they exist, the related parts of the diagram remain target architecture.
+Management also delivers inbox messages to the user. New-game messages are
+derived from the generated managed team, so they never describe state the game
+does not hold; selecting a different managed team replaces them with messages
+for that team. Marking a message read is a Management command.
+
+Desktop wires a Management game manager at startup. After the new-game screen
+starts a game, a `GameSession` forwards commands (lineup changes, reading
+messages) to Management and publishes each resulting snapshot to the in-game
+shell's feature pages: home, inbox, roster, lines, and league teams. Only the
+managed team's lineup is editable, and Management validates every change.
+Colours and control styles live in `HockeySim.Desktop/Theme/`; team identity
+colours are dynamic resources so a chosen team's colours can replace the
+league defaults later.
+Simulation and Infrastructure have not been scaffolded; until they exist, the
+related parts of the diagram remain target architecture.

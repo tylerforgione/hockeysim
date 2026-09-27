@@ -11,9 +11,11 @@ Linux. Matches are simulated independently of their presentation.
 
 The repository contains a headless new-game workflow that creates a reproducible
 32-team fictional league, protects Domain invariants, and exposes read-only
-Management snapshots. Domain and Management behavior tests run with coverage in
-CI. Desktop remains a console placeholder; Simulation, Infrastructure, and the
-Avalonia shell are planned, not scaffolded.
+Management snapshots. The Avalonia desktop application provides new-game setup
+and an in-game shell with a home dashboard, an inbox, the managed team's roster
+and lineup editor, and read-only browsing of every team's roster. Advancing
+days, schedules, and standings are not implemented yet. Simulation and
+Infrastructure have not yet been scaffolded.
 
 ## Development
 
@@ -28,9 +30,13 @@ dotnet build HockeySim.slnx --configuration Release --no-restore
 dotnet format HockeySim.slnx --verify-no-changes --no-restore --severity warn
 ```
 
-The current console placeholder can be run with
-`dotnet run --project src/HockeySim.Desktop`; it is not yet the Avalonia UI.
-See [testing](docs/testing.md) for the test setup and future execution commands.
+Run the Avalonia desktop application from source with:
+
+```sh
+dotnet run --project src/HockeySim.Desktop/HockeySim.Desktop.csproj
+```
+
+See [testing](docs/testing.md) for the complete validation commands.
 
 ## Engineering guide
 
