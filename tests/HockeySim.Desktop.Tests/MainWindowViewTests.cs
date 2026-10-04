@@ -48,6 +48,9 @@ public sealed class MainWindowViewTests
         Dispatcher.UIThread.RunJobs();
 
         var startupView = Single<StartupView>(window);
+        Assert.Equal(
+            $"Version {AppVersion.Current} · Pre-release build",
+            startupView.FindControl<TextBlock>("VersionLabel")?.Text);
         Click(Assert.IsType<Button>(startupView.FindControl<Button>("NewGameMenuButton")));
 
         var newGameView = Single<NewGameView>(window);
