@@ -187,6 +187,25 @@ per-platform artifact. There is no percentage gate: review meaningful behavior
 and edge cases, including critical invariants, persistence, and reproducibility.
 Revisit a threshold only after a useful baseline exists.
 
+## Release builds
+
+The [release workflow](../.github/workflows/release.yml) runs the validation
+workflow above on the tagged commit, then publishes each runtime identifier on
+a runner of its own OS and checks that the executable is in the output. That
+proves the build publishes and packages; it does not launch the app. A manual
+run (`workflow_dispatch`) is a dry run that uploads the archives as workflow
+artifacts without creating a release.
+
+Before tagging a release, and when publish settings change, smoke-test the
+published build natively on each supported platform, preferably on a machine
+with no .NET installed: launch it, confirm the startup menu shows the expected
+version, start a new game, advance at least one day, then save, and load that
+save. Record which OS and architecture combinations were checked and which were
+not. The Desktop tests check that the startup menu shows the running version
+and that a source build reports `0.0.0-dev`.
+
+To publish locally, see the [README](../README.md#publish-a-build).
+
 ## Evidence in PRs
 
 Record commands run, their outcomes, and any untested platforms or blocked
