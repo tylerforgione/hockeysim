@@ -26,6 +26,17 @@ other teams are read-only.
 A team's dressed players for a match: four forward lines (left wing, centre,
 right wing), three defence pairs, a starting goalie, and a backup goalie.
 
+**Match result**:
+The outcome of a simulated match: a decisive score, how it was decided
+(regulation, overtime, or shootout), shots, and the goals players scored.
+A shootout winner is credited one deciding goal that no player scored.
+
+**Overtime**:
+A five-minute sudden-death period played when regulation ends tied.
+
+**Shootout**:
+Alternating one-on-one attempts that decide a match still tied after overtime.
+
 **Scratch**:
 A rostered player who is not dressed in the current lineup.
 

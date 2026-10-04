@@ -56,6 +56,9 @@ Within the same engine version, the same starting state, random state, and
 sequence of management actions produce the same result. Preserve hidden random
 state in saves so reloading and repeating actions does not reroll an outcome.
 Keep outcome-affecting randomness and time inputs under explicit control.
+Simulation owns the single deterministic generator (`ControlledRandom`) and its
+persistable `RandomState`; Management uses the same generator for world
+generation and passes the state to and from match simulation.
 Reproducibility is not a promise across engine versions or protection against
 editing local saves. See [the rationale](adr/0002-reproducible-saves.md).
 
