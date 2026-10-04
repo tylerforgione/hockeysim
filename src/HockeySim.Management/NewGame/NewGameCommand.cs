@@ -1,3 +1,5 @@
+using HockeySim.Simulation.Randomness;
+
 namespace HockeySim.Management.NewGame;
 
 /// <summary>

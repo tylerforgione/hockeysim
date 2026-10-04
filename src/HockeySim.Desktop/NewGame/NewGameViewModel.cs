@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using HockeySim.Desktop.Players;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.NewGame;
+using HockeySim.Simulation.Randomness;
 
 namespace HockeySim.Desktop.NewGame;
 

@@ -1,8 +1,13 @@
 using System.Buffers.Binary;
 
-namespace HockeySim.Management.NewGame;
+namespace HockeySim.Simulation.Randomness;
 
-internal sealed class ControlledRandom
+/// <summary>
+/// The single source of outcome-affecting randomness. A SplitMix64 stream whose whole state is
+/// one value, so it can be saved and resumed exactly. Changing the algorithm changes every
+/// seeded outcome, including generated worlds.
+/// </summary>
+public sealed class ControlledRandom
 {
     private const ulong Increment = 0x9E3779B97F4A7C15;
 
@@ -14,6 +19,8 @@ internal sealed class ControlledRandom
     }
 
     public RandomState State => new(_state);
+
+    public bool Chance(double probability) => NextDouble() < probability;
 
     public int NextInt(int minimumInclusive, int maximumExclusive)
     {
@@ -28,6 +35,32 @@ internal sealed class ControlledRandom
         return minimumInclusive + (int)(NextUInt64() % range);
     }
 
+    /// <summary>
+    /// Picks an index with probability proportional to its weight.
+    /// </summary>
+    public int NextWeightedIndex(IReadOnlyList<double> weights)
+    {
+        ArgumentNullException.ThrowIfNull(weights);
+        if (weights.Count == 0 || weights.Any(weight => weight < 0) || weights.Sum() <= 0)
+        {
+            throw new ArgumentException("Weights must be non-negative with a positive total.", nameof(weights));
+        }
+
+        var target = NextDouble() * weights.Sum();
+
+        for (var index = 0; index < weights.Count; index++)
+        {
+            target -= weights[index];
+            if (target < 0)
+            {
+                return index;
+            }
+        }
+
+        // Floating-point rounding can leave a tiny remainder; it belongs to the last entry.
+        return weights.Count - 1;
+    }
+
     public Guid NextGuid()
     {
         Span<byte> bytes = stackalloc byte[16];
@@ -40,6 +73,8 @@ internal sealed class ControlledRandom
         bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
         return new Guid(bytes);
     }
+
+    private double NextDouble() => (NextUInt64() >> 11) * (1.0 / (1UL << 53));
 
     private ulong NextUInt64()
     {

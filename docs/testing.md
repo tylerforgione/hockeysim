@@ -2,13 +2,16 @@
 
 ## Current status
 
-Domain, Management, and Desktop test projects use xUnit v3 with
+Domain, Simulation, Management, and Desktop test projects use xUnit v3 with
 Microsoft.Testing.Platform. They cover generated-world invariants, managed-team
 selection, reproducibility, snapshot isolation, focused Domain validation,
 inbox messages, new-game and in-game view-model behavior (navigation, lineup
 editing, team browsing, player detail), and a headless Avalonia walkthrough
-from the startup menu through every available in-game page.
-Simulation and Infrastructure tests remain pending with their projects.
+from the startup menu through every available in-game page. Simulation tests
+check result invariants across many seeds, each decision path (regulation,
+overtime, shootout), determinism, unchanged input teams, and statistical bands
+for lineup strength, line and pair usage, and goalie quality.
+Infrastructure tests remain pending with their project.
 
 ## Test organization
 
@@ -37,6 +40,32 @@ Linux, including packaging and launching. Headless UI tests do not replace
 those checks. Full desktop end-to-end automation is deferred until concrete
 failures or repetitive checks justify its cost.
 
+## Simulation testing
+
+A single seeded example shows little about whether a stochastic match engine is
+correct. Simulation tests combine three kinds of check, all using fixed seeds so
+failures indicate changed behavior rather than unlucky randomness:
+
+- **Invariants across many seeds.** Run the engine over a fixed set of seeds and
+  assert every result is valid: the score matches goal events, shots are at
+  least goals, only dressed players appear in events, and a result has a winner
+  when the rules require one.
+- **Determinism.** The same inputs and random state produce an identical result,
+  different seeds produce differing results, and inputs are not mutated. This
+  protects the [reproducible saves](adr/0002-reproducible-saves.md) promise.
+- **Statistical bands.** Over many seeded matches, aggregate outcomes stay within
+  wide, plausible bands, such as average goals per match, and relative
+  expectations hold, such as a much stronger team winning most matches and
+  evenly matched teams splitting results. Prefer relative assertions over exact
+  targets so deliberate rebalancing does not break them; bands catch broken
+  tuning, not small balance changes.
+
+Avoid exact golden-master comparisons of seeded output while balance is still
+changing; every deliberate tuning change would invalidate them. Revisit them
+once balance stabilizes. When season orchestration exists, add long-run
+Management tests that simulate full seasons headlessly and assert the world
+remains valid afterward.
+
 ## Local validation
 
 Use the exact SDK from `global.json`. From the repository root:
@@ -51,6 +80,7 @@ Run each test project against the Release build:
 
 ```sh
 dotnet test --project tests/HockeySim.Domain.Tests/HockeySim.Domain.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
+dotnet test --project tests/HockeySim.Simulation.Tests/HockeySim.Simulation.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
 dotnet test --project tests/HockeySim.Desktop.Tests/HockeySim.Desktop.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
 dotnet test --project tests/HockeySim.Management.Tests/HockeySim.Management.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
 ```

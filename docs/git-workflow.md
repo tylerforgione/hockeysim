@@ -48,11 +48,13 @@ The maintainer's review is sufficient; a second reviewer is not required.
 **Every agent-created PR must receive the maintainer's review before merging.**
 Passing checks alone does not satisfy this requirement.
 
-For assigned implementation work, agents may edit, validate, commit, push the
-working branch, and open a review-ready PR without another instruction. Resolve
-failures in scope before handoff. If required validation is blocked, report the
-reason and keep any PR in draft. Agents stop at the review handoff; merging
-requires an explicit maintainer instruction after review. Do not enable
+For assigned implementation work, agents may edit and validate changes in the
+working tree without another instruction. Resolve failures in scope before
+handoff. **Agents never commit, push, open PRs, or merge.** The maintainer
+reviews all agent work in the working tree and commits and pushes it
+themselves. At handoff, agents may propose a commit message (and PR title/body)
+that follows the conventions above for the maintainer to use. If required
+validation is blocked, report the reason in the handoff. Do not enable
 unattended auto-merge.
 
 Follow the [stack's approval policy](tech-stack.md) before adding dependencies.

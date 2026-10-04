@@ -2,6 +2,7 @@ using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.GameManagement.Snapshots;
 using HockeySim.Management.NewGame;
+using HockeySim.Simulation.Randomness;
 
 using Xunit;
 

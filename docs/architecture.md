@@ -56,6 +56,9 @@ Within the same engine version, the same starting state, random state, and
 sequence of management actions produce the same result. Preserve hidden random
 state in saves so reloading and repeating actions does not reroll an outcome.
 Keep outcome-affecting randomness and time inputs under explicit control.
+Simulation owns the single deterministic generator (`ControlledRandom`) and its
+persistable `RandomState`; Management uses the same generator for world
+generation and passes the state to and from match simulation.
 Reproducibility is not a promise across engine versions or protection against
 editing local saves. See [the rationale](adr/0002-reproducible-saves.md).
 
@@ -105,5 +108,11 @@ managed team's lineup is editable, and Management validates every change.
 Colours and control styles live in `HockeySim.Desktop/Theme/`; team identity
 colours are dynamic resources so a chosen team's colours can replace the
 league defaults later.
-Simulation and Infrastructure have not been scaffolded; until they exist, the
-related parts of the diagram remain target architecture.
+Simulation calculates a match statistically from both teams' lineups as they
+stand at match start. Player ratings, fixed forward-line and defence-pair usage
+weights, and starting-goalie quality drive shots and goals. Tied matches go to
+sudden-death overtime and then a shootout. It takes an explicit random state and returns
+the state after the match with the result, without changing the teams.
+Management does not invoke it yet; season orchestration will apply results.
+Infrastructure has not been scaffolded; until it exists, the related parts of
+the diagram remain target architecture.

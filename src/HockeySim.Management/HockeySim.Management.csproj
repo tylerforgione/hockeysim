@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HockeySim.Domain\HockeySim.Domain.csproj" />
+    <ProjectReference Include="..\HockeySim.Simulation\HockeySim.Simulation.csproj" />
   </ItemGroup>
 
 </Project>

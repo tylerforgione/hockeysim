@@ -1,6 +1,7 @@
 using HockeySim.Desktop.Game;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.NewGame;
+using HockeySim.Simulation.Randomness;
 
 namespace HockeySim.Desktop.Tests;
 
