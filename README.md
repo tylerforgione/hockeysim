@@ -24,9 +24,9 @@ tie-breaking procedure. Desktop advances the season one league day at a time,
 shows each team's schedule and results with single-match box scores, summarises
 the latest league day and division table on the home page, presents division,
 conference, and league standings, and shows every player's current-season totals
-on roster tables and player profiles. Infrastructure saves a game to a
-versioned local file and loads it headlessly so play resumes exactly; Desktop
-does not yet offer saving or loading.
+on roster tables and player profiles. Games are saved under names the user
+chooses and loaded from the startup menu, resuming exactly where they were
+saved; the app asks before overwriting a save or discarding unsaved progress.
 
 ## Development
 
