@@ -13,12 +13,14 @@ public sealed class GameSnapshot
     private GameSnapshot(
         LeagueSnapshot league,
         ScheduleSnapshot schedule,
+        SeasonSnapshot season,
         TeamId managedTeamId,
         RandomState randomState,
         IReadOnlyList<InboxMessageSnapshot> inbox)
     {
         League = league;
         Schedule = schedule;
+        Season = season;
         ManagedTeamId = managedTeamId;
         RandomState = randomState;
         _inbox = new ReadOnlyCollection<InboxMessageSnapshot>(inbox.ToList());
@@ -27,6 +29,8 @@ public sealed class GameSnapshot
     public LeagueSnapshot League { get; }
 
     public ScheduleSnapshot Schedule { get; }
+
+    public SeasonSnapshot Season { get; }
 
     public TeamId ManagedTeamId { get; }
 
@@ -41,14 +45,14 @@ public sealed class GameSnapshot
     public IReadOnlyList<InboxMessageSnapshot> Inbox => _inbox;
 
     internal static GameSnapshot Create(
-        League league,
-        SeasonSchedule schedule,
+        Season season,
         TeamId managedTeamId,
         RandomState randomState,
         InboxMessages inbox) =>
         new(
-            LeagueSnapshot.Create(league),
-            ScheduleSnapshot.Create(schedule),
+            LeagueSnapshot.Create(season.League),
+            ScheduleSnapshot.Create(season.Schedule),
+            SeasonSnapshot.Create(season),
             managedTeamId,
             randomState,
             inbox.Messages.Select(InboxMessageSnapshot.Create).ToList());
