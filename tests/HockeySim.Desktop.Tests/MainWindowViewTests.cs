@@ -13,6 +13,7 @@ using HockeySim.Desktop.Main;
 using HockeySim.Desktop.NewGame;
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
+using HockeySim.Desktop.Saves;
 using HockeySim.Desktop.Schedule;
 using HockeySim.Desktop.Standings;
 using HockeySim.Desktop.Startup;
@@ -36,7 +37,8 @@ public sealed class MainWindowViewTests
             .SetupWithoutStarting();
 
         var gameManager = new GameManager();
-        var viewModel = new MainWindowViewModel(gameManager);
+        using var saves = new TemporarySaveDirectory();
+        var viewModel = new MainWindowViewModel(gameManager, saves.Library);
         var window = new MainWindow
         {
             DataContext = viewModel,
@@ -153,6 +155,56 @@ public sealed class MainWindowViewTests
             seasonStatistics!.GetVisualDescendants().OfType<TextBlock>()
                 .Where(text => text.DataContext is SeasonStatViewModel && text.Classes.Contains("label"))
                 .Select(text => text.Text));
+
+        // Save from the title bar under a typed name.
+        Assert.Equal("Unsaved changes", Single<GameShellView>(window).FindControl<TextBlock>("SaveStatusText")?.Text);
+        Click(Assert.IsType<Button>(shellView.FindControl<Button>("SaveGameButton")));
+        Assert.True(shellView.FindControl<Border>("SaveDialogOverlay")?.IsVisible);
+        var saveView = Single<SaveGameView>(window);
+        Assert.True(saveView.Bounds.Width > 300);
+        var saveName = Assert.IsType<TextBox>(saveView.FindControl<TextBox>("SaveNameTextBox"));
+        Assert.Equal("Seattle Dynasty", saveName.Text);
+        saveName.Text = "Opening Night";
+        Click(Assert.IsType<Button>(saveView.FindControl<Button>("ConfirmSaveButton")));
+        Assert.False(shellView.FindControl<Border>("SaveDialogOverlay")?.IsVisible);
+        Assert.Equal("Opening Night", shellView.FindControl<TextBlock>("GameNameText")?.Text);
+        Assert.Equal("Saved", shellView.FindControl<TextBlock>("SaveStatusText")?.Text);
+
+        // Play on, then load the save from the main menu; the unsaved day must be confirmed away.
+        ClickAndWait(continueButton, () => !viewModel.Game!.Session.IsAdvancing);
+        Click(window.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, "Main Menu")));
+        Click(Assert.IsType<Button>(Single<StartupView>(window).FindControl<Button>("LoadGameMenuButton")));
+        var loadView = Single<LoadGameView>(window);
+        var savesList = Assert.IsType<ListBox>(loadView.FindControl<ListBox>("SavesList"));
+        Assert.Equal(1, savesList.ItemCount);
+        savesList.SelectedIndex = 0;
+        Dispatcher.UIThread.RunJobs();
+        Click(Assert.IsType<Button>(loadView.FindControl<Button>("LoadSaveButton")));
+
+        var confirmationOverlay = Assert.IsType<Border>(window.FindControl<Border>("ConfirmationOverlay"));
+        Assert.True(confirmationOverlay.IsVisible);
+        Assert.Equal("Discard unsaved progress?", window.FindControl<TextBlock>("ConfirmationTitle")?.Text);
+        Assert.Equal("Discard progress", window.FindControl<Button>("ConfirmButton")?.Content);
+        Click(Assert.IsType<Button>(window.FindControl<Button>("ConfirmButton")));
+        Assert.False(confirmationOverlay.IsVisible);
+
+        var loadedShell = Single<GameShellView>(window);
+        Assert.Equal("Opening Night", loadedShell.FindControl<TextBlock>("GameNameText")?.Text);
+        Assert.Equal(16, gameManager.GetSnapshot().Season.Results.Count);
+        AssertNavigationRenders<StandingsPageView>(window, ShellPage.Standings);
+        Assert.All(
+            window.GetVisualDescendants().OfType<Border>().Select(border => border.DataContext).OfType<StandingsRowViewModel>(),
+            row => Assert.Equal(1, row.GamesPlayed));
+
+        // Closing the window with unsaved progress asks first instead of closing.
+        ClickAndWait(Assert.IsType<Button>(loadedShell.FindControl<Button>("ContinueButton")), () => !viewModel.Game!.Session.IsAdvancing);
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(window.IsVisible);
+        Assert.True(confirmationOverlay.IsVisible);
+        Click(Assert.IsType<Button>(window.FindControl<Button>("CancelConfirmationButton")));
+        Assert.True(window.IsVisible);
+        Assert.False(confirmationOverlay.IsVisible);
     }
 
     private static int CountStandingsRows(Visual view) =>
