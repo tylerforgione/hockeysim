@@ -1,10 +1,13 @@
+using System.Globalization;
+
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
 namespace HockeySim.Desktop.Players;
 
 /// <summary>
-/// Read-only profile of one player: identity, age, position, lineup role, and every rating.
+/// Read-only profile of one player: identity, age, position, lineup role, current-season totals,
+/// and every rating.
 /// </summary>
 public sealed class PlayerDetailViewModel
 {
@@ -22,10 +25,11 @@ public sealed class PlayerDetailViewModel
         ("OTHER", [Rating.ShotPower, Rating.ShotAccuracy, Rating.OffensiveAwareness, Rating.DefensiveAwareness, Rating.Checking, Rating.ShotBlocking, Rating.StickChecking]),
     ];
 
-    public PlayerDetailViewModel(PlayerSnapshot player, TeamSnapshot team)
+    public PlayerDetailViewModel(PlayerSnapshot player, TeamSnapshot team, PlayerSeasonTotals seasonTotals, int seasonYear)
     {
         ArgumentNullException.ThrowIfNull(player);
         ArgumentNullException.ThrowIfNull(team);
+        ArgumentNullException.ThrowIfNull(seasonTotals);
 
         Id = player.Id;
         FullName = PlayerDisplay.FullName(player);
@@ -35,7 +39,31 @@ public sealed class PlayerDetailViewModel
         TeamName = team.Name;
         LineupRole = PlayerDisplay.LineupRole(player.Id, team.Lineup);
 
-        var groups = player.Position == Domain.Position.Goalie ? GoalieGroups : SkaterGroups;
+        var isGoalie = player.Position == Domain.Position.Goalie;
+        SeasonTitle = $"{PlayerDisplay.FormatSeason(seasonYear)} REGULAR SEASON";
+        SeasonStatistics = isGoalie
+            ?
+            [
+                new("GP", seasonTotals.GamesPlayed.ToString(CultureInfo.CurrentCulture), "Games played"),
+                new("SA", seasonTotals.ShotsAgainst.ToString(CultureInfo.CurrentCulture), "Shots against"),
+                new("SV", seasonTotals.Saves.ToString(CultureInfo.CurrentCulture), "Saves"),
+                new("GA", seasonTotals.GoalsAgainst.ToString(CultureInfo.CurrentCulture), "Goals against"),
+                new("SV%", seasonTotals.SavePercentage, "Save percentage"),
+            ]
+            :
+            [
+                new("GP", seasonTotals.GamesPlayed.ToString(CultureInfo.CurrentCulture), "Games played"),
+                new("G", seasonTotals.Goals.ToString(CultureInfo.CurrentCulture), "Goals"),
+                new("A", seasonTotals.Assists.ToString(CultureInfo.CurrentCulture), "Assists"),
+                new("P", seasonTotals.Points.ToString(CultureInfo.CurrentCulture), "Points"),
+            ];
+
+        // Only the starting goalie appears in a match, so a goalie's games are starts.
+        SeasonCaption = seasonTotals.GamesPlayed > 0
+            ? string.Empty
+            : isGoalie ? "No starts yet this season." : "No appearances yet this season.";
+
+        var groups = isGoalie ? GoalieGroups : SkaterGroups;
         RatingGroups = groups
             .Select(group => new RatingGroupViewModel(
                 group.Name,
@@ -59,8 +87,23 @@ public sealed class PlayerDetailViewModel
 
     public string LineupRole { get; }
 
+    public string SeasonTitle { get; }
+
+    /// <summary>
+    /// Skater GP/G/A/P or goalie GP/SA/SV/GA/SV%. Totals are zero before a first appearance, and a
+    /// save percentage is a dash until a shot has been faced.
+    /// </summary>
+    public IReadOnlyList<SeasonStatViewModel> SeasonStatistics { get; }
+
+    /// <summary>Explains zero totals for a player who has not appeared; otherwise empty.</summary>
+    public string SeasonCaption { get; }
+
+    public bool HasSeasonCaption => SeasonCaption.Length > 0;
+
     public IReadOnlyList<RatingGroupViewModel> RatingGroups { get; }
 }
+
+public sealed record SeasonStatViewModel(string Label, string Value, string Description);
 
 public sealed record RatingGroupViewModel(string Name, IReadOnlyList<RatingLineViewModel> Ratings);
 

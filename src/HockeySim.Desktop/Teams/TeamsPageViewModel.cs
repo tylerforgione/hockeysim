@@ -37,7 +37,7 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
                 team.Id == session.Snapshot.ManagedTeamId)))
             .ToList();
         _selectedTeam = Teams.Single(team => team.IsManaged);
-        _roster = CreateRoster(_selectedTeam.Id, null);
+        _roster = new TeamRosterViewModel(session, _selectedTeam.Id);
     }
 
     public override string Title => "League Teams";
@@ -87,8 +87,12 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
         OnPropertyChanged(nameof(OwnershipNote));
     }
 
+    /// <summary>
+    /// Rebuilds the roster from the latest snapshot, keeping the chosen columns so browsing from
+    /// team to team compares like with like.
+    /// </summary>
     private TeamRosterViewModel CreateRoster(TeamId teamId, PlayerId? selectedPlayerId) =>
-        new(_session.Snapshot.League.Teams.Single(team => team.Id == teamId), selectedPlayerId);
+        new(_session, teamId, selectedPlayerId, Roster.Columns);
 }
 
 public sealed record TeamEntryViewModel(TeamId Id, string Name, string Division, bool IsManaged);
