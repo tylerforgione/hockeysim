@@ -269,7 +269,24 @@ public sealed class GameSaveFileTests : IDisposable
     {
         var store = new GameSaveFile(SavePath);
 
-        Assert.Throws<FileNotFoundException>(store.Load);
+        var exception = Assert.Throws<GameSaveStorageException>(store.Load);
+        Assert.Contains(SavePath, exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ASaveThatCannotBeWrittenIsReportedAsAStorageFailureAndLeavesTheEarlierSave()
+    {
+        var manager = StartGame();
+        manager.SaveGame(new GameSaveFile(SavePath));
+        var earlier = File.ReadAllBytes(SavePath);
+
+        // A directory where the save file should be makes the final move fail on every platform.
+        var blockedPath = Path.Combine(_directory, "blocked.hockeysim");
+        Directory.CreateDirectory(blockedPath);
+
+        Assert.Throws<GameSaveStorageException>(() => manager.SaveGame(new GameSaveFile(blockedPath)));
+        Assert.Equal(earlier, File.ReadAllBytes(SavePath));
+        Assert.Empty(Directory.EnumerateFiles(_directory, "*.tmp"));
     }
 
     [Fact]

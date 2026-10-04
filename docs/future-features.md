@@ -202,3 +202,16 @@ Direction:
   library); approve it under the [technology stack](tech-stack.md) policy.
   Record the change in a new ADR that supersedes ADR 0004, with a schema
   versioning and migration approach.
+
+## Autosave and save management
+
+Saving is manual: the user saves under a name and loads from the startup menu.
+Later:
+
+- Autosave at chosen intervals (every league day, week, or before the user's
+  matches), into rotating slots that do not overwrite the user's named saves.
+- Rename and delete saves from the load screen.
+- Show each save's club, season, and date in the list. That needs the summary
+  stored where listing can read it without loading the whole game, such as in
+  the save header, which changes the save format version.
+- Cloud or synced saves.

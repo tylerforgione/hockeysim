@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\HockeySim.Infrastructure\HockeySim.Infrastructure.csproj" />
     <ProjectReference Include="..\HockeySim.Management\HockeySim.Management.csproj" />
   </ItemGroup>
 

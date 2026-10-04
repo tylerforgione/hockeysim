@@ -5,6 +5,7 @@
              xmlns:inbox="using:HockeySim.Desktop.Inbox"
              xmlns:lines="using:HockeySim.Desktop.Lines"
              xmlns:roster="using:HockeySim.Desktop.Roster"
+             xmlns:saves="using:HockeySim.Desktop.Saves"
              xmlns:schedule="using:HockeySim.Desktop.Schedule"
              xmlns:standings="using:HockeySim.Desktop.Standings"
              xmlns:teams="using:HockeySim.Desktop.Teams"
@@ -33,166 +34,192 @@
     <DataTemplate x:DataType="schedule:SchedulePageViewModel">
       <schedule:SchedulePageView />
     </DataTemplate>
+    <DataTemplate x:DataType="saves:SaveGameViewModel">
+      <saves:SaveGameView />
+    </DataTemplate>
   </UserControl.DataTemplates>
 
-  <DockPanel>
-    <!-- Title bar in the team's colours. -->
-    <Border DockPanel.Dock="Top"
-            Background="{DynamicResource TeamPrimaryBrush}"
-            BorderBrush="{DynamicResource TeamSecondaryBrush}"
-            BorderThickness="0,0,0,3"
-            Height="56"
-            Padding="12,0,12,0">
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <Border Classes="badge" Width="38" Height="38">
-            <TextBlock Text="{Binding TeamInitials}" FontSize="13" />
-          </Border>
-          <StackPanel VerticalAlignment="Center">
-            <TextBlock x:Name="ShellTeamName"
-                       Text="{Binding TeamName}"
+  <Grid>
+    <DockPanel>
+      <!-- Title bar in the team's colours. -->
+      <Border DockPanel.Dock="Top"
+              Background="{DynamicResource TeamPrimaryBrush}"
+              BorderBrush="{DynamicResource TeamSecondaryBrush}"
+              BorderThickness="0,0,0,3"
+              Height="56"
+              Padding="12,0,12,0">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <Border Classes="badge" Width="38" Height="38">
+              <TextBlock Text="{Binding TeamInitials}" FontSize="13" />
+            </Border>
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock x:Name="ShellTeamName"
+                         Text="{Binding TeamName}"
+                         Foreground="{DynamicResource OnTeamPrimaryBrush}"
+                         FontSize="16"
+                         FontWeight="Bold" />
+              <TextBlock Text="{Binding TeamDivision}"
+                         Foreground="{DynamicResource OnTeamPrimaryBrush}"
+                         Opacity="0.7"
+                         FontSize="11" />
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Grid.Column="1"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center">
+            <TextBlock Text="{Binding SeasonLabel}"
                        Foreground="{DynamicResource OnTeamPrimaryBrush}"
-                       FontSize="16"
-                       FontWeight="Bold" />
-            <TextBlock Text="{Binding TeamDivision}"
+                       HorizontalAlignment="Center"
+                       FontWeight="SemiBold" />
+            <TextBlock x:Name="PhaseLabel"
+                       Text="{Binding PhaseLabel}"
                        Foreground="{DynamicResource OnTeamPrimaryBrush}"
                        Opacity="0.7"
-                       FontSize="11" />
+                       FontSize="11"
+                       HorizontalAlignment="Center" />
           </StackPanel>
-        </StackPanel>
 
-        <StackPanel Grid.Column="1"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center">
-          <TextBlock Text="{Binding SeasonLabel}"
-                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
-                     HorizontalAlignment="Center"
-                     FontWeight="SemiBold" />
-          <TextBlock x:Name="PhaseLabel"
-                     Text="{Binding PhaseLabel}"
-                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
-                     Opacity="0.7"
-                     FontSize="11"
-                     HorizontalAlignment="Center" />
-        </StackPanel>
-
-        <Button Grid.Column="2"
-                Classes="chrome"
-                Content="Main Menu"
-                VerticalAlignment="Center"
-                Command="{Binding ShowMainMenuCommand}" />
-        <Button x:Name="ContinueButton"
-                Grid.Column="3"
-                Classes="chrome continue"
-                VerticalAlignment="Center"
-                Command="{Binding AdvanceDayCommand}"
-                ToolTip.ShowOnDisabled="True"
-                ToolTip.Tip="{Binding ContinueDescription}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="{Binding ContinueLabel}" VerticalAlignment="Center" />
-            <Path Data="M1,1 L6,5 L1,9 Z"
-                  Fill="{Binding $parent[Button].Foreground}"
-                  VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-      </Grid>
-    </Border>
-
-    <!-- Advancement failure. The day was not applied, so nothing here claims partial success. -->
-    <Border x:Name="AdvanceErrorBanner"
-            DockPanel.Dock="Top"
-            Background="{DynamicResource SurfaceRaisedBrush}"
-            BorderBrush="{DynamicResource ErrorBrush}"
-            BorderThickness="0,0,0,2"
-            Padding="12,6"
-            IsVisible="{Binding HasAdvanceError}">
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-        <TextBlock x:Name="AdvanceErrorText"
-                   Classes="error"
-                   TextWrapping="Wrap"
-                   VerticalAlignment="Center"
-                   Text="{Binding AdvanceError}" />
-        <Button Grid.Column="1"
-                Classes="flat"
-                Content="Dismiss"
-                Command="{Binding DismissAdvanceErrorCommand}" />
-      </Grid>
-    </Border>
-
-    <!-- Status bar. -->
-    <Border DockPanel.Dock="Bottom"
-            Background="{DynamicResource SunkenBrush}"
-            BorderBrush="{DynamicResource BorderBrush}"
-            BorderThickness="0,1,0,0"
-            Height="24"
-            Padding="12,0">
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Classes="caption" VerticalAlignment="Center" FontSize="11">
-          <Run Text="Game:" />
-          <Run Text="{Binding GameName}" Foreground="{DynamicResource PrimaryTextBrush}" />
-        </TextBlock>
-        <TextBlock Grid.Column="1"
-                   Classes="caption"
-                   VerticalAlignment="Center"
-                   FontSize="11"
-                   Text="HockeySim · pre-release" />
-      </Grid>
-    </Border>
-
-    <!-- Sidebar navigation. -->
-    <Border DockPanel.Dock="Left"
-            Width="208"
-            Background="{DynamicResource SunkenBrush}"
-            BorderBrush="{DynamicResource BorderBrush}"
-            BorderThickness="0,0,1,0">
-      <ItemsControl x:Name="NavigationSectionsList"
-                    ItemsSource="{Binding NavigationSections}"
-                    Margin="0,8,0,0">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="game:NavigationSectionViewModel">
-            <StackPanel Margin="0,0,0,10">
-              <TextBlock Classes="label" Text="{Binding Title}" Margin="16,6,12,4" />
-              <ItemsControl ItemsSource="{Binding Items}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="game:NavigationItemViewModel">
-                    <Button Classes="nav"
-                            Classes.active="{Binding IsActive}"
-                            Command="{Binding NavigateCommand}"
-                            ToolTip.ShowOnDisabled="True"
-                            ToolTip.Tip="{Binding UnavailableReason}">
-                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                        <Path Data="{Binding Page, Converter={x:Static game:NavigationIconConverter.Instance}}"
-                              StrokeThickness="1.4"
-                              StrokeLineCap="Round"
-                              StrokeJoin="Round"
-                              Width="16"
-                              Height="16"
-                              VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" />
-                        <Border Grid.Column="2" Classes="pill" IsVisible="{Binding HasBadge}">
-                          <TextBlock Text="{Binding BadgeCount}" />
-                        </Border>
-                        <Border Grid.Column="2" Classes="pill muted" IsVisible="{Binding IsUnavailable}">
-                          <TextBlock Text="SOON" />
-                        </Border>
-                      </Grid>
-                    </Button>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
+          <Button x:Name="SaveGameButton"
+                  Grid.Column="2"
+                  Classes="chrome"
+                  Content="Save Game"
+                  VerticalAlignment="Center"
+                  Command="{Binding SaveGameCommand}" />
+          <Button Grid.Column="3"
+                  Classes="chrome"
+                  Content="Main Menu"
+                  VerticalAlignment="Center"
+                  Command="{Binding ShowMainMenuCommand}" />
+          <Button x:Name="ContinueButton"
+                  Grid.Column="4"
+                  Classes="chrome continue"
+                  VerticalAlignment="Center"
+                  Command="{Binding AdvanceDayCommand}"
+                  ToolTip.ShowOnDisabled="True"
+                  ToolTip.Tip="{Binding ContinueDescription}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="{Binding ContinueLabel}" VerticalAlignment="Center" />
+              <Path Data="M1,1 L6,5 L1,9 Z"
+                    Fill="{Binding $parent[Button].Foreground}"
+                    VerticalAlignment="Center" />
             </StackPanel>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-    </Border>
+          </Button>
+        </Grid>
+      </Border>
 
-    <!-- Page. -->
-    <DockPanel Margin="12,0,12,12">
-      <StackPanel DockPanel.Dock="Top" Margin="2,12,0,10">
-        <TextBlock x:Name="PageTitle" Classes="page-title" Text="{Binding CurrentPage.Title}" />
-        <TextBlock Classes="caption" Text="{Binding CurrentPage.Subtitle}" />
-      </StackPanel>
-      <ContentControl x:Name="PageHost" Content="{Binding CurrentPage}" />
+      <!-- Advancement failure. The day was not applied, so nothing here claims partial success. -->
+      <Border x:Name="AdvanceErrorBanner"
+              DockPanel.Dock="Top"
+              Background="{DynamicResource SurfaceRaisedBrush}"
+              BorderBrush="{DynamicResource ErrorBrush}"
+              BorderThickness="0,0,0,2"
+              Padding="12,6"
+              IsVisible="{Binding HasAdvanceError}">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+          <TextBlock x:Name="AdvanceErrorText"
+                     Classes="error"
+                     TextWrapping="Wrap"
+                     VerticalAlignment="Center"
+                     Text="{Binding AdvanceError}" />
+          <Button Grid.Column="1"
+                  Classes="flat"
+                  Content="Dismiss"
+                  Command="{Binding DismissAdvanceErrorCommand}" />
+        </Grid>
+      </Border>
+
+      <!-- Status bar. -->
+      <Border DockPanel.Dock="Bottom"
+              Background="{DynamicResource SunkenBrush}"
+              BorderBrush="{DynamicResource BorderBrush}"
+              BorderThickness="0,1,0,0"
+              Height="24"
+              Padding="12,0">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <TextBlock Classes="caption" FontSize="11" Text="Game:" />
+            <TextBlock x:Name="GameNameText"
+                       Classes="caption"
+                       FontSize="11"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       Text="{Binding GameName}" />
+            <TextBlock Classes="caption" FontSize="11" Text="·" />
+            <TextBlock x:Name="SaveStatusText" Classes="caption" FontSize="11" Text="{Binding SaveStatus}" />
+          </StackPanel>
+          <TextBlock Grid.Column="1"
+                     Classes="caption"
+                     VerticalAlignment="Center"
+                     FontSize="11"
+                     Text="HockeySim · pre-release" />
+        </Grid>
+      </Border>
+
+      <!-- Sidebar navigation. -->
+      <Border DockPanel.Dock="Left"
+              Width="208"
+              Background="{DynamicResource SunkenBrush}"
+              BorderBrush="{DynamicResource BorderBrush}"
+              BorderThickness="0,0,1,0">
+        <ItemsControl x:Name="NavigationSectionsList"
+                      ItemsSource="{Binding NavigationSections}"
+                      Margin="0,8,0,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="game:NavigationSectionViewModel">
+              <StackPanel Margin="0,0,0,10">
+                <TextBlock Classes="label" Text="{Binding Title}" Margin="16,6,12,4" />
+                <ItemsControl ItemsSource="{Binding Items}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="game:NavigationItemViewModel">
+                      <Button Classes="nav"
+                              Classes.active="{Binding IsActive}"
+                              Command="{Binding NavigateCommand}"
+                              ToolTip.ShowOnDisabled="True"
+                              ToolTip.Tip="{Binding UnavailableReason}">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                          <Path Data="{Binding Page, Converter={x:Static game:NavigationIconConverter.Instance}}"
+                                StrokeThickness="1.4"
+                                StrokeLineCap="Round"
+                                StrokeJoin="Round"
+                                Width="16"
+                                Height="16"
+                                VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" />
+                          <Border Grid.Column="2" Classes="pill" IsVisible="{Binding HasBadge}">
+                            <TextBlock Text="{Binding BadgeCount}" />
+                          </Border>
+                          <Border Grid.Column="2" Classes="pill muted" IsVisible="{Binding IsUnavailable}">
+                            <TextBlock Text="SOON" />
+                          </Border>
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+
+      <!-- Page. -->
+      <DockPanel Margin="12,0,12,12">
+        <StackPanel DockPanel.Dock="Top" Margin="2,12,0,10">
+          <TextBlock x:Name="PageTitle" Classes="page-title" Text="{Binding CurrentPage.Title}" />
+          <TextBlock Classes="caption" Text="{Binding CurrentPage.Subtitle}" />
+        </StackPanel>
+        <ContentControl x:Name="PageHost" Content="{Binding CurrentPage}" />
+      </DockPanel>
     </DockPanel>
-  </DockPanel>
+
+    <!-- Save dialog over the whole shell. -->
+    <Border x:Name="SaveDialogOverlay"
+            Background="#B3000000"
+            IsVisible="{Binding IsSaveDialogOpen}">
+      <ContentControl Content="{Binding SaveDialog}"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center" />
+    </Border>
+  </Grid>
 </UserControl>

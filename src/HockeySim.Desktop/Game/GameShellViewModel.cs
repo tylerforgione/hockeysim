@@ -3,16 +3,19 @@ using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using HockeySim.Desktop.Confirmation;
 using HockeySim.Desktop.Home;
 using HockeySim.Desktop.Inbox;
 using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
+using HockeySim.Desktop.Saves;
 using HockeySim.Desktop.Schedule;
 using HockeySim.Desktop.Standings;
 using HockeySim.Desktop.Teams;
 using HockeySim.Domain;
 using HockeySim.Management.Inbox;
+using HockeySim.Management.Saves;
 
 namespace HockeySim.Desktop.Game;
 
@@ -25,6 +28,7 @@ public sealed partial class GameShellViewModel : ObservableObject
     private const string NotAvailableYet = "Not available yet";
 
     private readonly Action _showMainMenu;
+    private readonly ISavedGameLibrary? _saves;
     private readonly Dictionary<ShellPage, ShellPageViewModel> _pages;
     private readonly NavigationItemViewModel _inboxItem;
 
@@ -35,12 +39,27 @@ public sealed partial class GameShellViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasAdvanceError))]
     private string? _advanceError;
 
-    public GameShellViewModel(GameSession session, Action? showMainMenu = null)
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSaveDialogOpen))]
+    private SaveGameViewModel? _saveDialog;
+
+    /// <param name="saves">Where the game can be saved; without it, saving is unavailable.</param>
+    /// <param name="confirmation">
+    /// Asks the user before an existing save is replaced. The main window shares its own, so the
+    /// question appears over every screen.
+    /// </param>
+    public GameShellViewModel(
+        GameSession session,
+        Action? showMainMenu = null,
+        ISavedGameLibrary? saves = null,
+        ConfirmationViewModel? confirmation = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         Session = session;
         _showMainMenu = showMainMenu ?? (() => { });
+        _saves = saves;
+        Confirmation = confirmation ?? new ConfirmationViewModel();
 
         Home = new HomePageViewModel(session, Navigate, OpenInboxMessage, OpenPlayer, OpenMatch);
         Inbox = new InboxPageViewModel(session);
@@ -89,6 +108,8 @@ public sealed partial class GameShellViewModel : ObservableObject
     }
 
     public GameSession Session { get; }
+
+    public ConfirmationViewModel Confirmation { get; }
 
     public HomePageViewModel Home { get; }
 
@@ -160,6 +181,10 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     public string GameName => Session.GameName;
 
+    public bool IsSaveDialogOpen => SaveDialog is not null;
+
+    public string SaveStatus => Session.HasUnsavedChanges ? "Unsaved changes" : "Saved";
+
     public ShellPage CurrentPageKind => _pages.Single(pair => pair.Value == CurrentPage).Key;
 
     public void Navigate(ShellPage page)
@@ -222,11 +247,28 @@ public sealed partial class GameShellViewModel : ObservableObject
         AdvanceError = null;
     }
 
-    [RelayCommand]
+    /// <summary>
+    /// Opens the save dialog. Saving stays available once the season is complete.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanSaveGame))]
+    private void SaveGame()
+    {
+        SaveDialog = new SaveGameViewModel(Session, _saves!, Confirmation, () => SaveDialog = null);
+    }
+
+    private bool CanSaveGame() => _saves is not null && !Session.IsAdvancing;
+
+    /// <summary>
+    /// Leaves for the main menu, where the game can be replaced. That waits until a day being
+    /// played has finished, so the day cannot complete into a game that has since been replaced.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanShowMainMenu))]
     private void ShowMainMenu()
     {
         _showMainMenu();
     }
+
+    private bool CanShowMainMenu() => !Session.IsAdvancing;
 
     partial void OnCurrentPageChanged(ShellPageViewModel value)
     {
@@ -240,6 +282,20 @@ public sealed partial class GameShellViewModel : ObservableObject
         {
             OnPropertyChanged(nameof(ContinueLabel));
             AdvanceDayCommand.NotifyCanExecuteChanged();
+            SaveGameCommand.NotifyCanExecuteChanged();
+            ShowMainMenuCommand.NotifyCanExecuteChanged();
+            return;
+        }
+
+        if (e.PropertyName == nameof(GameSession.GameName))
+        {
+            OnPropertyChanged(nameof(GameName));
+            return;
+        }
+
+        if (e.PropertyName == nameof(GameSession.HasUnsavedChanges))
+        {
+            OnPropertyChanged(nameof(SaveStatus));
             return;
         }
 

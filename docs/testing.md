@@ -20,7 +20,19 @@ skater and goalie totals for another team's roster and player detail, zero
 totals and undefined percentages before an appearance, the roster column choice
 kept across teams and days, and pages redrawn when the session's snapshot is
 replaced. The headless walkthrough also renders the standings scopes and the
-roster's season columns. Simulation tests
+roster's season columns, saves from the title bar, loads the save from the
+startup menu through the discard confirmation, and checks that closing the
+window with unsaved progress asks instead of closing. Desktop save and load
+tests use real save files in a temporary folder: saving under a typed or chosen
+name, what counts as unsaved progress (playing a day, changing the lineup,
+reading mail, but not a failed day), overwrite confirmation with cancellation
+leaving the file untouched, invalid names, write and listing failures, saving a
+completed season, saving and leaving for the menu blocked while a day plays,
+and loading into every page. Discard confirmations for loading, starting a new
+game, and exiting are checked with cancellation keeping the game and with no
+question asked when nothing is unsaved. Damaged, other-version, and unreadable
+saves are reported with the game in progress kept, and play continued after a
+load matches uninterrupted play. Simulation tests
 check result invariants across many seeds, each decision path (regulation,
 overtime, shootout), determinism, unchanged input teams, and statistical bands
 for lineup strength, line and pair usage, and goalie quality. Individual match
@@ -66,7 +78,12 @@ leaving the earlier save intact with no temporary file, the random state
 preserved exactly at its extremes, other format versions rejected as
 unsupported, non-save, damaged, truncated, and malformed files rejected, a
 well-formed save that breaks game rules rejected with the active game
-unchanged, and a missing save reported as missing.
+unchanged, and missing or unwritable saves reported as storage failures. Save
+directory tests keep separate named saves, list them newest first with their
+save time, find a save whose name differs only in case, skip files that are
+not named saves, and report a folder that cannot be created. Management tests
+check which save names are accepted, their case-insensitive equality, and
+composed accents.
 
 ## Test organization
 
