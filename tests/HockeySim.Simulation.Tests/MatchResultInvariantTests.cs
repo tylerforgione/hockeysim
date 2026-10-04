@@ -46,6 +46,15 @@ public sealed class MatchResultInvariantTests
         var home = TestTeams.Create("Home");
         var away = TestTeams.Create("Away");
         var match = TestTeams.CreateMatch(home, away);
+
+        // The test teams scratch skaters and a third goalie, so both kinds of scratch are covered.
+        Assert.All(new[] { home, away }, team =>
+        {
+            var scratched = team.Roster.Where(player => !team.Lineup.DressedPlayers.Contains(player)).ToList();
+            Assert.Contains(scratched, player => player.Position == Position.Goalie);
+            Assert.Contains(scratched, player => player.Position != Position.Goalie);
+        });
+
         var excluded = new[] { home, away }
             .SelectMany(team => team.Roster
                 .Where(player => !team.Lineup.DressedPlayers.Contains(player))
@@ -57,10 +66,12 @@ public sealed class MatchResultInvariantTests
         for (var seed = 0UL; seed < SeedCount; seed++)
         {
             var result = simulator.Simulate(match, new RandomState(seed));
-            var appearing = result.Goals.Select(goal => goal.ScorerId)
+            var appearing = result.Goals
+                .SelectMany(goal => new[] { goal.ScorerId, goal.PrimaryAssistId, goal.SecondaryAssistId })
+                .OfType<PlayerId>()
                 .Concat(result.Shootout?.Attempts.SelectMany(attempt => new[] { attempt.ShooterId, attempt.GoalieId }) ?? [])
-                .Append(result.Home.GoalieId)
-                .Append(result.Away.GoalieId);
+                .Concat(new[] { result.Home, result.Away }.SelectMany(team =>
+                    team.Skaters.Select(skater => skater.PlayerId).Append(team.Goalie.PlayerId)));
 
             Assert.DoesNotContain(appearing, excluded.Contains);
         }
@@ -70,8 +81,8 @@ public sealed class MatchResultInvariantTests
     {
         Assert.Equal(match.Home.Id, result.Home.TeamId);
         Assert.Equal(match.Away.Id, result.Away.TeamId);
-        Assert.Equal(match.Home.Lineup.StartingGoalie.Id, result.Home.GoalieId);
-        Assert.Equal(match.Away.Lineup.StartingGoalie.Id, result.Away.GoalieId);
+        Assert.Equal(match.Home.Lineup.StartingGoalie.Id, result.Home.Goalie.PlayerId);
+        Assert.Equal(match.Away.Lineup.StartingGoalie.Id, result.Away.Goalie.PlayerId);
         Assert.NotEqual(result.Home.Score, result.Away.Score);
         Assert.Equal(
             result.Home.Score > result.Away.Score ? match.Home.Id : match.Away.Id,
