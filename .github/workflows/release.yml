@@ -1,0 +1,146 @@
+name: Release
+
+# Pushing a v<version> tag validates the tagged commit, publishes a self-contained
+# build for each runtime identifier, and creates a GitHub release with the archives.
+# Running it manually is a dry run: it publishes the archives as workflow artifacts
+# and creates no release. See docs/adr/0005-self-contained-desktop-builds.md.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - id: version
+        shell: bash
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          # A tag is the source of truth for the version; a dry run from a branch
+          # builds the development version, as a source build would.
+          if [ "$REF_TYPE" = tag ]; then
+            version="${REF_NAME#v}"
+            if ! [[ "$REF_NAME" == v* && "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::Release tags must be v<major>.<minor>.<patch>[-<suffix>], not '$REF_NAME'."
+              exit 1
+            fi
+          else
+            version=0.0.0-dev
+          fi
+
+          # 0.x releases and suffixed versions are pre-releases.
+          if [[ "$version" == 0.* || "$version" == *-* ]]; then
+            prerelease=true
+          else
+            prerelease=false
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
+  validate:
+    name: Validate
+    uses: ./.github/workflows/build-and-test.yml
+
+  publish:
+    name: Publish (${{ matrix.rid }})
+    needs: [version, validate]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Any failed identifier fails the run, so a release never has a partial set of archives.
+      fail-fast: true
+      matrix:
+        include:
+          - rid: win-x64
+            os: windows-latest
+            executable: HockeySim.exe
+          - rid: osx-arm64
+            os: macos-latest
+            executable: HockeySim
+          - rid: osx-x64
+            os: macos-latest
+            executable: HockeySim
+          - rid: linux-x64
+            os: ubuntu-latest
+            executable: HockeySim
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      RID: ${{ matrix.rid }}
+      EXECUTABLE: ${{ matrix.executable }}
+      PACKAGE: HockeySim-${{ needs.version.outputs.version }}-${{ matrix.rid }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Publish
+        shell: bash
+        run: |
+          dotnet publish src/HockeySim.Desktop/HockeySim.Desktop.csproj \
+            --configuration Release --runtime "$RID" -p:Version="$VERSION" \
+            --output "publish/$PACKAGE"
+          test -f "publish/$PACKAGE/$EXECUTABLE"
+
+      # Each archive holds one folder named after the package. Linux uses tar so the
+      # executable bit is kept; ditto keeps it and the ad-hoc signature on macOS.
+      - name: Archive (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: publish
+        run: Compress-Archive -Path $env:PACKAGE -DestinationPath "$env:PACKAGE.zip"
+      - name: Archive (macOS)
+        if: runner.os == 'macOS'
+        working-directory: publish
+        run: ditto -c -k --keepParent "$PACKAGE" "$PACKAGE.zip"
+      - name: Archive (Linux)
+        if: runner.os == 'Linux'
+        working-directory: publish
+        run: tar -czf "$PACKAGE.tar.gz" "$PACKAGE"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.PACKAGE }}
+          path: |
+            publish/${{ env.PACKAGE }}.zip
+            publish/${{ env.PACKAGE }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Create release
+    needs: [version, publish]
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: HockeySim-*
+          merge-multiple: true
+          path: archives
+      - name: Create release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.version.outputs.prerelease }}
+        run: |
+          flags=(--verify-tag --generate-notes --title "HockeySim $TAG")
+          if [ "$PRERELEASE" = true ]; then
+            flags+=(--prerelease)
+          fi
+          gh release create "$TAG" archives/* --repo "$GITHUB_REPOSITORY" "${flags[@]}"
