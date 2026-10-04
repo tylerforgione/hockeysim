@@ -5,14 +5,16 @@ using HockeySim.Management.GameManagement.Snapshots;
 namespace HockeySim.Desktop.Roster;
 
 /// <summary>
-/// One roster table row. Rating abbreviations follow the table headers in <c>TeamRosterView</c>.
+/// One roster table row: ratings and current-season totals. Abbreviations follow the table
+/// headers in <c>TeamRosterView</c>.
 /// </summary>
 public sealed class PlayerRowViewModel
 {
-    public PlayerRowViewModel(PlayerSnapshot player, LineupSnapshot lineup)
+    public PlayerRowViewModel(PlayerSnapshot player, LineupSnapshot lineup, PlayerSeasonTotals seasonTotals)
     {
         ArgumentNullException.ThrowIfNull(player);
         ArgumentNullException.ThrowIfNull(lineup);
+        ArgumentNullException.ThrowIfNull(seasonTotals);
 
         Player = player;
         Number = player.Number;
@@ -35,6 +37,7 @@ public sealed class PlayerRowViewModel
         GoalieReflex = player.Ratings[Rating.GoalieReflex];
         GoaliePositioning = player.Ratings[Rating.GoaliePositioning];
         GoalieReboundControl = player.Ratings[Rating.GoalieReboundControl];
+        Season = seasonTotals;
     }
 
     public PlayerSnapshot Player { get; }
@@ -76,4 +79,6 @@ public sealed class PlayerRowViewModel
     public int GoaliePositioning { get; }
 
     public int GoalieReboundControl { get; }
+
+    public PlayerSeasonTotals Season { get; }
 }

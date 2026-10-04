@@ -219,6 +219,30 @@
     <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
   </Style>
 
+  <!-- Segmented choices, such as which columns or standings a page shows. -->
+  <Style Selector="Button.tab">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Padding" Value="8,3" />
+  </Style>
+  <Style Selector="Button.tab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+  </Style>
+  <Style Selector="Button.tab.selected">
+    <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+  </Style>
+  <Style Selector="Button.tab.selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
+  </Style>
+
   <!-- Title-bar buttons sit on the team primary colour. -->
   <Style Selector="Button.chrome">
     <Setter Property="Background" Value="Transparent" />

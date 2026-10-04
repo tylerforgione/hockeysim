@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:game="using:HockeySim.Desktop.Game"
              xmlns:home="using:HockeySim.Desktop.Home"
+             xmlns:standings="using:HockeySim.Desktop.Standings"
              x:Class="HockeySim.Desktop.Home.HomePageView"
              x:DataType="home:HomePageViewModel">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
@@ -159,7 +160,11 @@
               <Border DockPanel.Dock="Top" Classes="panel-header">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Classes="panel-title" Text="{Binding DivisionTitle}" />
-                  <TextBlock Grid.Column="1" Classes="caption" VerticalAlignment="Center" Text="Regular season" />
+                  <Button Grid.Column="1"
+                          Classes="link"
+                          Content="Standings ›"
+                          Command="{Binding NavigateCommand}"
+                          CommandParameter="{x:Static game:ShellPage.Standings}" />
                 </Grid>
               </Border>
               <Border DockPanel.Dock="Top" Classes="table-header">
@@ -175,7 +180,7 @@
               </Border>
               <ItemsControl x:Name="DivisionStandingsList" ItemsSource="{Binding DivisionStandings}">
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="home:StandingRowViewModel">
+                  <DataTemplate x:DataType="standings:StandingsRowViewModel">
                     <Border Classes="standing-row" Classes.managed="{Binding IsManaged}" Height="24" Padding="8,0">
                       <Grid ColumnDefinitions="24,*,32,32,32,36,36">
                         <TextBlock Classes="cell muted" Text="{Binding Rank}" />

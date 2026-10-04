@@ -7,6 +7,7 @@ using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Inbox;
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Schedule;
+using HockeySim.Desktop.Standings;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 using HockeySim.Management.Inbox;
@@ -49,7 +50,7 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
     private string _divisionName = string.Empty;
 
     [ObservableProperty]
-    private IReadOnlyList<StandingRowViewModel> _divisionStandings = [];
+    private IReadOnlyList<StandingsRowViewModel> _divisionStandings = [];
 
     [ObservableProperty]
     private IReadOnlyList<LineupSummaryRowViewModel> _lineupSummary = [];
@@ -132,15 +133,7 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
         DivisionStandings = snapshot.Season.Standings.Conferences
             .Single(standings => standings.Name == conference.Name).Divisions
             .Single(standings => standings.Name == division.Name).Teams
-            .Select(entry => new StandingRowViewModel(
-                entry.Rank,
-                _session.GetTeam(entry.Record.TeamId).Name,
-                entry.Record.TeamId == team.Id,
-                entry.Record.GamesPlayed,
-                entry.Record.Wins,
-                entry.Record.RegulationLosses,
-                entry.Record.OvertimeLosses + entry.Record.ShootoutLosses,
-                entry.Record.Points))
+            .Select(entry => StandingsRowViewModel.Create(entry, _session.GetTeam(entry.Record.TeamId).Name, entry.Record.TeamId == team.Id))
             .ToList();
 
         RefreshNextMatch(snapshot, team);
@@ -254,17 +247,6 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
 }
 
 public sealed record SummaryTileViewModel(string Label, string Value, string Caption);
-
-/// <param name="Losses">Regulation losses; overtime and shootout losses are counted in <paramref name="OvertimeLosses"/>.</param>
-public sealed record StandingRowViewModel(
-    int Rank,
-    string TeamName,
-    bool IsManaged,
-    int GamesPlayed,
-    int Wins,
-    int Losses,
-    int OvertimeLosses,
-    int Points);
 
 public sealed partial class LeagueResultRowViewModel
 {

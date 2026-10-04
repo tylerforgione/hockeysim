@@ -9,6 +9,7 @@ using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Schedule;
+using HockeySim.Desktop.Standings;
 using HockeySim.Desktop.Teams;
 using HockeySim.Domain;
 using HockeySim.Management.Inbox;
@@ -46,6 +47,7 @@ public sealed partial class GameShellViewModel : ObservableObject
         Roster = new RosterPageViewModel(session);
         Lines = new LinesPageViewModel(session);
         Teams = new TeamsPageViewModel(session);
+        Standings = new StandingsPageViewModel(session);
         Schedule = new SchedulePageViewModel(session);
         _pages = new Dictionary<ShellPage, ShellPageViewModel>
         {
@@ -54,6 +56,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             [ShellPage.Roster] = Roster,
             [ShellPage.Lines] = Lines,
             [ShellPage.Teams] = Teams,
+            [ShellPage.Standings] = Standings,
             [ShellPage.Schedule] = Schedule,
         };
 
@@ -70,7 +73,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             new("LEAGUE",
             [
                 new(ShellPage.Teams, "Teams", Navigate),
-                new(ShellPage.Standings, "Standings", Navigate, NotAvailableYet),
+                new(ShellPage.Standings, "Standings", Navigate),
                 new(ShellPage.Schedule, "Schedule", Navigate),
             ]),
             new("TRANSACTIONS",
@@ -96,6 +99,8 @@ public sealed partial class GameShellViewModel : ObservableObject
     public LinesPageViewModel Lines { get; }
 
     public TeamsPageViewModel Teams { get; }
+
+    public StandingsPageViewModel Standings { get; }
 
     public SchedulePageViewModel Schedule { get; }
 

@@ -13,7 +13,14 @@ current-date and continue states, page refresh after a day, an empty league day,
 opening a result's box score from the home page, schedule browsing, a failing
 match engine leaving the day unplayed with an error shown, overlapping
 advancement rejected while a gated engine holds a day, and a full season ending
-in the completed, still-browsable state. Simulation tests
+in the completed, still-browsable state with final standings. Desktop standings
+and statistics tests check each standings scope against Management's ranked
+tables, the level no-games state, refresh after a day with the chosen scope kept,
+skater and goalie totals for another team's roster and player detail, zero
+totals and undefined percentages before an appearance, the roster column choice
+kept across teams and days, and pages redrawn when the session's snapshot is
+replaced. The headless walkthrough also renders the standings scopes and the
+roster's season columns. Simulation tests
 check result invariants across many seeds, each decision path (regulation,
 overtime, shootout), determinism, unchanged input teams, and statistical bands
 for lineup strength, line and pair usage, and goalie quality. Individual match

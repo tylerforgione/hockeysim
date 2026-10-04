@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 
+using HockeySim.Desktop.Players;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.GameManagement.Snapshots;
@@ -25,6 +26,8 @@ public sealed partial class GameSession : ObservableObject
 
     private IReadOnlyDictionary<PlayerId, PlayerSnapshot> _playersById;
 
+    private IReadOnlyDictionary<PlayerId, PlayerSeasonTotals> _seasonTotals;
+
     public GameSession(GameManager gameManager, string gameName)
     {
         ArgumentNullException.ThrowIfNull(gameManager);
@@ -33,6 +36,7 @@ public sealed partial class GameSession : ObservableObject
         _gameManager = gameManager;
         _snapshot = gameManager.GetSnapshot();
         _playersById = IndexPlayers(_snapshot);
+        _seasonTotals = PlayerSeasonTotals.Index(_snapshot.Season);
         GameName = gameName;
     }
 
@@ -44,6 +48,13 @@ public sealed partial class GameSession : ObservableObject
     /// Gets every player in the league by identity, for resolving box scores and results.
     /// </summary>
     public IReadOnlyDictionary<PlayerId, PlayerSnapshot> PlayersById => _playersById;
+
+    /// <summary>
+    /// Gets a player's current-season totals, or <see cref="PlayerSeasonTotals.None"/> before
+    /// their first appearance.
+    /// </summary>
+    public PlayerSeasonTotals GetSeasonTotals(PlayerId playerId) =>
+        _seasonTotals.GetValueOrDefault(playerId, PlayerSeasonTotals.None);
 
     public TeamSnapshot GetTeam(TeamId teamId) => Snapshot.League.Teams.Single(team => team.Id == teamId);
 
@@ -105,6 +116,7 @@ public sealed partial class GameSession : ObservableObject
     partial void OnSnapshotChanged(GameSnapshot value)
     {
         _playersById = IndexPlayers(value);
+        _seasonTotals = PlayerSeasonTotals.Index(value.Season);
     }
 
     private static Dictionary<PlayerId, PlayerSnapshot> IndexPlayers(GameSnapshot snapshot) =>
