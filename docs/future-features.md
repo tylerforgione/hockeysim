@@ -59,37 +59,27 @@ Roster membership remains a separate invariant: every assigned player must be
 the actual player instance from that team's roster, regardless of which lineup
 roles are allowed.
 
-## Self-contained desktop builds
+## Native packaging and updates
 
-HockeySim currently runs only from source (`dotnet run`); there is no published
-build, and players would need the .NET 10 SDK or runtime installed.
+Releases publish self-contained, single-file builds as archives for `win-x64`,
+`osx-arm64`, `osx-x64`, and `linux-x64`
+([ADR 0005](adr/0005-self-contained-desktop-builds.md)). They are not signed
+for distribution, so macOS Gatekeeper and Windows SmartScreen warn on first
+launch, and players unpack and run the executable themselves.
 
-Players should be able to download and run the game on Windows, macOS, and Linux
-without installing .NET. Self-contained deployment bundles the runtime with the
-app, which also keeps a machine-wide .NET update from changing behaviour within
-an engine version ([reproducible saves](adr/0002-reproducible-saves.md)).
+Later:
 
-Direction:
-
-- Record the deployment decision in an ADR: self-contained versus
-  framework-dependent, single-file, ReadyToRun, trimming, and Native AOT, with
-  reasons for what is rejected or deferred. This resolves the native-packaging
-  row in [technology stack](tech-stack.md)'s deferred decisions.
-- Choose the supported runtime identifiers (likely `win-x64`, `osx-arm64`,
-  `osx-x64`, `linux-x64`) and minimum OS versions, and configure
-  `HockeySim.Desktop` so one publish command per identifier produces a
-  self-contained build.
-- Only enable trimming if publishing produces no trim warnings and the trimmed
-  build passes a native smoke test. Compiled bindings are already the default;
-  `BuiltInComInteropSupport` and any reflection-dependent bindings need explicit
-  attention.
-- Publish each identifier in a CI job separate from the existing build-and-test
-  checks, and smoke-test the output on each OS, including a machine with no .NET
-  installed.
-- Platform-native packaging (macOS `.app` bundle with signing and notarization,
-  a Windows installer or MSIX, Linux AppImage or Flatpak), auto-update, and
-  release versioning are separate follow-up work that builds on the publish
-  output.
+- A macOS `.app` bundle with an icon, Developer ID code signing, and
+  notarization.
+- Windows code signing and an installer or MSIX package.
+- Linux AppImage or Flatpak packages.
+- Auto-update, and checking for a newer release from the app.
+- Smaller or faster builds through trimming or ReadyToRun, deferred in
+  ADR 0005. Trimming needs `BuiltInComInteropSupport` removed after a native
+  Windows check.
+- Arm builds for Windows and Linux.
+- Migrating saves between releases rather than rejecting another save format
+  version ([ADR 0004](adr/0004-local-save-format.md)).
 
 ## Realistic season calendar
 

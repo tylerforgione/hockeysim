@@ -61,6 +61,10 @@ persistable `RandomState`; Management uses the same generator for world
 generation and passes the state to and from match simulation.
 Reproducibility is not a promise across engine versions or protection against
 editing local saves. See [the rationale](adr/0002-reproducible-saves.md).
+The engine version is the release version, taken from the Git tag; a source
+build is `0.0.0-dev` and promises nothing beyond its own commit. It is
+independent of the save format version: a release may or may not change the
+save format. See [the release decision](adr/0005-self-contained-desktop-builds.md).
 
 Pre-release saves may become incompatible. The save format is versioned, and a
 save from another version is rejected as unsupported rather than migrated. Each
@@ -216,4 +220,9 @@ progress as it was. A successful load builds a new session and shell from the
 loaded snapshot rather than refreshing the old pages, because a loaded game may
 be a different league with different teams and players, and no selection or
 unapplied lineup edit should carry over. Saving stays available once the
-season is complete.
+season is complete. The startup menu shows the running version.
+
+Releases publish `HockeySim.Desktop` as a self-contained, single-file build
+named `HockeySim` for each supported runtime identifier; ordinary builds stay
+framework-dependent. See
+[the deployment decision](adr/0005-self-contained-desktop-builds.md).
