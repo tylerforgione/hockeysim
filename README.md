@@ -15,11 +15,13 @@ Management snapshots. The Avalonia desktop application provides new-game setup
 and an in-game shell with a home dashboard, an inbox, the managed team's roster
 and lineup editor, and read-only browsing of every team's roster. A new game
 also generates a reproducible, balanced 84-match regular-season schedule,
-exposed through Management snapshots but not yet shown in Desktop. Advancing
-days and standings are not implemented yet. A headless Simulation
-project calculates statistical match results, including individual skater and
-goalie statistics, from two teams' lineups, but the game does not play matches
-yet. Infrastructure has not yet been scaffolded.
+exposed through Management snapshots but not yet shown in Desktop. A headless
+Simulation project calculates statistical match results, including individual
+skater and goalie statistics, from two teams' lineups. Management advances the
+season one league day at a time, playing every scheduled match and accumulating
+results, team records, and player season statistics through to a completed
+season; Desktop does not offer advancement yet, and standings ranking is not
+implemented. Infrastructure has not yet been scaffolded.
 
 ## Development
 

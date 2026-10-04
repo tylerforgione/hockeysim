@@ -114,6 +114,23 @@ every other day. Authentic NHL dates, travel, rest, and rotation constraints are
 not modelled; see [future features](future-features.md#realistic-season-calendar). The schedule is exposed as a read-only
 snapshot and is unchanged by managed-team selection.
 
+Domain's `Season` aggregate holds the league, schedule, current date, the
+completed-match history, team records, and player season statistics. A new
+season's current date is opening day. `CompleteDay` accepts exactly one
+completed match for each match scheduled on the current date, validates the
+whole day (scheduled teams, decisive scores, statistics that reconcile with the
+score, rostered players) before changing anything, and then moves to the next
+calendar day; a scheduled match therefore cannot be completed twice, and a day
+is never partly applied. Management's `AdvanceDay` command simulates the day's
+matches in schedule order from the current lineups on one continuous random
+stream, converts each Simulation result into a Domain completed match, and
+commits the random state only after the season accepts the day. `GameManager`
+serializes its commands, rejects commands issued from inside a day being played,
+and rejects advancement once the season is complete. The engine is injected
+through Simulation's `IMatchSimulator`; `MatchDecision` lives in Domain because
+both the engine and the history use it. Standings ranking and tie-breakers are
+not applied yet.
+
 Desktop wires a Management game manager at startup. After the new-game screen
 starts a game, a `GameSession` forwards commands (lineup changes, reading
 messages) to Management and publishes each resulting snapshot to the in-game
@@ -130,6 +147,5 @@ the scorer's on-ice teammates, and the result carries every appearing player's
 match statistics, derived from the goals and shots so they reconcile with the
 score; shootout attempts count toward no player. It takes an explicit random state and returns
 the state after the match with the result, without changing the teams.
-Management does not invoke it yet; season orchestration will apply results.
 Infrastructure has not been scaffolded; until it exists, the related parts of
 the diagram remain target architecture.

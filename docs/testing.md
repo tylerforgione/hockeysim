@@ -16,7 +16,17 @@ and eligibility rules, assist validity, shootout exclusion, and zero-shot and
 zero-production cases. Schedule tests check, across several seeds, the full
 opponent-count matrix, league match count, home/away totals, venue balance
 within each pair of opponents, valid identities, no self-matches or same-day
-conflicts, the calendar dates, and reproducibility.
+conflicts, the calendar dates, and reproducibility. Domain season tests check
+day-level atomicity (partial days, results for other dates, duplicates, invalid
+players), standings points for each decision, shootout handling in team and
+individual totals, completed-match invariants, and the terminal state.
+Management season tests advance real games: whole days, empty days, lineup
+changes used by the next match, a failing match engine leaving the day
+unplayed and the random state unchanged, rejected nested and serialized
+cross-thread advancement, snapshot isolation, and reproducibility. A shared
+fixture plays one full 1,344-match season and checks schedule completion, 84
+games per team, records and individual totals reconciled with the results, every
+decision type, and the completed-season state.
 Infrastructure tests remain pending with their project.
 
 ## Test organization
@@ -68,9 +78,8 @@ failures indicate changed behavior rather than unlucky randomness:
 
 Avoid exact golden-master comparisons of seeded output while balance is still
 changing; every deliberate tuning change would invalidate them. Revisit them
-once balance stabilizes. When season orchestration exists, add long-run
-Management tests that simulate full seasons headlessly and assert the world
-remains valid afterward.
+once balance stabilizes. Long-run Management tests simulate a full season
+headlessly and assert the world remains valid afterward.
 
 ## Local validation
 

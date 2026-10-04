@@ -48,6 +48,37 @@ against each divisional opponent, three against each other same-conference
 opponent, and two against each opposite-conference opponent, with 42 at home and
 42 away. A team plays at most once on any date.
 
+**League day**:
+One calendar date of the season. Advancing a league day plays every match
+scheduled on the current date, which may be none, and moves to the next date.
+A day's results are applied together or not at all.
+
+**Completed match**:
+The canonical record of a scheduled match after it is played: the scheduled
+date and teams, how it was decided, each side's score and shots, and the box
+score of every appearing player. A scheduled match is completed at most once.
+
+**Box score**:
+An appearing player's match statistics as recorded in a completed match.
+
+**Team record**:
+A team's current-season wins and losses, each kept by how the match was decided
+(regulation, overtime, or shootout), with goals for and against. Team goals
+include a shootout deciding goal.
+
+**Standings points**:
+Two for any win, one for an overtime or shootout loss, and none for a regulation
+loss.
+
+**Season statistics**:
+A player's current-season totals, accumulated from their box scores. Like match
+statistics, they exclude the shootout.
+
+**Completed season**:
+The state after the final scheduled match is played. It can still be browsed
+and managed, but no further league days can be played; playoffs and the next
+season are not modelled.
+
 **Overtime**:
 A five-minute sudden-death period played when regulation ends tied.
 
