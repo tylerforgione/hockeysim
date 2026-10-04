@@ -19,7 +19,14 @@ within each pair of opponents, valid identities, no self-matches or same-day
 conflicts, the calendar dates, and reproducibility. Domain season tests check
 day-level atomicity (partial days, results for other dates, duplicates, invalid
 players), standings points for each decision, shootout handling in team and
-individual totals, completed-match invariants, and the terminal state.
+individual totals, completed-match invariants, and the terminal state. Domain
+standings scenarios isolate each ranking criterion, two-club and multi-club
+head-to-head (unbalanced meetings, cycles, a partly broken tie, clubs that have
+not met), odd-game exclusion, shootout goals, games-played differences, the
+no-games state, and teams level on every criterion. Management standings tests
+check that league, conference, and division tables hold the right teams in a
+consistent order before any match, midseason, and after the full season, and
+that they are read-only and isolated between snapshots.
 Management season tests advance real games: whole days, empty days, lineup
 changes used by the next match, a failing match engine leaving the day
 unplayed and the random state unchanged, rejected nested and serialized

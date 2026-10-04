@@ -63,6 +63,33 @@ public sealed class Season
     public IReadOnlyList<TeamRecord> TeamRecords =>
         League.Teams.Select(team => _teamRecords[team.Id]).ToList().AsReadOnly();
 
+    /// <summary>
+    /// Ranks a group of league teams, such as a division, a conference, or the whole league, by
+    /// the NHL regular-season procedure. Head-to-head compares only games among the teams tied
+    /// within this group.
+    /// </summary>
+    /// <param name="teamIds">League teams; their order and any repetition do not affect the ranking.</param>
+    /// <returns>
+    /// The teams best first. Teams level on every criterion share a rank and keep league team
+    /// order.
+    /// </returns>
+    public IReadOnlyList<StandingsEntry> RankStandings(IEnumerable<TeamId> teamIds)
+    {
+        ArgumentNullException.ThrowIfNull(teamIds);
+
+        var requested = teamIds.ToHashSet();
+        if (!requested.All(_teamRecords.ContainsKey))
+        {
+            throw new ArgumentException("Every ranked team must belong to the league.", nameof(teamIds));
+        }
+
+        var records = League.Teams
+            .Where(team => requested.Contains(team.Id))
+            .Select(team => _teamRecords[team.Id])
+            .ToList();
+        return StandingsRanking.Rank(records, _completedMatchesView);
+    }
+
     /// <summary>Totals for every skater who has appeared, in league team and roster order.</summary>
     public IReadOnlyList<SkaterSeasonStatistics> SkaterStatistics => InRosterOrder(_skaterStatistics);
 

@@ -31,6 +31,11 @@ public sealed record TeamRecord(TeamId TeamId)
 
     public int Wins => RegulationWins + OvertimeWins + ShootoutWins;
 
+    /// <summary>Wins excluding shootout wins (the standings "ROW" column).</summary>
+    public int RegulationAndOvertimeWins => RegulationWins + OvertimeWins;
+
+    public int GoalDifferential => GoalsFor - GoalsAgainst;
+
     /// <summary>
     /// Two points for any win, one for a loss in overtime or a shootout, none for a regulation loss.
     /// </summary>

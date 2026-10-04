@@ -306,38 +306,13 @@ public sealed class SeasonTests
     private int SkaterGoals(Team team) =>
         _season.SkaterStatistics.Where(skater => skater.TeamId == team.Id).Sum(skater => skater.Goals);
 
-    private static PlayerId FirstSkater(Team team) => team.Lineup.ForwardLines[0].LeftWing.Id;
+    private static PlayerId FirstSkater(Team team) => TestResults.FirstSkater(team);
 
-    /// <summary>
-    /// Builds a consistent result in which each side's first forward scores every player goal.
-    /// A shootout adds the deciding goal to the winner's score.
-    /// </summary>
     private CompletedMatch Result(
         ScheduledMatch scheduled,
         int homeGoals,
         int awayGoals,
         MatchDecision decision = MatchDecision.Regulation,
-        bool shootoutWinnerIsHome = true)
-    {
-        const int shots = 30;
-        var home = _league.Teams.Single(team => team.Id == scheduled.HomeTeamId);
-        var away = _league.Teams.Single(team => team.Id == scheduled.AwayTeamId);
-        var homeBonus = decision == MatchDecision.Shootout && shootoutWinnerIsHome ? 1 : 0;
-        var awayBonus = decision == MatchDecision.Shootout && !shootoutWinnerIsHome ? 1 : 0;
-
-        return new CompletedMatch(
-            scheduled,
-            Side(home, homeGoals + homeBonus, homeGoals, opponentGoals: awayGoals),
-            Side(away, awayGoals + awayBonus, awayGoals, opponentGoals: homeGoals),
-            decision);
-
-        CompletedMatchTeam Side(Team team, int score, int playerGoals, int opponentGoals)
-        {
-            var skaters = team.Lineup.ForwardLines.SelectMany(line => line.Players)
-                .Concat(team.Lineup.DefencePairs.SelectMany(pair => pair.Players))
-                .Select(player => new SkaterBoxScore(player.Id, player.Id == FirstSkater(team) ? playerGoals : 0, 0));
-            var goalie = new GoalieBoxScore(team.Lineup.StartingGoalie.Id, shots, opponentGoals);
-            return new CompletedMatchTeam(team.Id, score, shots, skaters, goalie);
-        }
-    }
+        bool shootoutWinnerIsHome = true) =>
+        TestResults.Create(_league, scheduled, homeGoals, awayGoals, decision, shootoutWinnerIsHome);
 }

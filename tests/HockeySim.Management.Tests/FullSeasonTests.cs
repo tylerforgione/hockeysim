@@ -129,6 +129,18 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
     }
 
     [Fact]
+    public void FinalStandingsRankEveryTableFromTheFullSeason()
+    {
+        StandingsTests.AssertTablesMatchTheLeague(completed.Snapshot);
+        StandingsTests.AssertEveryTableIsRanked(Season.Standings);
+        Assert.All(Season.Standings.League, entry =>
+        {
+            Assert.Equal(84, entry.Record.GamesPlayed);
+            Assert.Equal(entry.Record.Points / 168.0, entry.Record.PointsPercentage);
+        });
+    }
+
+    [Fact]
     public void ACompletedSeasonRejectsFurtherAdvancementWithoutChangingTheGame()
     {
         var manager = completed.Manager;

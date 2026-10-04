@@ -20,8 +20,9 @@ Simulation project calculates statistical match results, including individual
 skater and goalie statistics, from two teams' lineups. Management advances the
 season one league day at a time, playing every scheduled match and accumulating
 results, team records, and player season statistics through to a completed
-season; Desktop does not offer advancement yet, and standings ranking is not
-implemented. Infrastructure has not yet been scaffolded.
+season, with league, conference, and division standings ranked by the NHL
+tie-breaking procedure; Desktop does not offer advancement or show standings
+yet. Infrastructure has not yet been scaffolded.
 
 ## Development
 
