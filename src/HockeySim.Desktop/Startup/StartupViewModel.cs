@@ -27,6 +27,9 @@ public sealed partial class StartupViewModel : ObservableObject
         _exitApplication = exitApplication;
     }
 
+    /// <summary>Shown on the startup menu so bug reports can cite the build.</summary>
+    public string Version { get; } = AppVersion.Current;
+
     [RelayCommand(CanExecute = nameof(CanContinue))]
     private void Continue()
     {

@@ -7,4 +7,15 @@
     <AnalysisLevel>10.0</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
+
+  <!--
+    The release version is also the engine version. Release builds pass the Git
+    tag's version (-p:Version=0.1.0); every other build is a development build.
+    The commit hash is left out of the informational version so a release shows
+    exactly its tag's version. See docs/adr/0005-self-contained-desktop-builds.md.
+  -->
+  <PropertyGroup>
+    <Version>0.0.0-dev</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
 </Project>

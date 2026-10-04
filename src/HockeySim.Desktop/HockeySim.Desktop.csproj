@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\HockeySim.Infrastructure\HockeySim.Infrastructure.csproj" />
@@ -14,8 +14,32 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <!-- Players run "HockeySim"; Avalonia resource URIs use this name (avares://HockeySim/...). -->
+    <AssemblyName>HockeySim</AssemblyName>
+    <RootNamespace>HockeySim.Desktop</RootNamespace>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
   </PropertyGroup>
+
+  <!--
+    Publishing for a runtime identifier (dotnet publish -c Release -r osx-arm64)
+    produces a self-contained, single-file build: one executable with the native
+    graphics libraries beside it, which are loaded in place rather than extracted.
+    Trimming, ReadyToRun, and Native AOT are deferred; see
+    docs/adr/0005-self-contained-desktop-builds.md.
+  -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+  </PropertyGroup>
+
+  <!-- Players have no use for debug symbols, including those that native packages ship. -->
+  <Target Name="ExcludeDebugSymbolsFromPublish"
+          AfterTargets="ComputeResolvedFilesToPublishList"
+          Condition="'$(RuntimeIdentifier)' != ''">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
 
 </Project>

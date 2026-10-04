@@ -21,13 +21,13 @@
                                ErrorText="#E06464" />
       </FluentTheme.Palettes>
     </FluentTheme>
-    <StyleInclude Source="avares://HockeySim.Desktop/Theme/Controls.axaml" />
+    <StyleInclude Source="avares://HockeySim/Theme/Controls.axaml" />
   </Application.Styles>
 
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
-        <ResourceInclude Source="avares://HockeySim.Desktop/Theme/Palette.axaml" />
+        <ResourceInclude Source="avares://HockeySim/Theme/Palette.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>
