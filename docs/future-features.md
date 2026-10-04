@@ -131,3 +131,16 @@ Direction:
 - Existing schedule tests (opponent matrix, home/away totals, same-day
   conflicts, reproducibility) still apply. Add checks for blocked dates, rest
   limits, and pinned matches, and replace the 16-matches-per-date check.
+
+## Skip-to-date and bulk simulation
+
+Desktop advances the season one league day per Continue press. Playing a full
+season therefore takes 167 presses.
+
+Add controls that play several days in one request: to the managed team's next
+match, to a chosen date, or to the end of the regular season. Build them on
+Management's existing day-atomic `AdvanceDay`, so each day still applies
+completely or not at all and a failure stops at the last complete day. Report
+progress and allow cancellation between days. Publish a snapshot when the run
+ends rather than after every day. Decide whether events such as injuries or
+inbox messages should interrupt a run once those features exist.

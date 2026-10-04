@@ -14,15 +14,17 @@ The repository contains a headless new-game workflow that creates a reproducible
 Management snapshots. The Avalonia desktop application provides new-game setup
 and an in-game shell with a home dashboard, an inbox, the managed team's roster
 and lineup editor, and read-only browsing of every team's roster. A new game
-also generates a reproducible, balanced 84-match regular-season schedule,
-exposed through Management snapshots but not yet shown in Desktop. A headless
+also generates a reproducible, balanced 84-match regular-season schedule. A headless
 Simulation project calculates statistical match results, including individual
 skater and goalie statistics, from two teams' lineups. Management advances the
 season one league day at a time, playing every scheduled match and accumulating
 results, team records, and player season statistics through to a completed
 season, with league, conference, and division standings ranked by the NHL
-tie-breaking procedure; Desktop does not offer advancement or show standings
-yet. Infrastructure has not yet been scaffolded.
+tie-breaking procedure. Desktop advances the season one league day at a time,
+shows each team's schedule and results with single-match box scores, and
+summarises the latest league day and division table on the home page; the full
+standings page and season statistics are not shown yet. Infrastructure has not
+yet been scaffolded.
 
 ## Development
 

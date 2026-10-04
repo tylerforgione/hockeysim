@@ -7,7 +7,13 @@ Microsoft.Testing.Platform. They cover generated-world invariants, managed-team
 selection, reproducibility, snapshot isolation, focused Domain validation,
 inbox messages, new-game and in-game view-model behavior (navigation, lineup
 editing, team browsing, player detail), and a headless Avalonia walkthrough
-from the startup menu through every available in-game page. Simulation tests
+from the startup menu through every available in-game page, playing a day, and
+opening a match's box score. Desktop season tests advance real games: the
+current-date and continue states, page refresh after a day, an empty league day,
+opening a result's box score from the home page, schedule browsing, a failing
+match engine leaving the day unplayed with an error shown, overlapping
+advancement rejected while a gated engine holds a day, and a full season ending
+in the completed, still-browsable state. Simulation tests
 check result invariants across many seeds, each decision path (regulation,
 overtime, shootout), determinism, unchanged input teams, and statistical bands
 for lineup strength, line and pair usage, and goalie quality. Individual match
