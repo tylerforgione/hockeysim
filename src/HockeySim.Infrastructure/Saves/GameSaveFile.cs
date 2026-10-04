@@ -40,6 +40,45 @@ public sealed class GameSaveFile : IGameSaveStore
     {
         ArgumentNullException.ThrowIfNull(save);
 
+        try
+        {
+            WriteAtomically(save);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            throw new GameSaveStorageException($"The game could not be saved to '{FilePath}'. {exception.Message}", exception);
+        }
+    }
+
+    public GameSave Load()
+    {
+        if (!File.Exists(FilePath))
+        {
+            throw new GameSaveStorageException($"No save exists at '{FilePath}'.", new FileNotFoundException(null, FilePath));
+        }
+
+        try
+        {
+            using var file = new FileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var compressed = new BrotliStream(file, CompressionMode.Decompress);
+            using var document = JsonDocument.Parse(compressed);
+            return ReadDocument(document.RootElement);
+        }
+        // The Brotli decoder reports data it cannot decode as an invalid operation.
+        catch (Exception exception) when (exception is JsonException or InvalidDataException or InvalidOperationException)
+        {
+            throw new InvalidGameSaveException(
+                $"'{FilePath}' is not a readable HockeySim save. It may be damaged or incomplete.",
+                exception);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            throw new GameSaveStorageException($"'{FilePath}' could not be read. {exception.Message}", exception);
+        }
+    }
+
+    private void WriteAtomically(GameSave save)
+    {
         var directory = Path.GetDirectoryName(FilePath)!;
         Directory.CreateDirectory(directory);
         var temporaryPath = Path.Combine(directory, $".{Path.GetFileName(FilePath)}.{Guid.NewGuid():N}.tmp");
@@ -64,31 +103,6 @@ public sealed class GameSaveFile : IGameSaveStore
         {
             File.Delete(temporaryPath);
             throw;
-        }
-    }
-
-    /// <exception cref="FileNotFoundException">No save exists at <see cref="FilePath"/>.</exception>
-    public GameSave Load()
-    {
-        if (!File.Exists(FilePath))
-        {
-            throw new FileNotFoundException($"No save exists at '{FilePath}'.", FilePath);
-        }
-
-        using var file = new FileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        using var compressed = new BrotliStream(file, CompressionMode.Decompress);
-
-        try
-        {
-            using var document = JsonDocument.Parse(compressed);
-            return ReadDocument(document.RootElement);
-        }
-        // The Brotli decoder reports data it cannot decode as an invalid operation.
-        catch (Exception exception) when (exception is JsonException or InvalidDataException or InvalidOperationException)
-        {
-            throw new InvalidGameSaveException(
-                $"'{FilePath}' is not a readable HockeySim save. It may be damaged or incomplete.",
-                exception);
         }
     }
 

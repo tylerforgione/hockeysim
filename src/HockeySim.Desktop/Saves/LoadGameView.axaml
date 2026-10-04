@@ -1,0 +1,85 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:saves="using:HockeySim.Desktop.Saves"
+             x:Class="HockeySim.Desktop.Saves.LoadGameView"
+             x:DataType="saves:LoadGameViewModel"
+             Background="{DynamicResource AppBackgroundBrush}">
+  <DockPanel>
+    <Border DockPanel.Dock="Top"
+            Background="{DynamicResource TeamPrimaryBrush}"
+            BorderBrush="{DynamicResource TeamSecondaryBrush}"
+            BorderThickness="0,0,0,3"
+            Height="56"
+            Padding="12,0">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+        <Button Classes="chrome"
+                Content="‹  Back"
+                VerticalAlignment="Center"
+                Command="{Binding BackCommand}" />
+        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+          <TextBlock Text="Load Game"
+                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
+                     FontSize="16"
+                     FontWeight="Bold" />
+          <TextBlock Text="Choose a saved game to continue"
+                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
+                     Opacity="0.7"
+                     FontSize="11" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Border DockPanel.Dock="Bottom"
+            Background="{DynamicResource SunkenBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="16,10">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+        <TextBlock x:Name="LoadErrorText"
+                   Classes="error"
+                   Text="{Binding ErrorMessage}"
+                   IsVisible="{Binding HasError}"
+                   TextWrapping="Wrap"
+                   VerticalAlignment="Center" />
+        <Button x:Name="LoadSaveButton"
+                Grid.Column="1"
+                Classes="primary"
+                Padding="24,8"
+                Content="Load"
+                Command="{Binding LoadCommand}" />
+      </Grid>
+    </Border>
+
+    <Border Classes="panel" Margin="24" MaxWidth="760" HorizontalAlignment="Stretch">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="table-header">
+          <Grid ColumnDefinitions="*,220">
+            <TextBlock Text="SAVED GAME" />
+            <TextBlock Grid.Column="1" Text="SAVED" />
+          </Grid>
+        </Border>
+        <Grid>
+          <TextBlock x:Name="NoSavesText"
+                     Classes="caption"
+                     Text="No saved games yet. Save a game from the title bar while playing."
+                     IsVisible="{Binding !HasSaves}"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center" />
+          <ListBox x:Name="SavesList"
+                   Classes="table tall"
+                   ItemsSource="{Binding Saves}"
+                   SelectedItem="{Binding SelectedSave}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="saves:SavedGameRowViewModel">
+                <Grid ColumnDefinitions="*,220">
+                  <TextBlock Classes="strong" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="1" Classes="muted" Text="{Binding SavedAtLabel}" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </DockPanel>
+    </Border>
+  </DockPanel>
+</UserControl>

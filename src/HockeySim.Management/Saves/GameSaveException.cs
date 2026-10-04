@@ -1,7 +1,7 @@
 namespace HockeySim.Management.Saves;
 
 /// <summary>
-/// A save could not be loaded. The active game, if any, is unchanged.
+/// A game could not be saved or loaded. The active game, if any, is unchanged.
 /// </summary>
 public abstract class GameSaveException : Exception
 {
@@ -15,6 +15,13 @@ public abstract class GameSaveException : Exception
 /// The save is damaged, is not a save, or describes a game that breaks the game's rules.
 /// </summary>
 public sealed class InvalidGameSaveException(string message, Exception? innerException = null)
+    : GameSaveException(message, innerException);
+
+/// <summary>
+/// The storage could not be read or written, such as a missing save, a full disk, or a folder the
+/// user may not change. Retrying after fixing the cause may succeed.
+/// </summary>
+public sealed class GameSaveStorageException(string message, Exception? innerException = null)
     : GameSaveException(message, innerException);
 
 /// <summary>
