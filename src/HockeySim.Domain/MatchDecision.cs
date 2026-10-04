@@ -1,4 +1,4 @@
-namespace HockeySim.Simulation;
+namespace HockeySim.Domain;
 
 /// <summary>
 /// How a match was decided.

@@ -11,7 +11,7 @@ namespace HockeySim.Simulation;
 /// supplied <see cref="RandomState"/>, so the same teams and state always produce the same
 /// result within an engine version.
 /// </remarks>
-public sealed class MatchSimulator
+public sealed class MatchSimulator : IMatchSimulator
 {
     public MatchResult Simulate(Match match, RandomState randomState)
     {
