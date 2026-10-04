@@ -215,6 +215,9 @@ public sealed class SeasonAdvancementTests
         Assert.Equal("Regular season complete", shell.Home.NextMatchTitle);
         Assert.Equal(16, shell.Home.LatestResults.Count);
         Assert.All(shell.Home.DivisionStandings, row => Assert.Equal(84, row.GamesPlayed));
+        Assert.EndsWith("final standings", shell.Standings.Subtitle, StringComparison.Ordinal);
+        Assert.All(shell.Standings.Tables.SelectMany(table => table.Rows), row => Assert.Equal(84, row.GamesPlayed));
+        Assert.Equal(84, shell.Roster.Roster.Goalies.Sum(row => row.Season.GamesPlayed));
         Assert.All(shell.Schedule.Matches, match => Assert.True(match.IsCompleted));
         Assert.DoesNotContain(shell.Schedule.Matches, match => match.IsNext);
 

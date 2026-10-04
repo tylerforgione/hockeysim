@@ -11,8 +11,10 @@ using HockeySim.Desktop.Inbox;
 using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Main;
 using HockeySim.Desktop.NewGame;
+using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Schedule;
+using HockeySim.Desktop.Standings;
 using HockeySim.Desktop.Startup;
 using HockeySim.Desktop.Teams;
 using HockeySim.Management.GameManagement;
@@ -74,6 +76,7 @@ public sealed class MainWindowViewTests
         AssertNavigationRenders<InboxPageView>(window, ShellPage.Inbox);
         AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
         AssertNavigationRenders<TeamsPageView>(window, ShellPage.Teams);
+        AssertNavigationRenders<StandingsPageView>(window, ShellPage.Standings);
         AssertNavigationRenders<SchedulePageView>(window, ShellPage.Schedule);
         AssertNavigationRenders<LinesPageView>(window, ShellPage.Lines);
 
@@ -118,7 +121,42 @@ public sealed class MainWindowViewTests
             .OfType<Grid>()
             .Count(grid => grid.DataContext is SkaterBoxScoreRowViewModel);
         Assert.Equal(36, skaterRows);
+
+        // Standings: four division tables by default, then the single league table.
+        AssertNavigationRenders<StandingsPageView>(window, ShellPage.Standings);
+        var standingsView = Single<StandingsPageView>(window);
+        Assert.Equal(32, CountStandingsRows(standingsView));
+        Assert.Equal(4, standingsView.FindControl<ItemsControl>("StandingsTables")?.ItemCount);
+        Click(Assert.IsType<Button>(standingsView.FindControl<Button>("LeagueScopeButton")));
+        Assert.Equal(1, standingsView.FindControl<ItemsControl>("StandingsTables")?.ItemCount);
+        Assert.Equal(32, CountStandingsRows(standingsView));
+        Assert.All(
+            standingsView.GetVisualDescendants().OfType<Border>().Select(border => border.DataContext).OfType<StandingsRowViewModel>(),
+            row => Assert.Equal(1, row.GamesPlayed));
+
+        // Roster: switch the tables to season totals; the detail panel always shows them.
+        AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
+        var rosterView = Single<TeamRosterView>(window);
+        var ratingsTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkatersTable"));
+        var seasonTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkaterSeasonTable"));
+        Assert.True(ratingsTable.IsEffectivelyVisible);
+        Assert.False(seasonTable.IsEffectivelyVisible);
+        Click(Assert.IsType<Button>(rosterView.FindControl<Button>("ShowSeasonButton")));
+        Assert.False(ratingsTable.IsEffectivelyVisible);
+        Assert.True(seasonTable.IsEffectivelyVisible);
+        Assert.True(seasonTable.Bounds.Height > 200);
+        Assert.True(Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("GoalieSeasonTable")).IsEffectivelyVisible);
+        var seasonStatistics = Single<PlayerDetailView>(rosterView).FindControl<StackPanel>("SeasonStatistics");
+        Assert.True(seasonStatistics?.IsEffectivelyVisible);
+        Assert.Equal(
+            ["GP", "G", "A", "P"],
+            seasonStatistics!.GetVisualDescendants().OfType<TextBlock>()
+                .Where(text => text.DataContext is SeasonStatViewModel && text.Classes.Contains("label"))
+                .Select(text => text.Text));
     }
+
+    private static int CountStandingsRows(Visual view) =>
+        view.GetVisualDescendants().OfType<Border>().Count(border => border.DataContext is StandingsRowViewModel);
 
     private static void ClickAndWait(Button button, Func<bool> isDone)
     {
