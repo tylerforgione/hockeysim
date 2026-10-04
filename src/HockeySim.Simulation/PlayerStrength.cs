@@ -29,6 +29,8 @@ internal static class PlayerStrength
 
     private static readonly Rating[] FinishingRatings = [Rating.ShotPower, Rating.ShotAccuracy];
 
+    private static readonly Rating[] PlaymakingRatings = [Rating.Passing, Rating.PuckControl, Rating.OffensiveAwareness];
+
     private static readonly Rating[] ShootoutRatings = [Rating.ShotAccuracy, Rating.PuckControl];
 
     private static readonly Rating[] GoaltendingRatings =
@@ -46,6 +48,9 @@ internal static class PlayerStrength
 
     /// <summary>Ability to beat a goalie with a shot.</summary>
     public static double Finishing(Player player) => Average(player, FinishingRatings);
+
+    /// <summary>Ability to set up a teammate's goal.</summary>
+    public static double Playmaking(Player player) => Average(player, PlaymakingRatings);
 
     /// <summary>Ability to beat a goalie one-on-one in a shootout.</summary>
     public static double Shootout(Player player) => Average(player, ShootoutRatings);

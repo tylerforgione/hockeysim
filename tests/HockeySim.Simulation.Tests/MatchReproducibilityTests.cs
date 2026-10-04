@@ -75,12 +75,15 @@ public sealed class MatchReproducibilityTests
     private static string Fingerprint(MatchResult result) =>
         string.Join(
             "|",
-            result.Home,
-            result.Away,
+            TeamResultFingerprint(result.Home),
+            TeamResultFingerprint(result.Away),
             result.Decision,
             string.Join(",", result.Goals),
             string.Join(",", result.Shootout?.Attempts ?? []),
             result.RandomState);
+
+    private static string TeamResultFingerprint(MatchTeamResult team) =>
+        $"{team.TeamId}:{team.Score}:{team.Shots}:{team.Goalie}:{string.Join(",", team.Skaters)}";
 
     private static string TeamFingerprint(Team team) =>
         string.Join(

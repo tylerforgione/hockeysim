@@ -111,7 +111,10 @@ league defaults later.
 Simulation calculates a match statistically from both teams' lineups as they
 stand at match start. Player ratings, fixed forward-line and defence-pair usage
 weights, and starting-goalie quality drive shots and goals. Tied matches go to
-sudden-death overtime and then a shootout. It takes an explicit random state and returns
+sudden-death overtime and then a shootout. Each goal credits up to two assists to
+the scorer's on-ice teammates, and the result carries every appearing player's
+match statistics, derived from the goals and shots so they reconcile with the
+score; shootout attempts count toward no player. It takes an explicit random state and returns
 the state after the match with the result, without changing the teams.
 Management does not invoke it yet; season orchestration will apply results.
 Infrastructure has not been scaffolded; until it exists, the related parts of
