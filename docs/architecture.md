@@ -100,6 +100,20 @@ derived from the generated managed team, so they never describe state the game
 does not hold; selecting a different managed team replaces them with messages
 for that team. Marking a message read is a Management command.
 
+A new game also generates the regular-season schedule from the same controlled
+random stream, after the league. Domain's `SeasonSchedule` holds scheduled
+matches by team identity in date order and rejects a team playing twice on one
+date or against itself; Management's generator guarantees the league balance:
+four meetings with each divisional opponent, three with each other
+same-conference opponent, two with each opposite-conference opponent, and 42
+home and 42 away matches per team. Generation has two stages: a meeting planner
+decides who plays whom and who hosts, independent of dates, then a calendar
+assigns dates. The current calendar packs the meetings into 84 rounds in which
+every team plays once, opening on October 1 of the season year with a round
+every other day. Authentic NHL dates, travel, rest, and rotation constraints are
+not modelled; see [future features](future-features.md#realistic-season-calendar). The schedule is exposed as a read-only
+snapshot and is unchanged by managed-team selection.
+
 Desktop wires a Management game manager at startup. After the new-game screen
 starts a game, a `GameSession` forwards commands (lineup changes, reading
 messages) to Management and publishes each resulting snapshot to the in-game

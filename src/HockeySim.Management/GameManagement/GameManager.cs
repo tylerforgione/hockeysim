@@ -3,6 +3,7 @@ using HockeySim.Management.GameManagement.Snapshots;
 using HockeySim.Management.Inbox;
 using HockeySim.Management.Lineups;
 using HockeySim.Management.NewGame;
+using HockeySim.Management.Scheduling;
 using HockeySim.Simulation.Randomness;
 
 namespace HockeySim.Management.GameManagement;
@@ -13,6 +14,7 @@ namespace HockeySim.Management.GameManagement;
 public sealed class GameManager
 {
     private League? _league;
+    private SeasonSchedule? _schedule;
     private InboxMessages _inbox = new();
     private TeamId _managedTeamId;
     private RandomState _randomState;
@@ -43,10 +45,12 @@ public sealed class GameManager
                 nameof(command));
         }
 
+        var schedule = ScheduleGenerator.Create(league, random);
         var inbox = new InboxMessages();
         NewGameMessages.Deliver(inbox, managedTeam, command.SeasonYear);
 
         _league = league;
+        _schedule = schedule;
         _managedTeamId = managedTeam.Id;
         _randomState = random.State;
         _inbox = inbox;
@@ -83,10 +87,13 @@ public sealed class GameManager
     }
 
     private GameSnapshot CreateSnapshot() =>
-        GameSnapshot.Create(GetLeague(), _managedTeamId, _randomState, _inbox);
+        GameSnapshot.Create(GetLeague(), GetSchedule(), _managedTeamId, _randomState, _inbox);
 
     private League GetLeague() =>
         _league ?? throw new InvalidOperationException("Start a new game before requesting game state.");
+
+    private SeasonSchedule GetSchedule() =>
+        _schedule ?? throw new InvalidOperationException("Start a new game before requesting game state.");
 
     private Team GetManagedTeam()
     {
