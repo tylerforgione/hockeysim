@@ -19,6 +19,7 @@ public sealed class SeasonSnapshot
         bool isComplete,
         IReadOnlyList<CompletedMatchSnapshot> results,
         IReadOnlyList<TeamRecordSnapshot> teamRecords,
+        StandingsSnapshot standings,
         IReadOnlyList<SkaterSeasonStatisticsSnapshot> skaterStatistics,
         IReadOnlyList<GoalieSeasonStatisticsSnapshot> goalieStatistics)
     {
@@ -26,6 +27,7 @@ public sealed class SeasonSnapshot
         IsComplete = isComplete;
         _results = new ReadOnlyCollection<CompletedMatchSnapshot>(results.ToList());
         _teamRecords = new ReadOnlyCollection<TeamRecordSnapshot>(teamRecords.ToList());
+        Standings = standings;
         _skaterStatistics = new ReadOnlyCollection<SkaterSeasonStatisticsSnapshot>(skaterStatistics.ToList());
         _goalieStatistics = new ReadOnlyCollection<GoalieSeasonStatisticsSnapshot>(goalieStatistics.ToList());
     }
@@ -44,8 +46,11 @@ public sealed class SeasonSnapshot
     /// <summary>Every completed match, in schedule order.</summary>
     public IReadOnlyList<CompletedMatchSnapshot> Results => _results;
 
-    /// <summary>Every team's record, in league team order; no ranking is applied.</summary>
+    /// <summary>Every team's record, in league team order; see <see cref="Standings"/> for rankings.</summary>
     public IReadOnlyList<TeamRecordSnapshot> TeamRecords => _teamRecords;
+
+    /// <summary>League, conference, and division standings from the results so far.</summary>
+    public StandingsSnapshot Standings { get; }
 
     /// <summary>Every skater who has appeared, in league team and roster order.</summary>
     public IReadOnlyList<SkaterSeasonStatisticsSnapshot> SkaterStatistics => _skaterStatistics;
@@ -59,6 +64,7 @@ public sealed class SeasonSnapshot
             season.IsComplete,
             season.CompletedMatches.Select(CompletedMatchSnapshot.Create).ToList(),
             season.TeamRecords.Select(TeamRecordSnapshot.Create).ToList(),
+            StandingsSnapshot.Create(season),
             season.SkaterStatistics.Select(SkaterSeasonStatisticsSnapshot.Create).ToList(),
             season.GoalieStatistics.Select(GoalieSeasonStatisticsSnapshot.Create).ToList());
 }
@@ -152,6 +158,19 @@ public sealed record TeamRecordSnapshot(
     int GoalsAgainst)
 {
     public int Wins => RegulationWins + OvertimeWins + ShootoutWins;
+
+    /// <summary>Wins excluding shootout wins (the standings "ROW" column).</summary>
+    public int RegulationAndOvertimeWins => RegulationWins + OvertimeWins;
+
+    public int Losses => RegulationLosses + OvertimeLosses + ShootoutLosses;
+
+    public int GoalDifferential => GoalsFor - GoalsAgainst;
+
+    /// <summary>
+    /// Points as a share of the points available, or <see langword="null"/> before any game.
+    /// </summary>
+    public double? PointsPercentage =>
+        GamesPlayed == 0 ? null : Points / (double)(TeamRecord.PointsPerWin * GamesPlayed);
 
     internal static TeamRecordSnapshot Create(TeamRecord record) =>
         new(
