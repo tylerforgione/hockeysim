@@ -15,6 +15,9 @@
 - Before starting substantive implementation or performing branch, commit, PR,
   or merge operations, read [Git workflow](docs/git-workflow.md). It defines issue
   requirements, agent autonomy, and mandatory maintainer review of agent PRs.
+- Agents never commit, push, open PRs, or merge. The maintainer reviews the
+  working tree and commits/pushes. Agents may suggest a conventional commit
+  message at handoff.
 - Before tracker operations, read [issue tracker](docs/agents/issue-tracker.md).
   Issues and specs live in GitHub Issues.
 - Before assigning triage labels, read [triage labels](docs/agents/triage-labels.md).
