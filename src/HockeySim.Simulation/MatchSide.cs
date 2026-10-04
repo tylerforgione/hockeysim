@@ -33,13 +33,14 @@ internal sealed class MatchSide
             }
         }
 
-        // OrderByDescending is stable, so equally rated shooters keep their lineup order and
-        // the shootout order is deterministic.
-        ShootoutOrder = lineup.ForwardLines
+        Skaters = lineup.ForwardLines
             .SelectMany(line => line.Players)
             .Concat(lineup.DefencePairs.SelectMany(pair => pair.Players))
-            .OrderByDescending(PlayerStrength.Shootout)
             .ToList();
+
+        // OrderByDescending is stable, so equally rated shooters keep their lineup order and
+        // the shootout order is deterministic.
+        ShootoutOrder = Skaters.OrderByDescending(PlayerStrength.Shootout).ToList();
     }
 
     public TeamId TeamId { get; }
@@ -47,6 +48,9 @@ internal sealed class MatchSide
     public Player Goalie { get; }
 
     public double Goaltending { get; }
+
+    /// <summary>The dressed skaters in lineup order: forward lines, then defence pairs.</summary>
+    public IReadOnlyList<Player> Skaters { get; }
 
     public IReadOnlyList<Player> ShootoutOrder { get; }
 

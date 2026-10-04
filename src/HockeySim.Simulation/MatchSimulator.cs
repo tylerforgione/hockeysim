@@ -143,8 +143,15 @@ public sealed class MatchSimulator
             }
 
             attacker.Goals++;
+            var (primaryAssist, secondaryAssist) = attackingUnit.SelectAssists(shooter, _random);
             var seconds = windowStartSeconds + _random.NextInt(0, windowSeconds);
-            _goals.Add(new GoalEvent(attacker.TeamId, shooter.Id, period, TimeSpan.FromSeconds(seconds)));
+            _goals.Add(new GoalEvent(
+                attacker.TeamId,
+                shooter.Id,
+                primaryAssist,
+                secondaryAssist,
+                period,
+                TimeSpan.FromSeconds(seconds)));
             return true;
         }
 
@@ -211,12 +218,28 @@ public sealed class MatchSimulator
             var awayBonus = shootout?.WinnerId == _away.TeamId ? 1 : 0;
 
             return new MatchResult(
-                new MatchTeamResult(_home.TeamId, _home.Goals + homeBonus, _home.Shots, _home.Goalie.Id),
-                new MatchTeamResult(_away.TeamId, _away.Goals + awayBonus, _away.Shots, _away.Goalie.Id),
+                CreateTeamResult(_home, _away, homeBonus),
+                CreateTeamResult(_away, _home, awayBonus),
                 decision,
                 _goals,
                 shootout,
                 _random.State);
+        }
+
+        /// <summary>
+        /// Derives individual statistics from the goal events and shot totals, so they always
+        /// reconcile with the score. Shootout attempts never reach the goal events or shot totals.
+        /// </summary>
+        private MatchTeamResult CreateTeamResult(MatchSide side, MatchSide opponent, int shootoutBonus)
+        {
+            var teamGoals = _goals.Where(goal => goal.TeamId == side.TeamId).ToList();
+            var skaters = side.Skaters.Select(skater => new SkaterMatchStatistics(
+                skater.Id,
+                Goals: teamGoals.Count(goal => goal.ScorerId == skater.Id),
+                Assists: teamGoals.Count(goal => goal.PrimaryAssistId == skater.Id || goal.SecondaryAssistId == skater.Id)));
+            var goalie = new GoalieMatchStatistics(side.Goalie.Id, ShotsAgainst: opponent.Shots, GoalsAgainst: opponent.Goals);
+
+            return new MatchTeamResult(side.TeamId, side.Goals + shootoutBonus, side.Shots, skaters, goalie);
         }
 
         /// <summary>
