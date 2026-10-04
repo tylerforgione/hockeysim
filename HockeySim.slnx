@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="src/HockeySim.Domain/HockeySim.Domain.csproj" />
+  <Project Path="src/HockeySim.Simulation/HockeySim.Simulation.csproj" />
   <Project Path="src/HockeySim.Management/HockeySim.Management.csproj" />
   <Project Path="src/HockeySim.Desktop/HockeySim.Desktop.csproj" />
   <Project Path="tests/HockeySim.Domain.Tests/HockeySim.Domain.Tests.csproj" />

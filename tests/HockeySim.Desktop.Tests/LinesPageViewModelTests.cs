@@ -1,6 +1,7 @@
 using HockeySim.Desktop.Lines;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.NewGame;
+using HockeySim.Simulation.Randomness;
 
 using Xunit;
 

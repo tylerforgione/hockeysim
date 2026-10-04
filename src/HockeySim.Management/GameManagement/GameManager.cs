@@ -3,6 +3,7 @@ using HockeySim.Management.GameManagement.Snapshots;
 using HockeySim.Management.Inbox;
 using HockeySim.Management.Lineups;
 using HockeySim.Management.NewGame;
+using HockeySim.Simulation.Randomness;
 
 namespace HockeySim.Management.GameManagement;
 

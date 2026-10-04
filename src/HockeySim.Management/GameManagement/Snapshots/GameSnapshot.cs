@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 
 using HockeySim.Domain;
 using HockeySim.Management.Inbox;
-using HockeySim.Management.NewGame;
+using HockeySim.Simulation.Randomness;
 
 namespace HockeySim.Management.GameManagement.Snapshots;
 
