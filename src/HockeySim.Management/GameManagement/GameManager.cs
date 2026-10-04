@@ -3,6 +3,7 @@ using HockeySim.Management.GameManagement.Snapshots;
 using HockeySim.Management.Inbox;
 using HockeySim.Management.Lineups;
 using HockeySim.Management.NewGame;
+using HockeySim.Management.Saves;
 using HockeySim.Management.Scheduling;
 using HockeySim.Management.SeasonPlay;
 using HockeySim.Simulation;
@@ -204,6 +205,57 @@ public sealed class GameManager
                 _isAdvancing = false;
             }
 
+            return CreateSnapshot();
+        }
+    }
+
+    /// <summary>
+    /// Writes the whole game to <paramref name="store"/>, replacing whatever it held.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// No game has started, or a day is being advanced on this thread.
+    /// </exception>
+    public void SaveGame(IGameSaveStore store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+
+        GameSave save;
+        lock (_gate)
+        {
+            EnsureNotAdvancing();
+            save = GameSaveCapture.Create(GetSeason(), _managedTeamId, _randomState, _inbox);
+        }
+
+        // The save is a detached copy, so writing it does not hold up other commands.
+        store.Save(save);
+    }
+
+    /// <summary>
+    /// Replaces the current game, if any, with the game in <paramref name="store"/>. Continuing
+    /// the loaded game with the same commands produces the same results as continuing the game
+    /// that was saved, within the same engine version.
+    /// </summary>
+    /// <remarks>
+    /// The save is read and fully rebuilt before anything changes, so a save that cannot be
+    /// loaded leaves the current game exactly as it was.
+    /// </remarks>
+    /// <exception cref="GameSaveException">The save cannot be read or does not describe a valid game.</exception>
+    /// <exception cref="InvalidOperationException">A day is being advanced on this thread.</exception>
+    public GameSnapshot LoadGame(IGameSaveStore store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+
+        var restored = GameSaveRestorer.Restore(
+            store.Load() ?? throw new InvalidGameSaveException("The save store returned no game."));
+
+        lock (_gate)
+        {
+            EnsureNotAdvancing();
+
+            _season = restored.Season;
+            _managedTeamId = restored.ManagedTeamId;
+            _randomState = restored.RandomState;
+            _inbox = restored.Inbox;
             return CreateSnapshot();
         }
     }
