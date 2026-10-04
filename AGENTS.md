@@ -36,6 +36,10 @@ the change before implementation and update the relevant documentation. Record
 resolved domain terminology in `CONTEXT.md` and consequential architecture
 tradeoffs in `docs/adr/`, following the single-context layout.
 
+Features and game-design decisions intentionally left out of v1 live in
+[future features](docs/future-features.md). Check it before proposing new scope,
+and add an entry there instead of implementing out-of-scope work.
+
 ## Subagents
 
 When delegating work to a subagent:
