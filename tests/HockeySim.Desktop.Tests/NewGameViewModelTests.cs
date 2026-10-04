@@ -91,8 +91,10 @@ public sealed class NewGameViewModelTests
     public void StartupMenuNavigatesToNewGameAndCanExit()
     {
         var exitWasRequested = false;
+        using var saves = new TemporarySaveDirectory();
         var viewModel = new MainWindowViewModel(
             new GameManager(),
+            saves.Library,
             () => exitWasRequested = true);
 
         Assert.True(viewModel.IsStartupVisible);
@@ -114,7 +116,8 @@ public sealed class NewGameViewModelTests
     [Fact]
     public void CreatingAGameOpensTheGameAndMainMenuCanContinueIt()
     {
-        var viewModel = new MainWindowViewModel(new GameManager());
+        using var saves = new TemporarySaveDirectory();
+        var viewModel = new MainWindowViewModel(new GameManager(), saves.Library);
         viewModel.Startup.ShowNewGameCommand.Execute(null);
         var newGame = viewModel.NewGame!;
         newGame.GameName = "Ottawa Rebuild";

@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:saves="using:HockeySim.Desktop.Saves"
+             x:Class="HockeySim.Desktop.Saves.SaveGameView"
+             x:DataType="saves:SaveGameViewModel">
+  <Border Classes="panel" Width="520" Padding="20">
+    <StackPanel Spacing="14">
+      <TextBlock Classes="panel-title" Text="SAVE GAME" />
+
+      <StackPanel Spacing="4">
+        <TextBlock Classes="label" Text="SAVE NAME" />
+        <TextBox x:Name="SaveNameTextBox"
+                 Text="{Binding Name}"
+                 MaxLength="{Binding MaximumNameLength}"
+                 PlaceholderText="e.g. Halifax Dynasty" />
+      </StackPanel>
+
+      <StackPanel Spacing="4" IsVisible="{Binding HasExistingSaves}">
+        <TextBlock Classes="label" Text="OR REPLACE AN EXISTING SAVE" />
+        <ListBox x:Name="ExistingSavesList"
+                 Classes="table"
+                 MaxHeight="220"
+                 ItemsSource="{Binding ExistingSaves}"
+                 SelectedItem="{Binding SelectedSave}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="saves:SavedGameRowViewModel">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <TextBlock Classes="cell" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding SavedAtLabel}" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
+
+      <TextBlock x:Name="SaveErrorText"
+                 Classes="error"
+                 Text="{Binding ErrorMessage}"
+                 IsVisible="{Binding HasError}"
+                 TextWrapping="Wrap" />
+
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+        <Button Classes="secondary" Content="Cancel" Command="{Binding CancelCommand}" />
+        <Button x:Name="ConfirmSaveButton" Classes="primary" Content="Save" Command="{Binding SaveCommand}" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

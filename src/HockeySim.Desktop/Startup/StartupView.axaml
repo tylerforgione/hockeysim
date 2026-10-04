@@ -29,11 +29,10 @@
                   Classes="menu"
                   Content="New Game"
                   Command="{Binding ShowNewGameCommand}" />
-          <Button Classes="menu"
+          <Button x:Name="LoadGameMenuButton"
+                  Classes="menu"
                   Content="Load Game"
-                  IsEnabled="False"
-                  ToolTip.ShowOnDisabled="True"
-                  ToolTip.Tip="Saving and loading are not available yet." />
+                  Command="{Binding ShowLoadGameCommand}" />
           <Button Classes="menu"
                   Content="Options"
                   IsEnabled="False"

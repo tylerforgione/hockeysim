@@ -158,3 +158,60 @@ most other advanced statistics need the match engine to record more first, such
 as plus/minus, penalty minutes, time on ice (and with it goals-against average),
 power-play and shorthanded production, and shots by skater. Add sortable
 league-wide leader tables alongside them.
+
+## League database for multi-season history
+
+Each game is saved as one Brotli-compressed JSON document
+([ADR 0004](adr/0004-local-save-format.md)). Every save rewrites the whole world,
+every load parses it and replays the season's completed matches, and the entire
+history is held in memory. That suits one season: a complete 32-team season is
+4.6 MB of JSON, mostly box scores, and saves in about 60 ms.
+
+It does not suit many seasons with more leagues. An AHL roughly doubles the
+match history per year, and draft prospects add statistics from leagues outside
+the simulated ones. Over 20–30 seasons the history is estimated at 150–300 MB of
+JSON, all parsed, held in memory, and rewritten on every save, when most of it
+only serves career pages and all-time records.
+
+Store the game in a SQLite league database, one file per game, when the first
+multi-season feature is built:
+
+- **Active and archived state.** Keep the current season's live state in
+  memory, and replay only the current season on load. Completed seasons become
+  fixed records that are stored and queried, not recalculated.
+- **Small writes.** Saving a league day adds that day's results in one
+  transaction, together with the random state so reproducibility holds
+  ([reproducible saves](adr/0002-reproducible-saves.md)), instead of rewriting
+  the whole history.
+- **Queries without loading everything.** Career lines, all-time leaders, and
+  prospect statistics are read on demand, so memory stays limited to the active
+  season.
+
+Direction:
+
+- Decide first what a completed season keeps: every box score, or only season
+  totals per player and team. That choice sizes the archive and shapes the
+  schema.
+- Keep the save semantics players expect. Play on a working copy and copy it
+  into the save slot on Save (SQLite's online backup API or `VACUUM INTO`), so
+  quitting without saving still discards progress.
+- `IGameSaveStore` currently takes the whole world at once. Replace it with
+  contracts shaped for incremental writes and history queries, still owned by
+  Management and free of storage types.
+- `Microsoft.Data.Sqlite` is a new runtime dependency (with a native SQLite
+  library); approve it under the [technology stack](tech-stack.md) policy.
+  Record the change in a new ADR that supersedes ADR 0004, with a schema
+  versioning and migration approach.
+
+## Autosave and save management
+
+Saving is manual: the user saves under a name and loads from the startup menu.
+Later:
+
+- Autosave at chosen intervals (every league day, week, or before the user's
+  matches), into rotating slots that do not overwrite the user's named saves.
+- Rename and delete saves from the load screen.
+- Show each save's club, season, and date in the list. That needs the summary
+  stored where listing can read it without loading the whole game, such as in
+  the save header, which changes the save format version.
+- Cloud or synced saves.

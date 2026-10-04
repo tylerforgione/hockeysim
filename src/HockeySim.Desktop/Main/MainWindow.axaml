@@ -3,6 +3,7 @@
         xmlns:game="using:HockeySim.Desktop.Game"
         xmlns:main="using:HockeySim.Desktop.Main"
         xmlns:newGame="using:HockeySim.Desktop.NewGame"
+        xmlns:saves="using:HockeySim.Desktop.Saves"
         xmlns:startup="using:HockeySim.Desktop.Startup"
         x:Class="HockeySim.Desktop.Main.MainWindow"
         x:DataType="main:MainWindowViewModel"
@@ -20,10 +21,46 @@
     <DataTemplate x:DataType="newGame:NewGameViewModel">
       <newGame:NewGameView />
     </DataTemplate>
+    <DataTemplate x:DataType="saves:LoadGameViewModel">
+      <saves:LoadGameView />
+    </DataTemplate>
     <DataTemplate x:DataType="game:GameShellViewModel">
       <game:GameShellView />
     </DataTemplate>
   </Window.DataTemplates>
 
-  <ContentControl Content="{Binding CurrentScreen}" />
+  <Grid>
+    <ContentControl Content="{Binding CurrentScreen}" />
+
+    <!-- Confirmation over every screen; it blocks the screen beneath until answered. -->
+    <Border x:Name="ConfirmationOverlay"
+            Background="#B3000000"
+            IsVisible="{Binding Confirmation.IsOpen}">
+      <Border Classes="panel"
+              Width="460"
+              Padding="20"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="14">
+          <TextBlock x:Name="ConfirmationTitle"
+                     FontSize="16"
+                     FontWeight="Bold"
+                     Text="{Binding Confirmation.Current.Title}" />
+          <TextBlock x:Name="ConfirmationMessage"
+                     TextWrapping="Wrap"
+                     Text="{Binding Confirmation.Current.Message}" />
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button x:Name="CancelConfirmationButton"
+                    Classes="secondary"
+                    Content="Cancel"
+                    Command="{Binding Confirmation.CancelCommand}" />
+            <Button x:Name="ConfirmButton"
+                    Classes="primary"
+                    Content="{Binding Confirmation.Current.ConfirmLabel}"
+                    Command="{Binding Confirmation.ConfirmCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Border>
+  </Grid>
 </Window>

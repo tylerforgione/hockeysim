@@ -92,6 +92,22 @@ The state after the final scheduled match is played. It can still be browsed
 and managed, but no further league days can be played; playoffs and the next
 season are not modelled.
 
+**Saved game**:
+A stored copy of a whole game, from which play resumes exactly as it would have
+continued. Loading a saved game replaces the current game only when the whole
+save is valid; team records, season statistics, and standings are rebuilt from
+its completed matches.
+
+**Save name**:
+The name a saved game is stored under, chosen by the user. Names that differ
+only in letter case are the same save, so saving under an existing name
+replaces that save.
+
+**Unsaved progress**:
+Changes to the game in progress since it was last saved or loaded, or the whole
+game if it has never been saved. Loading, starting a new game, or exiting
+discards it, so the user is asked first.
+
 **Overtime**:
 A five-minute sudden-death period played when regulation ends tied.
 

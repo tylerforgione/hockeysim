@@ -4,11 +4,11 @@
 | --- | --- | --- |
 | Language/runtime | C# on .NET 10 | Configured centrally |
 | SDK | Exact stable version in `global.json`; no roll-forward or previews | Configured for local development and CI |
-| Desktop | Avalonia on Windows, macOS, and Linux | Source-run new-game flow and in-game team-management shell (home, inbox, roster, lines, league teams, standings, schedule and results, season totals, daily advancement); packaging deferred |
+| Desktop | Avalonia on Windows, macOS, and Linux | Source-run new-game flow and in-game team-management shell (home, inbox, roster, lines, league teams, standings, schedule and results, season totals, daily advancement, named save and load); packaging deferred |
 | Presentation | MVVM with `CommunityToolkit.Mvvm` | Configured for feature-oriented view models |
 | Tests | xUnit v3; .NET 10's Microsoft.Testing.Platform runner | Domain, Simulation, Management, and Desktop test projects configured with coverage |
 | Dependency wiring | Constructor injection, manually composed at Desktop startup | Policy for future implementation |
-| Persistence | Separate Infrastructure project; versioned local saves | Storage technology deferred |
+| Persistence | Separate Infrastructure project; versioned local saves as one Brotli-compressed System.Text.Json document per game ([ADR 0004](adr/0004-local-save-format.md)) | Named manual saves in the Desktop app, kept in the user's application-data folder; no autosave |
 
 ## Configuration ownership
 
@@ -31,7 +31,6 @@ Dependabot maintains the exact SDK pin.
 
 | Decision | Resolve when |
 | --- | --- |
-| Save format and storage technology | First persistence feature, with realistic save size, history, and query needs |
 | Stable-release save compatibility | Before the first stable release |
 | OS minimum versions and native packaging | Desktop scaffolding/release work, before claiming distributable support |
 

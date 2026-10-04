@@ -9,6 +9,11 @@ internal sealed class InboxMessage
         string subject,
         string body)
     {
+        if (!Enum.IsDefined(senderRole))
+        {
+            throw new ArgumentOutOfRangeException(nameof(senderRole), "The sender role is not recognised.");
+        }
+
         ArgumentException.ThrowIfNullOrWhiteSpace(senderName);
         ArgumentException.ThrowIfNullOrWhiteSpace(subject);
         ArgumentException.ThrowIfNullOrWhiteSpace(body);

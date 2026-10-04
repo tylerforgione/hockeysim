@@ -20,7 +20,19 @@ skater and goalie totals for another team's roster and player detail, zero
 totals and undefined percentages before an appearance, the roster column choice
 kept across teams and days, and pages redrawn when the session's snapshot is
 replaced. The headless walkthrough also renders the standings scopes and the
-roster's season columns. Simulation tests
+roster's season columns, saves from the title bar, loads the save from the
+startup menu through the discard confirmation, and checks that closing the
+window with unsaved progress asks instead of closing. Desktop save and load
+tests use real save files in a temporary folder: saving under a typed or chosen
+name, what counts as unsaved progress (playing a day, changing the lineup,
+reading mail, but not a failed day), overwrite confirmation with cancellation
+leaving the file untouched, invalid names, write and listing failures, saving a
+completed season, saving and leaving for the menu blocked while a day plays,
+and loading into every page. Discard confirmations for loading, starting a new
+game, and exiting are checked with cancellation keeping the game and with no
+question asked when nothing is unsaved. Damaged, other-version, and unreadable
+saves are reported with the game in progress kept, and play continued after a
+load matches uninterrupted play. Simulation tests
 check result invariants across many seeds, each decision path (regulation,
 overtime, shootout), determinism, unchanged input teams, and statistical bands
 for lineup strength, line and pair usage, and goalie quality. Individual match
@@ -47,7 +59,31 @@ cross-thread advancement, snapshot isolation, and reproducibility. A shared
 fixture plays one full 1,344-match season and checks schedule completion, 84
 games per team, records and individual totals reconciled with the results, every
 decision type, and the completed-season state.
-Infrastructure tests remain pending with their project.
+Management save tests round-trip a new game, a midseason game with a changed
+lineup and a read message, and a completed season. They check that the loaded
+game matches what was saved, from rosters and lineups through every result,
+team records, season totals, standings, the inbox, and the random state, and
+that a lineup change and further league days after loading give the same
+results as uninterrupted play. They also check that loading replaces a
+different active game, that a save is a copy later play does not change, and
+that a loaded game accepts commands. Each kind of invalid save is rejected
+(missing values, missing, extra, or duplicate results, current dates outside the
+season, scores that do not reconcile, unrostered or ineligible players, invalid
+ratings, an unknown managed team or scheduled team, misnumbered inbox messages),
+and the active game then continues exactly as if the load was never attempted.
+Infrastructure tests save and load real files in a temporary directory: new,
+midseason, and completed games with continued play compared against
+uninterrupted play, the file header, replacing an earlier save, a failed save
+leaving the earlier save intact with no temporary file, the random state
+preserved exactly at its extremes, other format versions rejected as
+unsupported, non-save, damaged, truncated, and malformed files rejected, a
+well-formed save that breaks game rules rejected with the active game
+unchanged, and missing or unwritable saves reported as storage failures. Save
+directory tests keep separate named saves, list them newest first with their
+save time, find a save whose name differs only in case, skip files that are
+not named saves, and report a folder that cannot be created. Management tests
+check which save names are accepted, their case-insensitive equality, and
+composed accents.
 
 ## Test organization
 
@@ -118,6 +154,7 @@ dotnet test --project tests/HockeySim.Domain.Tests/HockeySim.Domain.Tests.csproj
 dotnet test --project tests/HockeySim.Simulation.Tests/HockeySim.Simulation.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
 dotnet test --project tests/HockeySim.Desktop.Tests/HockeySim.Desktop.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
 dotnet test --project tests/HockeySim.Management.Tests/HockeySim.Management.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
+dotnet test --project tests/HockeySim.Infrastructure.Tests/HockeySim.Infrastructure.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
 ```
 
 This is the native .NET 10 Microsoft.Testing.Platform command shape selected in
