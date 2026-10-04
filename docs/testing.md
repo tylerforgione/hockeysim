@@ -37,6 +37,32 @@ Linux, including packaging and launching. Headless UI tests do not replace
 those checks. Full desktop end-to-end automation is deferred until concrete
 failures or repetitive checks justify its cost.
 
+## Simulation testing
+
+A single seeded example shows little about whether a stochastic match engine is
+correct. Simulation tests combine three kinds of check, all using fixed seeds so
+failures indicate changed behavior rather than unlucky randomness:
+
+- **Invariants across many seeds.** Run the engine over a fixed set of seeds and
+  assert every result is valid: the score matches goal events, shots are at
+  least goals, only dressed players appear in events, and a result has a winner
+  when the rules require one.
+- **Determinism.** The same inputs and random state produce an identical result,
+  different seeds produce differing results, and inputs are not mutated. This
+  protects the [reproducible saves](adr/0002-reproducible-saves.md) promise.
+- **Statistical bands.** Over many seeded matches, aggregate outcomes stay within
+  wide, plausible bands, such as average goals per match, and relative
+  expectations hold, such as a much stronger team winning most matches and
+  evenly matched teams splitting results. Prefer relative assertions over exact
+  targets so deliberate rebalancing does not break them; bands catch broken
+  tuning, not small balance changes.
+
+Avoid exact golden-master comparisons of seeded output while balance is still
+changing; every deliberate tuning change would invalidate them. Revisit them
+once balance stabilizes. When season orchestration exists, add long-run
+Management tests that simulate full seasons headlessly and assert the world
+remains valid afterward.
+
 ## Local validation
 
 Use the exact SDK from `global.json`. From the repository root:
