@@ -8,6 +8,8 @@ using HockeySim.Desktop.Inbox;
 using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
+using HockeySim.Desktop.Schedule;
+using HockeySim.Desktop.Standings;
 using HockeySim.Desktop.Teams;
 using HockeySim.Domain;
 using HockeySim.Management.Inbox;
@@ -29,6 +31,10 @@ public sealed partial class GameShellViewModel : ObservableObject
     [ObservableProperty]
     private ShellPageViewModel _currentPage;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAdvanceError))]
+    private string? _advanceError;
+
     public GameShellViewModel(GameSession session, Action? showMainMenu = null)
     {
         ArgumentNullException.ThrowIfNull(session);
@@ -36,11 +42,13 @@ public sealed partial class GameShellViewModel : ObservableObject
         Session = session;
         _showMainMenu = showMainMenu ?? (() => { });
 
-        Home = new HomePageViewModel(session, Navigate, OpenInboxMessage, OpenPlayer);
+        Home = new HomePageViewModel(session, Navigate, OpenInboxMessage, OpenPlayer, OpenMatch);
         Inbox = new InboxPageViewModel(session);
         Roster = new RosterPageViewModel(session);
         Lines = new LinesPageViewModel(session);
         Teams = new TeamsPageViewModel(session);
+        Standings = new StandingsPageViewModel(session);
+        Schedule = new SchedulePageViewModel(session);
         _pages = new Dictionary<ShellPage, ShellPageViewModel>
         {
             [ShellPage.Home] = Home,
@@ -48,6 +56,8 @@ public sealed partial class GameShellViewModel : ObservableObject
             [ShellPage.Roster] = Roster,
             [ShellPage.Lines] = Lines,
             [ShellPage.Teams] = Teams,
+            [ShellPage.Standings] = Standings,
+            [ShellPage.Schedule] = Schedule,
         };
 
         _inboxItem = new NavigationItemViewModel(ShellPage.Inbox, "Inbox", Navigate);
@@ -63,8 +73,8 @@ public sealed partial class GameShellViewModel : ObservableObject
             new("LEAGUE",
             [
                 new(ShellPage.Teams, "Teams", Navigate),
-                new(ShellPage.Standings, "Standings", Navigate, NotAvailableYet),
-                new(ShellPage.Schedule, "Schedule", Navigate, NotAvailableYet),
+                new(ShellPage.Standings, "Standings", Navigate),
+                new(ShellPage.Schedule, "Schedule", Navigate),
             ]),
             new("TRANSACTIONS",
             [
@@ -90,6 +100,10 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     public TeamsPageViewModel Teams { get; }
 
+    public StandingsPageViewModel Standings { get; }
+
+    public SchedulePageViewModel Schedule { get; }
+
     public IReadOnlyList<NavigationSectionViewModel> NavigationSections { get; }
 
     public string TeamName => Session.ManagedTeam.Name;
@@ -107,7 +121,42 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     public string SeasonLabel => $"{PlayerDisplay.FormatSeason(Session.Snapshot.League.SeasonYear)} Season";
 
-    public string PhaseLabel => "Preseason";
+    public string PhaseLabel => Session.Snapshot.Season.IsComplete
+        ? "Regular season complete"
+        : $"Regular season · {MatchDisplay.ShortDate(Session.Snapshot.Season.CurrentDate)}";
+
+    public string ContinueLabel => Session.IsAdvancing ? "Playing…" : "Continue";
+
+    /// <summary>
+    /// Describes what continuing will do: which day is played, or why it cannot be.
+    /// </summary>
+    public string ContinueDescription
+    {
+        get
+        {
+            var season = Session.Snapshot.Season;
+            if (season.IsComplete)
+            {
+                return "The regular season is complete. Results and rosters remain available.";
+            }
+
+            var date = MatchDisplay.ShortDate(season.CurrentDate);
+            var matches = Session.Snapshot.Schedule.Matches.Where(match => match.Date == season.CurrentDate).ToList();
+            if (matches.Count == 0)
+            {
+                return $"No league matches on {date}. Continue to the next day.";
+            }
+
+            var managedTeamId = Session.Snapshot.ManagedTeamId;
+            var managedMatch = matches.FirstOrDefault(match => match.HomeTeamId == managedTeamId || match.AwayTeamId == managedTeamId);
+            var count = matches.Count == 1 ? "1 league match" : $"{matches.Count} league matches";
+            return managedMatch is null
+                ? $"Play {date}: {count}. Your team does not play."
+                : $"Play {date}: {count}, including yours.";
+        }
+    }
+
+    public bool HasAdvanceError => AdvanceError is not null;
 
     public string GameName => Session.GameName;
 
@@ -135,6 +184,44 @@ public sealed partial class GameShellViewModel : ObservableObject
         Roster.SelectPlayer(playerId);
     }
 
+    /// <summary>
+    /// Shows a match on the schedule page, in the schedule of the given team, which plays in it.
+    /// </summary>
+    public void OpenMatch(DateOnly date, TeamId teamId)
+    {
+        Navigate(ShellPage.Schedule);
+        Schedule.OpenMatch(date, teamId);
+    }
+
+    /// <summary>
+    /// Plays the current league day. Management applies a day completely or not at all, so a
+    /// failure is reported and nothing from that day is shown as played.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanAdvanceDay))]
+    private async Task AdvanceDayAsync()
+    {
+        var date = MatchDisplay.ShortDate(Session.Snapshot.Season.CurrentDate);
+        AdvanceError = null;
+        try
+        {
+            await Session.AdvanceDayAsync();
+        }
+        catch (Exception exception)
+        {
+            // The match engine and season validation may fail with any exception type. The day
+            // stays unplayed, so the user can read why and try again.
+            AdvanceError = $"{date} could not be played, and no results were applied. {exception.Message}";
+        }
+    }
+
+    private bool CanAdvanceDay() => !Session.IsAdvancing && !Session.Snapshot.Season.IsComplete;
+
+    [RelayCommand]
+    private void DismissAdvanceError()
+    {
+        AdvanceError = null;
+    }
+
     [RelayCommand]
     private void ShowMainMenu()
     {
@@ -149,6 +236,13 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     private void OnSessionChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(GameSession.IsAdvancing))
+        {
+            OnPropertyChanged(nameof(ContinueLabel));
+            AdvanceDayCommand.NotifyCanExecuteChanged();
+            return;
+        }
+
         if (e.PropertyName != nameof(GameSession.Snapshot))
         {
             return;
@@ -160,6 +254,9 @@ public sealed partial class GameShellViewModel : ObservableObject
         }
 
         UpdateNavigationState();
+        OnPropertyChanged(nameof(PhaseLabel));
+        OnPropertyChanged(nameof(ContinueDescription));
+        AdvanceDayCommand.NotifyCanExecuteChanged();
     }
 
     private void UpdateNavigationState()

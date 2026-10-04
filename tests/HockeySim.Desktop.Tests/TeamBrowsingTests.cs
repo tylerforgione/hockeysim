@@ -59,7 +59,7 @@ public sealed class TeamBrowsingTests
     {
         var session = GameTestData.StartSession();
         var team = session.ManagedTeam;
-        var roster = new TeamRosterViewModel(team);
+        var roster = new TeamRosterViewModel(session, team.Id);
         var rows = roster.Skaters.Concat(roster.Goalies).ToDictionary(row => row.Player.Id);
 
         Assert.Equal("F1 C", rows[team.Lineup.ForwardLines[0].CentreId].LineupRole);
@@ -77,7 +77,7 @@ public sealed class TeamBrowsingTests
         var team = session.ManagedTeam;
         var goalie = team.Roster.First(player => player.Position == Position.Goalie);
 
-        var detail = new PlayerDetailViewModel(goalie, team);
+        var detail = new PlayerDetailViewModel(goalie, team, session.GetSeasonTotals(goalie.Id), 2026);
 
         Assert.Equal($"{goalie.FirstName} {goalie.LastName}", detail.FullName);
         Assert.Equal($"#{goalie.Number}", detail.Number);
@@ -93,7 +93,8 @@ public sealed class TeamBrowsingTests
     [Fact]
     public void SelectingAGoalieClearsTheSkaterSelection()
     {
-        var roster = new TeamRosterViewModel(GameTestData.StartSession().ManagedTeam);
+        var session = GameTestData.StartSession();
+        var roster = new TeamRosterViewModel(session, session.ManagedTeam.Id);
 
         roster.SelectedGoalie = roster.Goalies[1];
 

@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:game="using:HockeySim.Desktop.Game"
              xmlns:home="using:HockeySim.Desktop.Home"
+             xmlns:standings="using:HockeySim.Desktop.Standings"
              x:Class="HockeySim.Desktop.Home.HomePageView"
              x:DataType="home:HomePageViewModel">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
@@ -100,10 +101,56 @@
                 <TextBlock Classes="panel-title" Text="NEXT MATCH" />
               </Border>
               <StackPanel Margin="12,10" Spacing="2">
-                <TextBlock Text="Schedule not yet released" FontWeight="SemiBold" />
+                <TextBlock x:Name="NextMatchTitle" Text="{Binding NextMatchTitle}" FontWeight="SemiBold" />
+                <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding NextMatchCaption}" />
+                <TextBlock Classes="caption" Text="{Binding LastResultCaption}" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+
+          <Border Classes="panel">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="panel-header">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Classes="panel-title" Text="{Binding LatestResultsTitle}" />
+                  <Button Grid.Column="1"
+                          Classes="link"
+                          Content="Schedule ›"
+                          Command="{Binding NavigateCommand}"
+                          CommandParameter="{x:Static game:ShellPage.Schedule}" />
+                </Grid>
+              </Border>
+              <StackPanel>
                 <TextBlock Classes="caption"
+                           Margin="12,10"
                            TextWrapping="Wrap"
-                           Text="The league will publish the regular-season schedule before opening night." />
+                           Text="{Binding LatestResultsCaption}"
+                           IsVisible="{Binding !HasLatestResults}" />
+                <ItemsControl x:Name="LatestResultsList" ItemsSource="{Binding LatestResults}" Margin="0,4">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="home:LeagueResultRowViewModel">
+                      <Button Classes="list-item" Command="{Binding OpenCommand}" Height="24" Padding="12,0">
+                        <Grid ColumnDefinitions="*,24,12,24,*,24">
+                          <TextBlock Classes="cell"
+                                     Classes.strong="{Binding InvolvesManagedTeam}"
+                                     HorizontalAlignment="Right"
+                                     Text="{Binding AwayTeamName}" />
+                          <TextBlock Grid.Column="1" Classes="cell-center strong" Text="{Binding AwayScore}" />
+                          <TextBlock Grid.Column="2" Classes="cell-center muted" Text="–" />
+                          <TextBlock Grid.Column="3" Classes="cell-center strong" Text="{Binding HomeScore}" />
+                          <TextBlock Grid.Column="4"
+                                     Classes="cell"
+                                     Classes.strong="{Binding InvolvesManagedTeam}"
+                                     Text="{Binding HomeTeamName}" />
+                          <TextBlock Grid.Column="5"
+                                     Classes="cell muted"
+                                     HorizontalAlignment="Right"
+                                     Text="{Binding DecisionSuffix}" />
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
               </StackPanel>
             </DockPanel>
           </Border>
@@ -113,30 +160,36 @@
               <Border DockPanel.Dock="Top" Classes="panel-header">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Classes="panel-title" Text="{Binding DivisionTitle}" />
-                  <TextBlock Grid.Column="1" Classes="caption" VerticalAlignment="Center" Text="Preseason" />
+                  <Button Grid.Column="1"
+                          Classes="link"
+                          Content="Standings ›"
+                          Command="{Binding NavigateCommand}"
+                          CommandParameter="{x:Static game:ShellPage.Standings}" />
                 </Grid>
               </Border>
               <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="*,32,32,32,36,36">
-                  <TextBlock Text="TEAM" />
-                  <TextBlock Grid.Column="1" Text="GP" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="2" Text="W" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="L" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="4" Text="OTL" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="5" Text="PTS" HorizontalAlignment="Center" />
+                <Grid ColumnDefinitions="24,*,32,32,32,36,36">
+                  <TextBlock Text="#" />
+                  <TextBlock Grid.Column="1" Text="TEAM" />
+                  <TextBlock Grid.Column="2" Text="GP" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Text="W" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="4" Text="L" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="5" Text="OTL" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="6" Text="PTS" HorizontalAlignment="Center" />
                 </Grid>
               </Border>
               <ItemsControl x:Name="DivisionStandingsList" ItemsSource="{Binding DivisionStandings}">
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="home:StandingRowViewModel">
+                  <DataTemplate x:DataType="standings:StandingsRowViewModel">
                     <Border Classes="standing-row" Classes.managed="{Binding IsManaged}" Height="24" Padding="8,0">
-                      <Grid ColumnDefinitions="*,32,32,32,36,36">
-                        <TextBlock Classes="cell" Classes.strong="{Binding IsManaged}" Text="{Binding TeamName}" />
-                        <TextBlock Grid.Column="1" Classes="cell-center" Text="{Binding GamesPlayed}" />
-                        <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Wins}" />
-                        <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Losses}" />
-                        <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding OvertimeLosses}" />
-                        <TextBlock Grid.Column="5" Classes="cell-center strong" Text="{Binding Points}" />
+                      <Grid ColumnDefinitions="24,*,32,32,32,36,36">
+                        <TextBlock Classes="cell muted" Text="{Binding Rank}" />
+                        <TextBlock Grid.Column="1" Classes="cell" Classes.strong="{Binding IsManaged}" Text="{Binding TeamName}" />
+                        <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding GamesPlayed}" />
+                        <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Wins}" />
+                        <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Losses}" />
+                        <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding OvertimeLosses}" />
+                        <TextBlock Grid.Column="6" Classes="cell-center strong" Text="{Binding Points}" />
                       </Grid>
                     </Border>
                   </DataTemplate>

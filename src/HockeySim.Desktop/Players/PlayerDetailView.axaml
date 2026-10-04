@@ -39,6 +39,28 @@
 
     <Border DockPanel.Dock="Top" Classes="divider" />
 
+    <StackPanel x:Name="SeasonStatistics" DockPanel.Dock="Top" Margin="12,10" Spacing="6">
+      <TextBlock Classes="label" Text="{Binding SeasonTitle}" />
+      <ItemsControl ItemsSource="{Binding SeasonStatistics}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Rows="1" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="players:SeasonStatViewModel">
+            <StackPanel Spacing="1" ToolTip.Tip="{Binding Description}">
+              <TextBlock Classes="label" Text="{Binding Label}" />
+              <TextBlock Text="{Binding Value}" FontSize="16" FontWeight="SemiBold" />
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBlock Classes="caption" Text="{Binding SeasonCaption}" IsVisible="{Binding HasSeasonCaption}" />
+    </StackPanel>
+
+    <Border DockPanel.Dock="Top" Classes="divider" />
+
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
       <ItemsControl ItemsSource="{Binding RatingGroups}" Margin="12,6,12,12">
         <ItemsControl.ItemTemplate>

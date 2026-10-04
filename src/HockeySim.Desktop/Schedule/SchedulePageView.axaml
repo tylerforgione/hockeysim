@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:schedule="using:HockeySim.Desktop.Schedule"
+             xmlns:teams="using:HockeySim.Desktop.Teams"
+             x:Class="HockeySim.Desktop.Schedule.SchedulePageView"
+             x:DataType="schedule:SchedulePageViewModel">
+  <Grid ColumnDefinitions="420,*" ColumnSpacing="8">
+    <Border Classes="panel">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="panel-header">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Classes="panel-title" Text="SCHEDULE" VerticalAlignment="Center" />
+            <ComboBox x:Name="ScheduleTeamSelector"
+                      Grid.Column="1"
+                      Width="220"
+                      ItemsSource="{Binding Teams}"
+                      SelectedItem="{Binding SelectedTeam}"
+                      MaxDropDownHeight="520">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="teams:TeamEntryViewModel">
+                  <TextBlock Classes="cell" Text="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+        </Border>
+        <Border DockPanel.Dock="Top" Classes="table-header">
+          <Grid ColumnDefinitions="96,28,*,96">
+            <TextBlock Text="DATE" />
+            <TextBlock Grid.Column="2" Text="OPPONENT" />
+            <TextBlock Grid.Column="3" Text="RESULT" HorizontalAlignment="Right" />
+          </Grid>
+        </Border>
+        <ListBox x:Name="ScheduleMatchesList"
+                 Classes="table"
+                 ItemsSource="{Binding Matches}"
+                 SelectedItem="{Binding SelectedMatch}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="schedule:ScheduleMatchRowViewModel">
+              <Grid ColumnDefinitions="96,28,*,96">
+                <TextBlock Classes="cell muted" Text="{Binding DateLabel}" />
+                <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding Venue}" />
+                <TextBlock Grid.Column="2" Classes="cell" Text="{Binding Opponent}" />
+                <TextBlock Grid.Column="3"
+                           Classes="cell strong"
+                           Classes.success="{Binding IsWin}"
+                           Classes.error="{Binding IsLoss}"
+                           HorizontalAlignment="Right"
+                           Text="{Binding Result}" />
+                <Border Grid.Column="3"
+                        Classes="pill"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding IsNext}">
+                  <TextBlock Text="NEXT" />
+                </Border>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <Border Grid.Column="1" Classes="panel">
+      <Grid>
+        <TextBlock Classes="caption"
+                   Text="{Binding SelectionHint}"
+                   TextWrapping="Wrap"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   IsVisible="{Binding !HasSelectedResult}" />
+        <ContentControl x:Name="MatchDetail" Content="{Binding SelectedResult}">
+          <ContentControl.ContentTemplate>
+            <DataTemplate x:DataType="schedule:MatchDetailViewModel">
+              <schedule:MatchDetailView />
+            </DataTemplate>
+          </ContentControl.ContentTemplate>
+        </ContentControl>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

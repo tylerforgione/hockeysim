@@ -1,0 +1,120 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:schedule="using:HockeySim.Desktop.Schedule"
+             x:Class="HockeySim.Desktop.Schedule.MatchDetailView"
+             x:DataType="schedule:MatchDetailViewModel">
+  <UserControl.DataTemplates>
+    <DataTemplate x:DataType="schedule:MatchSideViewModel">
+      <StackPanel>
+        <Border Classes="table-header">
+          <Grid ColumnDefinitions="*,32,32,32,32">
+            <TextBlock Text="{Binding TeamName}" />
+            <TextBlock Grid.Column="1" Text="POS" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="G" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="3" Text="A" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="4" Text="P" HorizontalAlignment="Center" />
+          </Grid>
+        </Border>
+        <ItemsControl ItemsSource="{Binding Skaters}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="schedule:SkaterBoxScoreRowViewModel">
+              <Grid ColumnDefinitions="*,32,32,32,32" Height="22" Margin="8,0">
+                <TextBlock Classes="cell" Text="{Binding Name}" />
+                <TextBlock Grid.Column="1" Classes="cell-center muted" Text="{Binding Position}" />
+                <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Goals}" />
+                <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Assists}" />
+                <TextBlock Grid.Column="4" Classes="cell-center strong" Text="{Binding Points}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Border Classes="table-header" Margin="0,6,0,0">
+          <Grid ColumnDefinitions="*,40,40,40,48">
+            <TextBlock Text="GOALIE" />
+            <TextBlock Grid.Column="1" Text="SA" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="SV" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="3" Text="GA" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="4" Text="SV%" HorizontalAlignment="Center" />
+          </Grid>
+        </Border>
+        <Grid ColumnDefinitions="*,40,40,40,48" Height="22" Margin="8,0">
+          <TextBlock Classes="cell" Text="{Binding Goalie.Name}" />
+          <TextBlock Grid.Column="1" Classes="cell-center" Text="{Binding Goalie.ShotsAgainst}" />
+          <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Goalie.Saves}" />
+          <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Goalie.GoalsAgainst}" />
+          <TextBlock Grid.Column="4" Classes="cell-center strong" Text="{Binding Goalie.SavePercentage}" />
+        </Grid>
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <DockPanel>
+    <!-- Scoreboard. -->
+    <Border DockPanel.Dock="Top"
+            Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="16,12">
+      <StackPanel Spacing="6">
+        <TextBlock Classes="caption" HorizontalAlignment="Center" Text="{Binding DateLabel}" />
+        <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="20">
+          <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="10">
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="{Binding Away.TeamName}"
+                         Classes.strong="{Binding Away.IsWinner}"
+                         FontSize="15"
+                         HorizontalAlignment="Right" />
+              <TextBlock Classes="caption" HorizontalAlignment="Right">
+                <Run Text="Away ·" />
+                <Run Text="{Binding Away.Shots}" />
+                <Run Text="shots" />
+              </TextBlock>
+            </StackPanel>
+            <Border Classes="badge" Width="40" Height="40">
+              <TextBlock Text="{Binding Away.TeamInitials}" FontSize="13" />
+            </Border>
+          </StackPanel>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center">
+            <TextBlock x:Name="FinalScore" Classes="stat" HorizontalAlignment="Center">
+              <Run Text="{Binding Away.Score}" />
+              <Run Text="–" />
+              <Run Text="{Binding Home.Score}" />
+            </TextBlock>
+            <TextBlock x:Name="FinalLabel"
+                       Classes="label"
+                       HorizontalAlignment="Center"
+                       Text="{Binding FinalLabel}" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+            <Border Classes="badge" Width="40" Height="40">
+              <TextBlock Text="{Binding Home.TeamInitials}" FontSize="13" />
+            </Border>
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="{Binding Home.TeamName}"
+                         Classes.strong="{Binding Home.IsWinner}"
+                         FontSize="15" />
+              <TextBlock Classes="caption">
+                <Run Text="Home ·" />
+                <Run Text="{Binding Home.Shots}" />
+                <Run Text="shots" />
+              </TextBlock>
+            </StackPanel>
+          </StackPanel>
+        </Grid>
+        <TextBlock Classes="caption"
+                   HorizontalAlignment="Center"
+                   TextWrapping="Wrap"
+                   Text="{Binding ShootoutNote}"
+                   IsVisible="{Binding IsShootout}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Box score for this match only. -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="12">
+        <ContentControl x:Name="AwayBoxScore" Content="{Binding Away}" />
+        <ContentControl x:Name="HomeBoxScore" Grid.Column="1" Content="{Binding Home}" />
+      </Grid>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

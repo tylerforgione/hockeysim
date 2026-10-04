@@ -5,6 +5,8 @@
              xmlns:inbox="using:HockeySim.Desktop.Inbox"
              xmlns:lines="using:HockeySim.Desktop.Lines"
              xmlns:roster="using:HockeySim.Desktop.Roster"
+             xmlns:schedule="using:HockeySim.Desktop.Schedule"
+             xmlns:standings="using:HockeySim.Desktop.Standings"
              xmlns:teams="using:HockeySim.Desktop.Teams"
              x:Class="HockeySim.Desktop.Game.GameShellView"
              x:DataType="game:GameShellViewModel"
@@ -24,6 +26,12 @@
     </DataTemplate>
     <DataTemplate x:DataType="teams:TeamsPageViewModel">
       <teams:TeamsPageView />
+    </DataTemplate>
+    <DataTemplate x:DataType="standings:StandingsPageViewModel">
+      <standings:StandingsPageView />
+    </DataTemplate>
+    <DataTemplate x:DataType="schedule:SchedulePageViewModel">
+      <schedule:SchedulePageView />
     </DataTemplate>
   </UserControl.DataTemplates>
 
@@ -60,7 +68,8 @@
                      Foreground="{DynamicResource OnTeamPrimaryBrush}"
                      HorizontalAlignment="Center"
                      FontWeight="SemiBold" />
-          <TextBlock Text="{Binding PhaseLabel}"
+          <TextBlock x:Name="PhaseLabel"
+                     Text="{Binding PhaseLabel}"
                      Foreground="{DynamicResource OnTeamPrimaryBrush}"
                      Opacity="0.7"
                      FontSize="11"
@@ -76,16 +85,37 @@
                 Grid.Column="3"
                 Classes="chrome continue"
                 VerticalAlignment="Center"
-                IsEnabled="False"
+                Command="{Binding AdvanceDayCommand}"
                 ToolTip.ShowOnDisabled="True"
-                ToolTip.Tip="Advancing days becomes available once the league schedule exists.">
+                ToolTip.Tip="{Binding ContinueDescription}">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="Continue" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding ContinueLabel}" VerticalAlignment="Center" />
             <Path Data="M1,1 L6,5 L1,9 Z"
                   Fill="{Binding $parent[Button].Foreground}"
                   VerticalAlignment="Center" />
           </StackPanel>
         </Button>
+      </Grid>
+    </Border>
+
+    <!-- Advancement failure. The day was not applied, so nothing here claims partial success. -->
+    <Border x:Name="AdvanceErrorBanner"
+            DockPanel.Dock="Top"
+            Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource ErrorBrush}"
+            BorderThickness="0,0,0,2"
+            Padding="12,6"
+            IsVisible="{Binding HasAdvanceError}">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <TextBlock x:Name="AdvanceErrorText"
+                   Classes="error"
+                   TextWrapping="Wrap"
+                   VerticalAlignment="Center"
+                   Text="{Binding AdvanceError}" />
+        <Button Grid.Column="1"
+                Classes="flat"
+                Content="Dismiss"
+                Command="{Binding DismissAdvanceErrorCommand}" />
       </Grid>
     </Border>
 

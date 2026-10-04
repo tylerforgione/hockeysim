@@ -7,13 +7,46 @@ Microsoft.Testing.Platform. They cover generated-world invariants, managed-team
 selection, reproducibility, snapshot isolation, focused Domain validation,
 inbox messages, new-game and in-game view-model behavior (navigation, lineup
 editing, team browsing, player detail), and a headless Avalonia walkthrough
-from the startup menu through every available in-game page. Simulation tests
+from the startup menu through every available in-game page, playing a day, and
+opening a match's box score. Desktop season tests advance real games: the
+current-date and continue states, page refresh after a day, an empty league day,
+opening a result's box score from the home page, schedule browsing, a failing
+match engine leaving the day unplayed with an error shown, overlapping
+advancement rejected while a gated engine holds a day, and a full season ending
+in the completed, still-browsable state with final standings. Desktop standings
+and statistics tests check each standings scope against Management's ranked
+tables, the level no-games state, refresh after a day with the chosen scope kept,
+skater and goalie totals for another team's roster and player detail, zero
+totals and undefined percentages before an appearance, the roster column choice
+kept across teams and days, and pages redrawn when the session's snapshot is
+replaced. The headless walkthrough also renders the standings scopes and the
+roster's season columns. Simulation tests
 check result invariants across many seeds, each decision path (regulation,
 overtime, shootout), determinism, unchanged input teams, and statistical bands
 for lineup strength, line and pair usage, and goalie quality. Individual match
 statistics are checked for reconciliation with the score and shots, appearance
 and eligibility rules, assist validity, shootout exclusion, and zero-shot and
-zero-production cases.
+zero-production cases. Schedule tests check, across several seeds, the full
+opponent-count matrix, league match count, home/away totals, venue balance
+within each pair of opponents, valid identities, no self-matches or same-day
+conflicts, the calendar dates, and reproducibility. Domain season tests check
+day-level atomicity (partial days, results for other dates, duplicates, invalid
+players), standings points for each decision, shootout handling in team and
+individual totals, completed-match invariants, and the terminal state. Domain
+standings scenarios isolate each ranking criterion, two-club and multi-club
+head-to-head (unbalanced meetings, cycles, a partly broken tie, clubs that have
+not met), odd-game exclusion, shootout goals, games-played differences, the
+no-games state, and teams level on every criterion. Management standings tests
+check that league, conference, and division tables hold the right teams in a
+consistent order before any match, midseason, and after the full season, and
+that they are read-only and isolated between snapshots.
+Management season tests advance real games: whole days, empty days, lineup
+changes used by the next match, a failing match engine leaving the day
+unplayed and the random state unchanged, rejected nested and serialized
+cross-thread advancement, snapshot isolation, and reproducibility. A shared
+fixture plays one full 1,344-match season and checks schedule completion, 84
+games per team, records and individual totals reconciled with the results, every
+decision type, and the completed-season state.
 Infrastructure tests remain pending with their project.
 
 ## Test organization
@@ -65,9 +98,8 @@ failures indicate changed behavior rather than unlucky randomness:
 
 Avoid exact golden-master comparisons of seeded output while balance is still
 changing; every deliberate tuning change would invalidate them. Revisit them
-once balance stabilizes. When season orchestration exists, add long-run
-Management tests that simulate full seasons headlessly and assert the world
-remains valid afterward.
+once balance stabilizes. Long-run Management tests simulate a full season
+headlessly and assert the world remains valid afterward.
 
 ## Local validation
 

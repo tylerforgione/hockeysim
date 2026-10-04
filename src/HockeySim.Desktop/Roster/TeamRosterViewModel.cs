@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
+using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Players;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
@@ -7,11 +9,13 @@ using HockeySim.Management.GameManagement.Snapshots;
 namespace HockeySim.Desktop.Roster;
 
 /// <summary>
-/// A read-only roster split into skaters and goalies, with the selected player's profile.
+/// A read-only roster split into skaters and goalies, with the selected player's profile. The
+/// tables show either ratings or current-season totals; both do not fit side by side.
 /// </summary>
 public sealed partial class TeamRosterViewModel : ObservableObject
 {
     private readonly TeamSnapshot _team;
+    private readonly GameSession _session;
 
     [ObservableProperty]
     private PlayerRowViewModel? _selectedSkater;
@@ -22,15 +26,25 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     [ObservableProperty]
     private PlayerDetailViewModel? _selectedPlayer;
 
-    public TeamRosterViewModel(TeamSnapshot team, PlayerId? initiallySelectedPlayerId = null)
-    {
-        ArgumentNullException.ThrowIfNull(team);
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsRatings), nameof(ShowsSeason))]
+    private RosterColumns _columns;
 
-        _team = team;
-        var rows = team.Roster
+    public TeamRosterViewModel(
+        GameSession session,
+        TeamId teamId,
+        PlayerId? initiallySelectedPlayerId = null,
+        RosterColumns columns = RosterColumns.Ratings)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+
+        _session = session;
+        _team = session.GetTeam(teamId);
+        _columns = columns;
+        var rows = _team.Roster
             .OrderBy(player => player.Position)
             .ThenBy(player => player.LastName, StringComparer.Ordinal)
-            .Select(player => new PlayerRowViewModel(player, team.Lineup))
+            .Select(player => new PlayerRowViewModel(player, _team.Lineup, session.GetSeasonTotals(player.Id)))
             .ToList();
         Skaters = rows.Where(row => row.Player.Position != Position.Goalie).ToList();
         Goalies = rows.Where(row => row.Player.Position == Position.Goalie).ToList();
@@ -42,6 +56,10 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     public IReadOnlyList<PlayerRowViewModel> Skaters { get; }
 
     public IReadOnlyList<PlayerRowViewModel> Goalies { get; }
+
+    public bool ShowsRatings => Columns == RosterColumns.Ratings;
+
+    public bool ShowsSeason => Columns == RosterColumns.Season;
 
     public void SelectPlayer(PlayerId playerId)
     {
@@ -56,6 +74,12 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private void ShowColumns(RosterColumns columns)
+    {
+        Columns = columns;
+    }
+
     partial void OnSelectedSkaterChanged(PlayerRowViewModel? value)
     {
         if (value is null)
@@ -64,7 +88,7 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         }
 
         SelectedGoalie = null;
-        SelectedPlayer = new PlayerDetailViewModel(value.Player, _team);
+        SelectedPlayer = CreateDetail(value);
     }
 
     partial void OnSelectedGoalieChanged(PlayerRowViewModel? value)
@@ -75,6 +99,18 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         }
 
         SelectedSkater = null;
-        SelectedPlayer = new PlayerDetailViewModel(value.Player, _team);
+        SelectedPlayer = CreateDetail(value);
     }
+
+    private PlayerDetailViewModel CreateDetail(PlayerRowViewModel row) =>
+        new(row.Player, _team, row.Season, _session.Snapshot.League.SeasonYear);
+}
+
+/// <summary>
+/// Which columns the roster tables show alongside each player's identity and lineup role.
+/// </summary>
+public enum RosterColumns
+{
+    Ratings,
+    Season,
 }
