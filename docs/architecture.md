@@ -62,10 +62,11 @@ generation and passes the state to and from match simulation.
 Reproducibility is not a promise across engine versions or protection against
 editing local saves. See [the rationale](adr/0002-reproducible-saves.md).
 
-Pre-release saves may become incompatible. Version the save format and reject
-unsupported versions clearly. Choose the format and storage technology during
-the first persistence feature, using representative data and access patterns.
-Establish a longer-term compatibility policy before the first stable release.
+Pre-release saves may become incompatible. The save format is versioned, and a
+save from another version is rejected as unsupported rather than migrated. Each
+game is saved as one Brotli-compressed JSON file; see
+[the format decision](adr/0004-local-save-format.md). Establish a longer-term
+compatibility policy before the first stable release.
 
 ## Repository structure
 
@@ -89,10 +90,10 @@ collections. Namespaces follow the owning project and folder.
 
 ## Current implementation
 
-Domain, Management, and Desktop exist today. Domain protects generated-world
-invariants through validated construction and read-only collections. Management
-owns a headless new-game workflow, controlled random state, managed-team
-selection, and read-only snapshots. Fictional names are kept separate from the
+Domain, Simulation, Management, Infrastructure, and Desktop exist today. Domain
+protects generated-world invariants through validated construction and
+read-only collections. Management owns a headless new-game workflow,
+controlled random state, managed-team selection, and read-only snapshots. Fictional names are kept separate from the
 league and roster rules that use them.
 
 Management also delivers inbox messages to the user. New-game messages are
@@ -179,5 +180,21 @@ the scorer's on-ice teammates, and the result carries every appearing player's
 match statistics, derived from the goals and shots so they reconcile with the
 score; shootout attempts count toward no player. It takes an explicit random state and returns
 the state after the match with the result, without changing the teams.
-Infrastructure has not been scaffolded; until it exists, the related parts of
-the diagram remain target architecture.
+Management saves and loads games through its own contracts in `Saves/`: the
+`GameSave` model and the `IGameSaveStore` interface. `SaveGame` copies the
+world, lineups, schedule, current date, completed matches, inbox, and random
+state into a detached save, then hands it to the store. `LoadGame` rebuilds the
+league through Domain constructors and replays each saved league day through
+`Season.CompleteDay`, so a loaded game is held to the same invariants as a
+played one, and team records, season statistics, and standings are derived
+from the history rather than read from the file. The active game is replaced
+only after the whole save has been rebuilt; an unreadable, unsupported, or
+invalid save raises a `GameSaveException` and leaves the active game
+unchanged. Continuing a loaded game with the same commands gives the same
+results as uninterrupted play within one engine version.
+Infrastructure's `GameSaveFile` implements the store for one local file. It
+writes the format name and version ahead of the game, serializes the save model
+with source-generated System.Text.Json, and writes through a temporary file
+that replaces the earlier save only once complete. Desktop does not yet offer
+saving or loading, so its reference to Infrastructure remains target
+architecture.

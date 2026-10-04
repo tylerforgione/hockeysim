@@ -47,7 +47,26 @@ cross-thread advancement, snapshot isolation, and reproducibility. A shared
 fixture plays one full 1,344-match season and checks schedule completion, 84
 games per team, records and individual totals reconciled with the results, every
 decision type, and the completed-season state.
-Infrastructure tests remain pending with their project.
+Management save tests round-trip a new game, a midseason game with a changed
+lineup and a read message, and a completed season. They check that the loaded
+game matches what was saved, from rosters and lineups through every result,
+team records, season totals, standings, the inbox, and the random state, and
+that a lineup change and further league days after loading give the same
+results as uninterrupted play. They also check that loading replaces a
+different active game, that a save is a copy later play does not change, and
+that a loaded game accepts commands. Each kind of invalid save is rejected
+(missing values, missing, extra, or duplicate results, current dates outside the
+season, scores that do not reconcile, unrostered or ineligible players, invalid
+ratings, an unknown managed team or scheduled team, misnumbered inbox messages),
+and the active game then continues exactly as if the load was never attempted.
+Infrastructure tests save and load real files in a temporary directory: new,
+midseason, and completed games with continued play compared against
+uninterrupted play, the file header, replacing an earlier save, a failed save
+leaving the earlier save intact with no temporary file, the random state
+preserved exactly at its extremes, other format versions rejected as
+unsupported, non-save, damaged, truncated, and malformed files rejected, a
+well-formed save that breaks game rules rejected with the active game
+unchanged, and a missing save reported as missing.
 
 ## Test organization
 
@@ -118,6 +137,7 @@ dotnet test --project tests/HockeySim.Domain.Tests/HockeySim.Domain.Tests.csproj
 dotnet test --project tests/HockeySim.Simulation.Tests/HockeySim.Simulation.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
 dotnet test --project tests/HockeySim.Desktop.Tests/HockeySim.Desktop.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
 dotnet test --project tests/HockeySim.Management.Tests/HockeySim.Management.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
+dotnet test --project tests/HockeySim.Infrastructure.Tests/HockeySim.Infrastructure.Tests.csproj --configuration Release --no-build --no-restore --minimum-expected-tests 1
 ```
 
 This is the native .NET 10 Microsoft.Testing.Platform command shape selected in
