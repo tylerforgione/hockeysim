@@ -90,3 +90,44 @@ Direction:
   a Windows installer or MSIX, Linux AppImage or Flatpak), auto-update, and
   release versioning are separate follow-up work that builds on the publish
   output.
+
+## Realistic season calendar
+
+The regular season is generated in two stages in `HockeySim.Management/Scheduling/`.
+`MeetingPlanner` decides who plays whom and who hosts, independent of dates.
+`RoundCalendar` then packs the meetings into 84 rounds in which every team
+plays exactly once, one round every other day from October 1. Every date has 16
+matches, and there are no breaks, back-to-backs, or special events.
+
+A realistic calendar should support:
+
+- **Breaks and blocked dates**: the All-Star break, an Olympic or international
+  tournament break, and league-wide days off such as Christmas.
+- **Uneven nights**: a varying number of matches per date, with some teams idle.
+- **Rest rules**: back-to-backs allowed but limited, plus caps such as matches
+  in a rolling window, and home stands and road trips.
+- **Pinned special matches**: a chosen pairing on a fixed date, such as an
+  outdoor game or a holiday showcase, possibly at a neutral or outdoor venue.
+- **Non-match events**: the All-Star Game and similar events appear on the
+  calendar but are not regular-season matches between league teams.
+
+Direction:
+
+- Keep `MeetingPlanner` and its balance guarantees; replace `RoundCalendar`
+  with a calendar builder that takes the planned meetings plus an explicit
+  calendar specification (season window, blocked dates, pinned matches, rest
+  rules). The round structure cannot express uneven nights, so this needs a
+  different algorithm, such as greedy date assignment with repair or a local
+  search over the constraints.
+- Venues are fixed per meeting before dates are chosen, so the builder only
+  orders them. Decide whether venue alternation through the season still
+  matters once dates are uneven.
+- Neutral-site or outdoor matches need a venue or event type on
+  `ScheduledMatch`. Non-match events need their own Domain concept rather than
+  a fake `ScheduledMatch`.
+- Keep every calendar input explicit and derived from game state, never the
+  wall clock, and keep generation on the controlled random stream
+  ([reproducible saves](adr/0002-reproducible-saves.md)).
+- Existing schedule tests (opponent matrix, home/away totals, same-day
+  conflicts, reproducibility) still apply. Add checks for blocked dates, rest
+  limits, and pinned matches, and replace the 16-matches-per-date check.

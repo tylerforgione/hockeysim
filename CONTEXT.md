@@ -42,6 +42,12 @@ assists, and points; the starting goalie records shots against, saves, and goals
 against. They reconcile with the score and shots, excluding the shootout:
 shootout attempts and the deciding goal count toward no player.
 
+**Schedule**:
+The ordered regular-season calendar of matches. Every team plays 84: four
+against each divisional opponent, three against each other same-conference
+opponent, and two against each opposite-conference opponent, with 42 at home and
+42 away. A team plays at most once on any date.
+
 **Overtime**:
 A five-minute sudden-death period played when regulation ends tied.
 

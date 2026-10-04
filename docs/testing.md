@@ -13,7 +13,10 @@ overtime, shootout), determinism, unchanged input teams, and statistical bands
 for lineup strength, line and pair usage, and goalie quality. Individual match
 statistics are checked for reconciliation with the score and shots, appearance
 and eligibility rules, assist validity, shootout exclusion, and zero-shot and
-zero-production cases.
+zero-production cases. Schedule tests check, across several seeds, the full
+opponent-count matrix, league match count, home/away totals, venue balance
+within each pair of opponents, valid identities, no self-matches or same-day
+conflicts, the calendar dates, and reproducibility.
 Infrastructure tests remain pending with their project.
 
 ## Test organization
