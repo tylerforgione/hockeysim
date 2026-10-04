@@ -12,6 +12,7 @@ using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Main;
 using HockeySim.Desktop.NewGame;
 using HockeySim.Desktop.Roster;
+using HockeySim.Desktop.Schedule;
 using HockeySim.Desktop.Startup;
 using HockeySim.Desktop.Teams;
 using HockeySim.Management.GameManagement;
@@ -66,12 +67,14 @@ public sealed class MainWindowViewTests
 
         var shellView = Single<GameShellView>(window);
         Assert.Equal("Seattle Evergreens", shellView.FindControl<TextBlock>("ShellTeamName")?.Text);
-        Assert.False(shellView.FindControl<Button>("ContinueButton")?.IsEnabled);
+        var continueButton = Assert.IsType<Button>(shellView.FindControl<Button>("ContinueButton"));
+        Assert.True(continueButton.IsEffectivelyEnabled);
         Assert.Single(window.GetVisualDescendants().OfType<HomePageView>());
 
         AssertNavigationRenders<InboxPageView>(window, ShellPage.Inbox);
         AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
         AssertNavigationRenders<TeamsPageView>(window, ShellPage.Teams);
+        AssertNavigationRenders<SchedulePageView>(window, ShellPage.Schedule);
         AssertNavigationRenders<LinesPageView>(window, ShellPage.Lines);
 
         var linesView = Single<LinesPageView>(window);
@@ -92,6 +95,43 @@ public sealed class MainWindowViewTests
             scratchedGoalie.Id,
             snapshot.League.Teams.Single(team => team.Id == snapshot.ManagedTeamId).Lineup.StartingGoalieId);
         Assert.False(saveButton.IsEffectivelyEnabled);
+
+        // Play opening night from the title bar, then open a result from the home page.
+        AssertNavigationRenders<HomePageView>(window, ShellPage.Home);
+        ClickAndWait(continueButton, () => !viewModel.Game!.Session.IsAdvancing);
+        Assert.Equal(16, gameManager.GetSnapshot().Season.Results.Count);
+        Assert.Contains("Oct", shellView.FindControl<TextBlock>("PhaseLabel")?.Text, StringComparison.Ordinal);
+        Assert.False(shellView.FindControl<Border>("AdvanceErrorBanner")?.IsVisible);
+
+        var homeView = Single<HomePageView>(window);
+        var resultButtons = homeView.GetVisualDescendants()
+            .OfType<Button>()
+            .Where(button => button.DataContext is LeagueResultRowViewModel)
+            .ToList();
+        Assert.Equal(16, resultButtons.Count);
+        Click(resultButtons[0]);
+
+        var matchDetail = Single<MatchDetailView>(window);
+        Assert.True(matchDetail.Bounds.Width > 300);
+        Assert.StartsWith("Final", matchDetail.FindControl<TextBlock>("FinalLabel")?.Text, StringComparison.Ordinal);
+        var skaterRows = matchDetail.GetVisualDescendants()
+            .OfType<Grid>()
+            .Count(grid => grid.DataContext is SkaterBoxScoreRowViewModel);
+        Assert.Equal(36, skaterRows);
+    }
+
+    private static void ClickAndWait(Button button, Func<bool> isDone)
+    {
+        Click(button);
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (!isDone())
+        {
+            Assert.True(DateTime.UtcNow < deadline, "The command did not finish.");
+            Thread.Sleep(5);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Dispatcher.UIThread.RunJobs();
     }
 
     private static void AssertNavigationRenders<TView>(Window window, ShellPage page)

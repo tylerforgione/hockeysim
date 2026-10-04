@@ -26,7 +26,6 @@ public sealed class GameShellViewModelTests
 
     [Theory]
     [InlineData(ShellPage.Standings)]
-    [InlineData(ShellPage.Schedule)]
     [InlineData(ShellPage.FreeAgents)]
     [InlineData(ShellPage.Trades)]
     public void PlannedPagesAreListedButCannotBeOpened(ShellPage page)
