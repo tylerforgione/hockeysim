@@ -144,3 +144,17 @@ completely or not at all and a failure stops at the last complete day. Report
 progress and allow cancellation between days. Publish a snapshot when the run
 ends rather than after every day. Decide whether events such as injuries or
 inbox messages should interrupt a run once those features exist.
+
+## Career history and advanced statistics
+
+Desktop shows each player's current-season totals only: skater games, goals,
+assists, and points, and goalie games, shots against, saves, goals against, and
+save percentage. Totals are not kept once a later season begins, and nothing
+beyond those counts is recorded.
+
+Keep per-season totals as history when subsequent seasons exist, and show career
+lines on the player profile. Shutouts can be derived from existing box scores;
+most other advanced statistics need the match engine to record more first, such
+as plus/minus, penalty minutes, time on ice (and with it goals-against average),
+power-play and shorthanded production, and shots by skater. Add sortable
+league-wide leader tables alongside them.

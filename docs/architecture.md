@@ -151,7 +151,7 @@ Desktop wires a Management game manager at startup. After the new-game screen
 starts a game, a `GameSession` forwards commands (lineup changes, reading
 messages, advancing a league day) to Management and publishes each resulting
 snapshot to the in-game shell's feature pages: home, inbox, roster, lines,
-league teams, and schedule. Only the managed team's lineup is editable, and
+league teams, standings, and schedule. Only the managed team's lineup is editable, and
 Management validates every change. The title bar's Continue button plays the
 current league day off the UI thread; the session rejects a second request while
 one runs and then publishes Management's latest snapshot, since a command
@@ -161,6 +161,13 @@ pages still show the unplayed day. Once the season is complete, Continue is
 disabled and every page remains browsable. The schedule page lists one team's
 84 matches with results and opens a completed match's score, decision, and box
 score; these are single-match figures, kept apart from season totals.
+The standings page presents Management's division, conference, or league tables
+as ranked, without re-sorting them. Roster tables for every team switch between
+ratings and current-season totals (skater GP/G/A/P, goalie GP/SA/SV/GA/SV%), and
+the player profile always shows the totals. A player who has not appeared shows
+zeros, and a save percentage or points percentage is a dash until it is defined.
+Pages rebuild from whichever snapshot the session last published, so a future
+load can replace the snapshot without page-specific handling.
 Colours and control styles live in `HockeySim.Desktop/Theme/`; team identity
 colours are dynamic resources so a chosen team's colours can replace the
 league defaults later.

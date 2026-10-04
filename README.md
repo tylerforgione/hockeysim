@@ -21,10 +21,11 @@ season one league day at a time, playing every scheduled match and accumulating
 results, team records, and player season statistics through to a completed
 season, with league, conference, and division standings ranked by the NHL
 tie-breaking procedure. Desktop advances the season one league day at a time,
-shows each team's schedule and results with single-match box scores, and
-summarises the latest league day and division table on the home page; the full
-standings page and season statistics are not shown yet. Infrastructure has not
-yet been scaffolded.
+shows each team's schedule and results with single-match box scores, summarises
+the latest league day and division table on the home page, presents division,
+conference, and league standings, and shows every player's current-season totals
+on roster tables and player profiles. Infrastructure has not yet been
+scaffolded.
 
 ## Development
 
