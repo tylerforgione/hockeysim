@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Inbox;
 using HockeySim.Desktop.Players;
+using HockeySim.Desktop.Schedule;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 using HockeySim.Management.Inbox;
@@ -14,7 +15,8 @@ namespace HockeySim.Desktop.Home;
 
 /// <summary>
 /// The dashboard shown when a game opens: a consolidated view of the club, the inbox, the
-/// division, and the current lineup, with shortcuts into the detailed pages.
+/// division, the next match, the latest league results, and the current lineup, with shortcuts
+/// into the detailed pages.
 /// </summary>
 public sealed partial class HomePageViewModel : ShellPageViewModel
 {
@@ -34,6 +36,7 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
     private readonly Action<ShellPage> _navigate;
     private readonly Action<InboxMessageId> _openMessage;
     private readonly Action<PlayerId> _openPlayer;
+    private readonly Action<DateOnly, TeamId> _openMatch;
 
     [ObservableProperty]
     private IReadOnlyList<SummaryTileViewModel> _tiles = [];
@@ -54,21 +57,43 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
     [ObservableProperty]
     private IReadOnlyList<RatingLeaderViewModel> _ratingLeaders = [];
 
+    [ObservableProperty]
+    private string _nextMatchTitle = string.Empty;
+
+    [ObservableProperty]
+    private string _nextMatchCaption = string.Empty;
+
+    [ObservableProperty]
+    private string _lastResultCaption = string.Empty;
+
+    [ObservableProperty]
+    private string _latestResultsTitle = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLatestResults))]
+    private IReadOnlyList<LeagueResultRowViewModel> _latestResults = [];
+
+    [ObservableProperty]
+    private string _latestResultsCaption = string.Empty;
+
     public HomePageViewModel(
         GameSession session,
         Action<ShellPage> navigate,
         Action<InboxMessageId> openMessage,
-        Action<PlayerId> openPlayer)
+        Action<PlayerId> openPlayer,
+        Action<DateOnly, TeamId> openMatch)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(navigate);
         ArgumentNullException.ThrowIfNull(openMessage);
         ArgumentNullException.ThrowIfNull(openPlayer);
+        ArgumentNullException.ThrowIfNull(openMatch);
 
         _session = session;
         _navigate = navigate;
         _openMessage = openMessage;
         _openPlayer = openPlayer;
+        _openMatch = openMatch;
         Refresh();
     }
 
@@ -80,11 +105,13 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
 
     public bool HasUnreadMessages => _session.Snapshot.Inbox.Any(message => !message.IsRead);
 
+    public bool HasLatestResults => LatestResults.Count > 0;
+
     public override void Refresh()
     {
         var snapshot = _session.Snapshot;
         var team = _session.ManagedTeam;
-        var (_, division) = _session.FindDivision(team);
+        var (conference, division) = _session.FindDivision(team);
         var rosterById = team.Roster.ToDictionary(player => player.Id);
         var unread = snapshot.Inbox.Count(message => !message.IsRead);
 
@@ -102,9 +129,22 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
             .ToList();
 
         DivisionName = division.Name;
-        DivisionStandings = division.Teams
-            .Select(divisionTeam => new StandingRowViewModel(divisionTeam.Name, divisionTeam.Id == team.Id))
+        DivisionStandings = snapshot.Season.Standings.Conferences
+            .Single(standings => standings.Name == conference.Name).Divisions
+            .Single(standings => standings.Name == division.Name).Teams
+            .Select(entry => new StandingRowViewModel(
+                entry.Rank,
+                _session.GetTeam(entry.Record.TeamId).Name,
+                entry.Record.TeamId == team.Id,
+                entry.Record.GamesPlayed,
+                entry.Record.Wins,
+                entry.Record.RegulationLosses,
+                entry.Record.OvertimeLosses + entry.Record.ShootoutLosses,
+                entry.Record.Points))
             .ToList();
+
+        RefreshNextMatch(snapshot, team);
+        RefreshLatestResults(snapshot, team);
 
         LineupSummary = team.Lineup.ForwardLines
             .Select((line, index) => new LineupSummaryRowViewModel(
@@ -145,22 +185,127 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
     {
         _navigate(page);
     }
+
+    private void RefreshNextMatch(GameSnapshot snapshot, TeamSnapshot team)
+    {
+        var season = snapshot.Season;
+        var lastResult = season.Results.LastOrDefault(result => Involves(result, team.Id));
+        LastResultCaption = lastResult is null
+            ? string.Empty
+            : $"Last: {MatchDisplay.ResultFor(lastResult, team.Id)} {Opponent(lastResult.Home.TeamId, lastResult.Away.TeamId, team.Id)} · {MatchDisplay.ShortDate(lastResult.Date)}";
+
+        var next = season.IsComplete
+            ? null
+            : snapshot.Schedule.Matches.FirstOrDefault(match =>
+                match.Date >= season.CurrentDate && (match.HomeTeamId == team.Id || match.AwayTeamId == team.Id));
+        if (next is null)
+        {
+            NextMatchTitle = "Regular season complete";
+            NextMatchCaption = "No further matches are scheduled.";
+            return;
+        }
+
+        NextMatchTitle = Opponent(next.HomeTeamId, next.AwayTeamId, team.Id);
+        var when = next.Date == season.CurrentDate ? "Today" : MatchDisplay.ShortDate(next.Date);
+        NextMatchCaption = $"{when} · {(next.HomeTeamId == team.Id ? "Home" : "Away")}";
+    }
+
+    /// <summary>
+    /// Shows the most recently played league day: the day before the current date. A day with no
+    /// league matches says so, rather than repeating an older day's results.
+    /// </summary>
+    private void RefreshLatestResults(GameSnapshot snapshot, TeamSnapshot team)
+    {
+        var season = snapshot.Season;
+        var openingDay = snapshot.Schedule.Matches[0].Date;
+        if (season.CurrentDate <= openingDay)
+        {
+            LatestResultsTitle = "LEAGUE RESULTS";
+            LatestResults = [];
+            LatestResultsCaption = $"The regular season opens {MatchDisplay.LongDate(openingDay)}.";
+            return;
+        }
+
+        var day = season.CurrentDate.AddDays(-1);
+        LatestResultsTitle = $"LEAGUE RESULTS · {MatchDisplay.ShortDate(day).ToUpperInvariant()}";
+        LatestResults = season.Results
+            .Where(result => result.Date == day)
+            .Select(result => new LeagueResultRowViewModel(
+                _session.GetTeam(result.Away.TeamId).Name,
+                result.Away.Score,
+                _session.GetTeam(result.Home.TeamId).Name,
+                result.Home.Score,
+                MatchDisplay.DecisionSuffix(result.Decision),
+                Involves(result, team.Id),
+                () => _openMatch(result.Date, Involves(result, team.Id) ? team.Id : result.Home.TeamId)))
+            .ToList();
+        LatestResultsCaption = LatestResults.Count == 0
+            ? $"No league matches were scheduled on {MatchDisplay.LongDate(day)}."
+            : string.Empty;
+    }
+
+    private string Opponent(TeamId homeTeamId, TeamId awayTeamId, TeamId teamId) =>
+        homeTeamId == teamId
+            ? $"vs {_session.GetTeam(awayTeamId).Name}"
+            : $"@ {_session.GetTeam(homeTeamId).Name}";
+
+    private static bool Involves(CompletedMatchSnapshot result, TeamId teamId) =>
+        result.Home.TeamId == teamId || result.Away.TeamId == teamId;
 }
 
 public sealed record SummaryTileViewModel(string Label, string Value, string Caption);
 
-public sealed record StandingRowViewModel(string TeamName, bool IsManaged)
+/// <param name="Losses">Regulation losses; overtime and shootout losses are counted in <paramref name="OvertimeLosses"/>.</param>
+public sealed record StandingRowViewModel(
+    int Rank,
+    string TeamName,
+    bool IsManaged,
+    int GamesPlayed,
+    int Wins,
+    int Losses,
+    int OvertimeLosses,
+    int Points);
+
+public sealed partial class LeagueResultRowViewModel
 {
-    // Every team starts the season without results; standings calculation arrives with the schedule.
-    public int GamesPlayed => 0;
+    private readonly Action _open;
 
-    public int Wins => 0;
+    public LeagueResultRowViewModel(
+        string awayTeamName,
+        int awayScore,
+        string homeTeamName,
+        int homeScore,
+        string decisionSuffix,
+        bool involvesManagedTeam,
+        Action open)
+    {
+        AwayTeamName = awayTeamName;
+        AwayScore = awayScore;
+        HomeTeamName = homeTeamName;
+        HomeScore = homeScore;
+        DecisionSuffix = decisionSuffix;
+        InvolvesManagedTeam = involvesManagedTeam;
+        _open = open;
+    }
 
-    public int Losses => 0;
+    public string AwayTeamName { get; }
 
-    public int OvertimeLosses => 0;
+    public int AwayScore { get; }
 
-    public int Points => 0;
+    public string HomeTeamName { get; }
+
+    public int HomeScore { get; }
+
+    /// <summary>"OT" or "SO", or empty for a regulation result.</summary>
+    public string DecisionSuffix { get; }
+
+    public bool InvolvesManagedTeam { get; }
+
+    [RelayCommand]
+    private void Open()
+    {
+        _open();
+    }
 }
 
 public sealed record LineupSummaryRowViewModel(string Unit, string Players);
