@@ -70,6 +70,19 @@ include a shootout deciding goal.
 Two for any win, one for an overtime or shootout loss, and none for a regulation
 loss.
 
+**Standings**:
+A ranked table of teams (the league, a conference, or a division) from the
+season's results so far. Teams are ordered by standings points, then the NHL
+tie-breakers: fewer games played, regulation wins, regulation and overtime wins,
+wins, head-to-head points among the tied clubs, goal differential, and goals
+for. Teams level on all of them share a rank.
+
+**Head-to-head**:
+The standings points tied clubs earned in games among themselves. Where two
+clubs have met an odd number of times, the first game in the city that hosted
+the extra meeting (the odd game) is not counted. For more than two clubs, the
+share of available points is compared.
+
 **Season statistics**:
 A player's current-season totals, accumulated from their box scores. Like match
 statistics, they exclude the shootout.

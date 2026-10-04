@@ -128,8 +128,24 @@ commits the random state only after the season accepts the day. `GameManager`
 serializes its commands, rejects commands issued from inside a day being played,
 and rejects advancement once the season is complete. The engine is injected
 through Simulation's `IMatchSimulator`; `MatchDecision` lives in Domain because
-both the engine and the history use it. Standings ranking and tie-breakers are
-not applied yet.
+both the engine and the history use it.
+
+Domain's `Season.RankStandings` ranks any group of league teams by the
+[NHL tie-breaking procedure](https://www.nhl.com/info/standings-info/tie-breaking-procedure):
+points, fewer games played, regulation wins, regulation and overtime wins, wins,
+head-to-head points among the tied clubs, goal differential, then goals for.
+It partitions each tied group criterion by criterion rather than sorting
+pairwise, because head-to-head depends on which clubs are tied. Head-to-head
+excludes the odd game (the first game in the city that hosted the extra meeting
+between two clubs) and, for more than two clubs, compares the share of available
+points; it is skipped for a group when any tied club has no counted games among
+the others. The official text does not say what happens when head-to-head
+separates only part of a larger tie; the clubs still level continue to goal
+differential rather than recomputing head-to-head among themselves. That choice
+is provisional and isolated in `StandingsRanking`. Teams level on every
+criterion share a rank and keep league team order. Management exposes league,
+conference, and division tables in `SeasonSnapshot.Standings`, each ranked
+independently. Playoff qualification is not modelled.
 
 Desktop wires a Management game manager at startup. After the new-game screen
 starts a game, a `GameSession` forwards commands (lineup changes, reading
