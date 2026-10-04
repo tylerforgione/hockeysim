@@ -28,8 +28,19 @@ right wing), three defence pairs, a starting goalie, and a backup goalie.
 
 **Match result**:
 The outcome of a simulated match: a decisive score, how it was decided
-(regulation, overtime, or shootout), shots, and the goals players scored.
+(regulation, overtime, or shootout), shots, the goals players scored with their
+assists, and each appearing player's match statistics.
 A shootout winner is credited one deciding goal that no player scored.
+
+**Appearance**:
+Taking part in a match, which counts as one game played. Every dressed skater
+and the starting goalie appear; the dressed backup goalie and scratches do not.
+
+**Match statistics**:
+An appearing player's individual production in one match. Skaters record goals,
+assists, and points; the starting goalie records shots against, saves, and goals
+against. They reconcile with the score and shots, excluding the shootout:
+shootout attempts and the deciding goal count toward no player.
 
 **Overtime**:
 A five-minute sudden-death period played when regulation ends tied.

@@ -10,7 +10,10 @@ editing, team browsing, player detail), and a headless Avalonia walkthrough
 from the startup menu through every available in-game page. Simulation tests
 check result invariants across many seeds, each decision path (regulation,
 overtime, shootout), determinism, unchanged input teams, and statistical bands
-for lineup strength, line and pair usage, and goalie quality.
+for lineup strength, line and pair usage, and goalie quality. Individual match
+statistics are checked for reconciliation with the score and shots, appearance
+and eligibility rules, assist validity, shootout exclusion, and zero-shot and
+zero-production cases.
 Infrastructure tests remain pending with their project.
 
 ## Test organization
