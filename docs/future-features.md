@@ -76,6 +76,33 @@ Later:
 - Migrating saves between releases rather than rejecting another save format
   version ([ADR 0004](adr/0004-local-save-format.md)).
 
+## Desktop end-to-end tests
+
+The Desktop tests closest to end to end use Avalonia.Headless: they render the
+real window in the test process and walk from the startup menu through every
+in-game page, play a day, save, and load. Nothing launches the published
+executable. The release workflow checks that each build publishes and contains
+the executable, and a manual smoke test on each platform covers launching,
+starting a game, advancing a day, saving, and loading
+([testing](testing.md#release-builds)). Packaging, startup, real windowing, and
+platform problems are only caught by that manual check.
+
+Automate it once concrete failures or repetitive release checks justify the
+cost ([testing](testing.md#test-organization)):
+
+- Start with a launch smoke test in the release workflow: run each published
+  build on its own OS runner and confirm it starts, shows the expected version,
+  and exits cleanly. This needs a way to drive or close the app without a
+  person, such as a command-line flag or a display server on Linux.
+- Then consider scripted UI journeys against the real executable (new game,
+  advance a day, save, load) through platform accessibility APIs or an
+  automation driver. Avalonia's UI automation support and the available drivers
+  differ by platform; approve any new test dependency under the
+  [technology stack](tech-stack.md) policy.
+- Keep the journeys few and stable, and keep detailed behaviour in the faster
+  headless and view-model tests. Use fixed seeds and a temporary save folder so
+  runs are reproducible and leave no files behind.
+
 ## Realistic season calendar
 
 The regular season is generated in two stages in `HockeySim.Management/Scheduling/`.
