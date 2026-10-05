@@ -130,6 +130,76 @@ progress and allow cancellation between days. Publish a snapshot when the run
 ends rather than after every day. Decide whether events such as injuries or
 inbox messages should interrupt a run once those features exist.
 
+## Parallel match simulation
+
+`LeagueDay` simulates a day's matches in schedule order on one continuous
+random stream: each match starts from the state the previous one left, so the
+matches cannot run concurrently without changing every outcome.
+
+There is no need yet. A benchmark of the current engine (Release build, Apple
+M4 Pro with 8 performance and 4 efficiency cores, October 2026) found:
+
+- About 20–30 µs per match, or roughly 45 ms of engine time in a 1,344-match
+  season.
+- A full season through `AdvanceDay` takes about 210–330 ms, mostly outside the
+  engine. Each day builds a snapshot whose cost grows with the history (about
+  1.2 ms by season end).
+- With per-match seeds, simulating 20 seasons' worth of matches took 560 ms
+  sequentially and 145 ms with `Parallel.For`: only about 4× on 12 cores, which
+  suggests allocation in the engine (LINQ, lists, result records) rather than
+  arithmetic limits scaling.
+
+Parallelism pays off once a request simulates far more matches than one league
+day:
+[playoff odds and projections](#playoff-odds-and-projections), a calibration
+harness that runs thousands of seasons while tuning
+([configurable match tuning](#configurable-match-tuning)),
+[development leagues](#development-leagues-and-roster-transactions) simulated
+alongside the NHL, and [bulk simulation](#skip-to-date-and-bulk-simulation)
+once AI decisions add work to each day.
+
+Direction:
+
+- Draw one seed per match from the main stream in schedule order, then
+  simulate each match on its own `ControlledRandom`. Results then do not depend
+  on thread scheduling, and the main stream still advances by a fixed amount
+  per day, so saves stay reproducible
+  ([reproducible saves](adr/0002-reproducible-saves.md)). This changes every
+  seeded outcome, which is allowed between engine versions; record the change
+  to how the stream is consumed in an ADR.
+- Keep the engine's inputs read-only during a day so concurrent matches can
+  share teams safely. Applying results stays sequential and day-atomic through
+  `Season.CompleteDay`.
+- Profile before parallelising: cutting allocation in the engine, and building
+  one snapshot per run instead of one per day during bulk simulation, may
+  matter more than extra cores.
+- GPU acceleration is not planned. Matches are branchy and small; a GPU library
+  would be a new cross-platform runtime dependency; and floating-point results
+  that differ between devices would break reproducibility across machines.
+
+## Playoff odds and projections
+
+The standings show current records only.
+
+Estimate each team's chance of making the playoffs, winning its division, and
+winning the championship, and project final points, by simulating the rest of
+the season (and, once playoffs exist, the bracket) many times from the current
+state. Show the odds on the standings page and the managed team's home page.
+
+Direction:
+
+- Projections must not affect the game. Run them on a random stream derived
+  from the game state that never feeds back into the main stream, so viewing
+  odds cannot change an outcome
+  ([reproducible saves](adr/0002-reproducible-saves.md)), and work on copies
+  rather than the live season.
+- Simulating thousands of seasons is the clearest case for
+  [parallel match simulation](#parallel-match-simulation). Run projections off
+  the UI thread, refresh them after a day is played rather than on every
+  snapshot, and decide how many runs give stable enough percentages.
+- Decide whether projections use current lineups and ratings unchanged, or
+  allow for future injuries and AI decisions.
+
 ## Career history and league leaders
 
 **Needs season rollover.** Desktop shows each player's current-season totals.
