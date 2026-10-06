@@ -54,6 +54,7 @@ public sealed class Player
         Age = age;
         Number = number;
         _ratings = new ReadOnlyDictionary<Rating, RatingScore>(ratingValues);
+        Overall = OverallRating.Calculate(position, _ratings);
     }
 
     public PlayerId Id { get; }
@@ -69,6 +70,9 @@ public sealed class Player
     public int Number { get; }
 
     public IReadOnlyDictionary<Rating, RatingScore> Ratings => _ratings;
+
+    /// <summary>The ratings summarised for the player's position; see <see cref="OverallRating"/>.</summary>
+    public RatingScore Overall { get; }
 
     public RatingScore GetRating(Rating rating) => _ratings[rating];
 }

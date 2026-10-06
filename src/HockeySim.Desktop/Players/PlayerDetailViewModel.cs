@@ -6,23 +6,27 @@ using HockeySim.Management.GameManagement.Snapshots;
 namespace HockeySim.Desktop.Players;
 
 /// <summary>
-/// Read-only profile of one player: identity, age, position, lineup role, current-season totals,
-/// and every rating.
+/// Read-only profile of one player: identity, age, position, lineup role, overall rating,
+/// current-season totals, and the ratings that matter to their position.
 /// </summary>
+/// <remarks>
+/// A skater's goaltending ratings and a goalie's skater ratings are generated low and play no
+/// part in their game, so the profile leaves them out. Durability is hidden and never reaches
+/// Desktop.
+/// </remarks>
 public sealed class PlayerDetailViewModel
 {
     private static readonly (string Name, Rating[] Ratings)[] SkaterGroups =
     [
         ("OFFENCE", [Rating.Skating, Rating.PuckControl, Rating.Passing, Rating.ShotPower, Rating.ShotAccuracy, Rating.OffensiveAwareness]),
         ("DEFENCE", [Rating.DefensiveAwareness, Rating.Checking, Rating.ShotBlocking, Rating.StickChecking]),
-        ("GOALTENDING", [Rating.GoalieReflex, Rating.GoaliePositioning, Rating.GoalieReboundControl]),
+        ("GAME", [Rating.Faceoffs, Rating.Stamina, Rating.Toughness, Rating.Discipline]),
     ];
 
     private static readonly (string Name, Rating[] Ratings)[] GoalieGroups =
     [
         ("GOALTENDING", [Rating.GoalieReflex, Rating.GoaliePositioning, Rating.GoalieReboundControl]),
-        ("SKATING AND PUCK", [Rating.Skating, Rating.PuckControl, Rating.Passing]),
-        ("OTHER", [Rating.ShotPower, Rating.ShotAccuracy, Rating.OffensiveAwareness, Rating.DefensiveAwareness, Rating.Checking, Rating.ShotBlocking, Rating.StickChecking]),
+        ("GAME", [Rating.Stamina, Rating.Discipline]),
     ];
 
     public PlayerDetailViewModel(PlayerSnapshot player, TeamSnapshot team, PlayerSeasonTotals seasonTotals, int seasonYear)
@@ -38,6 +42,7 @@ public sealed class PlayerDetailViewModel
         Age = player.Age;
         TeamName = team.Name;
         LineupRole = PlayerDisplay.LineupRole(player.Id, team.Lineup);
+        Overall = player.Overall;
 
         var isGoalie = player.Position == Domain.Position.Goalie;
         SeasonTitle = $"{PlayerDisplay.FormatSeason(seasonYear)} REGULAR SEASON";
@@ -86,6 +91,9 @@ public sealed class PlayerDetailViewModel
     public string TeamName { get; }
 
     public string LineupRole { get; }
+
+    /// <summary>The player's overall rating for their position.</summary>
+    public int Overall { get; }
 
     public string SeasonTitle { get; }
 

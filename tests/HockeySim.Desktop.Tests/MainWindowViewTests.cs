@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -151,7 +153,13 @@ public sealed class MainWindowViewTests
         Assert.True(seasonTable.IsEffectivelyVisible);
         Assert.True(seasonTable.Bounds.Height > 200);
         Assert.True(Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("GoalieSeasonTable")).IsEffectivelyVisible);
-        var seasonStatistics = Single<PlayerDetailView>(rosterView).FindControl<StackPanel>("SeasonStatistics");
+        var playerDetail = Single<PlayerDetailView>(rosterView);
+        var overallText = playerDetail.FindControl<TextBlock>("PlayerOverallText");
+        Assert.True(overallText?.IsEffectivelyVisible);
+        Assert.Equal(
+            Assert.IsType<PlayerDetailViewModel>(playerDetail.DataContext).Overall.ToString(CultureInfo.InvariantCulture),
+            overallText!.Text);
+        var seasonStatistics = playerDetail.FindControl<StackPanel>("SeasonStatistics");
         Assert.True(seasonStatistics?.IsEffectivelyVisible);
         Assert.Equal(
             ["GP", "G", "A", "P"],

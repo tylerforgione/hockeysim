@@ -24,6 +24,7 @@ public sealed class PlayerRowViewModel
         LineupRole = PlayerDisplay.LineupRole(player.Id, lineup);
         IsScratched = LineupRole == "Scratch";
 
+        Overall = player.Overall;
         Skating = player.Ratings[Rating.Skating];
         ShotPower = player.Ratings[Rating.ShotPower];
         ShotAccuracy = player.Ratings[Rating.ShotAccuracy];
@@ -53,6 +54,8 @@ public sealed class PlayerRowViewModel
     public string LineupRole { get; }
 
     public bool IsScratched { get; }
+
+    public int Overall { get; }
 
     public int Skating { get; }
 

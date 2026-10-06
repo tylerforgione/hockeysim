@@ -45,6 +45,10 @@ public static class PlayerDisplay
         Rating.GoalieReflex => "Reflexes",
         Rating.GoaliePositioning => "Positioning",
         Rating.GoalieReboundControl => "Rebound Control",
+        Rating.Faceoffs => "Faceoffs",
+        Rating.Discipline => "Discipline",
+        Rating.Stamina => "Stamina",
+        Rating.Toughness => "Toughness",
         _ => throw new ArgumentOutOfRangeException(nameof(rating), rating, "Unknown rating."),
     };
 

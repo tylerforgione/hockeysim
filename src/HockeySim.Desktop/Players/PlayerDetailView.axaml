@@ -26,15 +26,22 @@
 
     <Grid DockPanel.Dock="Top"
           Margin="12,10"
-          ColumnDefinitions="*,*,*"
+          ColumnDefinitions="*,*,*,Auto"
           RowDefinitions="Auto,Auto"
           RowSpacing="2">
       <TextBlock Classes="label" Text="POSITION" />
       <TextBlock Grid.Column="1" Classes="label" Text="AGE" />
       <TextBlock Grid.Column="2" Classes="label" Text="LINEUP" />
+      <TextBlock Grid.Column="3" Classes="label" Text="OVR" ToolTip.Tip="Overall rating for the player's position" />
       <TextBlock Grid.Row="1" Text="{Binding Position}" FontWeight="SemiBold" />
       <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Age}" FontWeight="SemiBold" />
       <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding LineupRole}" FontWeight="SemiBold" />
+      <TextBlock x:Name="PlayerOverallText"
+                 Grid.Row="1"
+                 Grid.Column="3"
+                 Text="{Binding Overall}"
+                 FontWeight="Bold"
+                 Foreground="{Binding Overall, Converter={StaticResource RatingBrush}}" />
     </Grid>
 
     <Border DockPanel.Dock="Top" Classes="divider" />

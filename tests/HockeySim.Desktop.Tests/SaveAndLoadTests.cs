@@ -305,7 +305,7 @@ public sealed class SaveAndLoadTests : IDisposable
         var (main, gameManager, before) = TryLoadingOverASavedGame("Future");
 
         Assert.Equal(
-            "'Future' was saved by a different version of HockeySim (save format 999). This version reads save format 1 only. Your current game is unchanged.",
+            "'Future' was saved by a different version of HockeySim (save format 999). This version reads save format 2 only. Your current game is unchanged.",
             main.LoadGame!.ErrorMessage);
         AssertActiveGameKept(main, gameManager, before);
     }

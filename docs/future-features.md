@@ -436,7 +436,7 @@ investments. Staff need contracts and a hiring market.
 ## Scouting and hidden information
 
 Desktop shows every player's exact ratings and (from v0.2.0) an overall
-rating. Body-part wear is already hidden in v0.2.0.
+rating. Durability and body-part wear are already hidden in v0.2.0.
 
 Add scouting in the style of OOTP, Football Manager, and Franchise Hockey
 Manager: the user sees estimates of other players' ratings and potential,

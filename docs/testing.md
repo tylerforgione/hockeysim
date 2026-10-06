@@ -84,6 +84,18 @@ save time, find a save whose name differs only in case, skip files that are
 not named saves, and report a folder that cannot be created. Management tests
 check which save names are accepted, their case-insensitive equality, and
 composed accents.
+Rating tests check that a player needs every defined rating, and that the
+overall rating's weights total 100 for each position and never include
+durability. They also check the overall at the edges: uniform 0, 67, and 100
+ratings, one maximum rating contributing its documented weight, unused ratings
+having no effect, and half points rounding up. Management generation tests,
+over several seeds, check that centres lead faceoffs, that defence lead
+defending while forwards lead scoring, and that only goalies are rated for
+goaltending. They also check that overall ratings spread at every position and
+that traits, including durability read from a save, vary. Snapshots omit
+durability, saves carry it through a load, and a save without it is rejected.
+Desktop tests check the OVR column, the overall in the player profile, and
+profiles that list only the ratings a position uses, never durability.
 
 ## Test organization
 

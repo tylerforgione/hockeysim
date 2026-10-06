@@ -22,6 +22,21 @@ management game.
 The one team the user controls. Only its lineup can be changed by the user;
 other teams are read-only.
 
+**Rating**:
+A 0-100 measure of one player ability, such as skating, faceoffs, discipline
+(how rarely the player takes penalties), stamina (how slowly they tire),
+durability (resistance to injury), or toughness (physical play and fighting).
+Every player has a value for every rating, including those their position does
+not use; those are low and not shown.
+
+**Overall rating**:
+A player's ratings summarised as one 0-100 value, weighted for their position.
+It never includes durability.
+
+**Hidden information**:
+Game state the user cannot see, such as a player's durability. It is kept out
+of everything Desktop displays and out of anything shown that could reveal it.
+
 **Lineup**:
 A team's dressed players for a match: four forward lines (left wing, centre,
 right wing), three defence pairs, a starting goalie, and a backup goalie.
