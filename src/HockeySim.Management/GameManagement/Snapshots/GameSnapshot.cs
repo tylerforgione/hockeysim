@@ -186,6 +186,10 @@ public sealed class TeamSnapshot
     }
 }
 
+/// <summary>
+/// A player as the user may see them. Durability is hidden information, so it is absent from
+/// <see cref="Ratings"/>; every other rating is present.
+/// </summary>
 public sealed class PlayerSnapshot
 {
     private readonly ReadOnlyDictionary<Rating, int> _ratings;
@@ -197,6 +201,7 @@ public sealed class PlayerSnapshot
         Position position,
         int age,
         int number,
+        int overall,
         IReadOnlyDictionary<Rating, int> ratings)
     {
         Id = id;
@@ -205,6 +210,7 @@ public sealed class PlayerSnapshot
         Position = position;
         Age = age;
         Number = number;
+        Overall = overall;
         _ratings = new ReadOnlyDictionary<Rating, int>(new Dictionary<Rating, int>(ratings));
     }
 
@@ -220,6 +226,10 @@ public sealed class PlayerSnapshot
 
     public int Number { get; }
 
+    /// <summary>The player's overall rating for their position.</summary>
+    public int Overall { get; }
+
+    /// <summary>Every rating visible to the user, which excludes <see cref="Rating.Durability"/>.</summary>
     public IReadOnlyDictionary<Rating, int> Ratings => _ratings;
 
     internal static PlayerSnapshot Create(Player player) =>
@@ -230,7 +240,10 @@ public sealed class PlayerSnapshot
             player.Position,
             player.Age,
             player.Number,
-            player.Ratings.ToDictionary(pair => pair.Key, pair => pair.Value.Value));
+            player.Overall.Value,
+            player.Ratings
+                .Where(pair => pair.Key != Rating.Durability)
+                .ToDictionary(pair => pair.Key, pair => pair.Value.Value));
 }
 
 public sealed class LineupSnapshot

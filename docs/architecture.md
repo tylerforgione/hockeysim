@@ -226,3 +226,52 @@ Releases publish `HockeySim.Desktop` as a self-contained, single-file build
 named `HockeySim` for each supported runtime identifier; ordinary builds stay
 framework-dependent. See
 [the deployment decision](adr/0005-self-contained-desktop-builds.md).
+
+### Player ratings
+
+Domain's `Player` holds a 0-100 value for every `Rating`: the skater skills,
+the three goaltending ratings, and faceoffs, discipline, stamina, durability,
+and toughness. The current match engine still uses only the original skater
+and goaltending ratings; the new ones are for the event engine. A new game
+generates ratings by position in Management's `PlayerRatingGenerator`. Each
+player draws one talent level that the position's skills follow, shifted by a
+position profile with a little variation per rating. For example, centres take
+faceoffs and defence block shots. Traits (discipline, stamina, durability,
+toughness) vary independently of talent. Ratings outside the position, such as
+a goalie's skating or a skater's reflexes, are drawn low. The values are
+provisional until the event engine is calibrated.
+
+Domain's `OverallRating` derives a player's overall rating from their
+ratings. It is a weighted mean for their position, rounded to the nearest whole
+number (halves round up). The weights are whole percentages that total 100 for
+each position. Unlisted ratings, including durability, carry no weight:
+
+| Rating | Centre | Wing | Defence | Goalie |
+| --- | ---: | ---: | ---: | ---: |
+| Skating | 14 | 15 | 14 | |
+| Shot power | 6 | 9 | 6 | |
+| Shot accuracy | 10 | 13 | 3 | |
+| Puck control | 11 | 11 | 6 | |
+| Passing | 11 | 9 | 9 | |
+| Offensive awareness | 13 | 14 | 6 | |
+| Defensive awareness | 9 | 7 | 17 | |
+| Checking | 3 | 4 | 9 | |
+| Shot blocking | 2 | 2 | 10 | |
+| Stick checking | 5 | 5 | 9 | |
+| Faceoffs | 8 | | | |
+| Discipline | 2 | 2 | 3 | |
+| Stamina | 4 | 5 | 5 | 5 |
+| Toughness | 2 | 4 | 3 | |
+| Reflexes | | | | 40 |
+| Positioning | | | | 35 |
+| Rebound control | | | | 20 |
+
+Durability is hidden information. Management's `PlayerSnapshot` carries the
+overall rating and every other rating, but not durability. Because the overall
+rating gives durability no weight, it cannot reveal it. Saves still carry every
+rating, durability included. Desktop shows the overall rating as the OVR column
+on both roster rating tables and in the player profile. The profile lists only
+the ratings that matter to the position: the skater skills plus faceoffs,
+stamina, toughness, and discipline for a skater, and the goaltending ratings,
+stamina, and discipline for a goalie. Exact ratings stay visible for now; see
+[scouting](future-features.md#scouting-and-hidden-information).

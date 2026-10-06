@@ -88,8 +88,7 @@ internal static class LeagueGenerator
             random.NextInt(0, FictionalLeagueData.FirstNames.Count)];
         var lastName = FictionalLeagueData.LastNames[
             random.NextInt(0, FictionalLeagueData.LastNames.Count)];
-        var ratings = Enum.GetValues<Rating>()
-            .ToDictionary(rating => rating, _ => new RatingScore(random.NextInt(40, 91)));
+        var ratings = PlayerRatingGenerator.Create(position, random);
 
         return new Player(
             new PlayerId(random.NextGuid()),
