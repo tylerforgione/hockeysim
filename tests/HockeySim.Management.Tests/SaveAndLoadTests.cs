@@ -34,6 +34,10 @@ public sealed class SaveAndLoadTests
         ManagedTeamNotInLeague,
         ScheduledTeamNotInLeague,
         MisnumberedInbox,
+        ScratchedSkaterInUnit,
+        MissingUnit,
+        UndefinedSituation,
+        MissingExtraAttackers,
     }
 
     [Fact]
@@ -53,6 +57,7 @@ public sealed class SaveAndLoadTests
         var manager = new GameManager();
         StartGame(manager);
         manager.SetLineup(SwapGoalies(ManagedTeam(manager.GetSnapshot())));
+        manager.SetLineup(ReshuffleUnits(ManagedTeam(manager.GetSnapshot())));
         manager.MarkInboxMessageRead(manager.GetSnapshot().Inbox[1].Id);
         var saved = Advance(manager, 9);
 
@@ -269,6 +274,13 @@ public sealed class SaveAndLoadTests
         var firstTeam = save.Conferences[0].Divisions[0].Teams[0];
         var firstPlayer = firstTeam.Roster[0];
         var unknownPlayerId = new PlayerId(Guid.NewGuid());
+        var firstUnit = firstTeam.Lineup.SpecialSituationUnits[0];
+        var dressedIds = firstTeam.Lineup.ForwardLines.SelectMany(line => new[] { line.LeftWingId, line.CentreId, line.RightWingId })
+            .Concat(firstTeam.Lineup.DefencePairs.SelectMany(pair => new[] { pair.LeftDefenceId, pair.RightDefenceId }))
+            .ToHashSet();
+        var scratchedSkaterId = firstTeam.Roster
+            .First(player => player.Position != Position.Goalie && !dressedIds.Contains(player.Id))
+            .Id;
         return invalidSave switch
         {
             NoGame => null!,
@@ -322,6 +334,36 @@ public sealed class SaveAndLoadTests
                 Schedule = [.. save.Schedule.SkipLast(1), save.Schedule[^1] with { HomeTeamId = new TeamId(Guid.NewGuid()) }],
             },
             MisnumberedInbox => save with { Inbox = save.Inbox.Reverse().ToList() },
+            ScratchedSkaterInUnit => WithFirstTeam(save, firstTeam with
+            {
+                Lineup = firstTeam.Lineup with
+                {
+                    SpecialSituationUnits =
+                    [
+                        firstUnit with { PlayerIds = [scratchedSkaterId, .. firstUnit.PlayerIds.Skip(1)] },
+                        .. firstTeam.Lineup.SpecialSituationUnits.Skip(1),
+                    ],
+                },
+            }),
+            MissingUnit => WithFirstTeam(save, firstTeam with
+            {
+                Lineup = firstTeam.Lineup with { SpecialSituationUnits = firstTeam.Lineup.SpecialSituationUnits.Skip(1).ToList() },
+            }),
+            UndefinedSituation => WithFirstTeam(save, firstTeam with
+            {
+                Lineup = firstTeam.Lineup with
+                {
+                    SpecialSituationUnits =
+                    [
+                        firstUnit with { Situation = (SpecialSituation)42 },
+                        .. firstTeam.Lineup.SpecialSituationUnits.Skip(1),
+                    ],
+                },
+            }),
+            MissingExtraAttackers => WithFirstTeam(save, firstTeam with
+            {
+                Lineup = firstTeam.Lineup with { ExtraAttackerIds = null! },
+            }),
             _ => throw new ArgumentOutOfRangeException(nameof(invalidSave)),
         };
     }
@@ -391,6 +433,20 @@ public sealed class SaveAndLoadTests
     {
         manager.SetLineup(SwapGoalies(ManagedTeam(manager.GetSnapshot())));
         return Advance(manager, 6);
+    }
+
+    /// <summary>
+    /// Reverses the first 5-on-4 unit's slots and makes a defence player the first extra attacker.
+    /// </summary>
+    private static Lineups.SetLineupCommand ReshuffleUnits(TeamSnapshot team)
+    {
+        var command = CurrentLineup(team.Lineup);
+        var first = command.SpecialSituationUnits[0];
+        return command with
+        {
+            SpecialSituationUnits = [first with { PlayerIds = first.PlayerIds.Reverse().ToList() }, .. command.SpecialSituationUnits.Skip(1)],
+            ExtraAttackerIds = [team.Lineup.DefencePairs[2].RightDefenceId, command.ExtraAttackerIds[0]],
+        };
     }
 
     private static Lineups.SetLineupCommand SwapGoalies(TeamSnapshot team) =>

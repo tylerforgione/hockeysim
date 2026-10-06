@@ -61,7 +61,7 @@ public sealed class SaveAndLoadTests : IDisposable
 
         Save(shell, "Progress", confirmOverwrite: true);
         var lines = shell.Lines;
-        lines.StartingGoalie!.SelectedPlayer = lines.Scratches.Single(player => player.PositionAbbreviation == "G");
+        lines.Lineup.StartingGoalie.SelectedPlayer = lines.Lineup.Scratches.Single(player => player.PositionAbbreviation == "G");
         lines.SaveCommand.Execute(null);
         Assert.True(shell.Session.HasUnsavedChanges);
     }
@@ -420,7 +420,7 @@ public sealed class SaveAndLoadTests : IDisposable
     private static async Task<GameSnapshot> PlayOnAsync(GameShellViewModel shell)
     {
         var lines = shell.Lines;
-        lines.StartingGoalie!.SelectedPlayer = lines.Scratches.Single(player => player.PositionAbbreviation == "G");
+        lines.Lineup.StartingGoalie.SelectedPlayer = lines.Lineup.Scratches.Single(player => player.PositionAbbreviation == "G");
         lines.SaveCommand.Execute(null);
         for (var day = 0; day < 4; day++)
         {
@@ -448,7 +448,7 @@ public sealed class SaveAndLoadTests : IDisposable
         Assert.Contains(shell.Standings.Tables.SelectMany(table => table.Rows), row => row.TeamName == managedName && row.GamesPlayed == played);
         Assert.Equal(played, shell.Schedule.Matches.Count(match => match.IsCompleted));
         Assert.Equal(expected.League.Teams.Single(team => team.Id == expected.ManagedTeamId).Roster.Count, shell.Roster.Roster.Skaters.Count + shell.Roster.Roster.Goalies.Count);
-        Assert.All(shell.Lines.ForwardLines.SelectMany(line => new[] { line.LeftWing, line.Centre, line.RightWing }), slot =>
+        Assert.All(shell.Lines.Lineup.ForwardLines.SelectMany(line => new[] { line.LeftWing, line.Centre, line.RightWing }), slot =>
             Assert.Contains(slot.SelectedPlayer!.Id, expected.League.Teams.Single(team => team.Id == expected.ManagedTeamId).Lineup.DressedPlayerIds));
         Assert.Equal(expected.Inbox.Count, shell.Inbox.Messages.Count);
     }

@@ -43,7 +43,7 @@ internal static class TestTeams
             .Select(index => new ForwardLine(wings[index * 2], centres[index], wings[(index * 2) + 1]));
         var defencePairs = Enumerable.Range(0, Lineup.RequiredDefencePairCount)
             .Select(index => new DefencePair(defence[index * 2], defence[(index * 2) + 1]));
-        var lineup = new Lineup(forwardLines, defencePairs, goalies[0], goalies[1]);
+        var lineup = Lineup.CreateWithDefaultUnits(forwardLines, defencePairs, goalies[0], goalies[1]);
 
         return new Team(new TeamId(NextGuid()), name, roster, lineup);
     }

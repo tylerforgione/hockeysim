@@ -34,7 +34,7 @@ internal static class TestLeague
         var wings = roster.Where(player => player.Position == Position.Wing).ToList();
         var defence = roster.Where(player => player.Position == Position.Defence).ToList();
         var goalies = roster.Where(player => player.Position == Position.Goalie).ToList();
-        var lineup = new Lineup(
+        var lineup = Lineup.CreateWithDefaultUnits(
             Enumerable.Range(0, Lineup.RequiredForwardLineCount)
                 .Select(index => new ForwardLine(wings[index * 2], centres[index], wings[(index * 2) + 1])),
             Enumerable.Range(0, Lineup.RequiredDefencePairCount)
