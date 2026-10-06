@@ -32,7 +32,13 @@ and loading into every page. Discard confirmations for loading, starting a new
 game, and exiting are checked with cancellation keeping the game and with no
 question asked when nothing is unsaved. Damaged, other-version, and unreadable
 saves are reported with the game in progress kept, and play continued after a
-load matches uninterrupted play. Simulation tests
+load matches uninterrupted play. Lines page tests load every special-situation
+unit and extra attacker, check slot labels and that unit slots offer every
+skater, save any skater in any unit slot, swap players within a unit but not
+across units, hand a dressed-in scratch the replaced player's unit slots, refuse
+to save a scratched skater on a unit, show other teams read-only while keeping
+the managed team's unsaved edits, and switch tabs; the headless walkthrough
+renders the unit tabs and another team's read-only lineup. Simulation tests
 check result invariants across many seeds, each decision path (regulation,
 overtime, shootout), determinism, unchanged input teams, and statistical bands
 for lineup strength, line and pair usage, and goalie quality. Individual match
@@ -48,7 +54,16 @@ individual totals, completed-match invariants, and the terminal state. Domain
 standings scenarios isolate each ranking criterion, two-club and multi-club
 head-to-head (unbalanced meetings, cycles, a partly broken tie, clubs that have
 not met), odd-game exclusion, shootout goals, games-played differences, the
-no-games state, and teams level on every criterion. Management standings tests
+no-games state, and teams level on every criterion. Domain special-situation
+tests check every format (unit count, slot roles, one centre), any skater in any
+slot, unit invariants (slot count, goalies, duplicates), the exact units each
+situation needs and their order, scratched skaters in units, extra-attacker
+rules, the line-derived defaults, and read-only collections. Management unit
+tests check that every generated team has valid units, that commands change
+units and extra attackers with any skater in any slot, that scratching a unit
+player is rejected until the units change too, that each kind of invalid unit
+command is rejected without changing any lineup, and snapshot isolation.
+Management standings tests
 check that league, conference, and division tables hold the right teams in a
 consistent order before any match, midseason, and after the full season, and
 that they are read-only and isolated between snapshots.
@@ -60,7 +75,7 @@ fixture plays one full 1,344-match season and checks schedule completion, 84
 games per team, records and individual totals reconciled with the results, every
 decision type, and the completed-season state.
 Management save tests round-trip a new game, a midseason game with a changed
-lineup and a read message, and a completed season. They check that the loaded
+lineup, changed units, and a read message, and a completed season. They check that the loaded
 game matches what was saved, from rosters and lineups through every result,
 team records, season totals, standings, the inbox, and the random state, and
 that a lineup change and further league days after loading give the same
@@ -69,12 +84,15 @@ different active game, that a save is a copy later play does not change, and
 that a loaded game accepts commands. Each kind of invalid save is rejected
 (missing values, missing, extra, or duplicate results, current dates outside the
 season, scores that do not reconcile, unrostered or ineligible players, invalid
-ratings, an unknown managed team or scheduled team, misnumbered inbox messages),
+ratings, an unknown managed team or scheduled team, misnumbered inbox messages,
+a scratched skater in a unit, a missing unit, an undefined situation, missing
+extra attackers),
 and the active game then continues exactly as if the load was never attempted.
 Infrastructure tests save and load real files in a temporary directory: new,
 midseason, and completed games with continued play compared against
 uninterrupted play, the file header, replacing an earlier save, a failed save
-leaving the earlier save intact with no temporary file, the random state
+leaving the earlier save intact with no temporary file, changed units and
+extra attackers, situations written by name, malformed unit values, the random state
 preserved exactly at its extremes, other format versions rejected as
 unsupported, non-save, damaged, truncated, and malformed files rejected, a
 well-formed save that breaks game rules rejected with the active game
