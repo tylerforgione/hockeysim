@@ -44,15 +44,22 @@ public sealed record SavedPlayer(
     int Number,
     IReadOnlyDictionary<Rating, int> Ratings);
 
+/// <param name="SpecialSituationUnits">Every unit, grouped by situation and first unit first.</param>
+/// <param name="ExtraAttackerIds">The extra attackers, first choice first.</param>
 public sealed record SavedLineup(
     IReadOnlyList<SavedForwardLine> ForwardLines,
     IReadOnlyList<SavedDefencePair> DefencePairs,
     PlayerId StartingGoalieId,
-    PlayerId BackupGoalieId);
+    PlayerId BackupGoalieId,
+    IReadOnlyList<SavedSpecialSituationUnit> SpecialSituationUnits,
+    IReadOnlyList<PlayerId> ExtraAttackerIds);
 
 public sealed record SavedForwardLine(PlayerId LeftWingId, PlayerId CentreId, PlayerId RightWingId);
 
 public sealed record SavedDefencePair(PlayerId LeftDefenceId, PlayerId RightDefenceId);
+
+/// <param name="PlayerIds">The skaters in the slot order of the situation's format.</param>
+public sealed record SavedSpecialSituationUnit(SpecialSituation Situation, IReadOnlyList<PlayerId> PlayerIds);
 
 public sealed record SavedScheduledMatch(DateOnly Date, TeamId HomeTeamId, TeamId AwayTeamId);
 
