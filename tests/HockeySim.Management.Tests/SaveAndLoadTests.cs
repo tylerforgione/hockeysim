@@ -30,6 +30,7 @@ public sealed class SaveAndLoadTests
         DuplicateRosterPlayer,
         RatingOutOfRange,
         MissingRating,
+        MissingDurability,
         ManagedTeamNotInLeague,
         ScheduledTeamNotInLeague,
         MisnumberedInbox,
@@ -138,6 +139,26 @@ public sealed class SaveAndLoadTests
 
         Assert.Equal(Describe(saved), Describe(loaded));
         Assert.Equal(Describe(ContinueWithLineupChange(source)), Describe(ContinueWithLineupChange(target)));
+    }
+
+    [Fact]
+    public void EveryRatingIncludingHiddenDurabilityIsSavedAndRestored()
+    {
+        var manager = new GameManager();
+        StartGame(manager);
+        var store = new MemorySaveStore();
+        manager.SaveGame(store);
+        var loadedManager = new GameManager();
+        loadedManager.LoadGame(store);
+        var resaved = new MemorySaveStore();
+
+        loadedManager.SaveGame(resaved);
+
+        // Snapshots omit durability, so compare the saves themselves.
+        Assert.All(
+            SavedPlayers(store.Saved!),
+            player => Assert.Equal(Enum.GetValues<Rating>().Order(), player.Ratings.Keys.Order()));
+        Assert.Equal(DescribeRatings(store.Saved!), DescribeRatings(resaved.Saved!));
     }
 
     [Fact]
@@ -289,6 +310,12 @@ public sealed class SaveAndLoadTests
             {
                 Ratings = firstPlayer.Ratings.Skip(1).ToDictionary(rating => rating.Key, rating => rating.Value),
             }),
+            MissingDurability => WithFirstPlayer(save, firstPlayer with
+            {
+                Ratings = firstPlayer.Ratings
+                    .Where(rating => rating.Key != Rating.Durability)
+                    .ToDictionary(rating => rating.Key, rating => rating.Value),
+            }),
             ManagedTeamNotInLeague => save with { ManagedTeamId = new TeamId(Guid.NewGuid()) },
             ScheduledTeamNotInLeague => save with
             {
@@ -327,6 +354,16 @@ public sealed class SaveAndLoadTests
             ],
         };
     }
+
+    private static IEnumerable<SavedPlayer> SavedPlayers(GameSave save) =>
+        save.Conferences
+            .SelectMany(conference => conference.Divisions)
+            .SelectMany(division => division.Teams)
+            .SelectMany(team => team.Roster);
+
+    private static IEnumerable<string> DescribeRatings(GameSave save) =>
+        SavedPlayers(save).Select(player =>
+            $"{player.Id} " + string.Join(",", player.Ratings.OrderBy(rating => rating.Key).Select(rating => $"{rating.Key}={rating.Value}")));
 
     private static (GameManager Manager, GameSnapshot Snapshot) SaveAndLoadIntoNewManager(GameManager manager)
     {
