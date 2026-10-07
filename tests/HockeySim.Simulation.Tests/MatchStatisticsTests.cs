@@ -1,4 +1,5 @@
 using HockeySim.Domain;
+using HockeySim.Simulation.Events;
 using HockeySim.Simulation.Randomness;
 
 using Xunit;
@@ -18,7 +19,7 @@ public sealed class MatchStatisticsTests
 
         for (var seed = 0UL; seed < SeedCount; seed++)
         {
-            var result = simulator.Simulate(match, new RandomState(seed));
+            var result = simulator.Simulate(match, OvertimeFormat.RegularSeason, new RandomState(seed));
             decisions.Add(result.Decision);
 
             AssertTeamStatisticsReconcile(result, result.Home, result.Away);
@@ -38,7 +39,7 @@ public sealed class MatchStatisticsTests
 
         for (var seed = 0UL; seed < SeedCount; seed++)
         {
-            foreach (var goal in simulator.Simulate(match, new RandomState(seed)).Goals)
+            foreach (var goal in simulator.Simulate(match, OvertimeFormat.RegularSeason, new RandomState(seed)).Goals)
             {
                 var team = goal.TeamId == home.Id ? home : away;
                 var teammates = DressedSkaterIds(team);
@@ -72,7 +73,7 @@ public sealed class MatchStatisticsTests
 
         for (var seed = 0UL; seed < 50; seed++)
         {
-            var result = simulator.Simulate(match, new RandomState(seed));
+            var result = simulator.Simulate(match, OvertimeFormat.RegularSeason, new RandomState(seed));
 
             foreach (var (team, teamResult) in new[] { (home, result.Home), (away, result.Away) })
             {
@@ -93,7 +94,7 @@ public sealed class MatchStatisticsTests
         var match = TestTeams.CreateMatch(TestTeams.Create("Home"), TestTeams.Create("Away"));
         var simulator = new MatchSimulator();
         var shootouts = Enumerable.Range(0, SeedCount)
-            .Select(seed => simulator.Simulate(match, new RandomState((ulong)seed)))
+            .Select(seed => simulator.Simulate(match, OvertimeFormat.RegularSeason, new RandomState((ulong)seed)))
             .Where(result => result.Decision == MatchDecision.Shootout)
             .ToList();
 
@@ -129,7 +130,7 @@ public sealed class MatchStatisticsTests
         var simulator = new MatchSimulator();
 
         var shutout = Enumerable.Range(0, 200)
-            .Select(seed => simulator.Simulate(match, new RandomState((ulong)seed)))
+            .Select(seed => simulator.Simulate(match, OvertimeFormat.RegularSeason, new RandomState((ulong)seed)))
             .FirstOrDefault(result => result.Away.Shots == 0);
 
         Assert.NotNull(shutout);
@@ -153,7 +154,7 @@ public sealed class MatchStatisticsTests
     [Fact]
     public void SavePercentageIsSavesOverShotsAgainst()
     {
-        var goalie = new GoalieMatchStatistics(new PlayerId(Guid.NewGuid()), ShotsAgainst: 30, GoalsAgainst: 3);
+        var goalie = new GoalieMatchStatistics(new PlayerId(Guid.NewGuid()), ShotsAgainst: 30, GoalsAgainst: 3, ExpectedGoalsAgainst: 2.5, TimeOnIce: TimeSpan.FromMinutes(60));
 
         Assert.Equal(27, goalie.Saves);
         Assert.Equal(0.9, goalie.SavePercentage!.Value, precision: 10);
@@ -166,7 +167,7 @@ public sealed class MatchStatisticsTests
         var match = TestTeams.CreateMatch(home, TestTeams.Create("Away"));
         var simulator = new MatchSimulator();
         var results = Enumerable.Range(0, 400)
-            .Select(seed => simulator.Simulate(match, new RandomState((ulong)seed)))
+            .Select(seed => simulator.Simulate(match, OvertimeFormat.RegularSeason, new RandomState((ulong)seed)))
             .ToList();
 
         var goals = results.Sum(result => result.Goals.Count);

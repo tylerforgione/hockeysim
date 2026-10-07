@@ -8,12 +8,52 @@ namespace HockeySim.Domain.Tests;
 internal static class TestResults
 {
     private const int Shots = 30;
+    private const double TeamExpectedGoals = 2.5;
+
+    public static TimeSpan MatchLength { get; } = TimeSpan.FromMinutes(60);
 
     public static PlayerId FirstSkater(Team team) => team.Lineup.ForwardLines[0].LeftWing.Id;
 
     /// <summary>
-    /// Builds a result in which each side's first forward scores every player goal. A shootout
-    /// adds the deciding goal to the winner's score.
+    /// A skater box score with every unnamed statistic zero. Shots default to the goals and shot
+    /// attempts to the shots, the fewest that are consistent.
+    /// </summary>
+    public static SkaterBoxScore Skater(
+        PlayerId playerId,
+        int goals = 0,
+        int assists = 0,
+        int? shots = null,
+        int? shotAttempts = null,
+        double expectedGoals = 0,
+        int plusMinus = 0,
+        int blockedShots = 0,
+        int faceoffsWon = 0,
+        int faceoffsLost = 0)
+    {
+        var shotsOnGoal = shots ?? goals;
+        return new SkaterBoxScore(
+            playerId,
+            goals,
+            assists,
+            plusMinus,
+            TimeSpan.FromMinutes(15),
+            shotsOnGoal,
+            shotAttempts ?? shotsOnGoal,
+            hits: 0,
+            blockedShots,
+            faceoffsWon,
+            faceoffsLost,
+            takeaways: 0,
+            giveaways: 0,
+            expectedGoals);
+    }
+
+    public static GoalieBoxScore Goalie(PlayerId playerId, int shotsAgainst, int goalsAgainst, double expectedGoalsAgainst = 0) =>
+        new(playerId, shotsAgainst, goalsAgainst, expectedGoalsAgainst, MatchLength);
+
+    /// <summary>
+    /// Builds a result in which each side's first forward takes every shot and scores every player
+    /// goal. A shootout adds the deciding goal to the winner's score.
     /// </summary>
     public static CompletedMatch Create(
         League league,
@@ -38,8 +78,10 @@ internal static class TestResults
         {
             var skaters = team.Lineup.ForwardLines.SelectMany(line => line.Players)
                 .Concat(team.Lineup.DefencePairs.SelectMany(pair => pair.Players))
-                .Select(player => new SkaterBoxScore(player.Id, player.Id == FirstSkater(team) ? playerGoals : 0, 0));
-            var goalie = new GoalieBoxScore(team.Lineup.StartingGoalie.Id, Shots, opponentGoals);
+                .Select(player => player.Id == FirstSkater(team)
+                    ? Skater(player.Id, playerGoals, shots: Shots, expectedGoals: TeamExpectedGoals)
+                    : Skater(player.Id));
+            var goalie = Goalie(team.Lineup.StartingGoalie.Id, Shots, opponentGoals, TeamExpectedGoals);
             return new CompletedMatchTeam(team.Id, score, Shots, skaters, goalie);
         }
     }
