@@ -55,7 +55,7 @@ internal static class TestLeague
             "Test",
             "Player",
             position,
-            24,
+            TestBiography.Create(),
             number,
             Enum.GetValues<Rating>().ToDictionary(rating => rating, _ => new RatingScore(50)));
 }

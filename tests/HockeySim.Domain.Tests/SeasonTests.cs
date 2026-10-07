@@ -232,6 +232,28 @@ public sealed class SeasonTests
             _league, new SeasonSchedule([new ScheduledMatch(OpeningDay, _first.Id, stranger)])));
     }
 
+    [Theory]
+    [InlineData("2017-03-15")]
+    [InlineData("2062-03-14")]
+    public void EveryPlayerMayBeFrom16To60OnOpeningDay(string openingDay)
+    {
+        // Every test player was born on 15 March 2001.
+        var season = new Season(
+            _league, new SeasonSchedule([new ScheduledMatch(DateOnly.Parse(openingDay), _first.Id, _second.Id)]));
+
+        Assert.Equal(DateOnly.Parse(openingDay), season.CurrentDate);
+    }
+
+    [Theory]
+    [InlineData("2000-10-01")]
+    [InlineData("2017-03-14")]
+    [InlineData("2062-03-15")]
+    public void ASeasonRejectsPlayersUnbornYoungerThan16OrOlderThan60OnOpeningDay(string openingDay)
+    {
+        Assert.Throws<ArgumentException>(() => new Season(
+            _league, new SeasonSchedule([new ScheduledMatch(DateOnly.Parse(openingDay), _first.Id, _second.Id)])));
+    }
+
     [Fact]
     public void ACompletedMatchMustBeDecisive()
     {

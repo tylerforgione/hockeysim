@@ -118,5 +118,5 @@ public sealed class OverallRatingTests
         Enum.GetValues<Rating>().ToDictionary(rating => rating, _ => new RatingScore(value));
 
     private static Player CreatePlayer(Position position, IReadOnlyDictionary<Rating, RatingScore> ratings) =>
-        new(new PlayerId(Guid.Parse("00000000-0000-0000-0000-000000000001")), "Test", "Player", position, 24, 12, ratings);
+        new(new PlayerId(Guid.Parse("00000000-0000-0000-0000-000000000001")), "Test", "Player", position, TestBiography.Create(), 12, ratings);
 }

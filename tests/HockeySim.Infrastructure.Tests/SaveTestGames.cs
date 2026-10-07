@@ -65,7 +65,7 @@ internal static class SaveTestGames
                 + $"units {string.Join(";", team.Lineup.SpecialSituationUnits.Select(unit => $"{unit.Situation}:{string.Join(",", unit.PlayerIds)}"))} "
                 + $"extra attackers {string.Join(",", team.Lineup.ExtraAttackerIds)}");
             lines.AddRange(team.Roster.Select(player =>
-                $"  {player.Id} {player.FirstName} {player.LastName} {player.Position} {player.Age} #{player.Number} "
+                $"  {player.Id} {player.FirstName} {player.LastName} {player.Position} {player.Age} {player.Biography} #{player.Number} "
                 + string.Join(",", player.Ratings.OrderBy(rating => rating.Key).Select(rating => rating.Value))));
         }
 

@@ -62,22 +62,6 @@ internal static class FictionalLeagueData
             ]),
     ];
 
-    public static IReadOnlyList<string> FirstNames { get; } =
-    [
-        "Adam", "Alex", "Andre", "Anton", "Ben", "Caleb", "Carter", "Cole",
-        "Daniel", "Elias", "Emil", "Ethan", "Felix", "Gabriel", "Henrik", "Isaac",
-        "Jack", "Jonah", "Julien", "Kai", "Leo", "Liam", "Logan", "Lucas",
-        "Marek", "Mason", "Nathan", "Noah", "Oliver", "Owen", "Sam", "Theo",
-    ];
-
-    public static IReadOnlyList<string> LastNames { get; } =
-    [
-        "Andersson", "Bennett", "Bouchard", "Campbell", "Caron", "Chen", "Clarke", "Dubois",
-        "Eriksson", "Fischer", "Gallagher", "Garcia", "Hansen", "Hughes", "Ivanov", "Johnson",
-        "Keller", "Kim", "Larsson", "Lee", "Lefebvre", "Martin", "Miller", "Nakamura",
-        "Novak", "Olsen", "Patel", "Petrov", "Roy", "Smith", "Sullivan", "Wilson",
-    ];
-
     internal sealed record ConferenceDefinition(
         string Name,
         IReadOnlyList<DivisionDefinition> Divisions);

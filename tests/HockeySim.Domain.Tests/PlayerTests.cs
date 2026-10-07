@@ -59,7 +59,7 @@ public sealed class PlayerTests
             "Test",
             "Player",
             position,
-            24,
+            TestBiography.Create(),
             number,
             ratings);
 

@@ -96,9 +96,21 @@ internal static class GameSaveRestorer
             saved.FirstName,
             saved.LastName,
             saved.Position,
-            saved.Age,
+            RestoreBiography(Required(saved.Biography, "player biography")),
             saved.Number,
             Required(saved.Ratings, "player ratings").ToDictionary(rating => rating.Key, rating => new RatingScore(rating.Value)));
+
+    private static PlayerBiography RestoreBiography(SavedBiography saved)
+    {
+        var birthplace = Required(saved.Birthplace, "player birthplace");
+        return new PlayerBiography(
+            saved.BirthDate,
+            new Birthplace(birthplace.City, birthplace.Region, birthplace.Country),
+            saved.Nationality,
+            saved.Handedness,
+            new Height(saved.HeightInches),
+            new Weight(saved.WeightPounds));
+    }
 
     /// <summary>
     /// Plays back every saved league day from opening day up to the saved current date. Each day

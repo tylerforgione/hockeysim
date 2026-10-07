@@ -136,7 +136,7 @@ public sealed class LineupTests
             scratchedCentre.FirstName,
             scratchedCentre.LastName,
             Position.Wing,
-            scratchedCentre.Age,
+            scratchedCentre.Biography,
             scratchedCentre.Number,
             scratchedCentre.Ratings);
         var forwardLines = originalLineup.ForwardLines.ToList();
@@ -186,7 +186,7 @@ public sealed class LineupTests
             "Test",
             "Player",
             position,
-            24,
+            TestBiography.Create(),
             number,
             Enum.GetValues<Rating>().ToDictionary(rating => rating, _ => new RatingScore(50)));
 }

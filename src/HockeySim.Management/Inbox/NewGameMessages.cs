@@ -91,7 +91,7 @@ internal static class NewGameMessages
         // The most experienced skater speaks for the room until captaincy becomes a managed decision.
         var veteran = team.Roster
             .Where(player => player.Position != Position.Goalie)
-            .OrderByDescending(player => player.Age)
+            .OrderBy(player => player.Biography.BirthDate)
             .First();
 
         inbox.Deliver(

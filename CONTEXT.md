@@ -11,6 +11,23 @@ The overall game in which the user manages a hockey team and matches are simulat
 A hockey athlete belonging to the simulated world.
 _Avoid_: Using player to mean the human user in domain documentation.
 
+**Biography**:
+A player's identifying details: birth date, birthplace (city, the state or
+province in Canada and the United States, and country), nationality,
+handedness, height, and weight.
+
+**Age**:
+A player's completed years on a given date, derived from the birth date rather
+than stored, so players age as the season passes. A player born on 29 February
+turns a year older on 28 February in other years. Every player is 16 to 60 on a
+season's opening day.
+
+**Nationality**:
+The country a player represents. Usually, but not always, the birth country.
+
+**Handedness**:
+The hand a skater shoots or a goalie catches with: left or right.
+
 **Team**:
 A group of hockey players competing together, with a roster and lineup.
 

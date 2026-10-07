@@ -40,9 +40,21 @@ public sealed record SavedPlayer(
     string FirstName,
     string LastName,
     Position Position,
-    int Age,
+    SavedBiography Biography,
     int Number,
     IReadOnlyDictionary<Rating, int> Ratings);
+
+/// <param name="Handedness">The hand a skater shoots or a goalie catches with.</param>
+public sealed record SavedBiography(
+    DateOnly BirthDate,
+    SavedBirthplace Birthplace,
+    Country Nationality,
+    Handedness Handedness,
+    int HeightInches,
+    int WeightPounds);
+
+/// <param name="Region">The state or province, present only where the country uses them.</param>
+public sealed record SavedBirthplace(string City, string? Region, Country Country);
 
 /// <param name="SpecialSituationUnits">Every unit, grouped by situation and first unit first.</param>
 /// <param name="ExtraAttackerIds">The extra attackers, first choice first.</param>

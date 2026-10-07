@@ -44,6 +44,39 @@
                  Foreground="{Binding Overall, Converter={StaticResource RatingBrush}}" />
     </Grid>
 
+    <Grid x:Name="Biography"
+          DockPanel.Dock="Top"
+          Margin="12,0,12,10"
+          ColumnDefinitions="*,*,*"
+          RowDefinitions="Auto,Auto"
+          RowSpacing="2">
+      <TextBlock Classes="label" Text="HEIGHT" />
+      <TextBlock Grid.Column="1" Classes="label" Text="WEIGHT" />
+      <TextBlock Grid.Column="2" Classes="label" Text="{Binding HandednessLabel}" />
+      <TextBlock Grid.Row="1" Text="{Binding Height}" FontWeight="SemiBold" />
+      <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Weight}" FontWeight="SemiBold" />
+      <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding Handedness}" FontWeight="SemiBold" />
+    </Grid>
+
+    <Grid DockPanel.Dock="Top"
+          Margin="12,0,12,10"
+          ColumnDefinitions="Auto,*"
+          RowDefinitions="Auto,Auto,Auto"
+          ColumnSpacing="10"
+          RowSpacing="3">
+      <TextBlock Classes="label" VerticalAlignment="Center" Text="BORN" />
+      <TextBlock Grid.Row="1" Classes="label" VerticalAlignment="Center" Text="BIRTHPLACE" />
+      <TextBlock Grid.Row="2" Classes="label" VerticalAlignment="Center" Text="NATIONALITY" />
+      <TextBlock Grid.Column="1" Text="{Binding BirthDate}" FontWeight="SemiBold" />
+      <TextBlock Grid.Row="1"
+                 Grid.Column="1"
+                 Text="{Binding Birthplace}"
+                 FontWeight="SemiBold"
+                 TextTrimming="CharacterEllipsis"
+                 ToolTip.Tip="{Binding Birthplace}" />
+      <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Nationality}" FontWeight="SemiBold" />
+    </Grid>
+
     <Border DockPanel.Dock="Top" Classes="divider" />
 
     <StackPanel x:Name="SeasonStatistics" DockPanel.Dock="Top" Margin="12,10" Spacing="6">

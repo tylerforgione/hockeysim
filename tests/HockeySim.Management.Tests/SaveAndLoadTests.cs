@@ -31,6 +31,12 @@ public sealed class SaveAndLoadTests
         RatingOutOfRange,
         MissingRating,
         MissingDurability,
+        MissingBiography,
+        MissingBirthplace,
+        RegionInCountryWithoutRegions,
+        UndefinedNationality,
+        HeightOutOfRange,
+        PlayerTooYoungOnOpeningDay,
         ManagedTeamNotInLeague,
         ScheduledTeamNotInLeague,
         MisnumberedInbox,
@@ -327,6 +333,27 @@ public sealed class SaveAndLoadTests
                 Ratings = firstPlayer.Ratings
                     .Where(rating => rating.Key != Rating.Durability)
                     .ToDictionary(rating => rating.Key, rating => rating.Value),
+            }),
+            MissingBiography => WithFirstPlayer(save, firstPlayer with { Biography = null! }),
+            MissingBirthplace => WithFirstPlayer(save, firstPlayer with
+            {
+                Biography = firstPlayer.Biography with { Birthplace = null! },
+            }),
+            RegionInCountryWithoutRegions => WithFirstPlayer(save, firstPlayer with
+            {
+                Biography = firstPlayer.Biography with { Birthplace = new SavedBirthplace("Stockholm", "Uppland", Country.Sweden) },
+            }),
+            UndefinedNationality => WithFirstPlayer(save, firstPlayer with
+            {
+                Biography = firstPlayer.Biography with { Nationality = (Country)99 },
+            }),
+            HeightOutOfRange => WithFirstPlayer(save, firstPlayer with
+            {
+                Biography = firstPlayer.Biography with { HeightInches = 0 },
+            }),
+            PlayerTooYoungOnOpeningDay => WithFirstPlayer(save, firstPlayer with
+            {
+                Biography = firstPlayer.Biography with { BirthDate = save.Schedule[0].Date.AddYears(-15) },
             }),
             ManagedTeamNotInLeague => save with { ManagedTeamId = new TeamId(Guid.NewGuid()) },
             ScheduledTeamNotInLeague => save with

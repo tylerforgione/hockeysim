@@ -50,7 +50,7 @@ public sealed class GameSnapshot
         RandomState randomState,
         InboxMessages inbox) =>
         new(
-            LeagueSnapshot.Create(season.League),
+            LeagueSnapshot.Create(season.League, season.CurrentDate),
             ScheduleSnapshot.Create(season.Schedule),
             SeasonSnapshot.Create(season),
             managedTeamId,
@@ -79,10 +79,11 @@ public sealed class LeagueSnapshot
 
     public IReadOnlyList<TeamSnapshot> Teams => _teams;
 
-    internal static LeagueSnapshot Create(League league)
+    /// <param name="currentDate">The game's current date, which players' ages are given on.</param>
+    internal static LeagueSnapshot Create(League league, DateOnly currentDate)
     {
         var teams = league.Teams
-            .Select(TeamSnapshot.Create)
+            .Select(team => TeamSnapshot.Create(team, currentDate))
             .ToDictionary(team => team.Id);
         var conferences = league.Conferences
             .Select(conference => ConferenceSnapshot.Create(conference, teams))
@@ -167,7 +168,7 @@ public sealed class TeamSnapshot
 
     public LineupSnapshot Lineup { get; }
 
-    internal static TeamSnapshot Create(Team team)
+    internal static TeamSnapshot Create(Team team, DateOnly currentDate)
     {
         var dressedPlayerIds = team.Lineup.DressedPlayers.Select(
             player => player.Id
@@ -180,7 +181,7 @@ public sealed class TeamSnapshot
         return new(
             team.Id,
             team.Name,
-            team.Roster.Select(PlayerSnapshot.Create).ToList(),
+            team.Roster.Select(player => PlayerSnapshot.Create(player, currentDate)).ToList(),
             scratchedPlayerIds,
             LineupSnapshot.Create(team.Lineup));
     }
@@ -190,6 +191,9 @@ public sealed class TeamSnapshot
 /// A player as the user may see them. Durability is hidden information, so it is absent from
 /// <see cref="Ratings"/>; every other rating is present.
 /// </summary>
+/// <remarks>
+/// <see cref="Age"/> is the player's age on the game's current date when the snapshot was taken.
+/// </remarks>
 public sealed class PlayerSnapshot
 {
     private readonly ReadOnlyDictionary<Rating, int> _ratings;
@@ -199,6 +203,7 @@ public sealed class PlayerSnapshot
         string firstName,
         string lastName,
         Position position,
+        PlayerBiography biography,
         int age,
         int number,
         int overall,
@@ -208,6 +213,7 @@ public sealed class PlayerSnapshot
         FirstName = firstName;
         LastName = lastName;
         Position = position;
+        Biography = biography;
         Age = age;
         Number = number;
         Overall = overall;
@@ -222,6 +228,9 @@ public sealed class PlayerSnapshot
 
     public Position Position { get; }
 
+    /// <summary>Birth date, birthplace, nationality, handedness, height, and weight.</summary>
+    public PlayerBiography Biography { get; }
+
     public int Age { get; }
 
     public int Number { get; }
@@ -232,13 +241,14 @@ public sealed class PlayerSnapshot
     /// <summary>Every rating visible to the user, which excludes <see cref="Rating.Durability"/>.</summary>
     public IReadOnlyDictionary<Rating, int> Ratings => _ratings;
 
-    internal static PlayerSnapshot Create(Player player) =>
+    internal static PlayerSnapshot Create(Player player, DateOnly currentDate) =>
         new(
             player.Id,
             player.FirstName,
             player.LastName,
             player.Position,
-            player.Age,
+            player.Biography,
+            player.AgeOn(currentDate),
             player.Number,
             player.Overall.Value,
             player.Ratings

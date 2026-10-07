@@ -38,9 +38,18 @@ internal static class GameSaveCapture
             player.FirstName,
             player.LastName,
             player.Position,
-            player.Age,
+            CaptureBiography(player.Biography),
             player.Number,
             player.Ratings.ToDictionary(rating => rating.Key, rating => rating.Value.Value));
+
+    private static SavedBiography CaptureBiography(PlayerBiography biography) =>
+        new(
+            biography.BirthDate,
+            new SavedBirthplace(biography.Birthplace.City, biography.Birthplace.Region, biography.Birthplace.Country),
+            biography.Nationality,
+            biography.Handedness,
+            biography.Height.Inches,
+            biography.Weight.Pounds);
 
     private static SavedLineup CaptureLineup(Lineup lineup) =>
         new(
