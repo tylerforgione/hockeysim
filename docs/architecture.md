@@ -299,3 +299,30 @@ the ratings that matter to the position: the skater skills plus faceoffs,
 stamina, toughness, and discipline for a skater, and the goaltending ratings,
 stamina, and discipline for a goalie. Exact ratings stay visible for now; see
 [scouting](future-features.md#scouting-and-hidden-information).
+
+### Player biographies
+
+Domain's `PlayerBiography` holds each player's birth date, `Birthplace`,
+nationality (`Country`), `Handedness`, `Height` (whole inches), and `Weight`
+(whole pounds). Rosters list size in imperial units, so they are stored that
+way; a metric display setting is a
+[future feature](future-features.md#display-settings). A birthplace names a
+state or province exactly when its country is Canada or the United States.
+Age is never stored: `Player.AgeOn(date)` derives it, and `Season` rejects a
+league with any player younger than 16 or older than 60 on opening day.
+`PlayerSnapshot.Age` is the age on the game's current date, so ages tick over on
+birthdays as days are played.
+
+Management's `PlayerBiographyGenerator` draws a nationality from
+`PlayerOriginData`, weighted to approximate recent NHL rosters (about 41%
+Canada, 27% United States, then Sweden, Finland, Russia, Czechia, and smaller
+hockey nations), then a name from that nation's pools, so names always fit the
+nationality. About 6% of players are born in another country. Ages on opening
+day run from 18 to 40 and cluster in the mid-twenties. Most players shoot left
+and nine in ten goalies catch left; defence and goalies are taller on average,
+and weight follows height. Like ratings, these values are provisional. The
+event engine (#50) is expected to use size in physical play.
+
+Desktop's roster tables add nationality (a three-letter code such as CAN or
+SUI) and handedness columns, and the player profile shows height, weight,
+whether the player shoots or catches, birth date, birthplace, and nationality.

@@ -114,6 +114,23 @@ that traits, including durability read from a save, vary. Snapshots omit
 durability, saves carry it through a load, and a save without it is rejected.
 Desktop tests check the OVR column, the overall in the player profile, and
 profiles that list only the ratings a position uses, never durability.
+Domain biography tests check age at birthdays and leap-day birthdays, no age
+before birth, birth regions required exactly in Canada and the United States,
+height and weight ranges and their edges, missing or undefined details, and a
+season that accepts players aged 16 to 60 on opening day and rejects anyone
+younger, older, or not yet born. Management generation tests, over several
+seeds, check the nationality mix, that names never cross between nations with
+distinct name pools, that most players are born in the country they represent,
+birthplace regions, handedness by position, taller defence and goalies with
+weight following height, opening-day ages, reproducibility, and that a player's
+snapshot age rises on their birthday as days are played. Saves round-trip every
+biography; a missing biography or birthplace, a region where the country has
+none, an undefined nationality, an out-of-range height, and a player too young
+on opening day are rejected, as are unknown nationality names, malformed birth
+dates, and a missing biography in the file. Desktop tests check height in feet
+and inches, weight in pounds, birthplaces with and without a region, country
+codes, the roster's nationality and handedness columns, and the profile's
+biography with "Shoots" for skaters and "Catches" for goalies.
 
 ## Test organization
 
