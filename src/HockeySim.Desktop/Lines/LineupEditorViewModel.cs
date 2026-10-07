@@ -169,10 +169,7 @@ public sealed partial class LineupEditorViewModel : ObservableObject
             var units = _savedLineup.UnitsFor(situation)
                 .Select((unit, index) => CreateUnit(situation, index, unit))
                 .ToList();
-            return new SpecialSituationGroupViewModel(
-                SituationTitle(situation),
-                SituationCaption(situation),
-                units);
+            return new SpecialSituationGroupViewModel(SituationTitle(situation), units);
         }).ToList();
 
     private SpecialUnitViewModel CreateUnit(SpecialSituation situation, int index, SpecialSituationUnitSnapshot unit)
@@ -302,19 +299,6 @@ public sealed partial class LineupEditorViewModel : ObservableObject
         SpecialSituation.PenaltyKill3On4 => "3 ON 4",
         SpecialSituation.FourOnFour => "4 ON 4",
         SpecialSituation.ThreeOnThree => "3 ON 3",
-        _ => throw new ArgumentOutOfRangeException(nameof(situation)),
-    };
-
-    private static string SituationCaption(SpecialSituation situation) => situation switch
-    {
-        SpecialSituation.PowerPlay5On4 => "One opponent in the box",
-        SpecialSituation.PowerPlay5On3 => "Two opponents in the box",
-        SpecialSituation.PowerPlay4On3 => "Two opponents in the box, one of ours",
-        SpecialSituation.PenaltyKill4On5 => "One of ours in the box",
-        SpecialSituation.PenaltyKill3On5 => "Two of ours in the box",
-        SpecialSituation.PenaltyKill3On4 => "Two of ours in the box, one opponent",
-        SpecialSituation.FourOnFour => "One from each side in the box",
-        SpecialSituation.ThreeOnThree => "Regular-season overtime",
         _ => throw new ArgumentOutOfRangeException(nameof(situation)),
     };
 }

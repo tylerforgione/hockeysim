@@ -476,3 +476,18 @@ already live in `HockeySim.Desktop/Theme/`.
 Desktop shows height and weight in imperial units from v0.2.0. Add a setting
 to show metric units instead, alongside other presentation preferences as
 they arise.
+
+## Trim explanatory UI text
+
+Desktop should assume the player knows hockey. The Lines page no longer
+explains situations (for example, that 5 on 3 means two opponents in the box),
+but similar text remains elsewhere:
+
+- Standings column tooltips that expand obvious abbreviations (GP, W, L, PTS)
+  and the tie-break caption above the table.
+- The OVR column tooltip in player detail.
+- The roster and lineup note on the New Game screen.
+
+Review each one. Remove text that only restates hockey basics, and keep text
+that reports game-specific facts the player cannot infer, such as an unusual
+tie-break order.

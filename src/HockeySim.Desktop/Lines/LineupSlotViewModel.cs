@@ -70,5 +70,4 @@ public sealed record SpecialUnitViewModel(
 
 public sealed record SpecialSituationGroupViewModel(
     string Title,
-    string Caption,
     IReadOnlyList<SpecialUnitViewModel> Units);

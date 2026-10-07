@@ -56,10 +56,7 @@
       <Border Classes="panel">
         <StackPanel>
           <Border Classes="panel-header">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Classes="panel-title" Text="{Binding Title}" />
-              <TextBlock Grid.Column="1" Classes="caption" VerticalAlignment="Center" Text="{Binding Caption}" />
-            </Grid>
+            <TextBlock Classes="panel-title" Text="{Binding Title}" />
           </Border>
           <ItemsControl ItemsSource="{Binding Units}" Margin="12,8,4,2">
             <ItemsControl.ItemsPanel>
@@ -107,7 +104,7 @@
           <Button x:Name="OtherTabButton"
                   Classes="tab"
                   Classes.selected="{Binding IsOtherTab}"
-                  Content="4 on 4 · 3 on 3 · extra attacker"
+                  Content="Other"
                   Command="{Binding SelectTabCommand}"
                   CommandParameter="{x:Static lines:LinesTab.Other}" />
         </StackPanel>
@@ -280,13 +277,7 @@
             <Border Classes="panel">
               <StackPanel>
                 <Border Classes="panel-header">
-                  <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Classes="panel-title" Text="EXTRA ATTACKER" />
-                    <TextBlock Grid.Column="1"
-                               Classes="caption"
-                               VerticalAlignment="Center"
-                               Text="Goalie pulled · the second choice covers a first choice already on the ice" />
-                  </Grid>
+                  <TextBlock Classes="panel-title" Text="EXTRA ATTACKER" />
                 </Border>
                 <ItemsControl ItemsSource="{Binding Lineup.ExtraAttackers}" Margin="12,8,12,10">
                   <ItemsControl.ItemsPanel>
@@ -311,11 +302,6 @@
               </Border>
             </Grid>
           </Border>
-          <TextBlock DockPanel.Dock="Bottom"
-                     Classes="caption"
-                     Margin="12,10"
-                     TextWrapping="Wrap"
-                     Text="Players not dressed for the next match. Any dressed skater can play anywhere on a special-situation unit. Dressing a scratched player gives them the replaced player's unit slots." />
           <ItemsControl x:Name="ScratchesList" ItemsSource="{Binding Lineup.Scratches}" Margin="0,4">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="lines:PlayerOptionViewModel">
