@@ -53,4 +53,29 @@ public static class MatchDisplay
         shotsAgainst == 0
             ? "—"
             : (saves / (double)shotsAgainst).ToString(".000", CultureInfo.CurrentCulture);
+
+    /// <summary>
+    /// Formats time on ice as minutes and seconds ("17:42"). Minutes keep counting past an hour,
+    /// as they do in long overtime.
+    /// </summary>
+    public static string TimeOnIce(TimeSpan time) =>
+        string.Create(CultureInfo.CurrentCulture, $"{(int)time.TotalMinutes}:{time.Seconds:00}");
+
+    /// <summary>Formats plus/minus with its sign, such as "+2", "0", or "-1".</summary>
+    public static string PlusMinus(int plusMinus) =>
+        plusMinus > 0
+            ? string.Create(CultureInfo.CurrentCulture, $"+{plusMinus}")
+            : plusMinus.ToString(CultureInfo.CurrentCulture);
+
+    /// <summary>Formats an expected-goal total to two decimal places ("0.42").</summary>
+    public static string ExpectedGoals(double expectedGoals) =>
+        expectedGoals.ToString("0.00", CultureInfo.CurrentCulture);
+
+    /// <summary>
+    /// Formats faceoffs as won and lost ("8–5"), or a dash for a skater who took none.
+    /// </summary>
+    public static string Faceoffs(int won, int lost) =>
+        won + lost == 0
+            ? "—"
+            : string.Create(CultureInfo.CurrentCulture, $"{won}–{lost}");
 }

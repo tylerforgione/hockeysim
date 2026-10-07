@@ -124,20 +124,62 @@ public sealed class CompletedMatchTeamSnapshot
             GoalieBoxScoreSnapshot.Create(team.Goalie));
 }
 
-public sealed record SkaterBoxScoreSnapshot(PlayerId PlayerId, int Goals, int Assists)
+/// <param name="PlusMinus">Even-strength and shorthanded goals for, less those against, while on the ice.</param>
+/// <param name="Shots">Shots on goal, including goals.</param>
+/// <param name="ShotAttempts">Shots on goal, missed shots, and blocked attempts.</param>
+/// <param name="BlockedShots">The opponent's attempts this skater blocked.</param>
+public sealed record SkaterBoxScoreSnapshot(
+    PlayerId PlayerId,
+    int Goals,
+    int Assists,
+    int PlusMinus,
+    TimeSpan TimeOnIce,
+    int Shots,
+    int ShotAttempts,
+    int Hits,
+    int BlockedShots,
+    int FaceoffsWon,
+    int FaceoffsLost,
+    int Takeaways,
+    int Giveaways,
+    double ExpectedGoals)
 {
     public int Points => Goals + Assists;
 
     internal static SkaterBoxScoreSnapshot Create(SkaterBoxScore boxScore) =>
-        new(boxScore.PlayerId, boxScore.Goals, boxScore.Assists);
+        new(
+            boxScore.PlayerId,
+            boxScore.Goals,
+            boxScore.Assists,
+            boxScore.PlusMinus,
+            boxScore.TimeOnIce,
+            boxScore.Shots,
+            boxScore.ShotAttempts,
+            boxScore.Hits,
+            boxScore.BlockedShots,
+            boxScore.FaceoffsWon,
+            boxScore.FaceoffsLost,
+            boxScore.Takeaways,
+            boxScore.Giveaways,
+            boxScore.ExpectedGoals);
 }
 
-public sealed record GoalieBoxScoreSnapshot(PlayerId PlayerId, int ShotsAgainst, int GoalsAgainst)
+public sealed record GoalieBoxScoreSnapshot(
+    PlayerId PlayerId,
+    int ShotsAgainst,
+    int GoalsAgainst,
+    double ExpectedGoalsAgainst,
+    TimeSpan TimeOnIce)
 {
     public int Saves => ShotsAgainst - GoalsAgainst;
 
     internal static GoalieBoxScoreSnapshot Create(GoalieBoxScore boxScore) =>
-        new(boxScore.PlayerId, boxScore.ShotsAgainst, boxScore.GoalsAgainst);
+        new(
+            boxScore.PlayerId,
+            boxScore.ShotsAgainst,
+            boxScore.GoalsAgainst,
+            boxScore.ExpectedGoalsAgainst,
+            boxScore.TimeOnIce);
 }
 
 /// <summary>

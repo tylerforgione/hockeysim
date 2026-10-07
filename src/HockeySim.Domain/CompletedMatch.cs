@@ -3,7 +3,8 @@ namespace HockeySim.Domain;
 /// <summary>
 /// The canonical record of a scheduled match that has been played. The score is always decisive,
 /// and individual statistics reconcile with it: only a shootout winner's score exceeds its player
-/// goals, by exactly the one deciding goal.
+/// goals, by exactly the one deciding goal. Each goalie's shots, goals, and expected goals against
+/// match the opponent's skaters, and one team's faceoff wins are the other's losses.
 /// </summary>
 public sealed class CompletedMatch
 {
@@ -47,7 +48,25 @@ public sealed class CompletedMatch
 
         if (!GoalieFacedOpponent(home.Goalie, away) || !GoalieFacedOpponent(away.Goalie, home))
         {
-            throw new ArgumentException("Each goalie's shots and goals against must match the opponent's totals.");
+            throw new ArgumentException(
+                "Each goalie's shots, goals, and expected goals against must match the opponent's totals.");
+        }
+
+        if (FaceoffsWon(home) != FaceoffsLost(away) || FaceoffsWon(away) != FaceoffsLost(home))
+        {
+            throw new ArgumentException("Each faceoff one team won must be one the other team lost.");
+        }
+
+        if (BlockedShots(home) > UnsuccessfulAttempts(away) || BlockedShots(away) > UnsuccessfulAttempts(home))
+        {
+            throw new ArgumentException("A team cannot block more shots than the opponent attempted without reaching the net.");
+        }
+
+        // Every goal changes a skater's plus/minus by at most one.
+        var playerGoals = home.PlayerGoals + away.PlayerGoals;
+        if (home.Skaters.Concat(away.Skaters).Any(skater => Math.Abs(skater.PlusMinus) > playerGoals))
+        {
+            throw new ArgumentException("A skater's plus/minus cannot exceed the goals scored in the match.");
         }
 
         ScheduledMatch = scheduledMatch;
@@ -71,5 +90,16 @@ public sealed class CompletedMatch
     public CompletedMatchTeam Loser => Home.Score > Away.Score ? Away : Home;
 
     private static bool GoalieFacedOpponent(GoalieBoxScore goalie, CompletedMatchTeam opponent) =>
-        goalie.ShotsAgainst == opponent.Shots && goalie.GoalsAgainst == opponent.PlayerGoals;
+        goalie.ShotsAgainst == opponent.Shots
+        && goalie.GoalsAgainst == opponent.PlayerGoals
+        && ExpectedGoalTotals.AreEqual(goalie.ExpectedGoalsAgainst, opponent.ExpectedGoals);
+
+    private static int FaceoffsWon(CompletedMatchTeam team) => team.Skaters.Sum(skater => skater.FaceoffsWon);
+
+    private static int FaceoffsLost(CompletedMatchTeam team) => team.Skaters.Sum(skater => skater.FaceoffsLost);
+
+    private static int BlockedShots(CompletedMatchTeam team) => team.Skaters.Sum(skater => skater.BlockedShots);
+
+    /// <summary>Attempts that missed the net or were blocked.</summary>
+    private static int UnsuccessfulAttempts(CompletedMatchTeam team) => team.ShotAttempts - team.Shots;
 }

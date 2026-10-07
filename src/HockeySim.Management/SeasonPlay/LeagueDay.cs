@@ -10,8 +10,9 @@ namespace HockeySim.Management.SeasonPlay;
 internal static class LeagueDay
 {
     /// <summary>
-    /// Simulates the day's matches in schedule order on one continuous random stream, then hands
-    /// the whole day to the season. Simulation never changes the teams, so if any match fails the
+    /// Simulates the day's matches in schedule order on one continuous random stream, with
+    /// regular-season overtime, then hands the whole day to the season. The play-by-play stays
+    /// with the Simulation result; the completed match keeps only the box score. Simulation never changes the teams, so if any match fails the
     /// season is untouched and the caller keeps its original random state.
     /// </summary>
     /// <returns>The random state after the day's final match.</returns>
@@ -23,7 +24,7 @@ internal static class LeagueDay
         foreach (var scheduledMatch in season.CurrentDateMatches)
         {
             var match = new Match(teams[scheduledMatch.HomeTeamId], teams[scheduledMatch.AwayTeamId]);
-            var result = simulator.Simulate(match, randomState);
+            var result = simulator.Simulate(match, OvertimeFormat.RegularSeason, randomState);
             results.Add(ToCompletedMatch(scheduledMatch, result));
             randomState = result.RandomState;
         }
@@ -40,6 +41,28 @@ internal static class LeagueDay
             side.TeamId,
             side.Score,
             side.Shots,
-            side.Skaters.Select(skater => new SkaterBoxScore(skater.PlayerId, skater.Goals, skater.Assists)),
-            new GoalieBoxScore(side.Goalie.PlayerId, side.Goalie.ShotsAgainst, side.Goalie.GoalsAgainst));
+            side.Skaters.Select(ToBoxScore),
+            new GoalieBoxScore(
+                side.Goalie.PlayerId,
+                side.Goalie.ShotsAgainst,
+                side.Goalie.GoalsAgainst,
+                side.Goalie.ExpectedGoalsAgainst,
+                side.Goalie.TimeOnIce));
+
+    private static SkaterBoxScore ToBoxScore(SkaterMatchStatistics skater) =>
+        new(
+            skater.PlayerId,
+            skater.Goals,
+            skater.Assists,
+            skater.PlusMinus,
+            skater.TimeOnIce,
+            skater.Shots,
+            skater.ShotAttempts,
+            skater.Hits,
+            skater.BlockedShots,
+            skater.FaceoffsWon,
+            skater.FaceoffsLost,
+            skater.Takeaways,
+            skater.Giveaways,
+            skater.ExpectedGoals);
 }
