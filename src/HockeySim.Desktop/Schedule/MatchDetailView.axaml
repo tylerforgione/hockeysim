@@ -7,42 +7,66 @@
     <DataTemplate x:DataType="schedule:MatchSideViewModel">
       <StackPanel>
         <Border Classes="table-header">
-          <Grid ColumnDefinitions="*,32,32,32,32">
+          <Grid ColumnDefinitions="*,36,32,32,32,36,52,36,36,44,36,36,48,32,32">
             <TextBlock Text="{Binding TeamName}" />
-            <TextBlock Grid.Column="1" Text="POS" HorizontalAlignment="Center" />
-            <TextBlock Grid.Column="2" Text="G" HorizontalAlignment="Center" />
-            <TextBlock Grid.Column="3" Text="A" HorizontalAlignment="Center" />
-            <TextBlock Grid.Column="4" Text="P" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="POS" ToolTip.Tip="Position" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="G" ToolTip.Tip="Goals" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="3" Text="A" ToolTip.Tip="Assists" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="4" Text="P" ToolTip.Tip="Points" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="5" Text="+/-" ToolTip.Tip="Plus/minus" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="6" Text="TOI" ToolTip.Tip="Time on ice" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="7" Text="SOG" ToolTip.Tip="Shots on goal" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="8" Text="ATT" ToolTip.Tip="Shot attempts: on goal, missed, and blocked" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="9" Text="xG" ToolTip.Tip="Expected goals" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="10" Text="HIT" ToolTip.Tip="Hits" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="11" Text="BLK" ToolTip.Tip="Blocked shots" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="12" Text="FO" ToolTip.Tip="Faceoffs won–lost" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="13" Text="TK" ToolTip.Tip="Takeaways" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="14" Text="GV" ToolTip.Tip="Giveaways" HorizontalAlignment="Center" />
           </Grid>
         </Border>
         <ItemsControl ItemsSource="{Binding Skaters}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="schedule:SkaterBoxScoreRowViewModel">
-              <Grid ColumnDefinitions="*,32,32,32,32" Height="22" Margin="8,0">
+              <Grid ColumnDefinitions="*,36,32,32,32,36,52,36,36,44,36,36,48,32,32" Height="22" Margin="8,0">
                 <TextBlock Classes="cell" Text="{Binding Name}" />
                 <TextBlock Grid.Column="1" Classes="cell-center muted" Text="{Binding Position}" />
                 <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Goals}" />
                 <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Assists}" />
                 <TextBlock Grid.Column="4" Classes="cell-center strong" Text="{Binding Points}" />
+                <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding PlusMinus}" />
+                <TextBlock Grid.Column="6" Classes="cell-center" Text="{Binding TimeOnIce}" />
+                <TextBlock Grid.Column="7" Classes="cell-center" Text="{Binding Shots}" />
+                <TextBlock Grid.Column="8" Classes="cell-center" Text="{Binding ShotAttempts}" />
+                <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding ExpectedGoals}" />
+                <TextBlock Grid.Column="10" Classes="cell-center" Text="{Binding Hits}" />
+                <TextBlock Grid.Column="11" Classes="cell-center" Text="{Binding BlockedShots}" />
+                <TextBlock Grid.Column="12" Classes="cell-center" Text="{Binding Faceoffs}" />
+                <TextBlock Grid.Column="13" Classes="cell-center" Text="{Binding Takeaways}" />
+                <TextBlock Grid.Column="14" Classes="cell-center" Text="{Binding Giveaways}" />
               </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
         <Border Classes="table-header" Margin="0,6,0,0">
-          <Grid ColumnDefinitions="*,40,40,40,48">
+          <Grid ColumnDefinitions="*,40,40,40,48,48,52">
             <TextBlock Text="GOALIE" />
-            <TextBlock Grid.Column="1" Text="SA" HorizontalAlignment="Center" />
-            <TextBlock Grid.Column="2" Text="SV" HorizontalAlignment="Center" />
-            <TextBlock Grid.Column="3" Text="GA" HorizontalAlignment="Center" />
-            <TextBlock Grid.Column="4" Text="SV%" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="SA" ToolTip.Tip="Shots against" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="SV" ToolTip.Tip="Saves" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="3" Text="GA" ToolTip.Tip="Goals against" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="4" Text="SV%" ToolTip.Tip="Save percentage" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="5" Text="xGA" ToolTip.Tip="Expected goals against" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="6" Text="TOI" ToolTip.Tip="Time on ice" HorizontalAlignment="Center" />
           </Grid>
         </Border>
-        <Grid ColumnDefinitions="*,40,40,40,48" Height="22" Margin="8,0">
+        <Grid ColumnDefinitions="*,40,40,40,48,48,52" Height="22" Margin="8,0">
           <TextBlock Classes="cell" Text="{Binding Goalie.Name}" />
           <TextBlock Grid.Column="1" Classes="cell-center" Text="{Binding Goalie.ShotsAgainst}" />
           <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Goalie.Saves}" />
           <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Goalie.GoalsAgainst}" />
           <TextBlock Grid.Column="4" Classes="cell-center strong" Text="{Binding Goalie.SavePercentage}" />
+          <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding Goalie.ExpectedGoalsAgainst}" />
+          <TextBlock Grid.Column="6" Classes="cell-center" Text="{Binding Goalie.TimeOnIce}" />
         </Grid>
       </StackPanel>
     </DataTemplate>
@@ -109,12 +133,13 @@
       </StackPanel>
     </Border>
 
-    <!-- Box score for this match only. -->
+    <!-- Box score for this match only, away team first as on the scoreboard. Each table needs
+         the full width for its columns, so the teams are stacked rather than side by side. -->
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-      <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="12">
+      <StackPanel Spacing="16" Margin="12">
         <ContentControl x:Name="AwayBoxScore" Content="{Binding Away}" />
-        <ContentControl x:Name="HomeBoxScore" Grid.Column="1" Content="{Binding Home}" />
-      </Grid>
+        <ContentControl x:Name="HomeBoxScore" Content="{Binding Home}" />
+      </StackPanel>
     </ScrollViewer>
   </DockPanel>
 </UserControl>

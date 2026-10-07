@@ -15,9 +15,11 @@ be played.
 ## Configurable match tuning
 
 Match simulation is driven by tuning values that are currently fixed constants
-in `HockeySim.Simulation`: base shot and goal chances, how strongly rating
-differences shift them, the overtime shot rate, shootout scoring, probability
-bounds, and the forward-line and defence-pair usage shares.
+in `HockeySim.Simulation`, kept together in `Play/MatchTuning.cs` and the
+expected-goal model: possession outcome weights, how strongly rating differences
+shift them, shot danger, blocking, and finishing chances, fatigue and shift
+lengths, open-ice overtime effects, shootout scoring, probability bounds, and
+the forward-line, defence-pair, and three-on-three usage shares.
 
 Two goals build on making these values configurable:
 

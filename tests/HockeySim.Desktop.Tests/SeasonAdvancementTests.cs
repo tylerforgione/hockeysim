@@ -110,6 +110,31 @@ public sealed class SeasonAdvancementTests
             Assert.Equal(snapshot.Score, side.Score);
             Assert.Equal(snapshot.Shots, side.Shots);
             Assert.Equal(snapshot.Skaters.Select(line => (line.Goals, line.Assists)), side.Skaters.Select(skater => (skater.Goals, skater.Assists)));
+            Assert.Equal(
+                snapshot.Skaters.Select(line => (
+                    MatchDisplay.PlusMinus(line.PlusMinus),
+                    MatchDisplay.TimeOnIce(line.TimeOnIce),
+                    line.Shots,
+                    line.ShotAttempts,
+                    MatchDisplay.ExpectedGoals(line.ExpectedGoals),
+                    line.Hits,
+                    line.BlockedShots,
+                    MatchDisplay.Faceoffs(line.FaceoffsWon, line.FaceoffsLost),
+                    line.Takeaways,
+                    line.Giveaways)),
+                side.Skaters.Select(skater => (
+                    skater.PlusMinus,
+                    skater.TimeOnIce,
+                    skater.Shots,
+                    skater.ShotAttempts,
+                    skater.ExpectedGoals,
+                    skater.Hits,
+                    skater.BlockedShots,
+                    skater.Faceoffs,
+                    skater.Takeaways,
+                    skater.Giveaways)));
+            Assert.Equal(MatchDisplay.ExpectedGoals(snapshot.Goalie.ExpectedGoalsAgainst), side.Goalie.ExpectedGoalsAgainst);
+            Assert.Equal(MatchDisplay.TimeOnIce(snapshot.Goalie.TimeOnIce), side.Goalie.TimeOnIce);
             Assert.All(side.Skaters, skater => Assert.Equal(skater.Goals + skater.Assists, skater.Points));
             var shootoutGoal = result.Decision == MatchDecision.Shootout && result.WinnerId == snapshot.TeamId ? 1 : 0;
             Assert.Equal(side.Score - shootoutGoal, side.Skaters.Sum(skater => skater.Goals));
@@ -234,5 +259,42 @@ public sealed class SeasonAdvancementTests
     public void SavePercentageIsOnlyShownOnceAGoalieHasFacedAShot(int saves, int shotsAgainst, string expected)
     {
         Assert.Equal(expected, MatchDisplay.SavePercentage(saves, shotsAgainst));
+    }
+
+    [Theory]
+    [InlineData(0, "0:00")]
+    [InlineData(65, "1:05")]
+    [InlineData(1062, "17:42")]
+    [InlineData(5400, "90:00")]
+    public void TimeOnIceShowsMinutesAndSecondsAndKeepsCountingPastAnHour(int seconds, string expected)
+    {
+        Assert.Equal(expected, MatchDisplay.TimeOnIce(TimeSpan.FromSeconds(seconds)));
+    }
+
+    [Theory]
+    [InlineData(2, "+2")]
+    [InlineData(0, "0")]
+    [InlineData(-1, "-1")]
+    public void PlusMinusShowsItsSign(int plusMinus, string expected)
+    {
+        Assert.Equal(expected, MatchDisplay.PlusMinus(plusMinus));
+    }
+
+    [Theory]
+    [InlineData(0, "0.00")]
+    [InlineData(0.416, "0.42")]
+    [InlineData(2.5, "2.50")]
+    public void ExpectedGoalsShowTwoDecimalPlaces(double expectedGoals, string expected)
+    {
+        Assert.Equal(expected, MatchDisplay.ExpectedGoals(expectedGoals));
+    }
+
+    [Theory]
+    [InlineData(0, 0, "—")]
+    [InlineData(8, 5, "8–5")]
+    [InlineData(0, 3, "0–3")]
+    public void FaceoffsShowWonAndLostOrADashWhenNoneWereTaken(int won, int lost, string expected)
+    {
+        Assert.Equal(expected, MatchDisplay.Faceoffs(won, lost));
     }
 }

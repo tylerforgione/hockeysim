@@ -287,10 +287,12 @@ public sealed class SeasonAdvancementTests
             snapshot.Season.Results.Select(result =>
                 $"{result.Date:yyyy-MM-dd} {result.Decision} {Side(result.Home)} @ {Side(result.Away)}"));
 
+    // Box-score records print every statistic, and doubles print exactly, so equal fingerprints
+    // mean every box-score value matches.
     private static string Side(CompletedMatchTeamSnapshot side) =>
         $"{side.TeamId}:{side.Score}/{side.Shots} "
-        + $"[{string.Join(",", side.Skaters.Select(skater => $"{skater.PlayerId}:{skater.Goals}+{skater.Assists}"))}] "
-        + $"G {side.Goalie.PlayerId}:{side.Goalie.GoalsAgainst}/{side.Goalie.ShotsAgainst}";
+        + $"[{string.Join(",", side.Skaters)}] "
+        + $"G {side.Goalie}";
 
     /// <summary>
     /// Plays matches with the real engine but lets a test act before each one: fail it, or call
@@ -303,10 +305,10 @@ public sealed class SeasonAdvancementTests
 
         public Action<int>? BeforeMatch { get; set; }
 
-        public MatchResult Simulate(Match match, RandomState randomState)
+        public MatchResult Simulate(Match match, OvertimeFormat overtime, RandomState randomState)
         {
             BeforeMatch?.Invoke(Interlocked.Increment(ref _calls));
-            return _engine.Simulate(match, randomState);
+            return _engine.Simulate(match, overtime, randomState);
         }
     }
 }

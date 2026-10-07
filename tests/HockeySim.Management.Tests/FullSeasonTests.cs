@@ -63,6 +63,26 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
     }
 
     [Fact]
+    public void EveryBoxScoreAccountsForTheTimePlayed()
+    {
+        // Regulation is five-on-five and regular-season overtime three-on-three, so each team's
+        // skaters share five times regulation and three times any overtime, and both goalies
+        // play the whole match.
+        const int RegulationSeconds = 60 * 60;
+        Assert.All(Season.Results, result =>
+        {
+            var playingSeconds = (int)result.Home.Goalie.TimeOnIce.TotalSeconds;
+            var overtimeSeconds = playingSeconds - RegulationSeconds;
+
+            Assert.Equal(result.Home.Goalie.TimeOnIce, result.Away.Goalie.TimeOnIce);
+            Assert.InRange(overtimeSeconds, 0, result.Decision == MatchDecision.Regulation ? 0 : 5 * 60);
+            Assert.All(new[] { result.Home, result.Away }, side => Assert.Equal(
+                (5 * RegulationSeconds) + (3 * overtimeSeconds),
+                side.Skaters.Sum(skater => (int)skater.TimeOnIce.TotalSeconds)));
+        });
+    }
+
+    [Fact]
     public void EveryKindOfOutcomeOccurs()
     {
         Assert.All(Enum.GetValues<MatchDecision>(), decision =>

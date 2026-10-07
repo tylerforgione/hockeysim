@@ -92,9 +92,30 @@ public sealed record SavedMatchSide(
     IReadOnlyList<SavedSkaterBoxScore> Skaters,
     SavedGoalieBoxScore Goalie);
 
-public sealed record SavedSkaterBoxScore(PlayerId PlayerId, int Goals, int Assists);
+/// <param name="TimeOnIceSeconds">Time on ice in whole seconds.</param>
+public sealed record SavedSkaterBoxScore(
+    PlayerId PlayerId,
+    int Goals,
+    int Assists,
+    int PlusMinus,
+    int TimeOnIceSeconds,
+    int Shots,
+    int ShotAttempts,
+    int Hits,
+    int BlockedShots,
+    int FaceoffsWon,
+    int FaceoffsLost,
+    int Takeaways,
+    int Giveaways,
+    double ExpectedGoals);
 
-public sealed record SavedGoalieBoxScore(PlayerId PlayerId, int ShotsAgainst, int GoalsAgainst);
+/// <param name="TimeOnIceSeconds">Time in net in whole seconds.</param>
+public sealed record SavedGoalieBoxScore(
+    PlayerId PlayerId,
+    int ShotsAgainst,
+    int GoalsAgainst,
+    double ExpectedGoalsAgainst,
+    int TimeOnIceSeconds);
 
 public sealed record SavedInboxMessage(
     InboxMessageId Id,

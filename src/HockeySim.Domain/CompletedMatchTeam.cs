@@ -14,7 +14,10 @@ public sealed class CompletedMatchTeam
     /// The decisive final score. A shootout winner's score includes the one deciding goal that no
     /// player scored.
     /// </param>
-    /// <param name="shots">Shots on goal in regulation and overtime; shootout attempts are excluded.</param>
+    /// <param name="shots">
+    /// Shots on goal in regulation and overtime, equal to the skaters' shots; shootout attempts are
+    /// excluded.
+    /// </param>
     public CompletedMatchTeam(
         TeamId teamId,
         int score,
@@ -39,11 +42,12 @@ public sealed class CompletedMatchTeam
             throw new ArgumentException("A player can appear only once for a team in a match.", nameof(skaters));
         }
 
-        var playerGoals = skaterList.Sum(skater => skater.Goals);
-        if (playerGoals > shots)
+        if (skaterList.Sum(skater => skater.Shots) != shots)
         {
-            throw new ArgumentException("A team cannot score more player goals than it has shots.", nameof(skaters));
+            throw new ArgumentException("A team's shots must equal its skaters' shots on goal.", nameof(skaters));
         }
+
+        var playerGoals = skaterList.Sum(skater => skater.Goals);
 
         // Each goal credits at most a primary and a secondary assist.
         if (skaterList.Sum(skater => skater.Assists) > 2 * playerGoals)
@@ -70,4 +74,10 @@ public sealed class CompletedMatchTeam
 
     /// <summary>Goals scored by players, excluding a shootout deciding goal.</summary>
     public int PlayerGoals => _skaters.Sum(skater => skater.Goals);
+
+    /// <summary>Every shot attempt: on goal, missed, or blocked.</summary>
+    public int ShotAttempts => _skaters.Sum(skater => skater.ShotAttempts);
+
+    /// <summary>The summed expected-goal value of the team's unblocked attempts.</summary>
+    public double ExpectedGoals => _skaters.Sum(skater => skater.ExpectedGoals);
 }

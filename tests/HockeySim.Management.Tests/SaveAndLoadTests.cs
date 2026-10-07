@@ -25,6 +25,10 @@ public sealed class SaveAndLoadTests
         ScoreNotMatchingGoals,
         UndefinedDecision,
         BoxScoreForUnrosteredPlayer,
+        ShotsNotMatchingSkaterShots,
+        ExpectedGoalsAgainstNotMatchingOpponent,
+        UnmatchedFaceoffs,
+        NegativeTimeOnIce,
         DressedPlayerNotOnRoster,
         SkaterDressedInGoal,
         DuplicateRosterPlayer,
@@ -308,6 +312,33 @@ public sealed class SaveAndLoadTests
                     Skaters = [firstResult.Home.Skaters[0] with { PlayerId = unknownPlayerId }, .. firstResult.Home.Skaters.Skip(1)],
                 },
             }),
+            ShotsNotMatchingSkaterShots => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with { Shots = firstResult.Home.Shots + 1 },
+                Away = firstResult.Away with { Goalie = firstResult.Away.Goalie with { ShotsAgainst = firstResult.Home.Shots + 1 } },
+            }),
+            ExpectedGoalsAgainstNotMatchingOpponent => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    Goalie = firstResult.Home.Goalie with { ExpectedGoalsAgainst = firstResult.Home.Goalie.ExpectedGoalsAgainst + 0.5 },
+                },
+            }),
+            UnmatchedFaceoffs => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    Skaters =
+                    [
+                        firstResult.Home.Skaters[0] with { FaceoffsWon = firstResult.Home.Skaters[0].FaceoffsWon + 1 },
+                        .. firstResult.Home.Skaters.Skip(1),
+                    ],
+                },
+            }),
+            NegativeTimeOnIce => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with { Goalie = firstResult.Home.Goalie with { TimeOnIceSeconds = -1 } },
+            }),
             DressedPlayerNotOnRoster => WithFirstTeam(save, firstTeam with
             {
                 Lineup = firstTeam.Lineup with { BackupGoalieId = unknownPlayerId },
@@ -494,10 +525,10 @@ public sealed class SaveAndLoadTests
     {
         private readonly Simulation.MatchSimulator _engine = new();
 
-        public Simulation.MatchResult Simulate(Match match, Simulation.Randomness.RandomState randomState)
+        public Simulation.MatchResult Simulate(Match match, Simulation.OvertimeFormat overtime, Simulation.Randomness.RandomState randomState)
         {
             beforeMatch();
-            return _engine.Simulate(match, randomState);
+            return _engine.Simulate(match, overtime, randomState);
         }
     }
 }

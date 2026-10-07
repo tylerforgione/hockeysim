@@ -76,8 +76,33 @@ internal static class GameSaveCapture
             side.TeamId,
             side.Score,
             side.Shots,
-            side.Skaters.Select(skater => new SavedSkaterBoxScore(skater.PlayerId, skater.Goals, skater.Assists)).ToList(),
-            new SavedGoalieBoxScore(side.Goalie.PlayerId, side.Goalie.ShotsAgainst, side.Goalie.GoalsAgainst));
+            side.Skaters.Select(CaptureSkater).ToList(),
+            new SavedGoalieBoxScore(
+                side.Goalie.PlayerId,
+                side.Goalie.ShotsAgainst,
+                side.Goalie.GoalsAgainst,
+                side.Goalie.ExpectedGoalsAgainst,
+                WholeSeconds(side.Goalie.TimeOnIce)));
+
+    private static SavedSkaterBoxScore CaptureSkater(SkaterBoxScore skater) =>
+        new(
+            skater.PlayerId,
+            skater.Goals,
+            skater.Assists,
+            skater.PlusMinus,
+            WholeSeconds(skater.TimeOnIce),
+            skater.Shots,
+            skater.ShotAttempts,
+            skater.Hits,
+            skater.BlockedShots,
+            skater.FaceoffsWon,
+            skater.FaceoffsLost,
+            skater.Takeaways,
+            skater.Giveaways,
+            skater.ExpectedGoals);
+
+    // Box-score times are whole seconds, so this is exact.
+    private static int WholeSeconds(TimeSpan time) => (int)(time.Ticks / TimeSpan.TicksPerSecond);
 
     private static SavedInboxMessage CaptureInboxMessage(InboxMessage message) =>
         new(message.Id, message.SenderRole, message.SenderName, message.Subject, message.Body, message.IsRead);

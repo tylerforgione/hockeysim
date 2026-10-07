@@ -31,7 +31,7 @@ public sealed class MatchTeamResult
 
     /// <summary>
     /// The decisive final score. A shootout winner is credited one goal that no player scored, so
-    /// the score can exceed the team's <see cref="GoalEvent"/> count by one.
+    /// the score can exceed the team's <see cref="Events.GoalEvent"/> count by one.
     /// </summary>
     public int Score { get; }
 

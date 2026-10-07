@@ -167,10 +167,31 @@ internal static class GameSaveRestorer
             saved.TeamId,
             saved.Score,
             saved.Shots,
-            Items(saved.Skaters, "skater box scores")
-                .Select(skater => new SkaterBoxScore(skater.PlayerId, skater.Goals, skater.Assists)),
-            new GoalieBoxScore(goalie.PlayerId, goalie.ShotsAgainst, goalie.GoalsAgainst));
+            Items(saved.Skaters, "skater box scores").Select(RestoreSkater),
+            new GoalieBoxScore(
+                goalie.PlayerId,
+                goalie.ShotsAgainst,
+                goalie.GoalsAgainst,
+                goalie.ExpectedGoalsAgainst,
+                TimeSpan.FromSeconds(goalie.TimeOnIceSeconds)));
     }
+
+    private static SkaterBoxScore RestoreSkater(SavedSkaterBoxScore skater) =>
+        new(
+            skater.PlayerId,
+            skater.Goals,
+            skater.Assists,
+            skater.PlusMinus,
+            TimeSpan.FromSeconds(skater.TimeOnIceSeconds),
+            skater.Shots,
+            skater.ShotAttempts,
+            skater.Hits,
+            skater.BlockedShots,
+            skater.FaceoffsWon,
+            skater.FaceoffsLost,
+            skater.Takeaways,
+            skater.Giveaways,
+            skater.ExpectedGoals);
 
     private static InboxMessages RestoreInbox(GameSave save) =>
         InboxMessages.Restore(Items(save.Inbox, "inbox messages").Select(saved =>

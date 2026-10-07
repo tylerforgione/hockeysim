@@ -8,7 +8,14 @@ namespace HockeySim.Simulation;
 /// </summary>
 /// <param name="ShotsAgainst">The opponent's shots on goal in regulation and overtime.</param>
 /// <param name="GoalsAgainst">The opponent's player-scored goals; excludes a shootout deciding goal.</param>
-public sealed record GoalieMatchStatistics(PlayerId PlayerId, int ShotsAgainst, int GoalsAgainst)
+/// <param name="ExpectedGoalsAgainst">The summed expected-goal value of the opponent's unblocked attempts.</param>
+/// <param name="TimeOnIce">Time in net in regulation and overtime, in whole seconds.</param>
+public sealed record GoalieMatchStatistics(
+    PlayerId PlayerId,
+    int ShotsAgainst,
+    int GoalsAgainst,
+    double ExpectedGoalsAgainst,
+    TimeSpan TimeOnIce)
 {
     /// <summary>
     /// Always one: an entry is an appearance. Exposed so season totals can sum it directly.

@@ -69,7 +69,17 @@ public sealed class MatchSideViewModel
                     PlayerDisplay.PositionAbbreviation(player.Position),
                     line.Goals,
                     line.Assists,
-                    line.Points);
+                    line.Points,
+                    MatchDisplay.PlusMinus(line.PlusMinus),
+                    MatchDisplay.TimeOnIce(line.TimeOnIce),
+                    line.Shots,
+                    line.ShotAttempts,
+                    MatchDisplay.ExpectedGoals(line.ExpectedGoals),
+                    line.Hits,
+                    line.BlockedShots,
+                    MatchDisplay.Faceoffs(line.FaceoffsWon, line.FaceoffsLost),
+                    line.Takeaways,
+                    line.Giveaways);
             })
             .ToList();
 
@@ -79,7 +89,9 @@ public sealed class MatchSideViewModel
             side.Goalie.ShotsAgainst,
             side.Goalie.Saves,
             side.Goalie.GoalsAgainst,
-            MatchDisplay.SavePercentage(side.Goalie.Saves, side.Goalie.ShotsAgainst));
+            MatchDisplay.SavePercentage(side.Goalie.Saves, side.Goalie.ShotsAgainst),
+            MatchDisplay.ExpectedGoals(side.Goalie.ExpectedGoalsAgainst),
+            MatchDisplay.TimeOnIce(side.Goalie.TimeOnIce));
     }
 
     public string TeamName { get; }
@@ -99,6 +111,32 @@ public sealed class MatchSideViewModel
     public GoalieBoxScoreRowViewModel Goalie { get; }
 }
 
-public sealed record SkaterBoxScoreRowViewModel(string Name, string Position, int Goals, int Assists, int Points);
+/// <param name="Shots">Shots on goal.</param>
+/// <param name="ShotAttempts">Shots on goal, missed, and blocked.</param>
+/// <param name="BlockedShots">Opponent attempts the skater blocked.</param>
+/// <param name="Faceoffs">Faceoffs won and lost, or a dash when none were taken.</param>
+public sealed record SkaterBoxScoreRowViewModel(
+    string Name,
+    string Position,
+    int Goals,
+    int Assists,
+    int Points,
+    string PlusMinus,
+    string TimeOnIce,
+    int Shots,
+    int ShotAttempts,
+    string ExpectedGoals,
+    int Hits,
+    int BlockedShots,
+    string Faceoffs,
+    int Takeaways,
+    int Giveaways);
 
-public sealed record GoalieBoxScoreRowViewModel(string Name, int ShotsAgainst, int Saves, int GoalsAgainst, string SavePercentage);
+public sealed record GoalieBoxScoreRowViewModel(
+    string Name,
+    int ShotsAgainst,
+    int Saves,
+    int GoalsAgainst,
+    string SavePercentage,
+    string ExpectedGoalsAgainst,
+    string TimeOnIce);

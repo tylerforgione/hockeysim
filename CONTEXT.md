@@ -81,9 +81,40 @@ dressed skater can be either.
 
 **Match result**:
 The outcome of a simulated match: a decisive score, how it was decided
-(regulation, overtime, or shootout), shots, the goals players scored with their
-assists, and each appearing player's match statistics.
+(regulation, overtime, or shootout), shots, the play-by-play, any shootout, and
+each appearing player's match statistics.
 A shootout winner is credited one deciding goal that no player scored.
+
+**Play-by-play**:
+The timed events of a match in order: faceoffs, shot attempts, goals, hits,
+takeaways, and giveaways, each with its period, time, strength state, and the
+players on the ice for both teams. Only the match result holds it; a completed
+match keeps the box score.
+
+**Strength state**:
+How many skaters each team has on the ice, such as five-on-five or
+three-on-three. Goalies are not counted.
+
+**Shift**:
+A stretch a skater spends on the ice before changing. Forward lines and defence
+pairs change separately, on the fly or at a stoppage; tired skaters play below
+their ratings, and stamina sets how fast they tire and recover.
+
+**Shot attempt**:
+Any shot toward the net: on goal (saved or scored), missed, or blocked by a
+defending skater. A shot on goal is one the goalie must stop.
+_Avoid_: Shot, when meaning any attempt; a shot is on goal.
+
+**Expected goals (xG)**:
+The chance that an unblocked shot attempt scores for a league-average shooter
+against a league-average goalie, from its danger level and whether it was a
+rebound or on the rush. Blocked attempts have none. A player's or team's xG is
+the sum over their unblocked attempts.
+
+**Shot danger**:
+How dangerous a shot attempt's location is: low from the point and perimeter,
+medium from the faceoff circles, and high from the slot and crease. A rebound is
+always high danger.
 
 **Appearance**:
 Taking part in a match, which counts as one game played. Every dressed skater
@@ -91,9 +122,20 @@ and the starting goalie appear; the dressed backup goalie and scratches do not.
 
 **Match statistics**:
 An appearing player's individual production in one match. Skaters record goals,
-assists, and points; the starting goalie records shots against, saves, and goals
-against. They reconcile with the score and shots, excluding the shootout:
-shootout attempts and the deciding goal count toward no player.
+assists, points, plus/minus, time on ice, shots on goal, shot attempts, hits,
+blocked shots, faceoffs won and lost, takeaways, giveaways, and xG; the starting
+goalie records shots against, saves, goals against, xG against, and time on ice.
+They are derived from the play-by-play and reconcile with the score and shots,
+excluding the shootout: shootout attempts and the deciding goal count toward no
+player.
+
+**Plus/minus**:
+For a skater, the goals their team scored while they were on the ice less the
+goals it conceded, not counting power-play goals.
+
+**Time on ice**:
+How long a player was on the ice in regulation and overtime, in whole seconds.
+The starting goalie's is the whole match.
 
 **Schedule**:
 The ordered regular-season calendar of matches. Every team plays 84: four
@@ -162,10 +204,14 @@ game if it has never been saved. Loading, starting a new game, or exiting
 discards it, so the user is asked first.
 
 **Overtime**:
-A five-minute sudden-death period played when regulation ends tied.
+Sudden-death play when regulation ends tied. In the regular season it is one
+five-minute three-on-three period with the three-on-three units, then a
+shootout; in the playoffs it is as many twenty-minute five-on-five periods as it
+takes, with no shootout.
 
 **Shootout**:
-Alternating one-on-one attempts that decide a match still tied after overtime.
+Alternating one-on-one attempts that decide a regular-season match still tied
+after overtime.
 
 **Scratch**:
 A rostered player who is not dressed in the current lineup.
