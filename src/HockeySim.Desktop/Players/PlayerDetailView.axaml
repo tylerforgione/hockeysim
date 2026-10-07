@@ -32,7 +32,7 @@
       <TextBlock Classes="label" Text="POSITION" />
       <TextBlock Grid.Column="1" Classes="label" Text="AGE" />
       <TextBlock Grid.Column="2" Classes="label" Text="LINEUP" />
-      <TextBlock Grid.Column="3" Classes="label" Text="OVR" ToolTip.Tip="Overall rating for the player's position" />
+      <TextBlock Grid.Column="3" Classes="label" Text="OVR" />
       <TextBlock Grid.Row="1" Text="{Binding Position}" FontWeight="SemiBold" />
       <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Age}" FontWeight="SemiBold" />
       <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding LineupRole}" FontWeight="SemiBold" />

@@ -92,10 +92,6 @@
               <TextBlock Classes="caption" Text="{Binding LeagueSummary}" />
               <TextBlock Classes="caption" Text="{Binding SeasonLabel}" />
             </StackPanel>
-
-            <TextBlock Classes="caption"
-                       TextWrapping="Wrap"
-                       Text="Every club starts with a generated 23-player roster and a provisional lineup. You can change lines once your career begins." />
           </StackPanel>
         </StackPanel>
       </Border>
