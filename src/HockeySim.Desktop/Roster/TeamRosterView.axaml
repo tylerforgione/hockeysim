@@ -40,7 +40,7 @@
                   <TextBlock Grid.Column="2" Text="POS" HorizontalAlignment="Center" />
                   <TextBlock Grid.Column="3" Text="AGE" HorizontalAlignment="Center" />
                   <TextBlock Grid.Column="4" Text="LINEUP" />
-                  <TextBlock Grid.Column="5" Text="OVR" HorizontalAlignment="Center" ToolTip.Tip="Overall rating for the player's position" />
+                  <TextBlock Grid.Column="5" Text="OVR" HorizontalAlignment="Center" />
                   <TextBlock Grid.Column="6" Text="SKA" HorizontalAlignment="Center" ToolTip.Tip="Skating" />
                   <TextBlock Grid.Column="7" Text="SHP" HorizontalAlignment="Center" ToolTip.Tip="Shot power" />
                   <TextBlock Grid.Column="8" Text="SHA" HorizontalAlignment="Center" ToolTip.Tip="Shot accuracy" />
@@ -89,10 +89,10 @@
                   <TextBlock Grid.Column="2" Text="POS" HorizontalAlignment="Center" />
                   <TextBlock Grid.Column="3" Text="AGE" HorizontalAlignment="Center" />
                   <TextBlock Grid.Column="4" Text="LINEUP" />
-                  <TextBlock Grid.Column="5" Text="GP" HorizontalAlignment="Center" ToolTip.Tip="Games played" />
-                  <TextBlock Grid.Column="6" Text="G" HorizontalAlignment="Center" ToolTip.Tip="Goals" />
-                  <TextBlock Grid.Column="7" Text="A" HorizontalAlignment="Center" ToolTip.Tip="Assists" />
-                  <TextBlock Grid.Column="8" Text="P" HorizontalAlignment="Center" ToolTip.Tip="Points" />
+                  <TextBlock Grid.Column="5" Text="GP" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="6" Text="G" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="7" Text="A" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="8" Text="P" HorizontalAlignment="Center" />
                 </Grid>
               </Border>
               <ListBox x:Name="SkaterSeasonTable"
@@ -133,7 +133,7 @@
                   <TextBlock Grid.Column="1" Text="NAME" />
                   <TextBlock Grid.Column="2" Text="AGE" HorizontalAlignment="Center" />
                   <TextBlock Grid.Column="3" Text="LINEUP" />
-                  <TextBlock Grid.Column="4" Text="OVR" HorizontalAlignment="Center" ToolTip.Tip="Overall rating for the player's position" />
+                  <TextBlock Grid.Column="4" Text="OVR" HorizontalAlignment="Center" />
                   <TextBlock Grid.Column="5" Text="REF" HorizontalAlignment="Center" ToolTip.Tip="Reflexes" />
                   <TextBlock Grid.Column="6" Text="POS" HorizontalAlignment="Center" ToolTip.Tip="Positioning" />
                   <TextBlock Grid.Column="7" Text="REB" HorizontalAlignment="Center" ToolTip.Tip="Rebound control" />
@@ -168,10 +168,10 @@
                   <TextBlock Grid.Column="2" Text="AGE" HorizontalAlignment="Center" />
                   <TextBlock Grid.Column="3" Text="LINEUP" />
                   <TextBlock Grid.Column="4" Text="GP" HorizontalAlignment="Center" ToolTip.Tip="Games played (starts)" />
-                  <TextBlock Grid.Column="5" Text="SA" HorizontalAlignment="Center" ToolTip.Tip="Shots against" />
-                  <TextBlock Grid.Column="6" Text="SV" HorizontalAlignment="Center" ToolTip.Tip="Saves" />
-                  <TextBlock Grid.Column="7" Text="GA" HorizontalAlignment="Center" ToolTip.Tip="Goals against" />
-                  <TextBlock Grid.Column="8" Text="SV%" HorizontalAlignment="Center" ToolTip.Tip="Save percentage" />
+                  <TextBlock Grid.Column="5" Text="SA" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="6" Text="SV" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="7" Text="GA" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="8" Text="SV%" HorizontalAlignment="Center" />
                 </Grid>
               </Border>
               <ListBox x:Name="GoalieSeasonTable"

@@ -250,15 +250,11 @@ public sealed class SeasonAdvancementTests
     internal static TeamSnapshot ManagedTeam(GameSnapshot snapshot) =>
         snapshot.League.Teams.Single(team => team.Id == snapshot.ManagedTeamId);
 
-    internal static SetLineupCommand CurrentLineup(LineupSnapshot lineup) =>
-        new(
-            lineup.ForwardLines.Select(line => new ForwardLineSelection(line.LeftWingId, line.CentreId, line.RightWingId)).ToList(),
-            lineup.DefencePairs.Select(pair => new DefencePairSelection(pair.LeftDefenceId, pair.RightDefenceId)).ToList(),
-            lineup.StartingGoalieId,
-            lineup.BackupGoalieId);
+    internal static SetLineupCommand CurrentLineup(LineupSnapshot lineup) => SetLineupCommand.From(lineup);
 
     /// <summary>
-    /// Puts a scratched skater into the matching slot of the fourth line or third pair.
+    /// Puts a scratched skater into the matching slot of the fourth line or third pair, and into the
+    /// replaced player's unit slots.
     /// </summary>
     private static (SetLineupCommand Lineup, PlayerId ReplacedId) DressInBottomUnit(
         SetLineupCommand lineup,
@@ -266,7 +262,7 @@ public sealed class SeasonAdvancementTests
     {
         var line = lineup.ForwardLines[^1];
         var pair = lineup.DefencePairs[^1];
-        return skater.Position switch
+        var (dressed, replacedId) = skater.Position switch
         {
             Position.Wing => (
                 lineup with { ForwardLines = [.. lineup.ForwardLines.SkipLast(1), line with { LeftWingId = skater.Id }] },
@@ -278,6 +274,7 @@ public sealed class SeasonAdvancementTests
                 lineup with { DefencePairs = [.. lineup.DefencePairs.SkipLast(1), pair with { LeftDefenceId = skater.Id }] },
                 pair.LeftDefenceId),
         };
+        return (dressed.ReplaceInUnits(replacedId, skater.Id), replacedId);
     }
 
     /// <summary>

@@ -57,17 +57,17 @@
                   <Grid ColumnDefinitions="32,*,40,40,40,44,44,52,40,44,40,40,48">
                     <TextBlock Text="#" />
                     <TextBlock Grid.Column="1" Text="TEAM" />
-                    <TextBlock Grid.Column="2" Text="GP" HorizontalAlignment="Center" ToolTip.Tip="Games played" />
-                    <TextBlock Grid.Column="3" Text="W" HorizontalAlignment="Center" ToolTip.Tip="Wins" />
-                    <TextBlock Grid.Column="4" Text="L" HorizontalAlignment="Center" ToolTip.Tip="Regulation losses" />
-                    <TextBlock Grid.Column="5" Text="OTL" HorizontalAlignment="Center" ToolTip.Tip="Overtime and shootout losses" />
-                    <TextBlock Grid.Column="6" Text="PTS" HorizontalAlignment="Center" ToolTip.Tip="Points" />
-                    <TextBlock Grid.Column="7" Text="P%" HorizontalAlignment="Center" ToolTip.Tip="Points percentage" />
-                    <TextBlock Grid.Column="8" Text="RW" HorizontalAlignment="Center" ToolTip.Tip="Regulation wins" />
-                    <TextBlock Grid.Column="9" Text="ROW" HorizontalAlignment="Center" ToolTip.Tip="Regulation and overtime wins" />
+                    <TextBlock Grid.Column="2" Text="GP" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="3" Text="W" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="4" Text="L" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="5" Text="OTL" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="6" Text="PTS" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="7" Text="P%" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="8" Text="RW" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="9" Text="ROW" HorizontalAlignment="Center" />
                     <TextBlock Grid.Column="10" Text="GF" HorizontalAlignment="Center" ToolTip.Tip="Goals for, including shootout deciding goals" />
                     <TextBlock Grid.Column="11" Text="GA" HorizontalAlignment="Center" ToolTip.Tip="Goals against, including shootout deciding goals" />
-                    <TextBlock Grid.Column="12" Text="DIFF" HorizontalAlignment="Center" ToolTip.Tip="Goal differential" />
+                    <TextBlock Grid.Column="12" Text="DIFF" HorizontalAlignment="Center" />
                   </Grid>
                 </Border>
                 <ItemsControl ItemsSource="{Binding Rows}">

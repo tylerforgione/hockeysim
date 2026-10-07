@@ -178,20 +178,20 @@ public sealed class LineupTests
                 defence[(index * 2) + 2].Id))
             .ToList();
 
-        return new SetLineupCommand(forwardLines, defencePairs, goalies[2].Id, goalies[0].Id);
+        // The edited lines scratch the first centre and defence player, so their unit slots go to
+        // the players dressed in their place.
+        return (SetLineupCommand.From(team.Lineup) with
+        {
+            ForwardLines = forwardLines,
+            DefencePairs = defencePairs,
+            StartingGoalieId = goalies[2].Id,
+            BackupGoalieId = goalies[0].Id,
+        })
+            .ReplaceInUnits(centres[0].Id, centres[4].Id)
+            .ReplaceInUnits(defence[0].Id, defence[6].Id);
     }
 
-    private static SetLineupCommand CreateCommand(LineupSnapshot lineup) =>
-        new(
-            lineup.ForwardLines.Select(line => new ForwardLineSelection(
-                line.LeftWingId,
-                line.CentreId,
-                line.RightWingId)).ToList(),
-            lineup.DefencePairs.Select(pair => new DefencePairSelection(
-                pair.LeftDefenceId,
-                pair.RightDefenceId)).ToList(),
-            lineup.StartingGoalieId,
-            lineup.BackupGoalieId);
+    private static SetLineupCommand CreateCommand(LineupSnapshot lineup) => SetLineupCommand.From(lineup);
 
     private static void AssertCommandApplied(SetLineupCommand command, LineupSnapshot lineup)
     {

@@ -82,7 +82,12 @@ internal static class GameSaveRestorer
                 Items(lineup.DefencePairs, "defence pairs")
                     .Select(pair => new DefencePair(Dressed(pair.LeftDefenceId), Dressed(pair.RightDefenceId))),
                 Dressed(lineup.StartingGoalieId),
-                Dressed(lineup.BackupGoalieId)));
+                Dressed(lineup.BackupGoalieId),
+                Items(lineup.SpecialSituationUnits, "special-situation units")
+                    .Select(unit => new SpecialSituationUnit(
+                        unit.Situation,
+                        Values(unit.PlayerIds, "unit skaters").Select(Dressed))),
+                Values(lineup.ExtraAttackerIds, "extra attackers").Select(Dressed)));
     }
 
     private static Player RestorePlayer(SavedPlayer saved) =>
@@ -172,6 +177,10 @@ internal static class GameSaveRestorer
         items is null || items.Any(item => item is null)
             ? throw Invalid($"The save's {description} are missing or incomplete.")
             : items;
+
+    private static IReadOnlyList<T> Values<T>(IReadOnlyList<T>? values, string description)
+        where T : struct =>
+        values ?? throw Invalid($"The save's {description} are missing.");
 
     private static T Required<T>(T? value, string description)
         where T : class =>

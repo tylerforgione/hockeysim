@@ -51,7 +51,13 @@ internal static class GameSaveCapture
                 .Select(pair => new SavedDefencePair(pair.LeftDefence.Id, pair.RightDefence.Id))
                 .ToList(),
             lineup.StartingGoalie.Id,
-            lineup.BackupGoalie.Id);
+            lineup.BackupGoalie.Id,
+            lineup.SpecialSituationUnits
+                .Select(unit => new SavedSpecialSituationUnit(
+                    unit.Situation,
+                    unit.Players.Select(player => player.Id).ToList()))
+                .ToList(),
+            lineup.ExtraAttackers.Select(player => player.Id).ToList());
 
     private static SavedCompletedMatch CaptureCompletedMatch(CompletedMatch match) =>
         new(match.Date, match.Decision, CaptureSide(match.Home), CaptureSide(match.Away));

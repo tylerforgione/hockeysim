@@ -64,7 +64,7 @@ internal static class LeagueGenerator
         var defencePairs = Enumerable.Range(0, Lineup.RequiredDefencePairCount)
             .Select(index => new DefencePair(defencePlayers[index * 2], defencePlayers[(index * 2) + 1]))
             .ToList();
-        var lineup = new Lineup(forwardLines, defencePairs, goalies[0], goalies[1]);
+        var lineup = Lineup.CreateWithDefaultUnits(forwardLines, defencePairs, goalies[0], goalies[1]);
 
         return new Team(new TeamId(random.NextGuid()), name, players, lineup);
     }

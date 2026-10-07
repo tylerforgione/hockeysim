@@ -39,7 +39,28 @@ of everything Desktop displays and out of anything shown that could reveal it.
 
 **Lineup**:
 A team's dressed players for a match: four forward lines (left wing, centre,
-right wing), three defence pairs, a starting goalie, and a backup goalie.
+right wing), three defence pairs, a starting goalie, and a backup goalie. It
+also names who plays in each special situation: its special-situation units and
+two extra attackers.
+
+**Special situation**:
+Any manpower situation other than five-on-five, named from the team's own side:
+a power play (5-on-4, 5-on-3, 4-on-3), a penalty kill (4-on-5, 3-on-5, 3-on-4),
+four-on-four, or three-on-three (regular-season overtime).
+
+**Special-situation unit**:
+The skaters a lineup sends out together in one special situation. A lineup holds
+two units for each power play, three 4-on-5 and two of each other penalty-kill
+units, two 4-on-4 units, and three 3-on-3 units. Each slot has a skater role
+(centre, wing, or defence) saying where that skater plays; the one centre takes
+faceoffs and defence players man the points. Any dressed skater can fill any
+slot, and a player may be in several units but only once in each.
+_Avoid_: Line, when meaning a special-situation unit.
+
+**Extra attacker**:
+The skater sent on when the goalie is pulled. A lineup names two, a first and a
+second choice, so one is available when the first is already on the ice. Any
+dressed skater can be either.
 
 **Match result**:
 The outcome of a simulated match: a decisive score, how it was decided

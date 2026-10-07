@@ -35,6 +35,9 @@ internal static class SaveTestData
             lines.AddRange(team.Lineup.ForwardLines.Select(line => $"  line {line}"));
             lines.AddRange(team.Lineup.DefencePairs.Select(pair => $"  pair {pair}"));
             lines.Add($"  goalies {team.Lineup.StartingGoalieId} / {team.Lineup.BackupGoalieId}");
+            lines.AddRange(team.Lineup.SpecialSituationUnits.Select(unit =>
+                $"  {unit.Situation} {string.Join(",", unit.PlayerIds)}"));
+            lines.Add($"  extra attackers {string.Join(",", team.Lineup.ExtraAttackerIds)}");
             lines.Add($"  scratches {string.Join(",", team.ScratchedPlayerIds)}");
         }
 

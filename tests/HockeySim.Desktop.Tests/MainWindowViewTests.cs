@@ -93,7 +93,7 @@ public sealed class MainWindowViewTests
 
         // Choose the scratched goalie as the starter through the rendered combo box.
         var starterCombo = Assert.IsType<ComboBox>(linesView.FindControl<ComboBox>("StartingGoalieSelector"));
-        var scratchedGoalie = viewModel.Game!.Lines.Scratches.Single(player => player.PositionAbbreviation == "G");
+        var scratchedGoalie = viewModel.Game!.Lines.Lineup.Scratches.Single(player => player.PositionAbbreviation == "G");
         starterCombo.SelectedItem = scratchedGoalie;
         Dispatcher.UIThread.RunJobs();
 
@@ -105,6 +105,26 @@ public sealed class MainWindowViewTests
             scratchedGoalie.Id,
             snapshot.League.Teams.Single(team => team.Id == snapshot.ManagedTeamId).Lineup.StartingGoalieId);
         Assert.False(saveButton.IsEffectivelyEnabled);
+
+        // Each unit tab renders its units, with a choice for every slot.
+        var powerPlayUnits = Assert.IsType<ItemsControl>(linesView.FindControl<ItemsControl>("PowerPlayUnits"));
+        Assert.False(powerPlayUnits.IsVisible);
+        Click(Assert.IsType<Button>(linesView.FindControl<Button>("PowerPlayTabButton")));
+        Assert.True(powerPlayUnits.IsVisible);
+        Assert.Equal(28, powerPlayUnits.GetVisualDescendants().OfType<ComboBox>().Count());
+        Click(Assert.IsType<Button>(linesView.FindControl<Button>("OtherTabButton")));
+        var otherUnits = Assert.IsType<StackPanel>(linesView.FindControl<StackPanel>("OtherSituationUnits"));
+        Assert.Equal(19, otherUnits.GetVisualDescendants().OfType<ComboBox>().Count());
+
+        // Another team's lineup is shown read-only, without the save bar.
+        var linesTeamSelector = Assert.IsType<ComboBox>(linesView.FindControl<ComboBox>("LinesTeamSelector"));
+        linesTeamSelector.SelectedItem = viewModel.Game!.Lines.Teams.First(team => !team.IsManaged);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(saveButton.IsEffectivelyVisible);
+        Assert.All(otherUnits.GetVisualDescendants().OfType<ComboBox>(), combo => Assert.False(combo.IsEffectivelyEnabled));
+        linesTeamSelector.SelectedItem = viewModel.Game!.Lines.Teams.Single(team => team.IsManaged);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(saveButton.IsEffectivelyVisible);
 
         // Play opening night from the title bar, then open a result from the home page.
         AssertNavigationRenders<HomePageView>(window, ShellPage.Home);

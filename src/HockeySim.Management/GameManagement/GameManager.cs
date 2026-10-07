@@ -129,6 +129,8 @@ public sealed class GameManager
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(command.ForwardLines);
         ArgumentNullException.ThrowIfNull(command.DefencePairs);
+        ArgumentNullException.ThrowIfNull(command.SpecialSituationUnits);
+        ArgumentNullException.ThrowIfNull(command.ExtraAttackerIds);
 
         lock (_gate)
         {
@@ -164,7 +166,15 @@ public sealed class GameManager
             var starter = Resolve(command.StartingGoalieId);
             var backup = Resolve(command.BackupGoalieId);
 
-            var lineup = new Lineup(forwardLines, defencePairs, starter, backup);
+            var units = command.SpecialSituationUnits.Select(selection => new SpecialSituationUnit(
+                selection.Situation,
+                (selection.PlayerIds ?? throw new ArgumentException("A unit must name its skaters.", nameof(command)))
+                    .Select(Resolve)
+            )).ToList();
+
+            var extraAttackers = command.ExtraAttackerIds.Select(Resolve).ToList();
+
+            var lineup = new Lineup(forwardLines, defencePairs, starter, backup, units, extraAttackers);
 
             team.SetLineup(lineup);
 

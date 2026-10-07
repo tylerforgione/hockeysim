@@ -251,19 +251,25 @@ public sealed class LineupSnapshot
     private readonly ReadOnlyCollection<ForwardLineSnapshot> _forwardLines;
     private readonly ReadOnlyCollection<DefencePairSnapshot> _defencePairs;
     private readonly ReadOnlyCollection<PlayerId> _dressedPlayerIds;
+    private readonly ReadOnlyCollection<SpecialSituationUnitSnapshot> _specialSituationUnits;
+    private readonly ReadOnlyCollection<PlayerId> _extraAttackerIds;
 
     private LineupSnapshot(
         IReadOnlyList<ForwardLineSnapshot> forwardLines,
         IReadOnlyList<DefencePairSnapshot> defencePairs,
         PlayerId startingGoalieId,
         PlayerId backupGoalieId,
-        IReadOnlyList<PlayerId> dressedPlayerIds)
+        IReadOnlyList<PlayerId> dressedPlayerIds,
+        IReadOnlyList<SpecialSituationUnitSnapshot> specialSituationUnits,
+        IReadOnlyList<PlayerId> extraAttackerIds)
     {
         _forwardLines = new ReadOnlyCollection<ForwardLineSnapshot>(forwardLines.ToList());
         _defencePairs = new ReadOnlyCollection<DefencePairSnapshot>(defencePairs.ToList());
         StartingGoalieId = startingGoalieId;
         BackupGoalieId = backupGoalieId;
         _dressedPlayerIds = new ReadOnlyCollection<PlayerId>(dressedPlayerIds.ToList());
+        _specialSituationUnits = new ReadOnlyCollection<SpecialSituationUnitSnapshot>(specialSituationUnits.ToList());
+        _extraAttackerIds = new ReadOnlyCollection<PlayerId>(extraAttackerIds.ToList());
     }
 
     public IReadOnlyList<ForwardLineSnapshot> ForwardLines => _forwardLines;
@@ -276,13 +282,51 @@ public sealed class LineupSnapshot
 
     public IReadOnlyList<PlayerId> DressedPlayerIds => _dressedPlayerIds;
 
+    /// <summary>
+    /// Gets every special-situation unit, grouped in <see cref="SpecialSituation"/> order and
+    /// ordered first unit first within each situation.
+    /// </summary>
+    public IReadOnlyList<SpecialSituationUnitSnapshot> SpecialSituationUnits => _specialSituationUnits;
+
+    /// <summary>
+    /// Gets the two extra attackers, first choice first.
+    /// </summary>
+    public IReadOnlyList<PlayerId> ExtraAttackerIds => _extraAttackerIds;
+
+    public IReadOnlyList<SpecialSituationUnitSnapshot> UnitsFor(SpecialSituation situation) =>
+        _specialSituationUnits.Where(unit => unit.Situation == situation).ToList().AsReadOnly();
+
     internal static LineupSnapshot Create(Lineup lineup) =>
         new(
             lineup.ForwardLines.Select(ForwardLineSnapshot.Create).ToList(),
             lineup.DefencePairs.Select(DefencePairSnapshot.Create).ToList(),
             lineup.StartingGoalie.Id,
             lineup.BackupGoalie.Id,
-            lineup.DressedPlayers.Select(player => player.Id).ToList());
+            lineup.DressedPlayers.Select(player => player.Id).ToList(),
+            lineup.SpecialSituationUnits.Select(SpecialSituationUnitSnapshot.Create).ToList(),
+            lineup.ExtraAttackers.Select(player => player.Id).ToList());
+}
+
+public sealed class SpecialSituationUnitSnapshot
+{
+    private readonly ReadOnlyCollection<PlayerId> _playerIds;
+
+    private SpecialSituationUnitSnapshot(SpecialSituation situation, IReadOnlyList<PlayerId> playerIds)
+    {
+        Situation = situation;
+        _playerIds = new ReadOnlyCollection<PlayerId>(playerIds.ToList());
+    }
+
+    public SpecialSituation Situation { get; }
+
+    /// <summary>
+    /// Gets the skaters in slot order, matching the roles of
+    /// <see cref="SpecialSituationFormat.For(SpecialSituation)"/>.
+    /// </summary>
+    public IReadOnlyList<PlayerId> PlayerIds => _playerIds;
+
+    internal static SpecialSituationUnitSnapshot Create(SpecialSituationUnit unit) =>
+        new(unit.Situation, unit.Players.Select(player => player.Id).ToList());
 }
 
 public sealed record ForwardLineSnapshot(

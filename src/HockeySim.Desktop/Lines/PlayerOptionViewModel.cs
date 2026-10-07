@@ -1,11 +1,20 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+
 using HockeySim.Desktop.Players;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
 namespace HockeySim.Desktop.Lines;
 
-public sealed class PlayerOptionViewModel
+public sealed partial class PlayerOptionViewModel : ObservableObject
 {
+    /// <summary>
+    /// Gets or sets whether the player is scratched in the lineup being edited. Scratched skaters
+    /// stay listed for unit slots but cannot be saved there.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isScratched;
+
     public PlayerOptionViewModel(PlayerSnapshot player)
     {
         ArgumentNullException.ThrowIfNull(player);

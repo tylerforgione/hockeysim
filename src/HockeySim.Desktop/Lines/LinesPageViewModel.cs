@@ -2,37 +2,31 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using HockeySim.Desktop.Game;
+using HockeySim.Desktop.Teams;
 using HockeySim.Domain;
-using HockeySim.Management.GameManagement.Snapshots;
-using HockeySim.Management.Lineups;
 
 namespace HockeySim.Desktop.Lines;
 
 /// <summary>
-/// Edits the managed team's forward lines, defence pairs, and goalies. Edits stay local until
-/// saved, when Management validates and applies the whole lineup at once.
+/// Shows any team's lineup and edits the managed team's: forward lines, defence pairs, goalies,
+/// special-situation units, and extra attackers. Edits stay local until saved, when Management
+/// validates and applies the whole lineup at once. Browsing another team keeps unsaved edits.
 /// </summary>
 public sealed partial class LinesPageViewModel : ShellPageViewModel
 {
     private readonly GameSession _session;
-    private bool _isApplyingSwap;
-    private LineupSnapshot _savedLineup;
-    private IReadOnlyList<PlayerOptionViewModel> _rosterOptions = [];
+    private LineupEditorViewModel _managedLineup;
 
     [ObservableProperty]
-    private IReadOnlyList<ForwardLineRowViewModel> _forwardLines = [];
+    [NotifyPropertyChangedFor(nameof(Subtitle), nameof(IsEditable), nameof(OwnershipNote))]
+    private TeamEntryViewModel _selectedTeam;
 
     [ObservableProperty]
-    private IReadOnlyList<DefencePairRowViewModel> _defencePairs = [];
+    private LineupEditorViewModel _lineup;
 
     [ObservableProperty]
-    private LineupSlotViewModel? _startingGoalie;
-
-    [ObservableProperty]
-    private LineupSlotViewModel? _backupGoalie;
-
-    [ObservableProperty]
-    private IReadOnlyList<PlayerOptionViewModel> _scratches = [];
+    [NotifyPropertyChangedFor(nameof(IsEvenStrengthTab), nameof(IsPowerPlayTab), nameof(IsPenaltyKillTab), nameof(IsOtherTab))]
+    private LinesTab _tab = LinesTab.EvenStrength;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
@@ -51,28 +45,64 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
-        _savedLineup = session.ManagedTeam.Lineup;
-        Load();
+        Teams = session.Snapshot.League.Conferences
+            .SelectMany(conference => conference.Divisions)
+            .SelectMany(division => division.Teams.Select(team => new TeamEntryViewModel(
+                team.Id,
+                team.Name,
+                division.Name,
+                team.Id == session.Snapshot.ManagedTeamId)))
+            .ToList();
+        _selectedTeam = Teams.Single(team => team.IsManaged);
+        _managedLineup = CreateManagedLineup();
+        _lineup = _managedLineup;
     }
 
     public override string Title => "Lines";
 
-    public override string Subtitle => $"{_session.ManagedTeam.Name} · 4 forward lines · 3 defence pairs · 2 goalies";
+    public override string Subtitle => $"{SelectedTeam.Name} · lines, special-situation units, and goalies";
+
+    /// <summary>
+    /// Gets every team in league order: by conference, then division.
+    /// </summary>
+    public IReadOnlyList<TeamEntryViewModel> Teams { get; }
+
+    public bool IsEditable => SelectedTeam.IsManaged;
+
+    public string OwnershipNote => IsEditable
+        ? "Your team · choosing a player who is already in a line or unit swaps the two"
+        : "Read-only · other clubs set their own lineups";
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
-    private IEnumerable<LineupSlotViewModel> Slots =>
-        ForwardLines.SelectMany(line => new[] { line.LeftWing, line.Centre, line.RightWing })
-            .Concat(DefencePairs.SelectMany(pair => new[] { pair.LeftDefence, pair.RightDefence }))
-            .Concat(new[] { StartingGoalie, BackupGoalie }.OfType<LineupSlotViewModel>());
+    public bool IsEvenStrengthTab => Tab == LinesTab.EvenStrength;
+
+    public bool IsPowerPlayTab => Tab == LinesTab.PowerPlay;
+
+    public bool IsPenaltyKillTab => Tab == LinesTab.PenaltyKill;
+
+    public bool IsOtherTab => Tab == LinesTab.Other;
+
+    public void SelectTeam(TeamId teamId)
+    {
+        SelectedTeam = Teams.Single(team => team.Id == teamId);
+    }
 
     public override void Refresh()
     {
         // Keep unsaved edits when unrelated game state changes, such as reading a message.
         if (!HasChanges)
         {
-            Load();
+            _managedLineup = CreateManagedLineup();
         }
+
+        ShowSelectedTeam();
+    }
+
+    [RelayCommand]
+    private void SelectTab(LinesTab tab)
+    {
+        Tab = tab;
     }
 
     [RelayCommand(CanExecute = nameof(HasChanges))]
@@ -83,7 +113,7 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel
 
         try
         {
-            _session.SetLineup(CreateCommand());
+            _session.SetLineup(_managedLineup.CreateCommand());
         }
         catch (ArgumentException exception)
         {
@@ -91,119 +121,55 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel
             return;
         }
 
-        Load();
+        ReloadManagedLineup();
         StatusMessage = "Lineup saved.";
     }
 
     [RelayCommand(CanExecute = nameof(HasChanges))]
     private void Revert()
     {
-        Load();
+        ReloadManagedLineup();
         StatusMessage = "Changes discarded.";
     }
 
-    private void Load()
+    partial void OnSelectedTeamChanged(TeamEntryViewModel value)
     {
-        var team = _session.ManagedTeam;
-        _savedLineup = team.Lineup;
-        var options = team.Roster
-            .OrderBy(player => player.LastName, StringComparer.Ordinal)
-            .Select(player => new PlayerOptionViewModel(player))
-            .ToList();
-        _rosterOptions = options;
-        var byId = options.ToDictionary(option => option.Id);
-        IReadOnlyList<PlayerOptionViewModel> OptionsFor(Position position) =>
-            options.Where(option => option.Position == position).ToList();
-        var centres = OptionsFor(Position.Centre);
-        var wings = OptionsFor(Position.Wing);
-        var defence = OptionsFor(Position.Defence);
-        var goalies = OptionsFor(Position.Goalie);
-
-        LineupSlotViewModel Slot(string label, IReadOnlyList<PlayerOptionViewModel> slotOptions, PlayerId id) =>
-            new(label, slotOptions, byId[id], OnSlotChanged);
-
-        ForwardLines = _savedLineup.ForwardLines
-            .Select((line, index) => new ForwardLineRowViewModel(
-                $"LINE {index + 1}",
-                Slot("LW", wings, line.LeftWingId),
-                Slot("C", centres, line.CentreId),
-                Slot("RW", wings, line.RightWingId)))
-            .ToList();
-        DefencePairs = _savedLineup.DefencePairs
-            .Select((pair, index) => new DefencePairRowViewModel(
-                $"PAIR {index + 1}",
-                Slot("LD", defence, pair.LeftDefenceId),
-                Slot("RD", defence, pair.RightDefenceId)))
-            .ToList();
-        StartingGoalie = Slot("STARTER", goalies, _savedLineup.StartingGoalieId);
-        BackupGoalie = Slot("BACKUP", goalies, _savedLineup.BackupGoalieId);
-
-        ErrorMessage = null;
-        HasChanges = false;
-        UpdateScratches();
+        ShowSelectedTeam();
     }
 
-    /// <summary>
-    /// Choosing a player who already fills another slot swaps the two, so the lineup never
-    /// dresses the same player twice.
-    /// </summary>
-    private void OnSlotChanged(LineupSlotViewModel changedSlot, PlayerOptionViewModel? previousPlayer)
+    private void ReloadManagedLineup()
     {
-        if (_isApplyingSwap)
-        {
-            return;
-        }
+        _managedLineup = CreateManagedLineup();
+        ErrorMessage = null;
+        ShowSelectedTeam();
+    }
 
-        var newPlayer = changedSlot.SelectedPlayer;
-        var otherSlot = Slots.FirstOrDefault(slot => slot != changedSlot && slot.SelectedPlayer == newPlayer);
-        if (otherSlot is not null && newPlayer is not null)
-        {
-            _isApplyingSwap = true;
-            try
-            {
-                otherSlot.SelectedPlayer = previousPlayer;
-            }
-            finally
-            {
-                _isApplyingSwap = false;
-            }
-        }
+    private void ShowSelectedTeam()
+    {
+        Lineup = SelectedTeam.IsManaged
+            ? _managedLineup
+            : new LineupEditorViewModel(_session.GetTeam(SelectedTeam.Id), isEditable: false, () => { });
+    }
 
+    private LineupEditorViewModel CreateManagedLineup()
+    {
+        var lineup = new LineupEditorViewModel(_session.ManagedTeam, isEditable: true, OnManagedLineupEdited);
+        HasChanges = false;
+        return lineup;
+    }
+
+    private void OnManagedLineupEdited()
+    {
         StatusMessage = null;
         ErrorMessage = null;
-        HasChanges = !Slots.Select(slot => slot.SelectedPlayer?.Id)
-            .SequenceEqual(SlotOrder(_savedLineup).Select(id => (PlayerId?)id));
-        UpdateScratches();
+        HasChanges = _managedLineup.HasChanges;
     }
+}
 
-    private void UpdateScratches()
-    {
-        var dressed = Slots.Select(slot => slot.SelectedPlayer).ToHashSet();
-        Scratches = _rosterOptions.Where(player => !dressed.Contains(player))
-            .OrderBy(player => player.Position)
-            .ToList();
-    }
-
-    private SetLineupCommand CreateCommand()
-    {
-        static PlayerId Id(LineupSlotViewModel slot) =>
-            slot.SelectedPlayer?.Id ?? throw new ArgumentException($"Choose a player for every {slot.Label} slot.");
-
-        return new SetLineupCommand(
-            ForwardLines
-                .Select(line => new ForwardLineSelection(Id(line.LeftWing), Id(line.Centre), Id(line.RightWing)))
-                .ToList(),
-            DefencePairs
-                .Select(pair => new DefencePairSelection(Id(pair.LeftDefence), Id(pair.RightDefence)))
-                .ToList(),
-            Id(StartingGoalie!),
-            Id(BackupGoalie!));
-    }
-
-    // Matches the order of the Slots property.
-    private static IEnumerable<PlayerId> SlotOrder(LineupSnapshot lineup) =>
-        lineup.ForwardLines.SelectMany(line => new[] { line.LeftWingId, line.CentreId, line.RightWingId })
-            .Concat(lineup.DefencePairs.SelectMany(pair => new[] { pair.LeftDefenceId, pair.RightDefenceId }))
-            .Append(lineup.StartingGoalieId)
-            .Append(lineup.BackupGoalieId);
+public enum LinesTab
+{
+    EvenStrength,
+    PowerPlay,
+    PenaltyKill,
+    Other,
 }

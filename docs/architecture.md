@@ -105,6 +105,25 @@ derived from the generated managed team, so they never describe state the game
 does not hold; selecting a different managed team replaces them with messages
 for that team. Marking a message read is a Management command.
 
+Domain's `Lineup` also holds the special-situation units and two extra
+attackers. `SpecialSituationFormat` fixes each situation's unit count and the
+skater role of every slot (5-on-4 and 5-on-3: LW C RW / LD RD; 4-on-3, 4-on-5,
+and 4-on-4: C W / LD RD; 3-on-5 and 3-on-4: C / LD RD; 3-on-3: C W / D), and
+every format has exactly one centre, who takes faceoffs. Lines and pairs still
+follow players' positions until any-role lineups (#55), but unit slots and the
+extra attackers already take any dressed skater: a slot's role says where the
+skater plays, and the match engine is expected to judge how well they suit it.
+The lineup rejects a unit that holds a goalie, a scratched skater, or the same
+player twice, and a lineup without exactly the required units. Generated teams
+get line-derived defaults from `Lineup.CreateWithDefaultUnits`, which lives in
+Domain because it is a deterministic function of the lines and every test
+project's lineup helpers reuse it: power plays, four-on-four, and three-on-three
+draw on the top lines and pairs, penalty kills on the second to fourth lines'
+centres and left wings, and the first two centres are the extra attackers.
+Management's `SetLineup` replaces the whole lineup, units included, so a lines
+change that scratches a unit player is rejected unless its units change too.
+Simulation does not use the units yet; the event engine (#50, #51) will.
+
 A new game also generates the regular-season schedule from the same controlled
 random stream, after the league. Domain's `SeasonSchedule` holds scheduled
 matches by team identity in date order and rejects a team playing twice on one
@@ -157,7 +176,12 @@ starts a game, a `GameSession` forwards commands (lineup changes, reading
 messages, advancing a league day) to Management and publishes each resulting
 snapshot to the in-game shell's feature pages: home, inbox, roster, lines,
 league teams, standings, and schedule. Only the managed team's lineup is editable, and
-Management validates every change. The title bar's Continue button plays the
+Management validates every change. The lines page shows any team's lineup, read-only
+for other clubs, on tabs for even strength, power play, penalty kill, and the
+other situations (4-on-4, 3-on-3, extra attacker); each unit shows its forwards
+in front of its defence. Choosing a player already in the same line set, unit, or
+extra-attacker pair swaps the two; dressing a scratched player hands them the
+replaced player's unit slots. Unsaved edits survive browsing other teams. The title bar's Continue button plays the
 current league day off the UI thread; the session rejects a second request while
 one runs and then publishes Management's latest snapshot, since a command
 issued meanwhile waits on Management's lock and may have produced newer state.
@@ -185,7 +209,7 @@ score; shootout attempts count toward no player. It takes an explicit random sta
 the state after the match with the result, without changing the teams.
 Management saves and loads games through its own contracts in `Saves/`: the
 `GameSave` model and the `IGameSaveStore` interface. `SaveGame` copies the
-world, lineups, schedule, current date, completed matches, inbox, and random
+world, lineups (with their units and extra attackers), schedule, current date, completed matches, inbox, and random
 state into a detached save, then hands it to the store. `LoadGame` rebuilds the
 league through Domain constructors and replays each saved league day through
 `Season.CompleteDay`, so a loaded game is held to the same invariants as a
