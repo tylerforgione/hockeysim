@@ -148,7 +148,8 @@ public sealed class GameSaveFileTests : IDisposable
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
-    [InlineData(3)]
+    [InlineData(2)]
+    [InlineData(4)]
     public void ASaveFromAnotherFormatVersionIsRejectedAsUnsupported(int version)
     {
         StartGame().SaveGame(new GameSaveFile(SavePath));
@@ -169,14 +170,14 @@ public sealed class GameSaveFileTests : IDisposable
 
     [Theory]
     [InlineData("""[]""")]
-    [InlineData("""{"formatVersion":2,"game":{}}""")]
-    [InlineData("""{"format":"Another game","formatVersion":2,"game":{}}""")]
+    [InlineData("""{"formatVersion":3,"game":{}}""")]
+    [InlineData("""{"format":"Another game","formatVersion":3,"game":{}}""")]
     [InlineData("""{"format":"HockeySim save","game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":"2","game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":2}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":2,"game":null}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":2,"game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":2,"game":{"seasonYear":2026""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":"3","game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":3}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":3,"game":null}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":3,"game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":3,"game":{"seasonYear":2026""")]
     public void ADocumentThatIsNotAWholeSaveIsRejected(string json)
     {
         Directory.CreateDirectory(_directory);
@@ -227,6 +228,9 @@ public sealed class GameSaveFileTests : IDisposable
         "unknown situation",
         "missing units",
         "null extra attacker",
+        "unknown nationality",
+        "malformed birth date",
+        "missing biography",
     ];
 
     [Theory]
@@ -273,6 +277,15 @@ public sealed class GameSaveFileTests : IDisposable
                 break;
             case "null extra attacker":
                 lineup["extraAttackerIds"]![0] = null;
+                break;
+            case "unknown nationality":
+                player["biography"]!["nationality"] = "Atlantis";
+                break;
+            case "malformed birth date":
+                player["biography"]!["birthDate"] = "the first of May";
+                break;
+            case "missing biography":
+                player.Remove("biography");
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(damage));
@@ -346,6 +359,11 @@ public sealed class GameSaveFileTests : IDisposable
 
         Assert.True(Guid.TryParse((string?)player["id"], out _));
         Assert.Contains((string?)player["position"], Enum.GetNames<Domain.Position>());
+        var biography = player["biography"]!;
+        Assert.Contains((string?)biography["nationality"], Enum.GetNames<Domain.Country>());
+        Assert.Contains((string?)biography["handedness"], Enum.GetNames<Domain.Handedness>());
+        Assert.Contains((string?)biography["birthplace"]!["country"], Enum.GetNames<Domain.Country>());
+        Assert.True(DateOnly.TryParseExact((string?)biography["birthDate"], "yyyy-MM-dd", out _));
         var units = game["conferences"]![0]!["divisions"]![0]!["teams"]![0]!["lineup"]!["specialSituationUnits"]!.AsArray();
         Assert.Equal(
             Enum.GetNames<SpecialSituation>().SelectMany(name => Enumerable.Repeat(name, SpecialSituationFormat.For(Enum.Parse<SpecialSituation>(name)).UnitCount)),

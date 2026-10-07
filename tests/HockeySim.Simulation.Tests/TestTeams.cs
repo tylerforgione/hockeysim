@@ -69,7 +69,7 @@ internal static class TestTeams
             "Test",
             $"{position}{number}",
             position,
-            25,
+            TestBiography.Create(),
             number,
             Enum.GetValues<Rating>().ToDictionary(value => value, _ => new RatingScore(rating)));
 

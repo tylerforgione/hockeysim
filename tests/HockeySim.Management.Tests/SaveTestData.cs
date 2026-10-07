@@ -30,7 +30,7 @@ internal static class SaveTestData
         {
             lines.Add($"team {team.Id} {team.Name}");
             lines.AddRange(team.Roster.Select(player =>
-                $"  {player.Id} {player.FirstName} {player.LastName} {player.Position} age {player.Age} #{player.Number} "
+                $"  {player.Id} {player.FirstName} {player.LastName} {player.Position} age {player.Age} {player.Biography} #{player.Number} "
                 + string.Join(",", player.Ratings.OrderBy(rating => rating.Key).Select(rating => $"{rating.Key}={rating.Value}"))));
             lines.AddRange(team.Lineup.ForwardLines.Select(line => $"  line {line}"));
             lines.AddRange(team.Lineup.DefencePairs.Select(pair => $"  pair {pair}"));
