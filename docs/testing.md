@@ -10,7 +10,10 @@ editing, team browsing, player detail), and a headless Avalonia walkthrough
 from the startup menu through every available in-game page, playing a day, and
 opening a match's box score. Desktop season tests advance real games: the
 current-date and continue states, page refresh after a day, an empty league day,
-opening a result's box score from the home page, schedule browsing, a failing
+opening a result's box score from the home page with every box-score column
+(plus/minus, time on ice, shots, attempts, xG, hits, blocks, faceoffs,
+takeaways, giveaways, and the goalie's xG against and time on ice) and its
+formatting, schedule browsing, a failing
 match engine leaving the day unplayed with an error shown, overlapping
 advancement rejected while a gated engine holds a day, and a full season ending
 in the completed, still-browsable state with final standings. Desktop standings
@@ -40,8 +43,30 @@ to save a scratched skater on a unit, show other teams read-only while keeping
 the managed team's unsaved edits, and switch tabs; the headless walkthrough
 renders the unit tabs and another team's read-only lineup. Simulation tests
 check result invariants across many seeds, each decision path (regulation,
-overtime, shootout), determinism, unchanged input teams, and statistical bands
-for lineup strength, line and pair usage, and goalie quality. Individual match
+overtime, shootout), determinism (including playoff overtime and the full
+play-by-play), unchanged input teams, and statistical bands for lineup
+strength, line and pair usage, and goalie quality. Play-by-play tests check that
+events are in order within their periods, that every period and every restart
+after a goal opens with a faceoff, five-on-five strength with five dressed
+skaters and the starting goalies on the ice for every regulation event, that
+each event's players are on the ice for the right team, that every event type
+and shot outcome occurs, that only unblocked attempts carry xG, and that xG
+depends only on the shot's context and rises with danger, rebounds, and rushes.
+Statistic tests recount every skater statistic from the events, recompute
+plus/minus from the players on the ice at each goal, check that time on ice adds
+up to the skaters on the ice for the time played (and the goalie's to the whole
+match), that team and goalie totals reconcile with the opponent's skaters, that
+only centres take regulation faceoffs, that goals track xG for reference-rated
+players, and wide bands for goals, shots, attempts, blocks, hits, takeaways,
+giveaways, faceoffs, xG, and save percentage until calibration (#53). Overtime
+tests check three-on-three with the lineup's own three-on-three units, a
+shootout only after a full scoreless overtime, playoff overtime as unlimited
+five-on-five twenty-minute periods with no shootout, identical regulation under
+either format, and better shootout shooters winning more shootouts. Shift tests
+check that higher lines and pairs play more but every group plays, that
+linemates' time on ice matches, and that a low-stamina line plays less than a
+high-stamina one; physical-play tests check that bigger skaters and higher
+checking and toughness throw more hits. Individual match
 statistics are checked for reconciliation with the score and shots, appearance
 and eligibility rules, assist validity, shootout exclusion, and zero-shot and
 zero-production cases. Schedule tests check, across several seeds, the full
@@ -54,7 +79,13 @@ individual totals, completed-match invariants, and the terminal state. Domain
 standings scenarios isolate each ranking criterion, two-club and multi-club
 head-to-head (unbalanced meetings, cycles, a partly broken tie, clubs that have
 not met), odd-game exclusion, shootout goals, games-played differences, the
-no-games state, and teams level on every criterion. Domain special-situation
+no-games state, and teams level on every criterion. Domain box-score tests check
+that goals cannot exceed shots nor shots exceed attempts, non-negative counts,
+whole-second time on ice, finite non-negative xG, team shots equal to the
+skaters' shots, and that a match is rejected when a goalie's xG against does not
+match the opponent's (beyond rounding), faceoff wins and losses do not pair up,
+blocks exceed the opponent's unsuccessful attempts, or a plus/minus exceeds the
+goals scored. Domain special-situation
 tests check every format (unit count, slot roles, one centre), any skater in any
 slot, unit invariants (slot count, goalies, duplicates), the exact units each
 situation needs and their order, scratched skaters in units, extra-attacker
@@ -73,7 +104,8 @@ unplayed and the random state unchanged, rejected nested and serialized
 cross-thread advancement, snapshot isolation, and reproducibility. A shared
 fixture plays one full 1,344-match season and checks schedule completion, 84
 games per team, records and individual totals reconciled with the results, every
-decision type, and the completed-season state.
+box score's time on ice adding up to the time played, every decision type, and
+the completed-season state. Save round trips compare every box-score statistic.
 Management save tests round-trip a new game, a midseason game with a changed
 lineup, changed units, and a read message, and a completed season. They check that the loaded
 game matches what was saved, from rosters and lineups through every result,
@@ -86,7 +118,8 @@ that a loaded game accepts commands. Each kind of invalid save is rejected
 season, scores that do not reconcile, unrostered or ineligible players, invalid
 ratings, an unknown managed team or scheduled team, misnumbered inbox messages,
 a scratched skater in a unit, a missing unit, an undefined situation, missing
-extra attackers),
+extra attackers, team shots that differ from the skaters' shots, xG against that
+does not match the opponent, unmatched faceoffs, negative time on ice),
 and the active game then continues exactly as if the load was never attempted.
 Infrastructure tests save and load real files in a temporary directory: new,
 midseason, and completed games with continued play compared against

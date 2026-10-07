@@ -122,7 +122,8 @@ draw on the top lines and pairs, penalty kills on the second to fourth lines'
 centres and left wings, and the first two centres are the extra attackers.
 Management's `SetLineup` replaces the whole lineup, units included, so a lines
 change that scratches a unit player is rejected unless its units change too.
-Simulation does not use the units yet; the event engine (#50, #51) will.
+The event engine plays regular-season overtime with the three-on-three units;
+the other units wait for penalties (#51) and pulling the goalie (#52).
 
 A new game also generates the regular-season schedule from the same controlled
 random stream, after the league. Domain's `SeasonSchedule` holds scheduled
@@ -189,7 +190,12 @@ A failed day is shown as an error banner; Management applied nothing, so the
 pages still show the unplayed day. Once the season is complete, Continue is
 disabled and every page remains browsable. The schedule page lists one team's
 84 matches with results and opens a completed match's score, decision, and box
-score; these are single-match figures, kept apart from season totals.
+score; these are single-match figures, kept apart from season totals. The box
+score lists each team's skaters (goals, assists, points, plus/minus, time on ice,
+shots, shot attempts, xG, hits, blocks, faceoffs won and lost, takeaways,
+giveaways) and starting goalie (shots and goals against, saves, save percentage,
+xG against, time on ice); the two teams are stacked, away first, because each
+table needs the full width.
 The standings page presents Management's division, conference, or league tables
 as ranked, without re-sorting them. Roster tables for every team switch between
 ratings and current-season totals (skater GP/G/A/P, goalie GP/SA/SV/GA/SV%), and
@@ -199,18 +205,17 @@ Pages rebuild from whichever snapshot the session last published.
 Colours and control styles live in `HockeySim.Desktop/Theme/`; team identity
 colours are dynamic resources so a chosen team's colours can replace the
 league defaults later.
-Simulation calculates a match statistically from both teams' lineups as they
-stand at match start. Player ratings, fixed forward-line and defence-pair usage
-weights, and starting-goalie quality drive shots and goals. Tied matches go to
-sudden-death overtime and then a shootout. Each goal credits up to two assists to
-the scorer's on-ice teammates, and the result carries every appearing player's
-match statistics, derived from the goals and shots so they reconcile with the
-score; shootout attempts count toward no player. It takes an explicit random state and returns
-the state after the match with the result, without changing the teams.
+Simulation plays a match as play-by-play hockey events from both teams' lineups
+as they stand at match start; see [Match engine](#match-engine). It takes an
+explicit random state and an `OvertimeFormat`, and returns the state after the
+match with the result, without changing the teams. Management plays every
+league match with regular-season overtime.
 Management saves and loads games through its own contracts in `Saves/`: the
 `GameSave` model and the `IGameSaveStore` interface. `SaveGame` copies the
-world, lineups (with their units and extra attackers), schedule, current date, completed matches, inbox, and random
-state into a detached save, then hands it to the store. `LoadGame` rebuilds the
+world, lineups (with their units and extra attackers), schedule, current date, completed matches (with
+their full box scores, time on ice in whole seconds), inbox, and random
+state into a detached save, then hands it to the store. The play-by-play is not
+saved. Save format version 4 added the event engine's box-score statistics. `LoadGame` rebuilds the
 league through Domain constructors and replays each saved league day through
 `Season.CompleteDay`, so a loaded game is held to the same invariants as a
 played one, and team records, season statistics, and standings are derived
@@ -251,12 +256,127 @@ named `HockeySim` for each supported runtime identifier; ordinary builds stay
 framework-dependent. See
 [the deployment decision](adr/0005-self-contained-desktop-builds.md).
 
+### Match engine
+
+`MatchSimulator` plays a match on a game clock in whole seconds as a sequence of
+possession steps. In each step the team with the puck tries to move it from its
+own zone through the neutral zone into the attacking zone and create a shot,
+and the defending team tries to win it back. A step can exit or enter a zone
+(carrying the puck in starts a rush; a dump-in is contested), cycle, end in a
+shot attempt, a hit, or a turnover, or stop play for icing, offside, a frozen
+puck, or a puck out of play. Every stoppage and period start is restarted with a
+faceoff between the centres on the ice, decided by their faceoff ratings, and
+its location (centre ice or either team's zone) decides who starts where.
+Outcome chances are base rates shifted in log-odds by the gap between the
+attackers' offence and the defenders' defence, so stronger units shoot more and
+turn the puck over less. Turnovers are recorded as the defender's takeaway or
+the carrier's giveaway only some of the time; the rest are loose pucks credited
+to nobody, as in NHL scoring.
+
+Play is five-on-five in regulation. Forward lines and defence pairs rotate
+independently. Each skater's energy falls on the ice and recovers on the bench,
+at rates set by stamina, and a tired skater plays below their ratings. A group
+changes when it tires or has been out for a long shift, on the fly when its team
+is not attacking or at a stoppage once it has been out a while; the coach then
+sends out the rested group furthest behind its target share of ice time (forward
+lines 36/30/21/13%, pairs 40/34/26%). Higher lines therefore play more, and a
+low-stamina group has shorter shifts and plays less. Skaters recover partly in
+each intermission.
+
+A shot attempt draws a context (see below) and a shooter from the skaters on
+the ice: forwards from the slot, defence from the point, better attackers more
+often. A defending skater may block it, more likely for a point shot and for a
+good shot blocker. An unblocked attempt may miss the net, depending on the
+shooter's accuracy, and a shot on goal beats the goalie depending on the
+shooter's finishing and the goalie's reflexes and positioning. A save may give
+up a rebound, less often for a goalie with good rebound control, which the
+attackers can shoot again within a second or two. Each goal credits up to two
+assists to on-ice teammates, favouring playmakers. Hits come from the defending
+team, more often and more effectively for skaters with high checking,
+toughness, and size; size moves physicality by about a rating point per inch
+over 6'1" and per four pounds over 200 lb, within limits, and also helps a puck
+carrier keep the puck through a hit.
+
+The tuning values live together in `Simulation/Play/MatchTuning.cs`, measured
+from a reference rating of 65, the centre of generated talent. They are
+provisional: evenly matched teams average about 3.1 goals, 28 shots, 53 shot
+attempts, 13 blocked attempts, 20 hits, and a .890 save percentage each, but 84%
+of matches end in regulation against about 77% in the NHL. Calibration to NHL
+averages is #53.
+
+A match tied after regulation is decided by its `OvertimeFormat`. Regular-season
+overtime is five minutes of three-on-three sudden death with the lineup's
+three-on-three units, then a shootout: three rounds, then sudden-death rounds,
+with shooters in order of shootout strength (accuracy and puck control) against
+the goalie's goaltending. Playoff overtime is as many twenty-minute five-on-five
+sudden-death periods as it takes, with no shootout. Regulation is played
+identically under either format. Penalties and every other strength state are
+#51; pulling the goalie is #52.
+
+#### Play-by-play and match statistics
+
+The `MatchResult` carries the play-by-play: faceoffs, shot attempts (saved,
+missed, or blocked), goals, hits, takeaways, and giveaways, each with its
+period, time, strength state, and the players on the ice for both sides. Only
+Simulation holds the play-by-play; Management keeps the box score in the
+completed match and saves, and Desktop shows the box score. Every individual
+statistic is derived from the play-by-play, except time on ice, which comes from
+the shifts, so they reconcile by construction. Skaters record goals, assists,
+plus/minus (goals for less goals against while on the ice, excluding power-play
+goals), time on ice, shots on goal, shot attempts, hits, blocked shots,
+faceoffs won and lost, takeaways, giveaways, and individual xG. The starting
+goalie plays the whole match and records shots and goals against, xG against,
+and time on ice. Shootout attempts count toward no player.
+
+Domain's `CompletedMatch` holds every one of these statistics and rejects a
+match that does not reconcile: a team's shots must equal its skaters' shots on
+goal, each goalie's shots, goals, and xG against must match the opponent's
+skaters, one team's faceoff wins must be the other's losses, a team cannot block
+more attempts than the opponent failed to get on goal, and no skater's
+plus/minus can exceed the goals scored. Time on ice is kept in whole seconds and
+xG totals are compared within a rounding tolerance. Season totals still
+accumulate only games, goals, assists, and the goalie's shots and goals against;
+the new statistics' season totals are #54.
+
+#### Expected goals
+
+Every unblocked shot attempt has an expected-goal (xG) value: the chance that a
+league-average (reference-rated) shooter scores on a league-average goalie from
+the same context. Blocked attempts have no xG, as in public NHL models built on
+unblocked (Fenwick) attempts. The context is the attempt's danger level, where
+it was taken from, and whether it was a rebound or on the rush:
+
+| Context | xG |
+| --- | ---: |
+| Low danger (point, perimeter) | 0.020 |
+| Medium danger (faceoff circles) | 0.055 |
+| High danger (slot, crease) | 0.140 |
+| Rebound (always high danger) | odds × 2.0 (0.246) |
+| Rush | odds × 1.3 (low 0.026, medium 0.070, high 0.175) |
+
+The engine splits an attempt's xG into reaching the net and beating the goalie.
+A reference shooter reaches the net with a fixed chance for the context (66%
+low, 72% medium, 76% high, 80% rebound), and a shot on goal scores with the xG
+divided by that chance, so the two together give exactly the xG. The shooter's
+accuracy then shifts the first chance, and the shooter's finishing against the
+goalie's saving shifts the second, each in log-odds from the reference rating.
+Skilled shooters and weak goalies therefore score above their xG and the reverse
+below it, which is what goals saved above expected will measure (#54). How
+often each context arises depends on the play: better attackers get to the slot
+more often and better defenders keep them to the outside.
+
+Simulating a 1,344-match season takes about 1.2 seconds of engine time (about
+0.9 ms a match, 245 events each), measured on an Apple-silicon Mac in a Release
+build, so a 16-match league day plays in well under a second. The Management
+full-season test, which also builds a snapshot after each day, takes about three
+seconds, as it did with the previous engine.
+
 ### Player ratings
 
 Domain's `Player` holds a 0-100 value for every `Rating`: the skater skills,
 the three goaltending ratings, and faceoffs, discipline, stamina, durability,
-and toughness. The current match engine still uses only the original skater
-and goaltending ratings; the new ones are for the event engine. A new game
+and toughness. The match engine uses faceoffs, stamina, and toughness; discipline
+waits for penalties (#51) and durability for injuries. A new game
 generates ratings by position in Management's `PlayerRatingGenerator`. Each
 player draws one talent level that the position's skills follow, shifted by a
 position profile with a little variation per rating. For example, centres take
@@ -321,7 +441,7 @@ nationality. About 6% of players are born in another country. Ages on opening
 day run from 18 to 40 and cluster in the mid-twenties. Most players shoot left
 and nine in ten goalies catch left; defence and goalies are taller on average,
 and weight follows height. Like ratings, these values are provisional. The
-event engine (#50) is expected to use size in physical play.
+match engine uses height and weight in physical play.
 
 Desktop's roster tables add nationality (a three-letter code such as CAN or
 SUI) and handedness columns, and the player profile shows height, weight,
