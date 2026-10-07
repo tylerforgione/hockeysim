@@ -21,7 +21,9 @@ internal static class ScheduleGenerator
         ArgumentNullException.ThrowIfNull(random);
 
         var meetings = MeetingPlanner.Create(league, random);
-        var openingDay = new DateOnly(league.SeasonYear, OpeningMonth, OpeningDayOfMonth);
-        return new SeasonSchedule(RoundCalendar.Assign(league, meetings, openingDay, random));
+        return new SeasonSchedule(RoundCalendar.Assign(league, meetings, OpeningDay(league.SeasonYear), random));
     }
+
+    /// <summary>The first league day of a season, before any calendar constraints apply.</summary>
+    public static DateOnly OpeningDay(int seasonYear) => new(seasonYear, OpeningMonth, OpeningDayOfMonth);
 }

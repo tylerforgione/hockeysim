@@ -7,7 +7,7 @@ namespace HockeySim.Desktop.Players;
 
 /// <summary>
 /// Read-only profile of one player: identity, age, position, lineup role, overall rating,
-/// current-season totals, and the ratings that matter to their position.
+/// biographical details, current-season totals, and the ratings that matter to their position.
 /// </summary>
 /// <remarks>
 /// A skater's goaltending ratings and a goalie's skater ratings are generated low and play no
@@ -40,6 +40,13 @@ public sealed class PlayerDetailViewModel
         Number = $"#{player.Number}";
         Position = PlayerDisplay.PositionName(player.Position);
         Age = player.Age;
+        Height = PlayerDisplay.FormatHeight(player.Biography.Height);
+        Weight = PlayerDisplay.FormatWeight(player.Biography.Weight);
+        HandednessLabel = PlayerDisplay.HandednessLabel(player.Position).ToUpperInvariant();
+        Handedness = PlayerDisplay.HandednessName(player.Biography.Handedness);
+        BirthDate = PlayerDisplay.FormatBirthDate(player.Biography.BirthDate);
+        Birthplace = PlayerDisplay.FormatBirthplace(player.Biography.Birthplace);
+        Nationality = PlayerDisplay.CountryName(player.Biography.Nationality);
         TeamName = team.Name;
         LineupRole = PlayerDisplay.LineupRole(player.Id, team.Lineup);
         Overall = player.Overall;
@@ -87,6 +94,23 @@ public sealed class PlayerDetailViewModel
     public string Position { get; }
 
     public int Age { get; }
+
+    /// <summary>Feet and inches, such as 6' 1".</summary>
+    public string Height { get; }
+
+    /// <summary>Pounds, such as 195 lb.</summary>
+    public string Weight { get; }
+
+    /// <summary>SHOOTS for a skater, CATCHES for a goalie.</summary>
+    public string HandednessLabel { get; }
+
+    public string Handedness { get; }
+
+    public string BirthDate { get; }
+
+    public string Birthplace { get; }
+
+    public string Nationality { get; }
 
     public string TeamName { get; }
 

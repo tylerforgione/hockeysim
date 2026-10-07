@@ -33,9 +33,19 @@ public sealed class Season
             throw new ArgumentException("Every scheduled team must belong to the league.", nameof(schedule));
         }
 
+        var openingDay = schedule.Matches[0].Date;
+        if (league.Teams.SelectMany(team => team.Roster).Any(player =>
+                player.Biography.BirthDate > openingDay
+                || player.AgeOn(openingDay) is < Player.MinimumAge or > Player.MaximumAge))
+        {
+            throw new ArgumentException(
+                $"Every player must be between {Player.MinimumAge} and {Player.MaximumAge} years old on opening day.",
+                nameof(league));
+        }
+
         League = league;
         Schedule = schedule;
-        CurrentDate = schedule.Matches[0].Date;
+        CurrentDate = openingDay;
         _completedMatchesView = _completedMatches.AsReadOnly();
         _teamRecords = league.Teams.ToDictionary(team => team.Id, team => new TeamRecord(team.Id));
     }
