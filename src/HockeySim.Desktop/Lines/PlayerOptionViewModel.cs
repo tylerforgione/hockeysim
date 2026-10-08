@@ -22,6 +22,8 @@ public sealed partial class PlayerOptionViewModel : ObservableObject
         Id = player.Id;
         Position = player.Position;
         PositionAbbreviation = PlayerDisplay.PositionAbbreviation(player.Position);
+        Handedness = player.Biography.Handedness;
+        HandednessAbbreviation = PlayerDisplay.HandednessAbbreviation(Handedness);
         Number = $"#{player.Number}";
         Name = PlayerDisplay.FullName(player);
         Age = player.Age;
@@ -31,7 +33,13 @@ public sealed partial class PlayerOptionViewModel : ObservableObject
 
     public Position Position { get; }
 
+    /// <summary>Gets the abbreviation of the player's natural position.</summary>
     public string PositionAbbreviation { get; }
+
+    public Handedness Handedness { get; }
+
+    /// <summary>Gets "L" or "R": the hand the player shoots or catches with.</summary>
+    public string HandednessAbbreviation { get; }
 
     public string Number { get; }
 

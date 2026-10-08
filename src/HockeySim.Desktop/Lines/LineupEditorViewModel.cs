@@ -54,7 +54,7 @@ public sealed partial class LineupEditorViewModel : ObservableObject
             .ToList();
         _optionsById = _rosterOptions.ToDictionary(option => option.Id);
 
-        // Any skater may play anywhere on a unit, so unit choices list every skater by position.
+        // Any skater may fill any skater slot, so skater choices list every skater by natural position.
         _skaterOptions = _rosterOptions
             .Where(option => option.Position != Position.Goalie)
             .OrderBy(option => option.Position)
@@ -63,25 +63,31 @@ public sealed partial class LineupEditorViewModel : ObservableObject
         ForwardLines = _savedLineup.ForwardLines
             .Select((line, index) => new ForwardLineRowViewModel(
                 $"LINE {index + 1}",
-                DressedSlot("LW", Position.Wing, line.LeftWingId),
-                DressedSlot("C", Position.Centre, line.CentreId),
-                DressedSlot("RW", Position.Wing, line.RightWingId)))
+                DressedSlot("LW", SkaterRole.Wing, SkaterSide.Left, line.LeftWingId),
+                DressedSlot("C", SkaterRole.Centre, side: null, line.CentreId),
+                DressedSlot("RW", SkaterRole.Wing, SkaterSide.Right, line.RightWingId)))
             .ToList();
         DefencePairs = _savedLineup.DefencePairs
             .Select((pair, index) => new DefencePairRowViewModel(
                 $"PAIR {index + 1}",
-                DressedSlot("LD", Position.Defence, pair.LeftDefenceId),
-                DressedSlot("RD", Position.Defence, pair.RightDefenceId)))
+                DressedSlot("LD", SkaterRole.Defence, SkaterSide.Left, pair.LeftDefenceId),
+                DressedSlot("RD", SkaterRole.Defence, SkaterSide.Right, pair.RightDefenceId)))
             .ToList();
-        StartingGoalie = DressedSlot("STARTER", Position.Goalie, _savedLineup.StartingGoalieId);
-        BackupGoalie = DressedSlot("BACKUP", Position.Goalie, _savedLineup.BackupGoalieId);
+        StartingGoalie = GoalieSlot("STARTER", _savedLineup.StartingGoalieId);
+        BackupGoalie = GoalieSlot("BACKUP", _savedLineup.BackupGoalieId);
         AddSwapGroup(_dressedSlots);
 
         PowerPlay = CreateGroups(PowerPlaySituations);
         PenaltyKill = CreateGroups(PenaltyKillSituations);
         OtherSituationUnits = CreateGroups(OtherSituations);
+        // The extra attacker joins the forwards, so the match engine plays them as a wing without a side.
         ExtraAttackers = _savedLineup.ExtraAttackerIds
-            .Select((id, index) => Slot(index == 0 ? "1ST CHOICE" : "2ND CHOICE", _skaterOptions, id))
+            .Select((id, index) => Slot(
+                index == 0 ? "1ST CHOICE" : "2ND CHOICE",
+                _skaterOptions,
+                id,
+                SkaterRole.Wing,
+                side: null))
             .ToList();
         AddSwapGroup(ExtraAttackers);
 
@@ -153,12 +159,25 @@ public sealed partial class LineupEditorViewModel : ObservableObject
             ExtraAttackers.Select(Id).ToList());
     }
 
-    private LineupSlotViewModel Slot(string label, IReadOnlyList<PlayerOptionViewModel> options, PlayerId id) =>
-        new(label, options, _optionsById[id], IsEditable, OnSlotChanged);
+    private LineupSlotViewModel Slot(
+        string label,
+        IReadOnlyList<PlayerOptionViewModel> options,
+        PlayerId id,
+        SkaterRole? role,
+        SkaterSide? side) =>
+        new(label, options, _optionsById[id], role, side, IsEditable, OnSlotChanged);
 
-    private LineupSlotViewModel DressedSlot(string label, Position position, PlayerId id)
+    private LineupSlotViewModel DressedSlot(string label, SkaterRole role, SkaterSide? side, PlayerId id)
     {
-        var slot = Slot(label, _rosterOptions.Where(option => option.Position == position).ToList(), id);
+        var slot = Slot(label, _skaterOptions, id, role, side);
+        _dressedSlots.Add(slot);
+        return slot;
+    }
+
+    private LineupSlotViewModel GoalieSlot(string label, PlayerId id)
+    {
+        var options = _rosterOptions.Where(option => option.Position == Position.Goalie).ToList();
+        var slot = Slot(label, options, id, role: null, side: null);
         _dressedSlots.Add(slot);
         return slot;
     }
@@ -174,10 +193,15 @@ public sealed partial class LineupEditorViewModel : ObservableObject
 
     private SpecialUnitViewModel CreateUnit(SpecialSituation situation, int index, SpecialSituationUnitSnapshot unit)
     {
-        var roles = SpecialSituationFormat.For(situation).Roles;
-        var labels = SlotLabels(roles);
+        var format = SpecialSituationFormat.For(situation);
+        var roles = format.Roles;
         var slots = unit.PlayerIds
-            .Select((id, slot) => Slot(labels[slot], _skaterOptions, id))
+            .Select((id, slot) => Slot(
+                SlotLabel(roles[slot], format.Sides[slot]),
+                _skaterOptions,
+                id,
+                roles[slot],
+                format.Sides[slot]))
             .ToList();
         var view = new SpecialUnitViewModel(
             situation,
@@ -273,21 +297,18 @@ public sealed partial class LineupEditorViewModel : ObservableObject
             .Concat(_savedLineup.ExtraAttackerIds);
 
     /// <summary>
-    /// Names each slot by its role, with sides when a unit has two wings or two defence players.
+    /// Names a unit slot by its role, with its side when the unit has two wings or two defence players.
     /// </summary>
-    private static IReadOnlyList<string> SlotLabels(IReadOnlyList<SkaterRole> roles)
+    private static string SlotLabel(SkaterRole role, SkaterSide? side) => (role, side) switch
     {
-        var wingCount = roles.Count(role => role == SkaterRole.Wing);
-        var defenceCount = roles.Count(role => role == SkaterRole.Defence);
-        var wingsSeen = 0;
-        var defenceSeen = 0;
-        return roles.Select(role => role switch
-        {
-            SkaterRole.Centre => "C",
-            SkaterRole.Wing => wingCount == 1 ? "W" : wingsSeen++ == 0 ? "LW" : "RW",
-            _ => defenceCount == 1 ? "D" : defenceSeen++ == 0 ? "LD" : "RD",
-        }).ToList();
-    }
+        (SkaterRole.Centre, _) => "C",
+        (SkaterRole.Wing, SkaterSide.Left) => "LW",
+        (SkaterRole.Wing, SkaterSide.Right) => "RW",
+        (SkaterRole.Wing, _) => "W",
+        (_, SkaterSide.Left) => "LD",
+        (_, SkaterSide.Right) => "RD",
+        _ => "D",
+    };
 
     private static string SituationTitle(SpecialSituation situation) => situation switch
     {

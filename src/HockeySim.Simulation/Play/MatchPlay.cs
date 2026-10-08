@@ -450,7 +450,8 @@ internal sealed class MatchPlay
             : fromDistance ? new ShotContext(ShotDanger.Low, IsRebound: false, IsRush: false)
             : new ShotContext(DrawDanger(rush), IsRebound: false, IsRush: rush);
         context = context with { IsEmptyNet = emptyNet };
-        var shooter = ChooseShooter(attacker, context.Danger);
+        var shooterSlot = ChooseShooter(attacker, context.Danger);
+        var shooter = shooterSlot.Skater;
 
         var blocker = Choose(defender, slot =>
             (slot.IsDefence ? MatchTuning.DefenceBlockerWeight : MatchTuning.ForwardBlockerWeight)
@@ -504,7 +505,7 @@ internal sealed class MatchPlay
         // goalie score exactly at the expected-goal rate.
         var goalChance = Probability.Adjust(
             expectedGoals!.Value / onNetBase,
-            (MatchTuning.FinishingSensitivity * ((shooter.Finishing * shooter.Performance) - MatchTuning.ReferenceRating))
+            (MatchTuning.FinishingSensitivity * ((shooterSlot.Finishing * shooter.Performance) - MatchTuning.ReferenceRating))
             - (MatchTuning.GoaltendingSensitivity * (defender.Saving - MatchTuning.ReferenceRating)));
         if (_random.Chance(goalChance))
         {
@@ -637,13 +638,14 @@ internal sealed class MatchPlay
         var hitter = Choose(defender, slot =>
             (slot.IsDefence ? MatchTuning.DefenceHitterWeight : MatchTuning.ForwardHitterWeight)
             * Math.Max(0.1, 0.5 + (slot.Skater.Physicality / 100)));
-        var carrier = attacker.OnIce[_random.NextInt(0, attacker.OnIce.Count)].Skater;
+        var carrierSlot = attacker.OnIce[_random.NextInt(0, attacker.OnIce.Count)];
+        var carrier = carrierSlot.Skater;
         Record(new HitEvent(_period, Now, OnIce(), defender.TeamId, hitter.Id, carrier.Id));
 
         var turnoverChance = Probability.Adjust(
             MatchTuning.HitTurnoverChance,
             MatchTuning.HitTurnoverSensitivity
-            * ((hitter.Physicality * hitter.Performance) - (carrier.PuckProtection * carrier.Performance)));
+            * ((hitter.Physicality * hitter.Performance) - (carrierSlot.PuckProtection * carrier.Performance)));
         if (_random.Chance(turnoverChance))
         {
             GiveTo(defender, opponentZoneIfTurnedOver);
@@ -658,9 +660,12 @@ internal sealed class MatchPlay
     private void TakeFaceoff()
     {
         _faceoffPending = false;
-        var home = _home.Centre.Skater;
-        var away = _away.Centre.Skater;
-        var homeWins = _random.Chance(Probability.Adjust(0.5, MatchTuning.FaceoffSensitivity * (home.Faceoffs - away.Faceoffs)));
+        var homeCentre = _home.Centre;
+        var awayCentre = _away.Centre;
+        var homeWins = _random.Chance(Probability.Adjust(
+            0.5,
+            MatchTuning.FaceoffSensitivity * (homeCentre.Faceoffs - awayCentre.Faceoffs)));
+        var (home, away) = (homeCentre.Skater, awayCentre.Skater);
         var (winner, winnerCentre, loserCentre) = homeWins ? (_home, home, away) : (_away, away, home);
         Record(new FaceoffEvent(_period, Now, OnIce(), winner.TeamId, winnerCentre.Id, loserCentre.Id, _faceoffZoneOwner?.TeamId));
 
@@ -827,7 +832,7 @@ internal sealed class MatchPlay
         _rush = false;
         AssessPenalties([new CalledPenalty(defender, offender, infraction, PenaltyKind.PenaltyShot)]);
 
-        var shooter = ChooseShooter(attacker, ShotDanger.High);
+        var shooter = ChooseShooter(attacker, ShotDanger.High).Skater;
         var context = new ShotContext(ShotDanger.High, IsRebound: false, IsRush: false, IsPenaltyShot: true);
         var expectedGoals = ExpectedGoalsModel.ExpectedGoals(context);
         if (_random.Chance(ShootoutPlay.OneOnOneGoalChance(shooter.Player, defender)))
@@ -952,7 +957,7 @@ internal sealed class MatchPlay
 
     /// <summary>Above one when a side's skaters on the ice are less disciplined than the reference, or tired.</summary>
     private static double IndisciplineFactor(MatchSide side) =>
-        Math.Exp(-MatchTuning.DisciplineSensitivity * (side.MeanOnIce(skater => skater.Discipline) - MatchTuning.ReferenceRating));
+        Math.Exp(-MatchTuning.DisciplineSensitivity * (side.MeanOnIce(slot => slot.Skater.Discipline) - MatchTuning.ReferenceRating));
 
     private static double Indiscipline(SkaterState skater) =>
         Math.Exp(-MatchTuning.DisciplineSensitivity * ((skater.Discipline * skater.Performance) - MatchTuning.ReferenceRating));
@@ -1011,8 +1016,8 @@ internal sealed class MatchPlay
         ]);
     }
 
-    private SkaterState ChooseShooter(MatchSide attacker, ShotDanger danger) =>
-        Choose(attacker, slot => ShooterRoleWeight(slot.IsDefence, danger) * (0.5 + (slot.Skater.Offence / 100)));
+    private OnIceSkater ChooseShooter(MatchSide attacker, ShotDanger danger) =>
+        ChooseSlot(attacker, slot => ShooterRoleWeight(slot.IsDefence, danger) * (0.5 + (slot.Offence / 100)));
 
     private static double ShooterRoleWeight(bool isDefence, ShotDanger danger) => (isDefence, danger) switch
     {
@@ -1050,7 +1055,7 @@ internal sealed class MatchPlay
 
     /// <summary>The attacking edge from the skaters' ratings alone, whatever the strength state.</summary>
     private double SkillEdge() =>
-        _possessor.MeanOnIce(skater => skater.Offence) - Opponent(_possessor).MeanOnIce(skater => skater.Defence);
+        _possessor.MeanOnIce(slot => slot.Offence) - Opponent(_possessor).MeanOnIce(slot => slot.Defence);
 
     /// <summary>Above one when the attackers are stronger, below one when the defenders are.</summary>
     private double AttackingEdgeFactor() => Math.Exp(MatchTuning.PlayEdgeSensitivity * AttackingEdge());
@@ -1058,10 +1063,12 @@ internal sealed class MatchPlay
     /// <summary>More physical defending skaters throw more hits.</summary>
     private double HitRateFactor() =>
         Math.Exp(MatchTuning.HitRateSensitivity
-            * (Opponent(_possessor).MeanOnIce(skater => skater.Physicality) - MatchTuning.ReferenceRating))
+            * (Opponent(_possessor).MeanOnIce(slot => slot.Skater.Physicality) - MatchTuning.ReferenceRating))
         * (_openIce ? MatchTuning.OpenIceHitMultiplier : 1);
 
-    private SkaterState Choose(MatchSide side, Func<OnIceSkater, double> weight)
+    private SkaterState Choose(MatchSide side, Func<OnIceSkater, double> weight) => ChooseSlot(side, weight).Skater;
+
+    private OnIceSkater ChooseSlot(MatchSide side, Func<OnIceSkater, double> weight)
     {
         var onIce = side.OnIce;
         var weights = new double[onIce.Count];
@@ -1070,7 +1077,7 @@ internal sealed class MatchPlay
             weights[index] = Math.Max(0, weight(onIce[index]));
         }
 
-        return onIce[_random.NextWeightedIndex(weights)].Skater;
+        return onIce[_random.NextWeightedIndex(weights)];
     }
 
     private void GiveTo(MatchSide side, Zone zone)

@@ -7,7 +7,8 @@ namespace HockeySim.Domain;
 /// </summary>
 /// <remarks>
 /// Slots list forwards before defence. Every format has exactly one centre, so faceoffs always
-/// have a defined player.
+/// have a defined player. Where a unit has two wings or two defence players, the first plays the
+/// left side and the second the right.
 /// </remarks>
 public sealed class SpecialSituationFormat
 {
@@ -36,12 +37,14 @@ public sealed class SpecialSituationFormat
     ]);
 
     private readonly ReadOnlyCollection<SkaterRole> _roles;
+    private readonly ReadOnlyCollection<SkaterSide?> _sides;
 
     private SpecialSituationFormat(SpecialSituation situation, int unitCount, SkaterRole[] roles)
     {
         Situation = situation;
         UnitCount = unitCount;
         _roles = Array.AsReadOnly(roles);
+        _sides = Array.AsReadOnly(SidesOf(roles));
     }
 
     /// <summary>
@@ -61,7 +64,29 @@ public sealed class SpecialSituationFormat
     /// </summary>
     public IReadOnlyList<SkaterRole> Roles => _roles;
 
+    /// <summary>
+    /// Gets the side of each slot, in slot order: left then right for a pair of wings or defence,
+    /// and none for the centre or a lone wing or defence player, who play across the ice.
+    /// </summary>
+    public IReadOnlyList<SkaterSide?> Sides => _sides;
+
     public static SpecialSituationFormat For(SpecialSituation situation) =>
         Formats.SingleOrDefault(format => format.Situation == situation)
         ?? throw new ArgumentOutOfRangeException(nameof(situation), "The special situation must be defined.");
+
+    private static SkaterSide?[] SidesOf(SkaterRole[] roles)
+    {
+        var sides = new SkaterSide?[roles.Length];
+        foreach (var role in new[] { SkaterRole.Wing, SkaterRole.Defence })
+        {
+            var slots = Enumerable.Range(0, roles.Length).Where(slot => roles[slot] == role).ToList();
+            if (slots.Count == 2)
+            {
+                sides[slots[0]] = SkaterSide.Left;
+                sides[slots[1]] = SkaterSide.Right;
+            }
+        }
+
+        return sides;
+    }
 }

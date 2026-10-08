@@ -64,15 +64,32 @@ internal static class LeagueGenerator
         var goalies = players.Where(player => player.Position == Position.Goalie).ToList();
 
         var forwardLines = Enumerable.Range(0, Lineup.RequiredForwardLineCount)
-            .Select(index => new ForwardLine(wings[index * 2], centres[index], wings[(index * 2) + 1]))
+            .Select(index =>
+            {
+                var (leftWing, rightWing) = OnNaturalSides(wings[index * 2], wings[(index * 2) + 1]);
+                return new ForwardLine(leftWing, centres[index], rightWing);
+            })
             .ToList();
         var defencePairs = Enumerable.Range(0, Lineup.RequiredDefencePairCount)
-            .Select(index => new DefencePair(defencePlayers[index * 2], defencePlayers[(index * 2) + 1]))
+            .Select(index =>
+            {
+                var (leftDefence, rightDefence) = OnNaturalSides(defencePlayers[index * 2], defencePlayers[(index * 2) + 1]);
+                return new DefencePair(leftDefence, rightDefence);
+            })
             .ToList();
         var lineup = Lineup.CreateWithDefaultUnits(forwardLines, defencePairs, goalies[0], goalies[1]);
 
         return new Team(new TeamId(random.NextGuid()), name, players, lineup);
     }
+
+    /// <summary>
+    /// Orders two wings or defence players left side first, swapping them only when that puts both
+    /// on their forehand side. Pairs that shoot the same way keep their order, so one plays off-hand.
+    /// </summary>
+    private static (Player Left, Player Right) OnNaturalSides(Player first, Player second) =>
+        first.Biography.Handedness == Handedness.Right && second.Biography.Handedness == Handedness.Left
+            ? (second, first)
+            : (first, second);
 
     private static void AddPlayers(
         ICollection<Player> players,

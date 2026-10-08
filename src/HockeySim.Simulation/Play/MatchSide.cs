@@ -48,17 +48,17 @@ internal sealed class MatchSide
         var forwards = new Rotation(
             lineup.ForwardLines.Select(line => new[]
             {
-                Slot(line.LeftWing, SkaterRole.Wing),
-                Slot(line.Centre, SkaterRole.Centre),
-                Slot(line.RightWing, SkaterRole.Wing),
+                Slot(line.LeftWing, SkaterRole.Wing, SkaterSide.Left),
+                Slot(line.Centre, SkaterRole.Centre, side: null),
+                Slot(line.RightWing, SkaterRole.Wing, SkaterSide.Right),
             }),
             MatchTuning.ForwardLineUsage,
             drainMultiplier: 1);
         var defence = new Rotation(
             lineup.DefencePairs.Select(pair => new[]
             {
-                Slot(pair.LeftDefence, SkaterRole.Defence),
-                Slot(pair.RightDefence, SkaterRole.Defence),
+                Slot(pair.LeftDefence, SkaterRole.Defence, SkaterSide.Left),
+                Slot(pair.RightDefence, SkaterRole.Defence, SkaterSide.Right),
             }),
             MatchTuning.DefencePairUsage,
             MatchTuning.DefenceDrainMultiplier);
@@ -70,7 +70,7 @@ internal sealed class MatchSide
             {
                 new Rotation(
                     lineup.UnitsFor(format.Situation).Select(unit => unit.Players
-                        .Select((player, slot) => Slot(player, unit.Format.Roles[slot]))
+                        .Select((player, slot) => Slot(player, unit.Format.Roles[slot], unit.Format.Sides[slot]))
                         .ToArray()),
                     MatchTuning.UnitUsage(format.Situation),
                     drainMultiplier: 1),
@@ -209,13 +209,14 @@ internal sealed class MatchSide
         }
     }
 
-    public double MeanOnIce(Func<SkaterState, double> strength)
+    /// <summary>The mean of a strength over the skaters on the ice, as they perform at their current energy.</summary>
+    public double MeanOnIce(Func<OnIceSkater, double> strength)
     {
         var onIce = OnIce;
         var total = 0.0;
         foreach (var slot in onIce)
         {
-            total += strength(slot.Skater) * slot.Skater.Performance;
+            total += strength(slot) * slot.Skater.Performance;
         }
 
         return total / onIce.Count;
@@ -281,7 +282,7 @@ internal sealed class MatchSide
             var skater = IsAvailable(slot.Skater) && !Contains(onIce, slot.Skater)
                 ? slot.Skater
                 : Substitute(onIce, planned, slot.Role);
-            onIce.Add(new OnIceSkater(skater, slot.Role));
+            onIce.Add(new OnIceSkater(skater, slot.Role, slot.Side));
             drains.Add(drain);
         }
 
@@ -289,7 +290,7 @@ internal sealed class MatchSide
         {
             var extraAttacker = _extraAttackers.FirstOrDefault(skater => IsAvailable(skater) && !Contains(onIce, skater))
                 ?? Substitute(onIce, planned, SkaterRole.Wing);
-            onIce.Add(new OnIceSkater(extraAttacker, SkaterRole.Wing));
+            onIce.Add(new OnIceSkater(extraAttacker, SkaterRole.Wing, side: null));
             drains.Add(1);
         }
 
@@ -341,5 +342,5 @@ internal sealed class MatchSide
         return false;
     }
 
-    private OnIceSkater Slot(Player player, SkaterRole role) => new(_skatersByPlayer[player], role);
+    private OnIceSkater Slot(Player player, SkaterRole role, SkaterSide? side) => new(_skatersByPlayer[player], role, side);
 }

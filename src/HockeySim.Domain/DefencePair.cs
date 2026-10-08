@@ -2,6 +2,12 @@ using System.Collections.ObjectModel;
 
 namespace HockeySim.Domain;
 
+/// <summary>
+/// A defence pair's left and right defence.
+/// </summary>
+/// <remarks>
+/// Any skater can fill either place, whatever their natural position; see <see cref="SkaterFit"/>.
+/// </remarks>
 public sealed class DefencePair
 {
     private readonly ReadOnlyCollection<Player> _players;
@@ -11,9 +17,9 @@ public sealed class DefencePair
         ArgumentNullException.ThrowIfNull(leftDefence);
         ArgumentNullException.ThrowIfNull(rightDefence);
 
-        if (leftDefence.Position != Position.Defence || rightDefence.Position != Position.Defence)
+        if (leftDefence.Position == Position.Goalie || rightDefence.Position == Position.Goalie)
         {
-            throw new ArgumentException("A defence pair must contain two defence players.");
+            throw new ArgumentException("A defence pair cannot include a goalie.");
         }
 
         if (leftDefence.Id == rightDefence.Id)

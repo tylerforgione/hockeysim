@@ -2,6 +2,12 @@ using System.Collections.ObjectModel;
 
 namespace HockeySim.Domain;
 
+/// <summary>
+/// A forward line's left wing, centre, and right wing.
+/// </summary>
+/// <remarks>
+/// Any skater can fill any place, whatever their natural position; see <see cref="SkaterFit"/>.
+/// </remarks>
 public sealed class ForwardLine
 {
     private readonly ReadOnlyCollection<Player> _players;
@@ -12,14 +18,9 @@ public sealed class ForwardLine
         ArgumentNullException.ThrowIfNull(centre);
         ArgumentNullException.ThrowIfNull(rightWing);
 
-        if (leftWing.Position != Position.Wing || rightWing.Position != Position.Wing)
+        if (new[] { leftWing, centre, rightWing }.Any(player => player.Position == Position.Goalie))
         {
-            throw new ArgumentException("A forward line must have two wings.");
-        }
-
-        if (centre.Position != Position.Centre)
-        {
-            throw new ArgumentException("A forward line must have one centre.", nameof(centre));
+            throw new ArgumentException("A forward line cannot include a goalie.");
         }
 
         if (new[] { leftWing.Id, centre.Id, rightWing.Id }.Distinct().Count() != 3)
