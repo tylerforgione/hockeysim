@@ -14,6 +14,7 @@ commands).
 | `Domain/OverallRating.cs` | Overall-rating weights (keep in step with the table below) |
 | `Domain/PlayerBiography.cs`, `Birthplace.cs`, `Country.cs`, `Handedness.cs`, `Height.cs`, `Weight.cs` | Biographies |
 | `Domain/Lineup.cs`, `ForwardLine.cs`, `DefencePair.cs` | Lines, pairs, and dressed players |
+| `Domain/SkaterFit.cs`, `PositionFit.cs`, `SkaterSide.cs` | Out-of-position and off-hand rules for any-role lineups |
 | `Domain/SpecialSituation*.cs`, `SkaterRole.cs`, `DefaultSpecialSituationUnits.cs` | Special-situation units and their defaults |
 | `Management/NewGame/LeagueGenerator.cs` | Builds the league |
 | `Management/NewGame/PlayerRatingGenerator.cs`, `PlayerBiographyGenerator.cs`, `PlayerOriginData.cs`, `FictionalLeagueData.cs` | Generated players, names, and teams |
@@ -31,6 +32,7 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | --- | --- |
 | `Domain.Tests/PlayerTests.cs`, `OverallRatingTests.cs`, `PlayerBiographyTests.cs` | Ratings, overall weights, ages and biography rules |
 | `Domain.Tests/LineupTests.cs`, `SpecialSituationUnitTests.cs` | Lineup and unit invariants, defaults |
+| `Domain.Tests/SkaterFitTests.cs` | Position fit, off-hand sides, unit slot sides |
 | `Management.Tests/NewGameTests.cs` | Generated-world invariants, team selection, reproducibility |
 | `Management.Tests/PlayerRatingGenerationTests.cs`, `PlayerBiographyGenerationTests.cs` | Generated distributions over several seeds |
 | `Management.Tests/LineupTests.cs`, `SpecialSituationUnitTests.cs` | Lineup commands, rejected changes, snapshot isolation |
@@ -52,12 +54,21 @@ Domain's `Lineup` also holds the special-situation units and two extra
 attackers. `SpecialSituationFormat` fixes each situation's unit count and the
 skater role of every slot (5-on-4 and 5-on-3: LW C RW / LD RD; 4-on-3, 4-on-5,
 and 4-on-4: C W / LD RD; 3-on-5 and 3-on-4: C / LD RD; 3-on-3: C W / D), and
-every format has exactly one centre, who takes faceoffs. Lines and pairs still
-follow players' positions until any-role lineups (#55), but unit slots and the
-extra attackers already take any dressed skater: a slot's role says where the
-skater plays, and the match engine is expected to judge how well they suit it.
-The lineup rejects a unit that holds a goalie, a scratched skater, or the same
-player twice, and a lineup without exactly the required units. Generated teams
+every format has exactly one centre, who takes faceoffs. Where a format has two
+wings or two defence players, its `Sides` put the first on the left and the
+second on the right; the centre and a lone wing or defence player have no side.
+
+Any skater can fill any skater slot: every place on a forward line or defence
+pair, every unit slot, and either extra attacker. A player's `Position` is their
+natural position. Goalies fill only the two goalie places, and only goalies fill
+them. Roster rules are unchanged. Domain's `SkaterFit` judges each assignment:
+`PositionFit` is natural, another forward position (centre and wing), or across
+forwards and defence, and a skater is off-hand on the side opposite their
+handedness. The match engine plays an ill-suited skater a little below their
+ratings (see [Positions and handedness](match-engine.md#positions-and-handedness)),
+and the Lines page warns when a skater is out of position. The lineup rejects a line, pair,
+or unit that holds a goalie or the same player twice, a unit with a scratched
+skater, and a lineup without exactly the required units. Generated teams
 get line-derived defaults from `Lineup.CreateWithDefaultUnits`, which lives in
 Domain because it is a deterministic function of the lines and every test
 project's lineup helpers reuse it: power plays, four-on-four, and three-on-three
@@ -65,6 +76,9 @@ draw on the top lines and pairs, penalty kills on the second to fourth lines'
 centres and left wings, and the first two centres are the extra attackers.
 Management's `SetLineup` replaces the whole lineup, units included, so a lines
 change that scratches a unit player is rejected unless its units change too.
+Generated lineups play everyone at their natural position, and within each line
+or pair a left and a right shot play on their forehand sides; a pair that shoots
+the same way keeps one player off-hand.
 The event engine plays every strength state that penalties create with the
 matching units (see [Penalties and special teams](match-engine.md#penalties-and-special-teams))
 and sends on an extra attacker whenever a goalie is pulled, during a delayed
@@ -142,7 +156,8 @@ nationality. About 6% of players are born in another country. Ages on opening
 day run from 18 to 40 and cluster in the mid-twenties. Most players shoot left
 and nine in ten goalies catch left; defence and goalies are taller on average,
 and weight follows height. Like ratings, these values are provisional. The
-match engine uses height and weight in physical play.
+match engine uses height and weight in physical play, and handedness on the
+wings and defence.
 
 Desktop's roster tables add nationality (a three-letter code such as CAN or
 SUI) and handedness columns, and the player profile shows height, weight,

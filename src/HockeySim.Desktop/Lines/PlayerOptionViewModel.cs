@@ -31,6 +31,7 @@ public sealed partial class PlayerOptionViewModel : ObservableObject
 
     public Position Position { get; }
 
+    /// <summary>Gets the abbreviation of the player's natural position.</summary>
     public string PositionAbbreviation { get; }
 
     public string Number { get; }

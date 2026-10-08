@@ -12,23 +12,39 @@ public sealed partial class LineupSlotViewModel : ObservableObject
     private readonly Action<LineupSlotViewModel, PlayerOptionViewModel?> _selectionChanged;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FitNote), nameof(HasFitNote))]
     private PlayerOptionViewModel? _selectedPlayer;
 
+    /// <param name="role">The skater role the slot plays, or none for a goalie slot.</param>
     public LineupSlotViewModel(
         string label,
         IReadOnlyList<PlayerOptionViewModel> options,
         PlayerOptionViewModel selectedPlayer,
+        SkaterRole? role,
         bool isEditable,
         Action<LineupSlotViewModel, PlayerOptionViewModel?> selectionChanged)
     {
         Label = label;
         Options = options;
         _selectedPlayer = selectedPlayer;
+        Role = role;
         IsEditable = isEditable;
         _selectionChanged = selectionChanged;
     }
 
     public string Label { get; }
+
+    public SkaterRole? Role { get; }
+
+    /// <summary>
+    /// Gets a warning when the chosen skater plays out of position here, such as "Forward on defence",
+    /// or nothing when the slot suits their position.
+    /// </summary>
+    public string? FitNote => Role is { } role && SelectedPlayer is { } player && player.Position != Position.Goalie
+        ? FitNoteFor(player.Position, role)
+        : null;
+
+    public bool HasFitNote => FitNote is not null;
 
     /// <summary>
     /// Gets every roster player who can be chosen for this slot, dressed or scratched.
@@ -39,6 +55,13 @@ public sealed partial class LineupSlotViewModel : ObservableObject
     /// Gets whether the user may change this slot; only the managed team's lineup is editable.
     /// </summary>
     public bool IsEditable { get; }
+
+    private static string? FitNoteFor(Position position, SkaterRole role) => SkaterFit.For(position, role) switch
+    {
+        PositionFit.OtherForwardPosition => "Out of position",
+        PositionFit.AcrossForwardsAndDefence => position == Position.Defence ? "Defenceman at forward" : "Forward on defence",
+        _ => null,
+    };
 
     partial void OnSelectedPlayerChanged(PlayerOptionViewModel? oldValue, PlayerOptionViewModel? newValue)
     {

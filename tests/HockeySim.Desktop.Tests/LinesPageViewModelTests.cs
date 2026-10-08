@@ -11,7 +11,7 @@ namespace HockeySim.Desktop.Tests;
 public sealed class LinesPageViewModelTests
 {
     [Fact]
-    public void LoadsTheManagedLineupWithPositionEligibleChoices()
+    public void LoadsTheManagedLineupWithEverySkaterForSkaterSlotsAndGoaliesForGoalieSlots()
     {
         var session = GameTestData.StartSession();
         var lines = new LinesPageViewModel(session);
@@ -21,10 +21,12 @@ public sealed class LinesPageViewModelTests
         Assert.Equal(3, lines.Lineup.DefencePairs.Count);
         Assert.Equal(lineup.ForwardLines[0].CentreId, lines.Lineup.ForwardLines[0].Centre.SelectedPlayer?.Id);
         Assert.Equal(lineup.StartingGoalieId, lines.Lineup.StartingGoalie.SelectedPlayer?.Id);
-        Assert.Equal(5, lines.Lineup.ForwardLines[0].Centre.Options.Count);
-        Assert.Equal(8, lines.Lineup.ForwardLines[0].LeftWing.Options.Count);
-        Assert.Equal(7, lines.Lineup.DefencePairs[0].LeftDefence.Options.Count);
+        Assert.Equal(20, lines.Lineup.ForwardLines[0].Centre.Options.Count);
+        Assert.Equal(20, lines.Lineup.ForwardLines[0].LeftWing.Options.Count);
+        Assert.Equal(20, lines.Lineup.DefencePairs[0].LeftDefence.Options.Count);
+        Assert.DoesNotContain(lines.Lineup.ForwardLines[0].Centre.Options, option => option.Position == Position.Goalie);
         Assert.Equal(3, lines.Lineup.StartingGoalie.Options.Count);
+        Assert.All(lines.Lineup.StartingGoalie.Options, option => Assert.Equal(Position.Goalie, option.Position));
         Assert.Equal(
             session.ManagedTeam.ScratchedPlayerIds.Select(id => id.Value).Order(),
             lines.Lineup.Scratches.Select(player => player.Id.Value).Order());
@@ -45,6 +47,70 @@ public sealed class LinesPageViewModelTests
         Assert.Equal(firstLeftWing, lines.Lineup.ForwardLines[3].RightWing.SelectedPlayer);
         Assert.True(lines.HasChanges);
         Assert.True(lines.SaveCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void ADefencemanCanBeSavedAtForwardAndAForwardOnDefence()
+    {
+        var session = GameTestData.StartSession();
+        var lines = new LinesPageViewModel(session);
+        var defenceman = lines.Lineup.DefencePairs[0].LeftDefence.SelectedPlayer!;
+        var centre = lines.Lineup.ForwardLines[0].Centre.SelectedPlayer!;
+
+        // Choosing a dressed player swaps them, so the centre moves to the defenceman's place.
+        lines.Lineup.ForwardLines[0].Centre.SelectedPlayer = defenceman;
+        lines.SaveCommand.Execute(null);
+
+        Assert.False(lines.HasError);
+        Assert.Equal(defenceman.Id, session.ManagedTeam.Lineup.ForwardLines[0].CentreId);
+        Assert.Equal(centre.Id, session.ManagedTeam.Lineup.DefencePairs[0].LeftDefenceId);
+    }
+
+    [Fact]
+    public void SlotsWarnOnlyWhenAPlayerIsOutOfPosition()
+    {
+        var session = GameTestData.StartSession();
+        var lines = new LinesPageViewModel(session);
+        var line = lines.Lineup.ForwardLines[0];
+        var pair = lines.Lineup.DefencePairs[0];
+        var options = line.LeftWing.Options;
+        PlayerOptionViewModel Skater(Position position, Handedness handedness) =>
+            options.First(option => option.Position == position
+                && session.ManagedTeam.Roster.Single(player => player.Id == option.Id).Biography.Handedness == handedness);
+
+        line.LeftWing.SelectedPlayer = Skater(Position.Wing, Handedness.Left);
+        Assert.Null(line.LeftWing.FitNote);
+        Assert.False(line.LeftWing.HasFitNote);
+
+        // Handedness is left to the manager, so an off-hand wing gets no warning.
+        line.LeftWing.SelectedPlayer = Skater(Position.Wing, Handedness.Right);
+        Assert.Null(line.LeftWing.FitNote);
+
+        line.LeftWing.SelectedPlayer = Skater(Position.Centre, Handedness.Left);
+        Assert.Equal("Out of position", line.LeftWing.FitNote);
+
+        line.LeftWing.SelectedPlayer = Skater(Position.Defence, Handedness.Right);
+        Assert.Equal("Defenceman at forward", line.LeftWing.FitNote);
+        Assert.True(line.LeftWing.HasFitNote);
+
+        pair.RightDefence.SelectedPlayer = Skater(Position.Wing, Handedness.Right);
+        Assert.Equal("Forward on defence", pair.RightDefence.FitNote);
+
+        line.Centre.SelectedPlayer = Skater(Position.Centre, Handedness.Right);
+        Assert.Null(line.Centre.FitNote);
+        Assert.Null(lines.Lineup.StartingGoalie.FitNote);
+    }
+
+    [Fact]
+    public void PlayerChoicesShowNaturalPosition()
+    {
+        var session = GameTestData.StartSession();
+        var lines = new LinesPageViewModel(session);
+        var player = session.ManagedTeam.Roster.First(player => player.Position == Position.Defence);
+
+        var option = lines.Lineup.ForwardLines[0].LeftWing.Options.Single(option => option.Id == player.Id);
+
+        Assert.Equal("D", option.PositionAbbreviation);
     }
 
     [Fact]

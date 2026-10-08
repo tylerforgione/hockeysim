@@ -4,8 +4,25 @@
              xmlns:teams="using:HockeySim.Desktop.Teams"
              x:Class="HockeySim.Desktop.Lines.LinesPageView"
              x:DataType="lines:LinesPageViewModel">
+  <UserControl.Resources>
+    <!-- A slot's player choice with a warning beneath when the player is out of position. -->
+    <DataTemplate x:Key="SlotPicker" x:DataType="lines:LineupSlotViewModel">
+      <StackPanel Spacing="1">
+        <ComboBox HorizontalAlignment="Stretch"
+                  ItemsSource="{Binding Options}"
+                  SelectedItem="{Binding SelectedPlayer}"
+                  IsEnabled="{Binding IsEditable}" />
+        <TextBlock Classes="caption warning"
+                   Text="{Binding FitNote}"
+                   IsVisible="{Binding HasFitNote}"
+                   TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.Resources>
+
   <UserControl.DataTemplates>
-    <!-- Scratched skaters stay listed for unit slots, dimmed, because only dressed skaters can be saved there. -->
+    <!-- Scratched skaters stay listed for unit slots, dimmed, because only dressed skaters can be saved there.
+         Each player shows their natural position. -->
     <DataTemplate x:DataType="lines:PlayerOptionViewModel">
       <Grid ColumnDefinitions="34,*,Auto">
         <TextBlock Classes="cell muted" Text="{Binding Number}" />
@@ -18,14 +35,11 @@
       </Grid>
     </DataTemplate>
 
-    <!-- One unit slot: its role above the player chosen for it. -->
+    <!-- One unit slot: its role above the player chosen for it, and any out-of-position warning. -->
     <DataTemplate x:DataType="lines:LineupSlotViewModel">
       <StackPanel Width="190" Spacing="2">
         <TextBlock Classes="label" Text="{Binding Label}" HorizontalAlignment="Center" />
-        <ComboBox HorizontalAlignment="Stretch"
-                  ItemsSource="{Binding Options}"
-                  SelectedItem="{Binding SelectedPlayer}"
-                  IsEnabled="{Binding IsEditable}" />
+        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SlotPicker}" />
       </StackPanel>
     </DataTemplate>
 
@@ -180,18 +194,9 @@
                     <DataTemplate x:DataType="lines:ForwardLineRowViewModel">
                       <Grid ColumnDefinitions="72,*,*,*" ColumnSpacing="8" Margin="0,3">
                         <TextBlock Classes="slot-row-label" Text="{Binding Label}" />
-                        <ComboBox Grid.Column="1"
-                                  ItemsSource="{Binding LeftWing.Options}"
-                                  SelectedItem="{Binding LeftWing.SelectedPlayer}"
-                                  IsEnabled="{Binding LeftWing.IsEditable}" />
-                        <ComboBox Grid.Column="2"
-                                  ItemsSource="{Binding Centre.Options}"
-                                  SelectedItem="{Binding Centre.SelectedPlayer}"
-                                  IsEnabled="{Binding Centre.IsEditable}" />
-                        <ComboBox Grid.Column="3"
-                                  ItemsSource="{Binding RightWing.Options}"
-                                  SelectedItem="{Binding RightWing.SelectedPlayer}"
-                                  IsEnabled="{Binding RightWing.IsEditable}" />
+                        <ContentControl Grid.Column="1" Content="{Binding LeftWing}" ContentTemplate="{StaticResource SlotPicker}" />
+                        <ContentControl Grid.Column="2" Content="{Binding Centre}" ContentTemplate="{StaticResource SlotPicker}" />
+                        <ContentControl Grid.Column="3" Content="{Binding RightWing}" ContentTemplate="{StaticResource SlotPicker}" />
                       </Grid>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
@@ -214,14 +219,8 @@
                       <DataTemplate x:DataType="lines:DefencePairRowViewModel">
                         <Grid ColumnDefinitions="72,*,*" ColumnSpacing="8" Margin="0,3">
                           <TextBlock Classes="slot-row-label" Text="{Binding Label}" />
-                          <ComboBox Grid.Column="1"
-                                    ItemsSource="{Binding LeftDefence.Options}"
-                                    SelectedItem="{Binding LeftDefence.SelectedPlayer}"
-                                    IsEnabled="{Binding LeftDefence.IsEditable}" />
-                          <ComboBox Grid.Column="2"
-                                    ItemsSource="{Binding RightDefence.Options}"
-                                    SelectedItem="{Binding RightDefence.SelectedPlayer}"
-                                    IsEnabled="{Binding RightDefence.IsEditable}" />
+                          <ContentControl Grid.Column="1" Content="{Binding LeftDefence}" ContentTemplate="{StaticResource SlotPicker}" />
+                          <ContentControl Grid.Column="2" Content="{Binding RightDefence}" ContentTemplate="{StaticResource SlotPicker}" />
                         </Grid>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>

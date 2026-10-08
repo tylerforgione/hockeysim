@@ -182,6 +182,22 @@ internal static class MatchTuning
     public const double SizePerPound = 0.25;
     public const double MaximumSizeEffect = 15;
 
+    // Playing out of position, in rating points off the skater's offence, defence, and faceoffs:
+    // a moderate penalty between centre and wing, a larger one between forward and defence.
+    public const double OtherForwardPositionPenalty = 3;
+    public const double AcrossForwardsAndDefencePenalty = 8;
+
+    // Playing on the off-hand side, in rating points. The skater's backhand faces the boards. An
+    // off-hand wing loses board battles and breakout passes (defence) and pucks along the wall
+    // (puck protection), but takes one-timers on the forehand (finishing), so the net effect is
+    // small and negative. An off-hand defenceman loses breakouts (defence) and pinches to keep
+    // the puck in at the line (offence).
+    public const double OffHandWingDefencePenalty = 1.5;
+    public const double OffHandWingPuckProtectionPenalty = 2.5;
+    public const double OffHandWingFinishingBonus = 1.5;
+    public const double OffHandDefenceDefencePenalty = 2;
+    public const double OffHandDefenceOffencePenalty = 1.5;
+
     // Assists: most goals are assisted, and most assisted goals have two assists.
     public const double PrimaryAssistChance = 0.9;
     public const double SecondaryAssistChance = 0.75;
