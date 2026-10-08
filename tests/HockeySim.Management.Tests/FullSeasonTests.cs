@@ -67,8 +67,10 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
     {
         // Each team has three to five skaters a side, and six while its goalie is pulled for an
         // extra attacker during a delayed penalty, so its skaters share between three and six
-        // times the time played. A goalie is off the ice only while pulled.
+        // times the time played. A goalie is off the ice only while pulled, which delayed penalties
+        // and a late pull to tie the match can add up to several minutes.
         const int RegulationSeconds = 60 * 60;
+        const int LongestTimePulled = 10 * 60;
         Assert.All(Season.Results, result =>
         {
             // The box score does not record when an overtime winner was scored, only that it was
@@ -82,7 +84,7 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
 
             Assert.All(new[] { result.Home, result.Away }, side =>
             {
-                Assert.InRange((int)side.Goalie.TimeOnIce.TotalSeconds, shortest - (5 * 60), longest);
+                Assert.InRange((int)side.Goalie.TimeOnIce.TotalSeconds, shortest - LongestTimePulled, longest);
                 Assert.InRange(side.Skaters.Sum(skater => (int)skater.TimeOnIce.TotalSeconds), 3 * shortest, 6 * longest);
             });
         });

@@ -7,25 +7,22 @@ using Xunit;
 namespace HockeySim.Simulation.Tests;
 
 /// <summary>
-/// Statistical checks over many fixed seeds. Bands are deliberately wide and comparisons are
-/// relative, so they catch broken tuning without breaking on deliberate rebalancing.
+/// Statistical checks over many fixed seeds. Comparisons are relative, so they catch broken tuning
+/// without breaking on deliberate rebalancing; Management's calibration tests check league
+/// averages against NHL targets.
 /// </summary>
 public sealed class MatchStrengthTests
 {
     private const int MatchCount = 400;
 
     [Fact]
-    public void EvenlyMatchedTeamsProducePlausibleScoringAndSplitResults()
+    public void EvenlyMatchedTeamsSplitResults()
     {
         var home = TestTeams.Create("Home");
         var results = SimulateMany(home, TestTeams.Create("Away"));
 
-        var averageGoals = results.Average(result => result.Goals.Count);
-        var averageShots = results.Average(result => (result.Home.Shots + result.Away.Shots) / 2.0);
         var homeWinShare = results.Count(result => result.WinnerId == home.Id) / (double)MatchCount;
 
-        Assert.InRange(averageGoals, 4.0, 8.0);
-        Assert.InRange(averageShots, 20.0, 40.0);
         Assert.InRange(homeWinShare, 0.4, 0.6);
     }
 
