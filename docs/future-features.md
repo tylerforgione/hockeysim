@@ -461,6 +461,38 @@ reserve and long-term injured reserve with [cap relief](#contracts-and-the-salar
 medical staff who affect recovery (see [staff](#coaches-staff-and-facilities)),
 and injury reports whose accuracy depends on [scouting](#scouting-and-hidden-information).
 
+## More injury causes and serious injuries
+
+v0.2.0 injures players only through hits (to the player hit and the hitter),
+blocked shots, fights, and non-contact strains, and its catalogue holds sixteen
+injuries that heal within about six weeks (see
+[injuries](areas/match-engine.md#injuries)).
+
+Later: more ways the play can hurt players, and the serious injuries they
+bring, such as torn ACLs, MCLs, and Achilles tendons. The causes and injuries
+are not yet chosen; candidates include awkward falls, knee-on-knee contact,
+collisions with the boards or the net, pucks and sticks to the face, and skate
+cuts.
+
+Direction:
+
+- A new injury on an existing cause is data: an `InjuryType` value, an
+  `InjuryCatalogue` entry, and a weight in the cause's `InjuryTuning` lists. A
+  new body part is an enum value plus its place in those lists.
+- A new cause is play logic: an `InjuryCause` value, its base chance and
+  struck parts in `InjuryTuning`, and a call to the injury roll at the right
+  moment in `MatchPlay`.
+- Decide how season-ending injuries interact with
+  [season rollover](#season-rollover) (recovery carrying into the next season),
+  [long-term injured reserve](#full-injury-and-health-system), and
+  [retirement](#player-retirement), and whether some leave lasting rating
+  losses or raise the chance of reinjury.
+- Saves store injury types and body parts by name, so adding them keeps old
+  saves loadable; renaming or removing one does not.
+- Every change shifts seeded results and the injury mix, so it is an engine
+  version change and needs the injury rows of the
+  [calibration](areas/match-engine.md#calibration) rechecked.
+
 ## Preseason roster decisions
 
 v0.2.0 plays a short preseason of exhibition matches, one against each
