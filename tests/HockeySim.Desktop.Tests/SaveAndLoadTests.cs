@@ -179,7 +179,7 @@ public sealed class SaveAndLoadTests : IDisposable
         var gameManager = StartManager(new GameManager());
         while (!gameManager.GetSnapshot().Season.IsComplete)
         {
-            gameManager.AdvanceDay();
+            gameManager.AdvanceDayReplacingInjured();
         }
 
         var shell = new GameShellViewModel(new GameSession(gameManager, "Champions"), saves: _saves.Library);
@@ -489,7 +489,7 @@ public sealed class SaveAndLoadTests : IDisposable
         manager.StartNewGame(new NewGameCommand(2026, new RandomState(seed), teamName));
         for (var day = 0; day < days; day++)
         {
-            manager.AdvanceDay();
+            manager.AdvanceDayReplacingInjured();
         }
 
         manager.SaveGame(_saves.Library.Open(SaveName.Parse(name)));

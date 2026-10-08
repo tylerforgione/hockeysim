@@ -333,7 +333,7 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
             var snapshot = StartGame(Manager, seed: 2026);
             while (!snapshot.Season.IsComplete && Advances < MaximumAdvances)
             {
-                snapshot = Manager.AdvanceDay();
+                snapshot = Manager.AdvanceDayReplacingInjured();
                 Advances++;
             }
 

@@ -81,14 +81,15 @@ public sealed class SaveAndLoadTests
         StartGame(manager);
         manager.SetLineup(SwapGoalies(ManagedTeam(manager.GetSnapshot())));
         manager.SetLineup(ReshuffleUnits(ManagedTeam(manager.GetSnapshot())));
-        manager.MarkInboxMessageRead(manager.GetSnapshot().Inbox[1].Id);
+        var readId = manager.GetSnapshot().Inbox[1].Id;
+        manager.MarkInboxMessageRead(readId);
         var saved = Advance(manager, 9);
 
         var loaded = SaveAndLoadIntoNewManager(manager).Snapshot;
 
         Assert.NotEmpty(saved.Season.Results);
         Assert.Equal(Describe(saved), Describe(loaded));
-        Assert.True(loaded.Inbox[1].IsRead);
+        Assert.True(loaded.Inbox.Single(message => message.Id == readId).IsRead);
     }
 
     [Fact]
@@ -99,7 +100,7 @@ public sealed class SaveAndLoadTests
         var saved = manager.GetSnapshot();
         while (!saved.Season.IsComplete)
         {
-            saved = manager.AdvanceDay();
+            saved = manager.AdvanceDayReplacingInjured();
         }
 
         var (loadedManager, loaded) = SaveAndLoadIntoNewManager(manager);
@@ -116,7 +117,7 @@ public sealed class SaveAndLoadTests
         StartGame(manager);
         while (!manager.GetSnapshot().Season.IsComplete)
         {
-            manager.AdvanceDay();
+            manager.AdvanceDayReplacingInjured();
         }
 
         var store = new MemorySaveStore();
@@ -596,7 +597,7 @@ public sealed class SaveAndLoadTests
         var snapshot = manager.GetSnapshot();
         for (var day = 0; day < days; day++)
         {
-            snapshot = manager.AdvanceDay();
+            snapshot = manager.AdvanceDayReplacingInjured();
         }
 
         return snapshot;

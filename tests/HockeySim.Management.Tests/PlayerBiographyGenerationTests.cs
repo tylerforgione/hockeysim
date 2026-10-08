@@ -185,10 +185,10 @@ public sealed class PlayerBiographyGenerationTests
 
     private static GameSnapshot AdvanceTo(GameManager manager, DateOnly date)
     {
-        var snapshot = manager.AdvanceDay();
+        var snapshot = manager.AdvanceDayReplacingInjured();
         while (snapshot.Season.CurrentDate < date)
         {
-            snapshot = manager.AdvanceDay();
+            snapshot = manager.AdvanceDayReplacingInjured();
         }
 
         return snapshot;

@@ -216,7 +216,7 @@ public sealed class SeasonAdvancementTests
             var start = StartGame(manager);
             for (var day = 0; day < 10; day++)
             {
-                manager.AdvanceDay();
+                manager.AdvanceDayReplacingInjured();
             }
 
             var team = ManagedTeam(manager.GetSnapshot());
@@ -230,7 +230,7 @@ public sealed class SeasonAdvancementTests
             GameSnapshot snapshot = start;
             for (var day = 0; day < 10; day++)
             {
-                snapshot = manager.AdvanceDay();
+                snapshot = manager.AdvanceDayReplacingInjured();
             }
 
             return snapshot;

@@ -15,7 +15,8 @@ internal static class SaveTestData
         var lines = new List<string>
         {
             $"year {snapshot.League.SeasonYear}, date {snapshot.Season.CurrentDate:yyyy-MM-dd}, "
-            + $"complete {snapshot.Season.IsComplete}, managed {snapshot.ManagedTeamId}, {snapshot.RandomState}",
+            + $"complete {snapshot.Season.IsComplete}, managed {snapshot.ManagedTeamId}, {snapshot.RandomState}, "
+            + $"to replace {string.Join(",", snapshot.PlayersToReplace)}",
         };
 
         foreach (var conference in snapshot.League.Conferences)
@@ -31,7 +32,8 @@ internal static class SaveTestData
             lines.Add($"team {team.Id} {team.Name}");
             lines.AddRange(team.Roster.Select(player =>
                 $"  {player.Id} {player.FirstName} {player.LastName} {player.Position} age {player.Age} {player.Biography} #{player.Number} "
-                + string.Join(",", player.Ratings.OrderBy(rating => rating.Key).Select(rating => $"{rating.Key}={rating.Value}"))));
+                + string.Join(",", player.Ratings.OrderBy(rating => rating.Key).Select(rating => $"{rating.Key}={rating.Value}"))
+                + $" injuries {string.Join(";", player.Injuries)}"));
             lines.AddRange(team.Lineup.ForwardLines.Select(line => $"  line {line}"));
             lines.AddRange(team.Lineup.DefencePairs.Select(pair => $"  pair {pair}"));
             lines.Add($"  goalies {team.Lineup.StartingGoalieId} / {team.Lineup.BackupGoalieId}");

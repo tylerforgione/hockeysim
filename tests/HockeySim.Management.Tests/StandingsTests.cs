@@ -36,7 +36,7 @@ public sealed class StandingsTests
         var snapshot = StartGame(manager);
         for (var day = 0; day < 15; day++)
         {
-            snapshot = manager.AdvanceDay();
+            snapshot = manager.AdvanceDayReplacingInjured();
         }
 
         Assert.NotEmpty(snapshot.Season.Results);
