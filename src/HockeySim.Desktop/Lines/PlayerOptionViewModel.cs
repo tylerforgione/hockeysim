@@ -25,6 +25,9 @@ public sealed partial class PlayerOptionViewModel : ObservableObject
         Number = $"#{player.Number}";
         Name = PlayerDisplay.FullName(player);
         Age = player.Age;
+        CanPlay = player.CanPlay;
+        InjuryMarker = InjuryDisplay.StatusMarker(player);
+        InjurySummary = InjuryDisplay.Summary(player);
     }
 
     public PlayerId Id { get; }
@@ -39,6 +42,20 @@ public sealed partial class PlayerOptionViewModel : ObservableObject
     public string Name { get; }
 
     public int Age { get; }
+
+    /// <summary>Gets whether the player can play today: they have no injury they cannot play through.</summary>
+    public bool CanPlay { get; }
+
+    /// <summary>OUT, INJ, or nothing for a healthy player.</summary>
+    public string? InjuryMarker { get; }
+
+    public bool HasInjury => InjuryMarker is not null;
+
+    public bool IsOut => !CanPlay;
+
+    public bool IsPlayingHurt => HasInjury && CanPlay;
+
+    public string InjurySummary { get; }
 
     public override string ToString() => $"{Number} {Name}";
 }

@@ -130,6 +130,27 @@
         </Grid>
       </Border>
 
+      <!-- Injured players who cannot play hold up the day until the lineup is changed. -->
+      <Border x:Name="PlayersToReplaceBanner"
+              DockPanel.Dock="Top"
+              Background="{DynamicResource SurfaceRaisedBrush}"
+              BorderBrush="{DynamicResource WarningBrush}"
+              BorderThickness="0,0,0,2"
+              Padding="12,6"
+              IsVisible="{Binding HasPlayersToReplace}">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+          <TextBlock x:Name="PlayersToReplaceText"
+                     Classes="warning"
+                     TextWrapping="Wrap"
+                     VerticalAlignment="Center"
+                     Text="{Binding PlayersToReplaceMessage}" />
+          <Button Grid.Column="1"
+                  Classes="flat"
+                  Content="Open Lines"
+                  Command="{Binding OpenLinesCommand}" />
+        </Grid>
+      </Border>
+
       <!-- Status bar. -->
       <Border DockPanel.Dock="Bottom"
               Background="{DynamicResource SunkenBrush}"

@@ -162,6 +162,11 @@ public sealed partial class GameShellViewModel : ObservableObject
             }
 
             var date = MatchDisplay.ShortDate(season.CurrentDate);
+            if (HasPlayersToReplace)
+            {
+                return $"Replace the injured players in your lineup before playing {date}.";
+            }
+
             var matches = Session.Snapshot.Schedule.Matches.Where(match => match.Date == season.CurrentDate).ToList();
             if (matches.Count == 0)
             {
@@ -178,6 +183,28 @@ public sealed partial class GameShellViewModel : ObservableObject
     }
 
     public bool HasAdvanceError => AdvanceError is not null;
+
+    /// <summary>
+    /// Gets whether the managed team plays today with players dressed who cannot play. Management
+    /// would reject the day, so Continue waits until the lineup is changed.
+    /// </summary>
+    public bool HasPlayersToReplace => Session.Snapshot.PlayersToReplace.Count > 0;
+
+    /// <summary>Names the players to replace, or is empty when there are none.</summary>
+    public string PlayersToReplaceMessage
+    {
+        get
+        {
+            if (!HasPlayersToReplace)
+            {
+                return string.Empty;
+            }
+
+            var names = Session.Snapshot.PlayersToReplace.Select(id => Session.PlayersById[id]).Select(player => $"{PlayerDisplay.FullName(player)} (#{player.Number})");
+            return $"Your lineup dresses injured players who cannot play: {string.Join(", ", names)}. "
+                + "Replace them on the Lines page and save the lineup to continue.";
+        }
+    }
 
     public string GameName => Session.GameName;
 
@@ -239,7 +266,13 @@ public sealed partial class GameShellViewModel : ObservableObject
         }
     }
 
-    private bool CanAdvanceDay() => !Session.IsAdvancing && !Session.Snapshot.Season.IsComplete;
+    private bool CanAdvanceDay() => !Session.IsAdvancing && !Session.Snapshot.Season.IsComplete && !HasPlayersToReplace;
+
+    [RelayCommand]
+    private void OpenLines()
+    {
+        Navigate(ShellPage.Lines);
+    }
 
     [RelayCommand]
     private void DismissAdvanceError()
@@ -312,6 +345,8 @@ public sealed partial class GameShellViewModel : ObservableObject
         UpdateNavigationState();
         OnPropertyChanged(nameof(PhaseLabel));
         OnPropertyChanged(nameof(ContinueDescription));
+        OnPropertyChanged(nameof(HasPlayersToReplace));
+        OnPropertyChanged(nameof(PlayersToReplaceMessage));
         AdvanceDayCommand.NotifyCanExecuteChanged();
     }
 

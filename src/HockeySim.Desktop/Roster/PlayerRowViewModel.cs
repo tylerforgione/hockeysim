@@ -26,6 +26,8 @@ public sealed class PlayerRowViewModel
         Handedness = PlayerDisplay.HandednessAbbreviation(player.Biography.Handedness);
         LineupRole = PlayerDisplay.LineupRole(player.Id, lineup);
         IsScratched = LineupRole == "Scratch";
+        InjuryMarker = InjuryDisplay.StatusMarker(player);
+        InjurySummary = InjuryDisplay.Summary(player);
 
         Overall = player.Overall;
         Skating = player.Ratings[Rating.Skating];
@@ -65,6 +67,18 @@ public sealed class PlayerRowViewModel
     public string LineupRole { get; }
 
     public bool IsScratched { get; }
+
+    /// <summary>OUT, INJ, or nothing for a healthy player; see <see cref="InjuryDisplay.StatusMarker"/>.</summary>
+    public string? InjuryMarker { get; }
+
+    public bool HasInjury => InjuryMarker is not null;
+
+    public bool IsOut => HasInjury && !Player.CanPlay;
+
+    public bool IsPlayingHurt => HasInjury && Player.CanPlay;
+
+    /// <summary>Each injury's status, name, and expected return, one per line.</summary>
+    public string InjurySummary { get; }
 
     public int Overall { get; }
 

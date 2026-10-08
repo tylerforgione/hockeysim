@@ -7,13 +7,13 @@ namespace HockeySim.Desktop.Players;
 
 /// <summary>
 /// Read-only profile of one player: identity, age, position, lineup role, overall rating,
-/// biographical details, the full current-season statistic line, and the ratings that matter to
-/// their position.
+/// biographical details, injuries, the full current-season statistic line, and the ratings that
+/// matter to their position.
 /// </summary>
 /// <remarks>
 /// A skater's goaltending ratings and a goalie's skater ratings are generated low and play no
-/// part in their game, so the profile leaves them out. Durability is hidden and never reaches
-/// Desktop.
+/// part in their game, so the profile leaves them out. Durability and wear are hidden and never
+/// reach Desktop.
 /// </remarks>
 public sealed class PlayerDetailViewModel
 {
@@ -51,6 +51,9 @@ public sealed class PlayerDetailViewModel
         TeamName = team.Name;
         LineupRole = PlayerDisplay.LineupRole(player.Id, team.Lineup);
         Overall = player.Overall;
+        Health = player.Injuries.Count == 0 ? "Healthy" : player.CanPlay ? "Playing through injury" : "Out injured";
+        IsOut = !player.CanPlay;
+        Injuries = player.Injuries.Select(injury => new PlayerInjuryViewModel(injury)).ToList();
 
         var isGoalie = player.Position == Domain.Position.Goalie;
         SeasonTitle = $"{PlayerDisplay.FormatSeason(seasonYear)} REGULAR SEASON";
@@ -105,6 +108,18 @@ public sealed class PlayerDetailViewModel
     /// <summary>The player's overall rating for their position.</summary>
     public int Overall { get; }
 
+    /// <summary>Healthy, playing through injury, or out injured.</summary>
+    public string Health { get; }
+
+    public bool IsOut { get; }
+
+    public bool IsPlayingHurt => HasInjuries && !IsOut;
+
+    /// <summary>The injuries that have not healed, in the order suffered.</summary>
+    public IReadOnlyList<PlayerInjuryViewModel> Injuries { get; }
+
+    public bool HasInjuries => Injuries.Count > 0;
+
     public string SeasonTitle { get; }
 
     /// <summary>
@@ -119,6 +134,42 @@ public sealed class PlayerDetailViewModel
     public bool HasSeasonCaption => SeasonCaption.Length > 0;
 
     public IReadOnlyList<RatingGroupViewModel> RatingGroups { get; }
+}
+
+/// <summary>One injury in a player's profile.</summary>
+public sealed class PlayerInjuryViewModel
+{
+    public PlayerInjuryViewModel(InjurySnapshot injury)
+    {
+        ArgumentNullException.ThrowIfNull(injury);
+
+        Name = InjuryDisplay.Name(injury.Type);
+        Status = InjuryDisplay.Status(injury);
+        IsOut = !injury.CanPlayThrough;
+        ExpectedReturn = $"Expected back {InjuryDisplay.ExpectedReturn(injury.ExpectedReturn)}";
+
+        // The catalogue's reductions are rules of the game, not hidden state, so the user may see
+        // what playing through costs.
+        Effect = injury.CanPlayThrough
+            ? "Plays at " + string.Join(
+                ", ",
+                InjuryCatalogue.For(injury.Type).RatingReductions
+                    .OrderBy(reduction => reduction.Key)
+                    .Select(reduction => $"−{reduction.Value} {PlayerDisplay.RatingName(reduction.Key)}"))
+            : "Cannot play until healed";
+    }
+
+    public string Name { get; }
+
+    /// <summary>Out, or playing through.</summary>
+    public string Status { get; }
+
+    public bool IsOut { get; }
+
+    public string ExpectedReturn { get; }
+
+    /// <summary>What the injury does: the rating points it costs, or that the player cannot play.</summary>
+    public string Effect { get; }
 }
 
 public sealed record SeasonStatViewModel(string Label, string Value, string Description);

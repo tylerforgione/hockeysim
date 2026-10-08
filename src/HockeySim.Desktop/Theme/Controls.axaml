@@ -136,6 +136,16 @@
   <Style Selector="Border.pill.muted TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
   </Style>
+  <!-- Injury markers: out (cannot play) and playing hurt. -->
+  <Style Selector="Border.pill.injury-out">
+    <Setter Property="Background" Value="{DynamicResource NegativeBrush}" />
+  </Style>
+  <Style Selector="Border.pill.injury-playing">
+    <Setter Property="Background" Value="{DynamicResource WarningBrush}" />
+  </Style>
+  <Style Selector="Border.pill.injury-out TextBlock, Border.pill.injury-playing TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource AppBackgroundBrush}" />
+  </Style>
   <Style Selector="Border.position">
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
     <Setter Property="CornerRadius" Value="2" />
