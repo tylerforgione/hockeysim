@@ -6,8 +6,34 @@
              x:DataType="roster:TeamRosterViewModel">
   <!-- Header and row templates share each table's ColumnDefinitions so columns align. -->
   <Grid ColumnDefinitions="*,280" ColumnSpacing="8">
-    <Grid RowDefinitions="*,Auto" RowSpacing="8">
-      <Border Classes="panel">
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+      <Border x:Name="TeamStatistics" Classes="panel" Padding="12,6">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Left"
+                     Classes="panel-title"
+                     VerticalAlignment="Center"
+                     Margin="0,0,16,0"
+                     Text="TEAM"
+                     ToolTip.Tip="Current-season special teams, faceoffs, and 5-on-5 shares" />
+          <ItemsControl ItemsSource="{Binding TeamStatistics}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="20" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="players:SeasonStatViewModel">
+                <StackPanel Spacing="1" ToolTip.Tip="{Binding Description}">
+                  <TextBlock Classes="label" Text="{Binding Label}" />
+                  <TextBlock Text="{Binding Value}" FontSize="14" FontWeight="SemiBold" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </DockPanel>
+      </Border>
+
+      <Border Grid.Row="1" Classes="panel">
         <DockPanel>
           <Border DockPanel.Dock="Top" Classes="panel-header">
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
@@ -20,13 +46,20 @@
                         ToolTip.Tip="Show skater and goalie ratings"
                         Command="{Binding ShowColumnsCommand}"
                         CommandParameter="{x:Static roster:RosterColumns.Ratings}" />
-                <Button x:Name="ShowSeasonButton"
+                <Button x:Name="ShowBasicButton"
                         Classes="tab"
-                        Classes.selected="{Binding ShowsSeason}"
-                        Content="Season"
-                        ToolTip.Tip="Show skater and goalie current-season totals"
+                        Classes.selected="{Binding ShowsBasic}"
+                        Content="Basic"
+                        ToolTip.Tip="Show current-season totals"
                         Command="{Binding ShowColumnsCommand}"
-                        CommandParameter="{x:Static roster:RosterColumns.Season}" />
+                        CommandParameter="{x:Static roster:RosterColumns.Basic}" />
+                <Button x:Name="ShowAdvancedButton"
+                        Classes="tab"
+                        Classes.selected="{Binding ShowsAdvanced}"
+                        Content="Advanced"
+                        ToolTip.Tip="Show 5-on-5 on-ice shares and expected goals"
+                        Command="{Binding ShowColumnsCommand}"
+                        CommandParameter="{x:Static roster:RosterColumns.Advanced}" />
               </StackPanel>
               <TextBlock Grid.Column="2" Classes="caption" VerticalAlignment="Center" Text="{Binding Skaters.Count, StringFormat='{}{0} players'}" />
             </Grid>
@@ -85,9 +118,9 @@
                 </ListBox.ItemTemplate>
               </ListBox>
             </DockPanel>
-            <DockPanel IsVisible="{Binding ShowsSeason}">
+            <DockPanel IsVisible="{Binding ShowsBasic}">
               <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,36,38,40,30,64,48,48,48,48">
+                <Grid ColumnDefinitions="36,*,36,38,40,30,64,40,40,40,40,40,40,40,40,40,56,48">
                   <TextBlock Text="#" />
                   <TextBlock Grid.Column="1" Text="NAME" />
                   <TextBlock Grid.Column="2" Text="POS" HorizontalAlignment="Center" />
@@ -96,18 +129,25 @@
                   <TextBlock Grid.Column="5" Text="SH" HorizontalAlignment="Center" ToolTip.Tip="Shoots" />
                   <TextBlock Grid.Column="6" Text="LINEUP" />
                   <TextBlock Grid.Column="7" Text="GP" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="8" Text="G" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="9" Text="A" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="10" Text="P" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="8" Text="G" HorizontalAlignment="Center" ToolTip.Tip="Goals" />
+                  <TextBlock Grid.Column="9" Text="A" HorizontalAlignment="Center" ToolTip.Tip="Assists" />
+                  <TextBlock Grid.Column="10" Text="P" HorizontalAlignment="Center" ToolTip.Tip="Points" />
+                  <TextBlock Grid.Column="11" Text="+/-" HorizontalAlignment="Center" ToolTip.Tip="Plus/minus" />
+                  <TextBlock Grid.Column="12" Text="PIM" HorizontalAlignment="Center" ToolTip.Tip="Penalty minutes" />
+                  <TextBlock Grid.Column="13" Text="PPP" HorizontalAlignment="Center" ToolTip.Tip="Power-play points" />
+                  <TextBlock Grid.Column="14" Text="SHP" HorizontalAlignment="Center" ToolTip.Tip="Shorthanded points" />
+                  <TextBlock Grid.Column="15" Text="S" HorizontalAlignment="Center" ToolTip.Tip="Shots on goal" />
+                  <TextBlock Grid.Column="16" Text="TOI/GP" HorizontalAlignment="Center" ToolTip.Tip="Average time on ice per game" />
+                  <TextBlock Grid.Column="17" Text="FO%" HorizontalAlignment="Center" ToolTip.Tip="Faceoff percentage" />
                 </Grid>
               </Border>
-              <ListBox x:Name="SkaterSeasonTable"
+              <ListBox x:Name="SkaterBasicTable"
                        Classes="table"
                        ItemsSource="{Binding Skaters}"
                        SelectedItem="{Binding SelectedSkater}">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,36,38,40,30,64,48,48,48,48">
+                    <Grid ColumnDefinitions="36,*,36,38,40,30,64,40,40,40,40,40,40,40,40,40,56,48">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
                       <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
                       <Border Grid.Column="2" Classes="position"><TextBlock Text="{Binding Position}" /></Border>
@@ -119,6 +159,66 @@
                       <TextBlock Grid.Column="8" Classes="cell-center" Text="{Binding Season.Goals}" />
                       <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding Season.Assists}" />
                       <TextBlock Grid.Column="10" Classes="cell-center strong" Text="{Binding Season.Points}" />
+                      <TextBlock Grid.Column="11" Classes="cell-center" Text="{Binding Season.PlusMinus}" />
+                      <TextBlock Grid.Column="12" Classes="cell-center" Text="{Binding Season.PenaltyMinutes}" />
+                      <TextBlock Grid.Column="13" Classes="cell-center" Text="{Binding Season.PowerPlayPoints}" />
+                      <TextBlock Grid.Column="14" Classes="cell-center" Text="{Binding Season.ShorthandedPoints}" />
+                      <TextBlock Grid.Column="15" Classes="cell-center" Text="{Binding Season.Shots}" />
+                      <TextBlock Grid.Column="16" Classes="cell-center" Text="{Binding Season.TimeOnIcePerGame}" />
+                      <TextBlock Grid.Column="17" Classes="cell-center" Text="{Binding Season.FaceoffPercentage}" />
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </DockPanel>
+            <DockPanel IsVisible="{Binding ShowsAdvanced}">
+              <Border DockPanel.Dock="Top" Classes="table-header">
+                <Grid ColumnDefinitions="36,*,36,38,40,30,64,40,40,40,48,40,40,48,48,48,52,48">
+                  <TextBlock Text="#" />
+                  <TextBlock Grid.Column="1" Text="NAME" />
+                  <TextBlock Grid.Column="2" Text="POS" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Text="AGE" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="4" Text="NAT" HorizontalAlignment="Center" ToolTip.Tip="Nationality" />
+                  <TextBlock Grid.Column="5" Text="SH" HorizontalAlignment="Center" ToolTip.Tip="Shoots" />
+                  <TextBlock Grid.Column="6" Text="LINEUP" />
+                  <TextBlock Grid.Column="7" Text="GP" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="8" Text="CF" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 Corsi for: team shot attempts while on the ice" />
+                  <TextBlock Grid.Column="9" Text="CA" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 Corsi against: opponent shot attempts while on the ice" />
+                  <TextBlock Grid.Column="10" Text="CF%" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 Corsi percentage: share of shot attempts" />
+                  <TextBlock Grid.Column="11" Text="FF" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 Fenwick for: unblocked team attempts while on the ice" />
+                  <TextBlock Grid.Column="12" Text="FA" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 Fenwick against: unblocked opponent attempts while on the ice" />
+                  <TextBlock Grid.Column="13" Text="FF%" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 Fenwick percentage: share of unblocked attempts" />
+                  <TextBlock Grid.Column="14" Text="xGF" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 team expected goals while on the ice" />
+                  <TextBlock Grid.Column="15" Text="xGA" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 opponent expected goals while on the ice" />
+                  <TextBlock Grid.Column="16" Text="xGF%" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 share of expected goals" />
+                  <TextBlock Grid.Column="17" Text="ixG" HorizontalAlignment="Center" ToolTip.Tip="Individual expected goals from the skater's own attempts, in all situations" />
+                </Grid>
+              </Border>
+              <ListBox x:Name="SkaterAdvancedTable"
+                       Classes="table"
+                       ItemsSource="{Binding Skaters}"
+                       SelectedItem="{Binding SelectedSkater}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="roster:PlayerRowViewModel">
+                    <Grid ColumnDefinitions="36,*,36,38,40,30,64,40,40,40,48,40,40,48,48,48,52,48">
+                      <TextBlock Classes="cell muted" Text="{Binding Number}" />
+                      <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                      <Border Grid.Column="2" Classes="position"><TextBlock Text="{Binding Position}" /></Border>
+                      <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Age}" />
+                      <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
+                      <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding Handedness}" />
+                      <TextBlock Grid.Column="6" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
+                      <TextBlock Grid.Column="7" Classes="cell-center" Text="{Binding Season.GamesPlayed}" />
+                      <TextBlock Grid.Column="8" Classes="cell-center" Text="{Binding Season.CorsiFor}" />
+                      <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding Season.CorsiAgainst}" />
+                      <TextBlock Grid.Column="10" Classes="cell-center strong" Text="{Binding Season.CorsiPercentage}" />
+                      <TextBlock Grid.Column="11" Classes="cell-center" Text="{Binding Season.FenwickFor}" />
+                      <TextBlock Grid.Column="12" Classes="cell-center" Text="{Binding Season.FenwickAgainst}" />
+                      <TextBlock Grid.Column="13" Classes="cell-center" Text="{Binding Season.FenwickPercentage}" />
+                      <TextBlock Grid.Column="14" Classes="cell-center" Text="{Binding Season.OnIceExpectedGoalsFor}" />
+                      <TextBlock Grid.Column="15" Classes="cell-center" Text="{Binding Season.OnIceExpectedGoalsAgainst}" />
+                      <TextBlock Grid.Column="16" Classes="cell-center strong" Text="{Binding Season.OnIceExpectedGoalsPercentage}" />
+                      <TextBlock Grid.Column="17" Classes="cell-center" Text="{Binding Season.IndividualExpectedGoals}" />
                     </Grid>
                   </DataTemplate>
                 </ListBox.ItemTemplate>
@@ -128,7 +228,7 @@
         </DockPanel>
       </Border>
 
-      <Border Grid.Row="1" Classes="panel">
+      <Border Grid.Row="2" Classes="panel">
         <DockPanel>
           <Border DockPanel.Dock="Top" Classes="panel-header">
             <TextBlock Classes="panel-title" Text="GOALIES" />
@@ -172,9 +272,9 @@
                 </ListBox.ItemTemplate>
               </ListBox>
             </DockPanel>
-            <DockPanel IsVisible="{Binding ShowsSeason}">
+            <DockPanel IsVisible="{Binding ShowsBasic}">
               <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,38,40,30,64,48,48,48,48,56">
+                <Grid ColumnDefinitions="36,*,38,40,30,64,40,48,48,48,56,52,40">
                   <TextBlock Text="#" />
                   <TextBlock Grid.Column="1" Text="NAME" />
                   <TextBlock Grid.Column="2" Text="AGE" HorizontalAlignment="Center" />
@@ -182,20 +282,22 @@
                   <TextBlock Grid.Column="4" Text="CA" HorizontalAlignment="Center" ToolTip.Tip="Catches" />
                   <TextBlock Grid.Column="5" Text="LINEUP" />
                   <TextBlock Grid.Column="6" Text="GP" HorizontalAlignment="Center" ToolTip.Tip="Games played (starts)" />
-                  <TextBlock Grid.Column="7" Text="SA" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="8" Text="SV" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="9" Text="GA" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="10" Text="SV%" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="7" Text="SA" HorizontalAlignment="Center" ToolTip.Tip="Shots against" />
+                  <TextBlock Grid.Column="8" Text="SV" HorizontalAlignment="Center" ToolTip.Tip="Saves" />
+                  <TextBlock Grid.Column="9" Text="GA" HorizontalAlignment="Center" ToolTip.Tip="Goals against" />
+                  <TextBlock Grid.Column="10" Text="SV%" HorizontalAlignment="Center" ToolTip.Tip="Save percentage" />
+                  <TextBlock Grid.Column="11" Text="GAA" HorizontalAlignment="Center" ToolTip.Tip="Goals-against average: goals against per 60 minutes" />
+                  <TextBlock Grid.Column="12" Text="SO" HorizontalAlignment="Center" ToolTip.Tip="Shutouts" />
                 </Grid>
               </Border>
-              <ListBox x:Name="GoalieSeasonTable"
+              <ListBox x:Name="GoalieBasicTable"
                        Classes="table"
                        ItemsSource="{Binding Goalies}"
                        SelectedItem="{Binding SelectedGoalie}"
                        ScrollViewer.VerticalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,38,40,30,64,48,48,48,48,56">
+                    <Grid ColumnDefinitions="36,*,38,40,30,64,40,48,48,48,56,52,40">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
                       <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
                       <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Age}" />
@@ -207,6 +309,50 @@
                       <TextBlock Grid.Column="8" Classes="cell-center" Text="{Binding Season.Saves}" />
                       <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding Season.GoalsAgainst}" />
                       <TextBlock Grid.Column="10" Classes="cell-center strong" Text="{Binding Season.SavePercentage}" />
+                      <TextBlock Grid.Column="11" Classes="cell-center" Text="{Binding Season.GoalsAgainstAverage}" />
+                      <TextBlock Grid.Column="12" Classes="cell-center" Text="{Binding Season.Shutouts}" />
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </DockPanel>
+            <DockPanel IsVisible="{Binding ShowsAdvanced}">
+              <Border DockPanel.Dock="Top" Classes="table-header">
+                <Grid ColumnDefinitions="36,*,38,40,30,64,40,64,52,48,60,56">
+                  <TextBlock Text="#" />
+                  <TextBlock Grid.Column="1" Text="NAME" />
+                  <TextBlock Grid.Column="2" Text="AGE" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Text="NAT" HorizontalAlignment="Center" ToolTip.Tip="Nationality" />
+                  <TextBlock Grid.Column="4" Text="CA" HorizontalAlignment="Center" ToolTip.Tip="Catches" />
+                  <TextBlock Grid.Column="5" Text="LINEUP" />
+                  <TextBlock Grid.Column="6" Text="GP" HorizontalAlignment="Center" ToolTip.Tip="Games played (starts)" />
+                  <TextBlock Grid.Column="7" Text="TOI" HorizontalAlignment="Center" ToolTip.Tip="Total time in net" />
+                  <TextBlock Grid.Column="8" Text="xGA" HorizontalAlignment="Center" ToolTip.Tip="Expected goals against: the expected-goal value of the shots faced" />
+                  <TextBlock Grid.Column="9" Text="GA" HorizontalAlignment="Center" ToolTip.Tip="Goals against" />
+                  <TextBlock Grid.Column="10" Text="GSAx" HorizontalAlignment="Center" ToolTip.Tip="Goals saved above expected: expected goals against less goals against" />
+                  <TextBlock Grid.Column="11" Text="TOI/GP" HorizontalAlignment="Center" ToolTip.Tip="Average time in net per start" />
+                </Grid>
+              </Border>
+              <ListBox x:Name="GoalieAdvancedTable"
+                       Classes="table"
+                       ItemsSource="{Binding Goalies}"
+                       SelectedItem="{Binding SelectedGoalie}"
+                       ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="roster:PlayerRowViewModel">
+                    <Grid ColumnDefinitions="36,*,38,40,30,64,40,64,52,48,60,56">
+                      <TextBlock Classes="cell muted" Text="{Binding Number}" />
+                      <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Age}" />
+                      <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
+                      <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Handedness}" />
+                      <TextBlock Grid.Column="5" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
+                      <TextBlock Grid.Column="6" Classes="cell-center" Text="{Binding Season.GamesPlayed}" />
+                      <TextBlock Grid.Column="7" Classes="cell-center" Text="{Binding Season.TimeInNet}" />
+                      <TextBlock Grid.Column="8" Classes="cell-center" Text="{Binding Season.ExpectedGoalsAgainst}" />
+                      <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding Season.GoalsAgainst}" />
+                      <TextBlock Grid.Column="10" Classes="cell-center strong" Text="{Binding Season.GoalsSavedAboveExpected}" />
+                      <TextBlock Grid.Column="11" Classes="cell-center" Text="{Binding Season.TimeOnIcePerGame}" />
                     </Grid>
                   </DataTemplate>
                 </ListBox.ItemTemplate>

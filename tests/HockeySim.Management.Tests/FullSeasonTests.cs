@@ -149,6 +149,27 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
             Assert.Equal(boxScores.Count, skater.GamesPlayed);
             Assert.Equal(boxScores.Sum(box => box.Goals), skater.Goals);
             Assert.Equal(boxScores.Sum(box => box.Assists), skater.Assists);
+            Assert.Equal(boxScores.Sum(box => box.PlusMinus), skater.PlusMinus);
+            Assert.Equal(boxScores.Aggregate(TimeSpan.Zero, (total, box) => total + box.TimeOnIce), skater.TimeOnIce);
+            Assert.Equal(boxScores.Sum(box => box.Shots), skater.Shots);
+            Assert.Equal(boxScores.Sum(box => box.ShotAttempts), skater.ShotAttempts);
+            Assert.Equal(boxScores.Sum(box => box.Hits), skater.Hits);
+            Assert.Equal(boxScores.Sum(box => box.BlockedShots), skater.BlockedShots);
+            Assert.Equal(boxScores.Sum(box => box.FaceoffsWon), skater.FaceoffsWon);
+            Assert.Equal(boxScores.Sum(box => box.FaceoffsLost), skater.FaceoffsLost);
+            Assert.Equal(boxScores.Sum(box => box.Takeaways), skater.Takeaways);
+            Assert.Equal(boxScores.Sum(box => box.Giveaways), skater.Giveaways);
+            Assert.Equal(boxScores.Sum(box => box.ExpectedGoals), skater.ExpectedGoals, precision: 9);
+            Assert.Equal(boxScores.Sum(box => box.PenaltyMinutes), skater.PenaltyMinutes);
+            Assert.Equal(boxScores.Sum(box => box.PowerPlayGoals), skater.PowerPlayGoals);
+            Assert.Equal(boxScores.Sum(box => box.PowerPlayAssists), skater.PowerPlayAssists);
+            Assert.Equal(boxScores.Sum(box => box.ShorthandedGoals), skater.ShorthandedGoals);
+            Assert.Equal(boxScores.Sum(box => box.ShorthandedAssists), skater.ShorthandedAssists);
+            Assert.Equal(boxScores.Sum(box => box.EmptyNetGoals), skater.EmptyNetGoals);
+            Assert.Equal(boxScores.Sum(box => box.OnIce.FiveOnFive.AttemptsFor), skater.OnIce.FiveOnFive.AttemptsFor);
+            Assert.Equal(boxScores.Sum(box => box.OnIce.PenaltyKill.AttemptsAgainst), skater.OnIce.PenaltyKill.AttemptsAgainst);
+            Assert.Equal(boxScores.Sum(box => box.OnIce.PowerPlay.ExpectedGoalsFor), skater.OnIce.PowerPlay.ExpectedGoalsFor, precision: 9);
+            Assert.Equal(boxScores.Sum(box => box.OnIce.Other.GoalsAgainst), skater.OnIce.Other.GoalsAgainst);
         });
 
         Assert.Equal(goalieBoxScores.Keys.OrderBy(id => id.Value), Season.GoalieStatistics.Select(goalie => goalie.PlayerId).OrderBy(id => id.Value));
@@ -158,7 +179,72 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
             Assert.Equal(boxScores.Count, goalie.GamesPlayed);
             Assert.Equal(boxScores.Sum(box => box.ShotsAgainst), goalie.ShotsAgainst);
             Assert.Equal(boxScores.Sum(box => box.GoalsAgainst), goalie.GoalsAgainst);
+            Assert.Equal(boxScores.Sum(box => box.ExpectedGoalsAgainst), goalie.ExpectedGoalsAgainst, precision: 9);
+            Assert.Equal(boxScores.Aggregate(TimeSpan.Zero, (total, box) => total + box.TimeOnIce), goalie.TimeOnIce);
+            Assert.Equal(boxScores.Count(box => box.GoalsAgainst == 0), goalie.Shutouts);
         });
+        Assert.Contains(Season.GoalieStatistics, goalie => goalie.Shutouts > 0);
+    }
+
+    [Fact]
+    public void TeamStatisticsReconcileWithTheirResults()
+    {
+        Assert.All(Season.TeamStatistics, statistics =>
+        {
+            var games = Season.Results
+                .Where(result => result.Home.TeamId == statistics.TeamId || result.Away.TeamId == statistics.TeamId)
+                .Select(result => (Team: Side(result, statistics.TeamId), Opponent: Opponent(result, statistics.TeamId)))
+                .ToList();
+
+            Assert.Equal(84, statistics.GamesPlayed);
+            Assert.Equal(games.Sum(game => game.Team.PowerPlayGoals), statistics.PowerPlayGoals);
+            Assert.Equal(games.Sum(game => game.Team.PowerPlayOpportunities), statistics.PowerPlayOpportunities);
+            Assert.Equal(games.Sum(game => game.Opponent.PowerPlayOpportunities), statistics.TimesShorthanded);
+            Assert.Equal(games.Sum(game => game.Opponent.PowerPlayGoals), statistics.PowerPlayGoalsAgainst);
+            Assert.Equal(games.Sum(game => game.Team.Skaters.Sum(skater => skater.FaceoffsWon)), statistics.FaceoffsWon);
+            Assert.Equal(games.Sum(game => game.Team.Skaters.Sum(skater => skater.FaceoffsLost)), statistics.FaceoffsLost);
+            Assert.Equal(games.Sum(game => game.Team.ShotTotals.FiveOnFive.AttemptsFor), statistics.ShotTotals.FiveOnFive.AttemptsFor);
+            Assert.Equal(games.Sum(game => game.Opponent.ShotTotals.FiveOnFive.AttemptsFor), statistics.ShotTotals.FiveOnFive.AttemptsAgainst);
+            Assert.Equal(
+                statistics.PowerPlayGoals / (double)statistics.PowerPlayOpportunities,
+                statistics.PowerPlayPercentage!.Value,
+                precision: 12);
+            Assert.Equal(
+                1 - (statistics.PowerPlayGoalsAgainst / (double)statistics.TimesShorthanded),
+                statistics.PenaltyKillPercentage!.Value,
+                precision: 12);
+        });
+
+        // Every attempt for one team is an attempt against another.
+        Assert.Equal(
+            Season.TeamStatistics.Sum(team => team.ShotTotals.All.AttemptsFor),
+            Season.TeamStatistics.Sum(team => team.ShotTotals.All.AttemptsAgainst));
+        Assert.Equal(
+            Season.TeamStatistics.Sum(team => team.ShotTotals.PowerPlay.GoalsFor),
+            Season.TeamStatistics.Sum(team => team.ShotTotals.PenaltyKill.GoalsAgainst));
+    }
+
+    [Fact]
+    public void EveryMatchSummaryAccountsForItsPlayerGoalsAndPenaltyMinutes()
+    {
+        Assert.All(Season.Results, result =>
+        {
+            foreach (var side in new[] { result.Home, result.Away })
+            {
+                Assert.Equal(side.Skaters.Sum(skater => skater.Goals), result.Goals.Count(goal => goal.TeamId == side.TeamId));
+                Assert.Equal(side.PenaltyMinutes, result.Penalties.Where(penalty => penalty.TeamId == side.TeamId).Sum(penalty => penalty.Minutes));
+            }
+
+            Assert.Equal(
+                result.Goals.Select(goal => (goal.Period, goal.TimeInPeriod)).Order(),
+                result.Goals.Select(goal => (goal.Period, goal.TimeInPeriod)));
+        });
+
+        var goals = Season.Results.SelectMany(result => result.Goals).ToList();
+        Assert.All(Enum.GetValues<GoalSituation>(), situation => Assert.Contains(goals, goal => goal.Situation == situation));
+        Assert.Contains(goals, goal => goal.IsEmptyNet);
+        Assert.Contains(goals, goal => goal.Period == 4);
+        Assert.Contains(Season.Results.SelectMany(result => result.Penalties), penalty => penalty.Kind == PenaltyKind.PenaltyShot);
     }
 
     [Fact]

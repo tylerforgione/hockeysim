@@ -21,19 +21,25 @@ public sealed class CompletedMatchTeam
     /// <param name="powerPlayOpportunities">
     /// Opponent penalties that gave the team a manpower advantage, each counted once.
     /// </param>
+    /// <param name="shotTotals">
+    /// Both teams' shot attempts, shots, goals, and expected goals by strength situation from this
+    /// team's side, excluding penalty shots.
+    /// </param>
     public CompletedMatchTeam(
         TeamId teamId,
         int score,
         int shots,
         int powerPlayOpportunities,
         IEnumerable<SkaterBoxScore> skaters,
-        GoalieBoxScore goalie)
+        GoalieBoxScore goalie,
+        SituationalShotTotals shotTotals)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(score);
         ArgumentOutOfRangeException.ThrowIfNegative(shots);
         ArgumentOutOfRangeException.ThrowIfNegative(powerPlayOpportunities);
         ArgumentNullException.ThrowIfNull(skaters);
         ArgumentNullException.ThrowIfNull(goalie);
+        ArgumentNullException.ThrowIfNull(shotTotals);
 
         var skaterList = skaters.ToList();
         if (skaterList.Any(skater => skater is null))
@@ -68,12 +74,28 @@ public sealed class CompletedMatchTeam
             throw new ArgumentException("A team cannot score on the power play without a power-play opportunity.", nameof(skaters));
         }
 
+        // The team's own totals leave out only penalty shots, and a skater is on the ice for part of the play.
+        var all = shotTotals.All;
+        if (all.AttemptsFor > skaterList.Sum(skater => skater.ShotAttempts)
+            || all.ShotsFor > shots
+            || all.GoalsFor > playerGoals
+            || all.ExpectedGoalsFor > skaterList.Sum(skater => skater.ExpectedGoals) + ExpectedGoalTotals.Tolerance)
+        {
+            throw new ArgumentException("A team's shot totals cannot exceed its skaters' attempts, shots, goals, and expected goals.", nameof(shotTotals));
+        }
+
+        if (skaterList.Any(skater => !skater.OnIce.IsWithin(shotTotals)))
+        {
+            throw new ArgumentException("A skater's on-ice shot totals cannot exceed the team's in any situation.", nameof(skaters));
+        }
+
         TeamId = teamId;
         Score = score;
         Shots = shots;
         PowerPlayOpportunities = powerPlayOpportunities;
         _skaters = skaterList.AsReadOnly();
         Goalie = goalie;
+        ShotTotals = shotTotals;
     }
 
     public TeamId TeamId { get; }
@@ -96,6 +118,15 @@ public sealed class CompletedMatchTeam
     public IReadOnlyList<SkaterBoxScore> Skaters => _skaters;
 
     public GoalieBoxScore Goalie { get; }
+
+    /// <summary>
+    /// Both teams' shot totals by strength situation from this team's side, excluding penalty shots.
+    /// </summary>
+    public SituationalShotTotals ShotTotals { get; }
+
+    public int FaceoffsWon => _skaters.Sum(skater => skater.FaceoffsWon);
+
+    public int FaceoffsLost => _skaters.Sum(skater => skater.FaceoffsLost);
 
     /// <summary>Goals scored by players, excluding a shootout deciding goal.</summary>
     public int PlayerGoals => _skaters.Sum(skater => skater.Goals);

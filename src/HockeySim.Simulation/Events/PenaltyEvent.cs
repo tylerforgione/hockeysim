@@ -21,16 +21,5 @@ public sealed record PenaltyEvent(
     : MatchEvent(Period, TimeInPeriod, OnIce)
 {
     /// <summary>The penalty minutes charged to the player.</summary>
-    public int Minutes => MinutesFor(Kind);
-
-    public static int MinutesFor(PenaltyKind kind) => kind switch
-    {
-        PenaltyKind.Minor => 2,
-        PenaltyKind.DoubleMinor => 4,
-        PenaltyKind.Major => 5,
-        PenaltyKind.Misconduct => 10,
-        PenaltyKind.GameMisconduct => 10,
-        PenaltyKind.PenaltyShot => 0,
-        _ => throw new ArgumentOutOfRangeException(nameof(kind), "The penalty kind must be defined."),
-    };
+    public int Minutes => MatchPenalty.MinutesFor(Kind);
 }

@@ -25,6 +25,10 @@ namespace HockeySim.Simulation;
 /// Goals scored into a net whose goalie was pulled for an extra attacker; part of
 /// <paramref name="Goals"/>.
 /// </param>
+/// <param name="OnIce">
+/// Both teams' shot attempts, shots, goals, and expected goals while the skater was on the ice, by
+/// strength situation from the skater's team's side; penalty shots are not counted.
+/// </param>
 public sealed record SkaterMatchStatistics(
     PlayerId PlayerId,
     int Goals,
@@ -45,7 +49,8 @@ public sealed record SkaterMatchStatistics(
     int PowerPlayAssists,
     int ShorthandedGoals,
     int ShorthandedAssists,
-    int EmptyNetGoals)
+    int EmptyNetGoals,
+    SituationalShotTotals OnIce)
 {
     /// <summary>
     /// Always one: an entry is an appearance. Exposed so season totals can sum it directly.

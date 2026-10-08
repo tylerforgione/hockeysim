@@ -40,11 +40,15 @@ version in `GameSaveFile`.
 Management saves and loads games through its own contracts in `Saves/`: the
 `GameSave` model and the `IGameSaveStore` interface. `SaveGame` copies the
 world, lineups (with their units and extra attackers), schedule, current date, completed matches (with
-their full box scores, time on ice in whole seconds), inbox, and random
-state into a detached save, then hands it to the store. The play-by-play is not
+their full box scores, on-ice and team shot totals by situation, and scoring and
+penalty summaries, times in whole seconds), inbox, and random state into a
+detached save, then hands it to the store. The rest of the play-by-play is not
 saved. Save format version 4 added the event engine's box-score statistics,
 version 5 penalty minutes, power-play and shorthanded goals and assists, and
-power-play opportunities, and version 6 empty-net goals. `LoadGame` rebuilds the
+power-play opportunities, version 6 empty-net goals, and version 7 the shot
+totals and summaries. The shot totals roughly triple a save's size: a complete
+season is about 3 MB compressed (70 MB of JSON) rather than 1 MB, and loads in
+about half a second. `LoadGame` rebuilds the
 league through Domain constructors and replays each saved league day through
 `Season.CompleteDay`, so a loaded game is held to the same invariants as a
 played one, and team records, season statistics, and standings are derived

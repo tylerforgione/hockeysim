@@ -21,7 +21,7 @@ public sealed class GameSaveFile : IGameSaveStore
     /// <see cref="GameSave"/> or its serialization changes shape; pre-release builds reject saves
     /// from any other version rather than migrating them.
     /// </summary>
-    public const int FormatVersion = 6;
+    public const int FormatVersion = 7;
 
     private const string FormatName = "HockeySim save";
     private const string FormatProperty = "format";

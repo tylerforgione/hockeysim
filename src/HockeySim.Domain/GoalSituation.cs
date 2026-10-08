@@ -1,4 +1,4 @@
-namespace HockeySim.Simulation.Events;
+namespace HockeySim.Domain;
 
 /// <summary>
 /// How a goal counts toward special-teams statistics, decided by the penalties being served

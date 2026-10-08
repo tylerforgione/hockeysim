@@ -1,4 +1,4 @@
-using HockeySim.Simulation.Events;
+using HockeySim.Domain;
 
 namespace HockeySim.Simulation.Play;
 
@@ -155,7 +155,7 @@ internal sealed class ServedPenalty
         Player = player;
         Kind = kind;
         AffectsManpower = affectsManpower && kind != PenaltyKind.Misconduct;
-        RemainingSeconds = PenaltyEvent.MinutesFor(kind) * 60;
+        RemainingSeconds = MatchPenalty.MinutesFor(kind) * 60;
     }
 
     public MatchSide Side { get; }

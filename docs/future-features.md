@@ -243,13 +243,52 @@ the team page. Add sortable league-wide leader tables for the current season,
 single seasons, and all time. History storage depends on the
 [league database](#league-database-for-multi-season-history).
 
+## Situational statistics views
+
+Every skater and team records on-ice shot attempts, unblocked attempts, shots,
+goals, and xG for and against by strength situation (five-on-five, power play,
+penalty kill, and other), but Desktop shows only the five-on-five figures, the
+usual measure of possession. Later, let the user choose the situation for the
+advanced roster columns, the team strip, and the profile, including all
+situations together, so a power-play unit's xG and xG share can be compared with
+its five-on-five play.
+
+Direction:
+
+- Rates per sixty minutes need time on ice by situation, which the engine does
+  not record yet. Add it to the box score (and the save) alongside the shot
+  totals.
+- Consider score- and venue-adjusted shares once score effects exist in the
+  engine.
+
+## Play-by-play retention
+
+A completed match keeps its box score and its scoring and penalty summaries; the
+rest of the play-by-play (faceoffs, shot attempts, hits, takeaways, giveaways,
+and who was on the ice) is discarded after the match. Later, keep the full
+play-by-play with each completed match so a match can be reviewed event by
+event (and replayed by a match viewer), and let the user choose how long it is
+kept: by default two seasons, after which only the box score and summaries
+remain. Keeping more is the user's choice and costs save size and load time.
+
+Direction:
+
+- A season's play-by-play is far larger than its box scores, so this belongs
+  with the [league database](#league-database-for-multi-season-history), where
+  events are written once per day and read on demand rather than parsed on every
+  load.
+- The retention setting is per game, and pruning happens at season rollover;
+  pruning must never change any statistic, since every statistic is already in
+  the box score.
+
 ## League database for multi-season history
 
 Each game is saved as one Brotli-compressed JSON document
 ([ADR 0004](adr/0004-local-save-format.md)). Every save rewrites the whole world,
 every load parses it and replays the season's completed matches, and the entire
 history is held in memory. That suits one season: a complete 32-team season is
-4.6 MB of JSON, mostly box scores, and saves in about 60 ms.
+about 70 MB of JSON (3 MB compressed), mostly box scores and their on-ice shot
+totals, and loads in about half a second.
 
 It does not suit many seasons with more leagues. An AHL roughly doubles the
 match history per year, and draft prospects add statistics from leagues outside

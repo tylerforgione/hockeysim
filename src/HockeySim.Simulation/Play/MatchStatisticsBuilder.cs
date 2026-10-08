@@ -13,10 +13,12 @@ internal sealed class MatchStatisticsBuilder
     private readonly Dictionary<PlayerId, SkaterTally> _skaters = [];
     private readonly Dictionary<TeamId, TeamTally> _teams = [];
     private readonly TeamId _homeTeamId;
+    private readonly TeamId _awayTeamId;
 
-    public MatchStatisticsBuilder(IEnumerable<MatchEvent> events, TeamId homeTeamId)
+    public MatchStatisticsBuilder(IEnumerable<MatchEvent> events, TeamId homeTeamId, TeamId awayTeamId)
     {
         _homeTeamId = homeTeamId;
+        _awayTeamId = awayTeamId;
 
         foreach (var matchEvent in events)
         {
@@ -76,7 +78,8 @@ internal sealed class MatchStatisticsBuilder
                 tally.PowerPlayAssists,
                 tally.ShorthandedGoals,
                 tally.ShorthandedAssists,
-                tally.EmptyNetGoals);
+                tally.EmptyNetGoals,
+                tally.OnIce.ToTotals());
         });
 
         // Empty-net goals were scored with the goalie on the bench, so they are not held against them.
@@ -87,7 +90,8 @@ internal sealed class MatchStatisticsBuilder
             ExpectedGoalsAgainst: against.ExpectedGoals,
             TimeOnIce: TimeSpan.FromSeconds(side.GoalieTimeOnIceSeconds));
 
-        return new MatchTeamResult(side.TeamId, score, team.Shots, side.PowerPlayOpportunities, skaters, goalie);
+        return new MatchTeamResult(
+            side.TeamId, score, team.Shots, side.PowerPlayOpportunities, skaters, goalie, team.ShotTotals.ToTotals());
     }
 
     private void AddGoal(GoalEvent goal)
@@ -138,6 +142,10 @@ internal sealed class MatchStatisticsBuilder
         }
 
         AddPlusMinus(goal);
+        if (goal.Situation != GoalSituation.PenaltyShot)
+        {
+            AddOnIce(goal, goal.TeamId, new ShotCount(IsBlocked: false, IsOnGoal: true, IsGoal: true, goal.ExpectedGoals ?? 0));
+        }
     }
 
     /// <summary>
@@ -190,7 +198,67 @@ internal sealed class MatchStatisticsBuilder
         {
             Skater(blockerId).BlockedShots++;
         }
+
+        if (!attempt.Context.IsPenaltyShot)
+        {
+            AddOnIce(
+                attempt,
+                attempt.TeamId,
+                new ShotCount(attempt.BlockerId is not null, attempt.IsOnGoal, IsGoal: false, attempt.ExpectedGoals ?? 0));
+        }
     }
+
+    /// <summary>
+    /// Counts a shot attempt for the shooting team and every skater it had on the ice, and against
+    /// the defending team's, each in its own strength situation. Penalty shots are left out, as
+    /// they are from plus/minus, because the skaters on the ice took no part.
+    /// </summary>
+    private void AddOnIce(MatchEvent shot, TeamId shootingTeamId, ShotCount count)
+    {
+        var onIce = shot.OnIce;
+        var shootingIsHome = shootingTeamId == _homeTeamId;
+        var (shooters, defenders) = shootingIsHome
+            ? (onIce.HomeSkaters, onIce.AwaySkaters)
+            : (onIce.AwaySkaters, onIce.HomeSkaters);
+        var (shootingGoalie, defendingGoalie) = shootingIsHome
+            ? (onIce.HomeGoalie, onIce.AwayGoalie)
+            : (onIce.AwayGoalie, onIce.HomeGoalie);
+
+        var situation = SituationFor(
+            Manpower(shooters.Count, shootingGoalie),
+            Manpower(defenders.Count, defendingGoalie),
+            bothGoaliesInNet: shootingGoalie is not null && defendingGoalie is not null);
+        var defendingSituation = situation switch
+        {
+            StrengthSituation.PowerPlay => StrengthSituation.PenaltyKill,
+            StrengthSituation.PenaltyKill => StrengthSituation.PowerPlay,
+            _ => situation,
+        };
+
+        Team(shootingTeamId).ShotTotals.For(situation, count);
+        Team(shootingIsHome ? _awayTeamId : _homeTeamId).ShotTotals.Against(defendingSituation, count);
+        foreach (var playerId in shooters)
+        {
+            Skater(playerId).OnIce.For(situation, count);
+        }
+
+        foreach (var playerId in defenders)
+        {
+            Skater(playerId).OnIce.Against(defendingSituation, count);
+        }
+    }
+
+    /// <summary>
+    /// The skaters the penalties allow a team: those on the ice, less the extra attacker that
+    /// replaces a pulled goalie.
+    /// </summary>
+    private static int Manpower(int skatersOnIce, PlayerId? goalie) => goalie is null ? skatersOnIce - 1 : skatersOnIce;
+
+    private static StrengthSituation SituationFor(int manpower, int opponentManpower, bool bothGoaliesInNet) =>
+        manpower > opponentManpower ? StrengthSituation.PowerPlay
+        : manpower < opponentManpower ? StrengthSituation.PenaltyKill
+        : manpower == 5 && bothGoaliesInNet ? StrengthSituation.FiveOnFive
+        : StrengthSituation.Other;
 
     private SkaterTally Skater(PlayerId playerId)
     {
@@ -251,6 +319,8 @@ internal sealed class MatchStatisticsBuilder
         public int ShorthandedAssists { get; set; }
 
         public int EmptyNetGoals { get; set; }
+
+        public SituationalShotTally OnIce { get; } = new();
     }
 
     private sealed class TeamTally
@@ -262,5 +332,65 @@ internal sealed class MatchStatisticsBuilder
         public double ExpectedGoals { get; set; }
 
         public int EmptyNetGoals { get; set; }
+
+        public SituationalShotTally ShotTotals { get; } = new();
+    }
+
+    /// <summary>One shot attempt, as it counts toward attempts, unblocked attempts, shots, and goals.</summary>
+    private readonly record struct ShotCount(bool IsBlocked, bool IsOnGoal, bool IsGoal, double ExpectedGoals);
+
+    private sealed class SituationalShotTally
+    {
+        private readonly ShotTally[] _for = [new(), new(), new(), new()];
+        private readonly ShotTally[] _against = [new(), new(), new(), new()];
+
+        public void For(StrengthSituation situation, ShotCount count) => _for[(int)situation].Add(count);
+
+        public void Against(StrengthSituation situation, ShotCount count) => _against[(int)situation].Add(count);
+
+        public SituationalShotTotals ToTotals() =>
+            new(
+                Totals(StrengthSituation.FiveOnFive),
+                Totals(StrengthSituation.PowerPlay),
+                Totals(StrengthSituation.PenaltyKill),
+                Totals(StrengthSituation.Other));
+
+        private ShotTotals Totals(StrengthSituation situation)
+        {
+            var (shotsFor, against) = (_for[(int)situation], _against[(int)situation]);
+            return new ShotTotals(
+                shotsFor.Attempts,
+                against.Attempts,
+                shotsFor.UnblockedAttempts,
+                against.UnblockedAttempts,
+                shotsFor.Shots,
+                against.Shots,
+                shotsFor.Goals,
+                against.Goals,
+                shotsFor.ExpectedGoals,
+                against.ExpectedGoals);
+        }
+    }
+
+    private sealed class ShotTally
+    {
+        public int Attempts { get; private set; }
+
+        public int UnblockedAttempts { get; private set; }
+
+        public int Shots { get; private set; }
+
+        public int Goals { get; private set; }
+
+        public double ExpectedGoals { get; private set; }
+
+        public void Add(ShotCount count)
+        {
+            Attempts++;
+            UnblockedAttempts += count.IsBlocked ? 0 : 1;
+            Shots += count.IsOnGoal ? 1 : 0;
+            Goals += count.IsGoal ? 1 : 0;
+            ExpectedGoals += count.ExpectedGoals;
+        }
     }
 }

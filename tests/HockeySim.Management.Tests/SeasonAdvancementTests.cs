@@ -287,12 +287,13 @@ public sealed class SeasonAdvancementTests
         string.Join(
             Environment.NewLine,
             snapshot.Season.Results.Select(result =>
-                $"{result.Date:yyyy-MM-dd} {result.Decision} {Side(result.Home)} @ {Side(result.Away)}"));
+                $"{result.Date:yyyy-MM-dd} {result.Decision} {Side(result.Home)} @ {Side(result.Away)} "
+                + $"goals [{string.Join(",", result.Goals)}] penalties [{string.Join(",", result.Penalties)}]"));
 
-    // Box-score records print every statistic, and doubles print exactly, so equal fingerprints
-    // mean every box-score value matches.
+    // Box-score and summary records print every statistic, and doubles print exactly, so equal
+    // fingerprints mean every box-score and summary value matches.
     private static string Side(CompletedMatchTeamSnapshot side) =>
-        $"{side.TeamId}:{side.Score}/{side.Shots} "
+        $"{side.TeamId}:{side.Score}/{side.Shots}/{side.PowerPlayOpportunities} {side.ShotTotals} "
         + $"[{string.Join(",", side.Skaters)}] "
         + $"G {side.Goalie}";
 

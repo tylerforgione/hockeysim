@@ -12,8 +12,10 @@ is in [match engine](match-engine.md).
 | `Domain/Season.cs` | The season aggregate: `CompleteDay`, records, season statistics |
 | `Domain/SeasonSchedule.cs`, `ScheduledMatch.cs`, `Match.cs` | The schedule and its invariants |
 | `Domain/CompletedMatch.cs`, `CompletedMatchTeam.cs`, `SkaterBoxScore.cs`, `GoalieBoxScore.cs`, `ExpectedGoalTotals.cs`, `MatchTime.cs` | A completed match's box score and its reconciliation rules |
+| `Domain/MatchGoal.cs`, `MatchPenalty.cs`, `MatchClock.cs`, `GoalSituation.cs`, `Infraction.cs`, `PenaltyKind.cs` | The scoring and penalty summaries |
+| `Domain/ShotTotals.cs`, `SituationalShotTotals.cs`, `StrengthSituation.cs` | Shot totals for and against by strength situation, and their shares (Corsi, Fenwick, xG) |
 | `Domain/MatchDecision.cs` | Regulation, overtime, or shootout |
-| `Domain/TeamRecord.cs`, `SkaterSeasonStatistics.cs`, `GoalieSeasonStatistics.cs` | Season totals |
+| `Domain/TeamRecord.cs`, `TeamSeasonStatistics.cs`, `SkaterSeasonStatistics.cs`, `GoalieSeasonStatistics.cs`, `SeasonAverages.cs` | Season totals and the rates derived from them |
 | `Domain/StandingsRanking.cs`, `StandingsEntry.cs` | NHL tie-breaking |
 | `Management/Scheduling/` | `ScheduleGenerator`: `MeetingPlanner` then `RoundCalendar` |
 | `Management/SeasonPlay/LeagueDay.cs` | Plays a day's matches and converts results |
@@ -29,12 +31,15 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | --- | --- |
 | `Domain.Tests/SeasonTests.cs` | Day atomicity, points per decision, terminal state |
 | `Domain.Tests/BoxScoreTests.cs` | Completed-match reconciliation rules |
+| `Domain.Tests/MatchSummaryTests.cs` | Summaries agreeing with the box scores, shot totals across teams and skaters |
+| `Domain.Tests/ShotTotalsTests.cs` | Shot totals, their shares, reversing, and adding |
+| `Domain.Tests/SeasonStatisticsTests.cs` | Accumulating every statistic and each derived rate and percentage, undefined values |
 | `Domain.Tests/StandingsTests.cs` | Each tie-breaker, head-to-head cases, odd-game exclusion |
 | `Domain.Tests/SeasonScheduleTests.cs` | Schedule invariants |
 | `Management.Tests/ScheduleTests.cs` | Opponent matrix, home/away balance, dates, over several seeds |
 | `Management.Tests/SeasonAdvancementTests.cs` | Advancing days, failures leaving nothing applied, threading |
 | `Management.Tests/StandingsTests.cs` | Standings tables and snapshot isolation |
-| `Management.Tests/FullSeasonTests.cs` | A shared fixture plays a full 1,344-match season and reconciles it |
+| `Management.Tests/FullSeasonTests.cs` | A shared fixture plays a full 1,344-match season and reconciles it, including every season total and summary |
 | `Domain.Tests/TestLeague.cs`, `TestResults.cs` | Builders |
 
 ## Behaviour
@@ -54,7 +59,7 @@ not modelled; see [future features](../future-features.md#realistic-season-calen
 snapshot and is unchanged by managed-team selection.
 
 Domain's `Season` aggregate holds the league, schedule, current date, the
-completed-match history, team records, and player season statistics. A new
+completed-match history, team records, and team and player season statistics. A new
 season's current date is opening day. `CompleteDay` accepts exactly one
 completed match for each match scheduled on the current date, validates the
 whole day (scheduled teams, decisive scores, statistics that reconcile with the
@@ -66,8 +71,18 @@ stream, converts each Simulation result into a Domain completed match, and
 commits the random state only after the season accepts the day. `GameManager`
 serializes its commands, rejects commands issued from inside a day being played,
 and rejects advancement once the season is complete. The engine is injected
-through Simulation's `IMatchSimulator`; `MatchDecision` lives in Domain because
-both the engine and the history use it.
+through Simulation's `IMatchSimulator`; `MatchDecision`, `GoalSituation`,
+`Infraction`, and `PenaltyKind` live in Domain because both the engine and the
+history use them.
+
+A completed match keeps the box score and, from the play-by-play, a scoring
+summary (each player goal's period, time, team, scorer, assists, situation, and
+whether the net was empty) and a penalty summary (each penalty's period, time,
+team, player, infraction, and kind). The rest of the play-by-play is not kept;
+see [future features](../future-features.md#play-by-play-retention). The
+completed match rejects summaries out of time order, or that do not credit
+exactly each skater's goals, assists, power-play, shorthanded, and empty-net
+goals and assists, and penalty minutes.
 
 Domain's `Season.RankStandings` ranks any group of league teams by the
 [NHL tie-breaking procedure](https://www.nhl.com/info/standings-info/tie-breaking-procedure):
@@ -85,3 +100,38 @@ is provisional and isolated in `StandingsRanking`. Teams level on every
 criterion share a rank and keep league team order. Management exposes league,
 conference, and division tables in `SeasonSnapshot.Standings`, each ranked
 independently. Playoff qualification is not modelled.
+
+### Season statistics
+
+The season accumulates every box-score statistic, excluding the shootout. Each
+skater's totals sum their goals, assists, plus/minus, time on ice, shots, shot
+attempts, hits, blocks, faceoffs won and lost, takeaways, giveaways, xG, penalty
+minutes, power-play, shorthanded, and empty-net goals and assists, and their
+on-ice shot totals by strength situation. Each goalie's totals sum shots and
+goals against, xG against, time in net, and shutouts: starts in which the goalie
+was charged with no goal, so an empty-net goal or a shootout does not prevent
+one. Each team's `TeamSeasonStatistics` sum its power-play goals and
+opportunities, the opponents' power-play goals and opportunities (its penalty
+kill), shorthanded goals, faceoffs, and its shot totals by situation; wins,
+losses, and goals stay in the `TeamRecord`.
+
+Domain derives the rates and percentages, each undefined (`null`) until it can
+be calculated:
+
+| Value | Formula | Undefined until |
+| --- | --- | --- |
+| Corsi, Fenwick, shots, goals, xG percentage | for ÷ (for + against) of attempts, unblocked attempts, shots, goals, or xG | either side has one |
+| Faceoff percentage | won ÷ (won + lost) | a faceoff is taken |
+| Time on ice per game | total ÷ games, to the nearest second | a first appearance |
+| Save percentage | saves ÷ shots against | a shot is faced |
+| Goals-against average | goals against × 60 minutes ÷ time in net | time in net |
+| Goals saved above expected (GSAx) | xG against − goals against | always defined |
+| Power-play percentage | power-play goals ÷ opportunities | a first opportunity |
+| Penalty-kill percentage | 1 − power-play goals against ÷ times shorthanded | the team is first shorthanded |
+
+Power-play and shorthanded points are goals plus assists. Desktop shows the
+five-on-five shot totals as the advanced measures; the others are kept for
+situational views (see [future features](../future-features.md#situational-statistics-views)).
+Management exposes team statistics in `SeasonSnapshot.TeamStatistics` and passes
+Domain's derived values through the player snapshots rather than recomputing
+them.

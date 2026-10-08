@@ -148,6 +148,15 @@ public sealed class MainWindowViewTests
             .OfType<Grid>()
             .Count(grid => grid.DataContext is SkaterBoxScoreRowViewModel);
         Assert.Equal(36, skaterRows);
+        var detailViewModel = Assert.IsType<MatchDetailViewModel>(matchDetail.DataContext);
+        var goalRows = matchDetail.GetVisualDescendants()
+            .OfType<Grid>()
+            .Count(grid => grid.DataContext is GoalSummaryRowViewModel);
+        Assert.True(matchDetail.FindControl<StackPanel>("ScoringSummary")?.IsEffectivelyVisible);
+        Assert.Equal(detailViewModel.ScoringSummary.Count, goalRows);
+        Assert.Equal(
+            detailViewModel.PenaltySummary.Count,
+            matchDetail.GetVisualDescendants().OfType<Grid>().Count(grid => grid.DataContext is PenaltySummaryRowViewModel));
 
         // Standings: four division tables by default, then the single league table.
         AssertNavigationRenders<StandingsPageView>(window, ShellPage.Standings);
@@ -161,18 +170,25 @@ public sealed class MainWindowViewTests
             standingsView.GetVisualDescendants().OfType<Border>().Select(border => border.DataContext).OfType<StandingsRowViewModel>(),
             row => Assert.Equal(1, row.GamesPlayed));
 
-        // Roster: switch the tables to season totals; the detail panel always shows them.
+        // Roster: the team strip, then the tables switched to basic and advanced statistics; the
+        // detail panel always shows the full line.
         AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
         var rosterView = Single<TeamRosterView>(window);
+        Assert.True(rosterView.FindControl<Border>("TeamStatistics")?.IsEffectivelyVisible);
         var ratingsTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkatersTable"));
-        var seasonTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkaterSeasonTable"));
+        var basicTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkaterBasicTable"));
+        var advancedTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkaterAdvancedTable"));
         Assert.True(ratingsTable.IsEffectivelyVisible);
-        Assert.False(seasonTable.IsEffectivelyVisible);
-        Click(Assert.IsType<Button>(rosterView.FindControl<Button>("ShowSeasonButton")));
+        Assert.False(basicTable.IsEffectivelyVisible);
+        Click(Assert.IsType<Button>(rosterView.FindControl<Button>("ShowBasicButton")));
         Assert.False(ratingsTable.IsEffectivelyVisible);
-        Assert.True(seasonTable.IsEffectivelyVisible);
-        Assert.True(seasonTable.Bounds.Height > 200);
-        Assert.True(Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("GoalieSeasonTable")).IsEffectivelyVisible);
+        Assert.True(basicTable.IsEffectivelyVisible);
+        Assert.True(basicTable.Bounds.Height > 200);
+        Assert.True(Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("GoalieBasicTable")).IsEffectivelyVisible);
+        Click(Assert.IsType<Button>(rosterView.FindControl<Button>("ShowAdvancedButton")));
+        Assert.False(basicTable.IsEffectivelyVisible);
+        Assert.True(advancedTable.IsEffectivelyVisible);
+        Assert.True(Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("GoalieAdvancedTable")).IsEffectivelyVisible);
         var playerDetail = Single<PlayerDetailView>(rosterView);
         var overallText = playerDetail.FindControl<TextBlock>("PlayerOverallText");
         Assert.True(overallText?.IsEffectivelyVisible);
@@ -182,10 +198,11 @@ public sealed class MainWindowViewTests
         var seasonStatistics = playerDetail.FindControl<StackPanel>("SeasonStatistics");
         Assert.True(seasonStatistics?.IsEffectivelyVisible);
         Assert.Equal(
-            ["GP", "G", "A", "P"],
+            ["GP", "G", "A", "P", "+/-", "PIM", "ENG"],
             seasonStatistics!.GetVisualDescendants().OfType<TextBlock>()
                 .Where(text => text.DataContext is SeasonStatViewModel && text.Classes.Contains("label"))
-                .Select(text => text.Text));
+                .Select(text => text.Text)
+                .Take(7));
 
         // Save from the title bar under a typed name.
         Assert.Equal("Unsaved changes", Single<GameShellView>(window).FindControl<TextBlock>("SaveStatusText")?.Text);

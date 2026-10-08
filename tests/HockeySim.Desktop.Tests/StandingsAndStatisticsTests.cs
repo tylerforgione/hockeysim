@@ -115,14 +115,20 @@ public sealed class StandingsAndStatisticsTests
         roster.SelectPlayer(roster.Skaters[0].Player.Id);
         var skater = roster.SelectedPlayer!;
         Assert.Equal("2026–27 REGULAR SEASON", skater.SeasonTitle);
-        Assert.Equal(["GP", "G", "A", "P"], skater.SeasonStatistics.Select(stat => stat.Label));
-        Assert.All(skater.SeasonStatistics, stat => Assert.Equal("0", stat.Value));
+        Assert.Equal(
+            ["SCORING", "SPECIAL TEAMS", "SHOOTING AND PLAY", "FACEOFFS AND ICE TIME", "5-ON-5 ON ICE"],
+            skater.SeasonStatisticGroups.Select(group => group.Name));
+        Assert.Equal(["GP", "G", "A", "P", "+/-", "PIM", "ENG"], skater.SeasonStatisticGroups[0].Statistics.Select(stat => stat.Label));
+        var skaterLine = skater.SeasonStatisticGroups.SelectMany(group => group.Statistics).ToDictionary(stat => stat.Label, stat => stat.Value);
+        Assert.All(["FO%", "TOI/GP", "CF%", "FF%", "SF%", "GF%", "xGF%"], label => Assert.Equal("—", skaterLine[label]));
+        Assert.All(["GP", "G", "A", "P", "+/-", "PPP", "CF", "CA"], label => Assert.Equal("0", skaterLine[label]));
         Assert.Equal("No appearances yet this season.", skater.SeasonCaption);
 
         roster.SelectPlayer(roster.Goalies[0].Player.Id);
         var goalie = roster.SelectedPlayer!;
-        Assert.Equal(["GP", "SA", "SV", "GA", "SV%"], goalie.SeasonStatistics.Select(stat => stat.Label));
-        Assert.Equal(["0", "0", "0", "0", "—"], goalie.SeasonStatistics.Select(stat => stat.Value));
+        Assert.Equal(["GP", "SA", "SV", "GA", "SV%", "GAA", "SO"], goalie.SeasonStatisticGroups[0].Statistics.Select(stat => stat.Label));
+        Assert.Equal(["0", "0", "0", "0", "—", "—", "0"], goalie.SeasonStatisticGroups[0].Statistics.Select(stat => stat.Value));
+        Assert.Equal(["0.00", "0.00", "0:00", "—"], goalie.SeasonStatisticGroups[1].Statistics.Select(stat => stat.Value));
         Assert.Equal("No starts yet this season.", goalie.SeasonCaption);
     }
 
@@ -162,26 +168,27 @@ public sealed class StandingsAndStatisticsTests
         roster.SelectPlayer(starter.Player.Id);
         var detail = roster.SelectedPlayer!;
         Assert.Equal(other.Name, detail.TeamName);
-        Assert.Equal(starter.Season.SavePercentage, detail.SeasonStatistics.Single(stat => stat.Label == "SV%").Value);
+        Assert.Equal(starter.Season.SavePercentage, detail.SeasonStatisticGroups.SelectMany(group => group.Statistics).Single(stat => stat.Label == "SV%").Value);
         Assert.False(detail.HasSeasonCaption);
     }
 
     [Fact]
-    public async Task SeasonColumnsStayChosenAcrossTeamsAndDays()
+    public async Task StatisticColumnsStayChosenAcrossTeamsAndDays()
     {
         var shell = new GameShellViewModel(GameTestData.StartSession());
-        shell.Teams.Roster.ShowColumnsCommand.Execute(RosterColumns.Season);
-        shell.Roster.Roster.ShowColumnsCommand.Execute(RosterColumns.Season);
+        shell.Teams.Roster.ShowColumnsCommand.Execute(RosterColumns.Advanced);
+        shell.Roster.Roster.ShowColumnsCommand.Execute(RosterColumns.Basic);
 
-        Assert.True(shell.Teams.Roster.ShowsSeason);
+        Assert.True(shell.Teams.Roster.ShowsAdvanced);
+        Assert.False(shell.Teams.Roster.ShowsBasic);
         Assert.False(shell.Teams.Roster.ShowsRatings);
 
         shell.Teams.ShowNextTeamCommand.Execute(null);
-        Assert.True(shell.Teams.Roster.ShowsSeason);
+        Assert.True(shell.Teams.Roster.ShowsAdvanced);
 
         await shell.AdvanceDayCommand.ExecuteAsync(null);
-        Assert.True(shell.Teams.Roster.ShowsSeason);
-        Assert.True(shell.Roster.Roster.ShowsSeason);
+        Assert.True(shell.Teams.Roster.ShowsAdvanced);
+        Assert.True(shell.Roster.Roster.ShowsBasic);
         Assert.Contains(shell.Roster.Roster.Skaters, row => row.Season.GamesPlayed == 1);
     }
 
