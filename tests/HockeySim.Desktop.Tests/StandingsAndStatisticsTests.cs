@@ -5,6 +5,7 @@ using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Schedule;
 using HockeySim.Desktop.Standings;
+using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
 using Xunit;
@@ -65,6 +66,58 @@ public sealed class StandingsAndStatisticsTests
 
         Assert.True(page.IsLeagueScope);
         AssertTables(session, [("League", standings.League)], page.Tables);
+    }
+
+    [Fact]
+    public async Task TheWildCardScopeShowsEachDivisionsTopThreeThenEachConferencesRace()
+    {
+        var session = GameTestData.StartSession();
+        var shell = new GameShellViewModel(session);
+        await shell.AdvanceDayCommand.ExecuteAsync(null);
+        var page = shell.Standings;
+
+        page.SelectScopeCommand.Execute(StandingsScope.WildCard);
+
+        Assert.True(page.IsWildCardScope);
+        Assert.False(page.IsDivisionScope);
+        var expected = session.Snapshot.Season.Standings.WildCard
+            .SelectMany(conference => conference.DivisionLeaders
+                .Select(division => (division.Name, division.Teams))
+                .Append(($"{conference.Name} wild card", conference.WildCardRace)));
+        AssertTables(session, expected, page.Tables);
+        Assert.Equal(
+            ["Eastern Conference", "Eastern Conference", "Top 2 qualify", "Western Conference", "Western Conference", "Top 2 qualify"],
+            page.Tables.Select(table => table.Caption));
+
+        // Only the second wild card is drawn with the playoff line beneath it.
+        Assert.All(page.Tables, table => Assert.Equal(
+            table.Title.EndsWith("WILD CARD", StringComparison.Ordinal) ? [1] : [],
+            table.Rows.Select((row, index) => (row, index)).Where(pair => pair.row.IsLastQualifier).Select(pair => pair.index)));
+        Assert.All(page.Tables.SelectMany(table => table.Rows), row =>
+        {
+            Assert.Equal("", row.PlayoffMarker);
+            Assert.Null(row.PlayoffStatus);
+        });
+    }
+
+    [Theory]
+    [InlineData(PlayoffStatus.Undecided, "", null)]
+    [InlineData(PlayoffStatus.Eliminated, "e", "Eliminated from playoff contention")]
+    [InlineData(PlayoffStatus.ClinchedPlayoffSpot, "x", "Clinched a playoff spot")]
+    [InlineData(PlayoffStatus.ClinchedDivision, "y", "Clinched the division")]
+    [InlineData(PlayoffStatus.ClinchedConference, "z", "Clinched the conference")]
+    [InlineData(PlayoffStatus.ClinchedBestRecord, "p", "Clinched the best record in the league")]
+    public void EachPlayoffStatusShowsTheNhlLetterWithItsMeaning(PlayoffStatus status, string marker, string? meaning)
+    {
+        var entry = new StandingsEntrySnapshot(1, new TeamRecordSnapshot(new TeamId(Guid.NewGuid()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), status);
+
+        var row = StandingsRowViewModel.Create(entry, "Team", isManaged: false);
+
+        Assert.Equal((marker, meaning), (row.PlayoffMarker, row.PlayoffStatus));
+        if (meaning is not null)
+        {
+            Assert.Contains($"{marker} {meaning}", PlayoffStatusDisplay.Legend, StringComparison.Ordinal);
+        }
     }
 
     [Fact]

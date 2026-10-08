@@ -322,10 +322,71 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
     private static CompletedMatchTeamSnapshot Opponent(CompletedMatchSnapshot result, TeamId teamId) =>
         result.Home.TeamId == teamId ? result.Away : result.Home;
 
+    [Fact]
+    public void TheFinalStandingsDecideEveryTeamWithEightQualifiersPerConference()
+    {
+        var standings = Season.Standings;
+        var statuses = standings.League.ToDictionary(entry => entry.Record.TeamId, entry => entry.PlayoffStatus);
+
+        Assert.DoesNotContain(PlayoffStatus.Undecided, statuses.Values);
+        Assert.Single(statuses.Values, status => status == PlayoffStatus.ClinchedBestRecord);
+        foreach (var view in standings.WildCard)
+        {
+            var qualifiers = view.DivisionLeaders
+                .SelectMany(division => division.Teams)
+                .Concat(view.WildCardRace.Take(view.WildCardCount))
+                .Select(entry => entry.Record.TeamId)
+                .ToList();
+            Assert.Equal(8, qualifiers.Count);
+            Assert.All(qualifiers, teamId => Assert.True(statuses[teamId] >= PlayoffStatus.ClinchedPlayoffSpot));
+            Assert.All(view.WildCardRace.Skip(view.WildCardCount), entry => Assert.Equal(PlayoffStatus.Eliminated, entry.PlayoffStatus));
+            Assert.All(view.DivisionLeaders, division => Assert.True(division.Teams[0].PlayoffStatus >= PlayoffStatus.ClinchedDivision));
+        }
+
+        // Every table carries the same status for a team.
+        var everyEntry = standings.Conferences
+            .SelectMany(conference => conference.Teams.Concat(conference.Divisions.SelectMany(division => division.Teams)))
+            .Concat(standings.WildCard.SelectMany(view =>
+                view.WildCardRace.Concat(view.DivisionLeaders.SelectMany(division => division.Teams))));
+        Assert.All(everyEntry, entry => Assert.Equal(statuses[entry.Record.TeamId], entry.PlayoffStatus));
+    }
+
+    [Fact]
+    public void EveryClinchOrEliminationDuringTheSeasonHoldsUntilTheEnd()
+    {
+        var daily = completed.DailyPlayoffStatuses;
+        var final = daily[^1];
+
+        foreach (var (statuses, nextDay) in daily.Zip(daily.Skip(1)))
+        {
+            foreach (var (teamId, status) in statuses)
+            {
+                if (status == PlayoffStatus.Eliminated)
+                {
+                    Assert.Equal(PlayoffStatus.Eliminated, nextDay[teamId]);
+                    Assert.Equal(PlayoffStatus.Eliminated, final[teamId]);
+                }
+                else if (status != PlayoffStatus.Undecided)
+                {
+                    // A clinch can only be strengthened, never withdrawn.
+                    Assert.True(nextDay[teamId] >= status);
+                    Assert.True(final[teamId] >= status);
+                }
+            }
+        }
+
+        // Guarantees appear before the final day rather than only once the season is over.
+        var beforeTheEnd = daily[^2];
+        Assert.Contains(beforeTheEnd.Values, status => status >= PlayoffStatus.ClinchedPlayoffSpot);
+        Assert.Contains(beforeTheEnd.Values, status => status == PlayoffStatus.Eliminated);
+    }
+
     public sealed class CompletedSeason
     {
         // Far more than the calendar needs, so a season that never completes fails instead of hanging.
         private const int MaximumAdvances = 366;
+
+        private readonly List<IReadOnlyDictionary<TeamId, PlayoffStatus>> _dailyPlayoffStatuses = [];
 
         public CompletedSeason()
         {
@@ -335,6 +396,8 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
             {
                 snapshot = Manager.AdvanceDayReplacingInjured();
                 Advances++;
+                _dailyPlayoffStatuses.Add(snapshot.Season.Standings.League
+                    .ToDictionary(entry => entry.Record.TeamId, entry => entry.PlayoffStatus));
             }
 
             Snapshot = snapshot;
@@ -345,5 +408,8 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
         public GameSnapshot Snapshot { get; }
 
         public int Advances { get; }
+
+        /// <summary>Every team's playoff status after each advance, the last being the final one.</summary>
+        public IReadOnlyList<IReadOnlyDictionary<TeamId, PlayoffStatus>> DailyPlayoffStatuses => _dailyPlayoffStatuses;
     }
 }

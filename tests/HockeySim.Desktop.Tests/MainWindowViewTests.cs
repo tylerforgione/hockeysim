@@ -158,11 +158,16 @@ public sealed class MainWindowViewTests
             detailViewModel.PenaltySummary.Count,
             matchDetail.GetVisualDescendants().OfType<Grid>().Count(grid => grid.DataContext is PenaltySummaryRowViewModel));
 
-        // Standings: four division tables by default, then the single league table.
+        // Standings: four division tables by default with the marker legend, then the wild-card
+        // view's four division leader tables and two races, then the single league table.
         AssertNavigationRenders<StandingsPageView>(window, ShellPage.Standings);
         var standingsView = Single<StandingsPageView>(window);
         Assert.Equal(32, CountStandingsRows(standingsView));
         Assert.Equal(4, standingsView.FindControl<ItemsControl>("StandingsTables")?.ItemCount);
+        Assert.True(standingsView.FindControl<TextBlock>("PlayoffStatusLegend")?.IsEffectivelyVisible);
+        Click(Assert.IsType<Button>(standingsView.FindControl<Button>("WildCardScopeButton")));
+        Assert.Equal(6, standingsView.FindControl<ItemsControl>("StandingsTables")?.ItemCount);
+        Assert.Equal(32, CountStandingsRows(standingsView));
         Click(Assert.IsType<Button>(standingsView.FindControl<Button>("LeagueScopeButton")));
         Assert.Equal(1, standingsView.FindControl<ItemsControl>("StandingsTables")?.ItemCount);
         Assert.Equal(32, CountStandingsRows(standingsView));
