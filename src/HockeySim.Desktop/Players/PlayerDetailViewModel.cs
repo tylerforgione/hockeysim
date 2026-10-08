@@ -7,7 +7,8 @@ namespace HockeySim.Desktop.Players;
 
 /// <summary>
 /// Read-only profile of one player: identity, age, position, lineup role, overall rating,
-/// biographical details, current-season totals, and the ratings that matter to their position.
+/// biographical details, the full current-season statistic line, and the ratings that matter to
+/// their position.
 /// </summary>
 /// <remarks>
 /// A skater's goaltending ratings and a goalie's skater ratings are generated low and play no
@@ -53,22 +54,7 @@ public sealed class PlayerDetailViewModel
 
         var isGoalie = player.Position == Domain.Position.Goalie;
         SeasonTitle = $"{PlayerDisplay.FormatSeason(seasonYear)} REGULAR SEASON";
-        SeasonStatistics = isGoalie
-            ?
-            [
-                new("GP", seasonTotals.GamesPlayed.ToString(CultureInfo.CurrentCulture), "Games played"),
-                new("SA", seasonTotals.ShotsAgainst.ToString(CultureInfo.CurrentCulture), "Shots against"),
-                new("SV", seasonTotals.Saves.ToString(CultureInfo.CurrentCulture), "Saves"),
-                new("GA", seasonTotals.GoalsAgainst.ToString(CultureInfo.CurrentCulture), "Goals against"),
-                new("SV%", seasonTotals.SavePercentage, "Save percentage"),
-            ]
-            :
-            [
-                new("GP", seasonTotals.GamesPlayed.ToString(CultureInfo.CurrentCulture), "Games played"),
-                new("G", seasonTotals.Goals.ToString(CultureInfo.CurrentCulture), "Goals"),
-                new("A", seasonTotals.Assists.ToString(CultureInfo.CurrentCulture), "Assists"),
-                new("P", seasonTotals.Points.ToString(CultureInfo.CurrentCulture), "Points"),
-            ];
+        SeasonStatisticGroups = seasonTotals.ProfileGroups(isGoalie);
 
         // Only the starting goalie appears in a match, so a goalie's games are starts.
         SeasonCaption = seasonTotals.GamesPlayed > 0
@@ -122,10 +108,10 @@ public sealed class PlayerDetailViewModel
     public string SeasonTitle { get; }
 
     /// <summary>
-    /// Skater GP/G/A/P or goalie GP/SA/SV/GA/SV%. Totals are zero before a first appearance, and a
-    /// save percentage is a dash until a shot has been faced.
+    /// The full current-season statistic line, grouped. Counts are zero before a first appearance,
+    /// and a percentage, average, or rate is a dash until it is defined.
     /// </summary>
-    public IReadOnlyList<SeasonStatViewModel> SeasonStatistics { get; }
+    public IReadOnlyList<SeasonStatGroupViewModel> SeasonStatisticGroups { get; }
 
     /// <summary>Explains zero totals for a player who has not appeared; otherwise empty.</summary>
     public string SeasonCaption { get; }
@@ -136,6 +122,8 @@ public sealed class PlayerDetailViewModel
 }
 
 public sealed record SeasonStatViewModel(string Label, string Value, string Description);
+
+public sealed record SeasonStatGroupViewModel(string Name, IReadOnlyList<SeasonStatViewModel> Statistics);
 
 public sealed record RatingGroupViewModel(string Name, IReadOnlyList<RatingLineViewModel> Ratings);
 

@@ -1121,7 +1121,7 @@ internal sealed class MatchPlay
         var homeBonus = shootout?.WinnerId == _home.TeamId ? 1 : 0;
         var awayBonus = shootout?.WinnerId == _away.TeamId ? 1 : 0;
         var playingTime = TimeSpan.FromSeconds(_playingSeconds);
-        var statistics = new MatchStatisticsBuilder(_events, _home.TeamId);
+        var statistics = new MatchStatisticsBuilder(_events, _home.TeamId, _away.TeamId);
 
         return new MatchResult(
             statistics.TeamResult(_home, _away, _homeGoals + homeBonus),

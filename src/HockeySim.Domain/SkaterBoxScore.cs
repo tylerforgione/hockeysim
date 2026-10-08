@@ -23,6 +23,10 @@ public sealed record SkaterBoxScore
     /// <param name="emptyNetGoals">
     /// Goals scored into a net whose goalie was pulled for an extra attacker, counted among the goals.
     /// </param>
+    /// <param name="onIce">
+    /// Both teams' shot attempts, shots, goals, and expected goals while the skater was on the ice,
+    /// by strength situation from the skater's team's side.
+    /// </param>
     public SkaterBoxScore(
         PlayerId playerId,
         int goals,
@@ -43,7 +47,8 @@ public sealed record SkaterBoxScore
         int powerPlayAssists,
         int shorthandedGoals,
         int shorthandedAssists,
-        int emptyNetGoals)
+        int emptyNetGoals,
+        SituationalShotTotals onIce)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(goals);
         ArgumentOutOfRangeException.ThrowIfNegative(assists);
@@ -66,6 +71,7 @@ public sealed record SkaterBoxScore
         ArgumentOutOfRangeException.ThrowIfGreaterThan(powerPlayAssists + shorthandedAssists, assists, nameof(shorthandedAssists));
         ArgumentOutOfRangeException.ThrowIfNegative(emptyNetGoals);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(emptyNetGoals, goals);
+        ArgumentNullException.ThrowIfNull(onIce);
 
         PlayerId = playerId;
         Goals = goals;
@@ -87,6 +93,7 @@ public sealed record SkaterBoxScore
         ShorthandedGoals = shorthandedGoals;
         ShorthandedAssists = shorthandedAssists;
         EmptyNetGoals = emptyNetGoals;
+        OnIce = onIce;
     }
 
     public PlayerId PlayerId { get; }
@@ -134,4 +141,7 @@ public sealed record SkaterBoxScore
     public int ShorthandedPoints => ShorthandedGoals + ShorthandedAssists;
 
     public int EmptyNetGoals { get; }
+
+    /// <summary>Both teams' shot totals while the skater was on the ice, excluding penalty shots.</summary>
+    public SituationalShotTotals OnIce { get; }
 }

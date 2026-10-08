@@ -5,8 +5,9 @@ using HockeySim.Management.GameManagement.Snapshots;
 namespace HockeySim.Desktop.Schedule;
 
 /// <summary>
-/// One completed match: the final score, how it was decided, and each side's box score. These are
-/// single-match figures only; season totals are presented separately.
+/// One completed match: the final score, how it was decided, the scoring and penalty summaries,
+/// and each side's box score. These are single-match figures only; season totals are presented
+/// separately.
 /// </summary>
 public sealed class MatchDetailViewModel
 {
@@ -26,6 +27,21 @@ public sealed class MatchDetailViewModel
         IsShootout = result.Decision == MatchDecision.Shootout;
         Away = new MatchSideViewModel(result.Away, players, teamName(result.Away.TeamId), result.WinnerId == result.Away.TeamId);
         Home = new MatchSideViewModel(result.Home, players, teamName(result.Home.TeamId), result.WinnerId == result.Home.TeamId);
+
+        var initials = new Dictionary<TeamId, string>
+        {
+            [result.Away.TeamId] = Away.TeamInitials,
+            [result.Home.TeamId] = Home.TeamInitials,
+        };
+        ScoringSummary = ScoringRows(result, players, initials);
+        PenaltySummary = result.Penalties
+            .Select(penalty => new PenaltySummaryRowViewModel(
+                MatchDisplay.PeriodTime(penalty.Period, penalty.TimeInPeriod),
+                initials[penalty.TeamId],
+                PlayerDisplay.FullName(players[penalty.PlayerId]),
+                MatchDisplay.InfractionName(penalty.Infraction),
+                MatchDisplay.PenaltyDescription(penalty.Kind, penalty.Minutes)))
+            .ToList();
     }
 
     public DateOnly Date { get; }
@@ -46,6 +62,50 @@ public sealed class MatchDetailViewModel
     public MatchSideViewModel Away { get; }
 
     public MatchSideViewModel Home { get; }
+
+    /// <summary>Every goal scored by a player, in order, with the running score.</summary>
+    public IReadOnlyList<GoalSummaryRowViewModel> ScoringSummary { get; }
+
+    public bool HasNoGoals => ScoringSummary.Count == 0;
+
+    /// <summary>Every penalty assessed, in order.</summary>
+    public IReadOnlyList<PenaltySummaryRowViewModel> PenaltySummary { get; }
+
+    public bool HasNoPenalties => PenaltySummary.Count == 0;
+
+    private static List<GoalSummaryRowViewModel> ScoringRows(
+        CompletedMatchSnapshot result,
+        IReadOnlyDictionary<PlayerId, PlayerSnapshot> players,
+        Dictionary<TeamId, string> initials)
+    {
+        var (awayGoals, homeGoals) = (0, 0);
+        var rows = new List<GoalSummaryRowViewModel>();
+        foreach (var goal in result.Goals)
+        {
+            if (goal.TeamId == result.Home.TeamId)
+            {
+                homeGoals++;
+            }
+            else
+            {
+                awayGoals++;
+            }
+
+            var assists = new[] { goal.PrimaryAssistId, goal.SecondaryAssistId }
+                .OfType<PlayerId>()
+                .Select(id => PlayerDisplay.FullName(players[id]))
+                .ToList();
+            rows.Add(new GoalSummaryRowViewModel(
+                MatchDisplay.PeriodTime(goal.Period, goal.TimeInPeriod),
+                initials[goal.TeamId],
+                PlayerDisplay.FullName(players[goal.ScorerId]),
+                assists.Count == 0 ? "Unassisted" : string.Join(", ", assists),
+                MatchDisplay.GoalSituationLabel(goal.Situation, goal.IsEmptyNet),
+                $"{awayGoals}–{homeGoals}"));
+        }
+
+        return rows;
+    }
 }
 
 public sealed class MatchSideViewModel
@@ -84,7 +144,9 @@ public sealed class MatchSideViewModel
                     line.Giveaways,
                     line.PenaltyMinutes,
                     line.PowerPlayGoals,
-                    line.ShorthandedGoals);
+                    line.ShorthandedGoals,
+                    MatchDisplay.Percentage(line.OnIce.FiveOnFive.CorsiPercentage),
+                    MatchDisplay.Percentage(line.OnIce.FiveOnFive.ExpectedGoalsPercentage));
             })
             .ToList();
 
@@ -96,6 +158,7 @@ public sealed class MatchSideViewModel
             side.Goalie.GoalsAgainst,
             MatchDisplay.SavePercentage(side.Goalie.Saves, side.Goalie.ShotsAgainst),
             MatchDisplay.ExpectedGoals(side.Goalie.ExpectedGoalsAgainst),
+            MatchDisplay.GoalsSavedAboveExpected(side.Goalie.ExpectedGoalsAgainst - side.Goalie.GoalsAgainst),
             MatchDisplay.TimeOnIce(side.Goalie.TimeOnIce));
     }
 
@@ -127,6 +190,8 @@ public sealed class MatchSideViewModel
 /// <param name="Faceoffs">Faceoffs won and lost, or a dash when none were taken.</param>
 /// <param name="PowerPlayGoals">Goals on the power play, counted among the goals.</param>
 /// <param name="ShorthandedGoals">Goals while shorthanded, counted among the goals.</param>
+/// <param name="CorsiPercentage">The 5-on-5 share of shot attempts while on the ice, or a dash.</param>
+/// <param name="ExpectedGoalsPercentage">The 5-on-5 share of expected goals while on the ice, or a dash.</param>
 public sealed record SkaterBoxScoreRowViewModel(
     string Name,
     string Position,
@@ -145,7 +210,9 @@ public sealed record SkaterBoxScoreRowViewModel(
     int Giveaways,
     int PenaltyMinutes,
     int PowerPlayGoals,
-    int ShorthandedGoals);
+    int ShorthandedGoals,
+    string CorsiPercentage,
+    string ExpectedGoalsPercentage);
 
 public sealed record GoalieBoxScoreRowViewModel(
     string Name,
@@ -154,4 +221,28 @@ public sealed record GoalieBoxScoreRowViewModel(
     int GoalsAgainst,
     string SavePercentage,
     string ExpectedGoalsAgainst,
+    string GoalsSavedAboveExpected,
     string TimeOnIce);
+
+/// <param name="Time">The period and clock, such as "2nd 14:05".</param>
+/// <param name="Team">The scoring team's initials.</param>
+/// <param name="Assists">The assisting players, or "Unassisted".</param>
+/// <param name="Situation">PP, SH, PS, and EN markers, or empty at even strength.</param>
+/// <param name="Score">The score after the goal, away first as on the scoreboard.</param>
+public sealed record GoalSummaryRowViewModel(
+    string Time,
+    string Team,
+    string Scorer,
+    string Assists,
+    string Situation,
+    string Score);
+
+/// <param name="Time">The period and clock when play stopped for the penalty.</param>
+/// <param name="Team">The penalized team's initials.</param>
+/// <param name="Penalty">The minutes and kind, such as "2 min" or "Penalty shot".</param>
+public sealed record PenaltySummaryRowViewModel(
+    string Time,
+    string Team,
+    string Player,
+    string Infraction,
+    string Penalty);

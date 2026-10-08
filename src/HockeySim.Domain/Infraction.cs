@@ -1,4 +1,4 @@
-namespace HockeySim.Simulation.Events;
+namespace HockeySim.Domain;
 
 /// <summary>The rule a penalized skater broke.</summary>
 public enum Infraction

@@ -20,7 +20,8 @@ public sealed class MatchTeamResult
         int shots,
         int powerPlayOpportunities,
         IEnumerable<SkaterMatchStatistics> skaters,
-        GoalieMatchStatistics goalie)
+        GoalieMatchStatistics goalie,
+        SituationalShotTotals shotTotals)
     {
         TeamId = teamId;
         Score = score;
@@ -28,6 +29,7 @@ public sealed class MatchTeamResult
         PowerPlayOpportunities = powerPlayOpportunities;
         _skaters = skaters.ToList().AsReadOnly();
         Goalie = goalie;
+        ShotTotals = shotTotals;
     }
 
     public TeamId TeamId { get; }
@@ -55,4 +57,10 @@ public sealed class MatchTeamResult
 
     /// <summary>The starting goalie, who plays the entire match.</summary>
     public GoalieMatchStatistics Goalie { get; }
+
+    /// <summary>
+    /// Both teams' shot attempts, shots, goals, and expected goals by strength situation from this
+    /// team's side; penalty shots are not counted.
+    /// </summary>
+    public SituationalShotTotals ShotTotals { get; }
 }

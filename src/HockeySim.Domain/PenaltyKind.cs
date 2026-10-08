@@ -1,4 +1,4 @@
-namespace HockeySim.Simulation.Events;
+namespace HockeySim.Domain;
 
 /// <summary>
 /// How a penalty is served. Minors, double minors, and majors leave the team a skater short

@@ -158,7 +158,23 @@ internal static class GameSaveRestorer
             scheduledMatch,
             RestoreSide(Required(saved.Home, "home side")),
             RestoreSide(Required(saved.Away, "away side")),
-            saved.Decision);
+            saved.Decision,
+            Items(saved.Goals, "goals").Select(goal => new MatchGoal(
+                goal.Period,
+                TimeSpan.FromSeconds(goal.TimeInPeriodSeconds),
+                goal.TeamId,
+                goal.ScorerId,
+                goal.PrimaryAssistId,
+                goal.SecondaryAssistId,
+                goal.Situation,
+                goal.IsEmptyNet)),
+            Items(saved.Penalties, "penalties").Select(penalty => new MatchPenalty(
+                penalty.Period,
+                TimeSpan.FromSeconds(penalty.TimeInPeriodSeconds),
+                penalty.TeamId,
+                penalty.PlayerId,
+                penalty.Infraction,
+                penalty.Kind)));
 
     private static CompletedMatchTeam RestoreSide(SavedMatchSide saved)
     {
@@ -174,7 +190,8 @@ internal static class GameSaveRestorer
                 goalie.ShotsAgainst,
                 goalie.GoalsAgainst,
                 goalie.ExpectedGoalsAgainst,
-                TimeSpan.FromSeconds(goalie.TimeOnIceSeconds)));
+                TimeSpan.FromSeconds(goalie.TimeOnIceSeconds)),
+            RestoreShotTotals(saved.ShotTotals));
     }
 
     private static SkaterBoxScore RestoreSkater(SavedSkaterBoxScore skater) =>
@@ -198,7 +215,34 @@ internal static class GameSaveRestorer
             skater.PowerPlayAssists,
             skater.ShorthandedGoals,
             skater.ShorthandedAssists,
-            skater.EmptyNetGoals);
+            skater.EmptyNetGoals,
+            RestoreShotTotals(skater.OnIce));
+
+    private static SituationalShotTotals RestoreShotTotals(SavedSituationalShotTotals? saved)
+    {
+        var totals = Required(saved, "shot totals");
+        return new(
+            RestoreShotTotals(totals.FiveOnFive),
+            RestoreShotTotals(totals.PowerPlay),
+            RestoreShotTotals(totals.PenaltyKill),
+            RestoreShotTotals(totals.Other));
+    }
+
+    private static ShotTotals RestoreShotTotals(SavedShotTotals? saved)
+    {
+        var totals = Required(saved, "shot totals");
+        return new(
+            totals.AttemptsFor,
+            totals.AttemptsAgainst,
+            totals.UnblockedAttemptsFor,
+            totals.UnblockedAttemptsAgainst,
+            totals.ShotsFor,
+            totals.ShotsAgainst,
+            totals.GoalsFor,
+            totals.GoalsAgainst,
+            totals.ExpectedGoalsFor,
+            totals.ExpectedGoalsAgainst);
+    }
 
     private static InboxMessages RestoreInbox(GameSave save) =>
         InboxMessages.Restore(Items(save.Inbox, "inbox messages").Select(saved =>
