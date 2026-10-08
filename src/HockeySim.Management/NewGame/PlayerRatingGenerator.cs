@@ -12,7 +12,8 @@ namespace HockeySim.Management.NewGame;
 /// with a small per-rating variation, so a strong player is strong across the board without every
 /// rating being equal. Traits (discipline, stamina, durability, toughness) vary independently of
 /// talent. Ratings outside the position's game (a goalie's skating, a skater's reflexes) are drawn
-/// low around a fixed value. The values are provisional until the event engine is calibrated.
+/// low around a fixed value. The event engine is calibrated against leagues generated this way, so
+/// changing these distributions means re-checking Management's calibration tests.
 /// </remarks>
 internal static class PlayerRatingGenerator
 {

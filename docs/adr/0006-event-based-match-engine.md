@@ -47,7 +47,8 @@ playoff overtime (unlimited twenty-minute five-on-five sudden-death periods) is
 available before playoffs are modelled. Regulation consumes the random stream
 identically under either format.
 
-The tuning values are provisional and kept together in `MatchTuning` so that
-calibration (#53) and [configurable match tuning](../future-features.md#configurable-match-tuning)
+The tuning values are kept together in `MatchTuning` so that calibration to NHL
+averages ([match engine](../areas/match-engine.md#calibration)) and
+[configurable match tuning](../future-features.md#configurable-match-tuning)
 can adjust them in one place. Changing any of them changes seeded results, so it
 is a change of engine version for [reproducible saves](0002-reproducible-saves.md).

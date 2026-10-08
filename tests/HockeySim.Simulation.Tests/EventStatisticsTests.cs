@@ -179,27 +179,6 @@ public sealed class EventStatisticsTests
         result.Goals.Count(goal => goal.Situation == situation && (goal.PrimaryAssistId == playerId || goal.SecondaryAssistId == playerId));
 
     [Fact]
-    public void AggregateTotalsArePlausibleForEvenlyMatchedTeams()
-    {
-        // Wide bands that catch broken tuning; calibration to NHL averages is #53.
-        double PerTeam(Func<MatchTeamResult, double> total) => Results.Average(result => (total(result.Home) + total(result.Away)) / 2);
-
-        Assert.InRange(PerTeam(team => team.Skaters.Sum(skater => skater.Goals)), 2.0, 4.5);
-        Assert.InRange(PerTeam(team => team.Shots), 20, 40);
-        Assert.InRange(PerTeam(team => team.Skaters.Sum(skater => skater.ShotAttempts)), 40, 75);
-        Assert.InRange(PerTeam(team => team.Skaters.Sum(skater => skater.BlockedShots)), 6, 22);
-        Assert.InRange(PerTeam(team => team.Skaters.Sum(skater => skater.Hits)), 8, 35);
-        Assert.InRange(PerTeam(team => team.Skaters.Sum(skater => skater.Takeaways)), 2, 15);
-        Assert.InRange(PerTeam(team => team.Skaters.Sum(skater => skater.Giveaways)), 3, 18);
-        Assert.InRange(PerTeam(team => team.Goalie.ExpectedGoalsAgainst), 2.0, 4.5);
-        Assert.InRange(Results.Average(result => result.Events.OfType<FaceoffEvent>().Count()), 40, 85);
-
-        var saves = Results.Sum(result => result.Home.Goalie.Saves + result.Away.Goalie.Saves);
-        var shotsAgainst = Results.Sum(result => result.Home.Goalie.ShotsAgainst + result.Away.Goalie.ShotsAgainst);
-        Assert.InRange(saves / (double)shotsAgainst, 0.87, 0.93);
-    }
-
-    [Fact]
     public void ScoringTracksExpectedGoalsForReferenceRatedPlayers()
     {
         // With every player at the reference rating, rested players score at the xG rate; fatigue

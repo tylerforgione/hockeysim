@@ -10,44 +10,30 @@ namespace HockeySim.Simulation.Play;
 /// </summary>
 /// <remarks>
 /// Each danger level has a base chance. A rebound multiplies the odds of scoring by
-/// <see cref="ReboundOddsMultiplier"/> and a rush by <see cref="RushOddsMultiplier"/>. The engine
-/// then splits the xG into reaching the net and beating the goalie, adjusting each by the
+/// <see cref="MatchTuning.ReboundOddsMultiplier"/> and a rush by
+/// <see cref="MatchTuning.RushOddsMultiplier"/>. The engine then splits the xG into reaching the net and beating the goalie, adjusting each by the
 /// shooter's and goalie's ratings, so a reference-rated shooter against a reference-rated goalie
-/// scores exactly as often as the xG says. See docs/areas/match-engine.md.
+/// scores exactly as often as the xG says. The values are in <see cref="MatchTuning"/>; see
+/// docs/areas/match-engine.md.
 /// </remarks>
 internal static class ExpectedGoalsModel
 {
-    public const double LowDangerExpectedGoals = 0.02;
-    public const double MediumDangerExpectedGoals = 0.055;
-    public const double HighDangerExpectedGoals = 0.14;
-    public const double ReboundOddsMultiplier = 2.0;
-    public const double RushOddsMultiplier = 1.3;
-
-    // The share of unblocked attempts by a reference-rated shooter that reach the net.
-    public const double LowDangerOnNetChance = 0.66;
-    public const double MediumDangerOnNetChance = 0.72;
-    public const double HighDangerOnNetChance = 0.76;
-    public const double ReboundOnNetChance = 0.80;
-
-    /// <summary>A penalty shot is a one-on-one attempt, scored as often as a reference shootout attempt.</summary>
-    public const double PenaltyShotExpectedGoals = MatchTuning.BaseShootoutGoalChance;
-
     public static double ExpectedGoals(ShotContext context)
     {
         if (context.IsPenaltyShot)
         {
-            return PenaltyShotExpectedGoals;
+            return MatchTuning.PenaltyShotExpectedGoals;
         }
 
         var logOdds = Probability.Logit(BaseExpectedGoals(context.Danger));
         if (context.IsRebound)
         {
-            logOdds += Math.Log(ReboundOddsMultiplier);
+            logOdds += Math.Log(MatchTuning.ReboundOddsMultiplier);
         }
 
         if (context.IsRush)
         {
-            logOdds += Math.Log(RushOddsMultiplier);
+            logOdds += Math.Log(MatchTuning.RushOddsMultiplier);
         }
 
         return Probability.Logistic(logOdds);
@@ -56,18 +42,18 @@ internal static class ExpectedGoalsModel
     /// <summary>The chance a reference-rated shooter's unblocked attempt reaches the net.</summary>
     public static double OnNetChance(ShotContext context) =>
         context.IsRebound
-            ? ReboundOnNetChance
+            ? MatchTuning.ReboundOnNetChance
             : context.Danger switch
             {
-                ShotDanger.Low => LowDangerOnNetChance,
-                ShotDanger.Medium => MediumDangerOnNetChance,
-                _ => HighDangerOnNetChance,
+                ShotDanger.Low => MatchTuning.LowDangerOnNetChance,
+                ShotDanger.Medium => MatchTuning.MediumDangerOnNetChance,
+                _ => MatchTuning.HighDangerOnNetChance,
             };
 
     private static double BaseExpectedGoals(ShotDanger danger) => danger switch
     {
-        ShotDanger.Low => LowDangerExpectedGoals,
-        ShotDanger.Medium => MediumDangerExpectedGoals,
-        _ => HighDangerExpectedGoals,
+        ShotDanger.Low => MatchTuning.LowDangerExpectedGoals,
+        ShotDanger.Medium => MatchTuning.MediumDangerExpectedGoals,
+        _ => MatchTuning.HighDangerExpectedGoals,
     };
 }

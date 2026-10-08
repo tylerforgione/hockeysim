@@ -81,8 +81,10 @@ player draws one talent level that the position's skills follow, shifted by a
 position profile with a little variation per rating. For example, centres take
 faceoffs and defence block shots. Traits (discipline, stamina, durability,
 toughness) vary independently of talent. Ratings outside the position, such as
-a goalie's skating or a skater's reflexes, are drawn low. The values are
-provisional until the event engine is calibrated.
+a goalie's skating or a skater's reflexes, are drawn low. The event engine is
+calibrated against leagues generated this way (see
+[match engine calibration](match-engine.md#calibration)), so changing the
+distributions means re-checking that calibration.
 
 Domain's `OverallRating` derives a player's overall rating from their
 ratings. It is a weighted mean for their position, rounded to the nearest whole

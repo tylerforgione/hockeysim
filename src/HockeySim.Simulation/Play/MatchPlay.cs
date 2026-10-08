@@ -662,7 +662,7 @@ internal sealed class MatchPlay
         var away = _away.Centre.Skater;
         var homeWins = _random.Chance(Probability.Adjust(0.5, MatchTuning.FaceoffSensitivity * (home.Faceoffs - away.Faceoffs)));
         var (winner, winnerCentre, loserCentre) = homeWins ? (_home, home, away) : (_away, away, home);
-        Record(new FaceoffEvent(_period, Now, OnIce(), winner.TeamId, winnerCentre.Id, loserCentre.Id));
+        Record(new FaceoffEvent(_period, Now, OnIce(), winner.TeamId, winnerCentre.Id, loserCentre.Id, _faceoffZoneOwner?.TeamId));
 
         var zone = _faceoffZoneOwner is null
             ? Zone.Neutral
