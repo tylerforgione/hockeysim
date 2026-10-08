@@ -113,7 +113,8 @@ public sealed record SavedSkaterBoxScore(
     int PowerPlayGoals,
     int PowerPlayAssists,
     int ShorthandedGoals,
-    int ShorthandedAssists);
+    int ShorthandedAssists,
+    int EmptyNetGoals);
 
 /// <param name="TimeOnIceSeconds">Time in net in whole seconds.</param>
 public sealed record SavedGoalieBoxScore(

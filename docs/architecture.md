@@ -124,8 +124,8 @@ Management's `SetLineup` replaces the whole lineup, units included, so a lines
 change that scratches a unit player is rejected unless its units change too.
 The event engine plays every strength state that penalties create with the
 matching units (see [Penalties and special teams](#penalties-and-special-teams))
-and uses the extra attackers during delayed penalties; pulling the goalie late
-in a match is #52.
+and sends on an extra attacker whenever a goalie is pulled, during a delayed
+penalty or late in a match (see [Pulling the goalie](#pulling-the-goalie)).
 
 A new game also generates the regular-season schedule from the same controlled
 random stream, after the league. Domain's `SeasonSchedule` holds scheduled
@@ -219,9 +219,9 @@ Management saves and loads games through its own contracts in `Saves/`: the
 world, lineups (with their units and extra attackers), schedule, current date, completed matches (with
 their full box scores, time on ice in whole seconds), inbox, and random
 state into a detached save, then hands it to the store. The play-by-play is not
-saved. Save format version 4 added the event engine's box-score statistics, and
+saved. Save format version 4 added the event engine's box-score statistics,
 version 5 penalty minutes, power-play and shorthanded goals and assists, and
-power-play opportunities. `LoadGame` rebuilds the
+power-play opportunities, and version 6 empty-net goals. `LoadGame` rebuilds the
 league through Domain constructors and replays each saved league day through
 `Season.CompleteDay`, so a loaded game is held to the same invariants as a
 played one, and team records, season statistics, and standings are derived
@@ -307,11 +307,11 @@ carrier keep the puck through a hit.
 
 The tuning values live together in `Simulation/Play/MatchTuning.cs`, measured
 from a reference rating of 65, the centre of generated talent. They are
-provisional: in a generated league's season, teams average about 3.1 goals
-(0.6 on the power play), 30 shots, 2.9 power-play opportunities at a 20% success
-rate, and 8.5 penalty minutes each, with 0.2 fights and 0.03 penalty shots a
-match, but 84% of matches end in regulation against about 77% in the NHL.
-Calibration to NHL averages is #53.
+provisional: in a generated league's season, teams average about 3.3 goals
+(0.65 on the power play), 30 shots, 3.0 power-play opportunities at a 22% success
+rate, and 8.6 penalty minutes each, with about 0.2 fights, 0.03 penalty shots, and
+0.22 empty-net goals a match, but 81% of matches end in regulation against about
+77% in the NHL. Calibration to NHL averages is #53.
 
 A match tied after regulation is decided by its `OvertimeFormat`. Regular-season
 overtime is five minutes of three-on-three sudden death with the lineup's
@@ -321,7 +321,7 @@ the goalie's goaltending; a skater ejected or still serving a penalty when
 overtime ends does not shoot. Playoff overtime is as many twenty-minute
 five-a-side sudden-death periods as it takes, with no shootout. Regulation is
 played identically under either format. Penalties carry over from regulation
-into either overtime. Pulling the goalie late in a match is #52.
+into either overtime. Goalies are pulled to tie a match only in regulation.
 
 #### Penalties and special teams
 
@@ -375,6 +375,37 @@ instigator rules are not modelled (see
 [future features](future-features.md#goalie-bench-and-instigator-penalties)),
 nor are suspensions ([off-ice events](future-features.md#off-ice-events)).
 
+#### Pulling the goalie
+
+Late in the third period a team trailing by one goal pulls its goalie with two
+minutes left, and a team trailing by two with three and a half, close to recent
+NHL averages; the timing is a tuning value until
+[tactics](future-features.md#tactics-and-formations) let the user choose it. It
+pulls once it has the puck outside its own zone, or for a faceoff in the
+attacking zone. The goalie comes back for a faceoff in the team's own zone and
+after any goal, and goes out again while the rule still applies, so a team that
+scores to trail by one, or concedes to trail by two, pulls again. A team that is
+tied, ahead, or three or more behind never pulls, and the goalie returns when
+regulation ends.
+
+The extra attacker joins whatever strength state the penalties allow, exactly as
+during a delayed penalty: the team keeps rotating the lines, pairs, or units for
+that state and adds the first of the lineup's two extra attackers who is
+available and not already on the ice. A five-on-four power play therefore
+becomes six-on-four, and a team killing a penalty plays five-on-five. Manpower,
+and so a goal's situation, still comes from the penalties being served
+([ADR 0007](adr/0007-manpower-from-penalties-served.md)): a goal by six skaters
+against five is at even strength, and an empty-net goal against a team that
+pulled its goalie while shorthanded is a power-play goal. The extra skater adds
+to the attackers' edge like any other.
+
+Every shot attempt at an empty net that reaches it scores. The leading team also
+shoots for the empty net from its own zone or the neutral zone, reaching it less
+often; a miss from its own zone is icing unless it is killing a penalty. A foul
+from behind on a rush at an empty net is an ordinary penalty rather than a
+penalty shot; awarded goals are not modelled. Between evenly matched teams about
+one pull in seven ties the match and four in ten concede an empty-net goal.
+
 #### Play-by-play and match statistics
 
 The `MatchResult` carries the play-by-play: faceoffs, shot attempts (saved,
@@ -396,17 +427,21 @@ served, so they reconcile by construction. Skaters record goals, assists,
 plus/minus (goals for less goals against while on the ice, excluding power-play
 and penalty-shot goals), time on ice, shots on goal, shot attempts, hits,
 blocked shots, faceoffs won and lost, takeaways, giveaways, individual xG,
-penalty minutes, and power-play and shorthanded goals and assists. A team
+penalty minutes, power-play and shorthanded goals and assists, and empty-net
+goals (scored while the opponent's goalie was pulled). A team
 records its power-play opportunities: each opponent penalty counts once, the
 first time the team has more skaters while it is served, so a 5-on-3 is two and
 coincidental penalties are none. The starting goalie plays the whole match,
-apart from any time pulled during a delayed penalty, and records shots and goals
-against, xG against, and time on ice. Shootout attempts count toward no player.
+apart from any time pulled for an extra attacker, and records shots and goals
+against, xG against, and time on ice. As in NHL scoring, an empty-net goal is a
+shot and a goal for the scoring team but neither a shot nor a goal against the
+goalie. Shootout attempts count toward no player.
 
 Domain's `CompletedMatch` holds every one of these statistics and rejects a
 match that does not reconcile: a team's shots must equal its skaters' shots on
 goal, each goalie's shots, goals, and xG against must match the opponent's
-skaters, one team's faceoff wins must be the other's losses, a team cannot block
+skaters less their empty-net goals, empty-net goals are counted among a
+skater's goals, one team's faceoff wins must be the other's losses, a team cannot block
 more attempts than the opponent failed to get on goal, no skater's plus/minus
 can exceed the goals scored, power-play and shorthanded goals and assists are
 counted among a skater's goals and assists (at most two assists per such goal),
@@ -418,10 +453,12 @@ the new statistics' season totals are #54.
 
 #### Expected goals
 
-Every unblocked shot attempt has an expected-goal (xG) value: the chance that a
-league-average (reference-rated) shooter scores on a league-average goalie from
-the same context. Blocked attempts have no xG, as in public NHL models built on
-unblocked (Fenwick) attempts. The context is the attempt's danger level, where
+Every unblocked shot attempt at a goalie has an expected-goal (xG) value: the
+chance that a league-average (reference-rated) shooter scores on a
+league-average goalie from the same context. Blocked attempts have no xG, as in
+public NHL models built on unblocked (Fenwick) attempts, and neither do attempts
+at an empty net, which those models also leave out; a goalie's xG against is
+therefore every attempt they faced. The context is the attempt's danger level, where
 it was taken from, and whether it was a rebound or on the rush:
 
 | Context | xG |

@@ -32,6 +32,7 @@ public sealed class SaveAndLoadTests
         NegativePenaltyMinutes,
         PowerPlayGoalWithoutOpportunity,
         ShorthandedGoalWithoutOpponentPowerPlay,
+        EmptyNetGoalChargedToTheGoalie,
         DressedPlayerNotOnRoster,
         SkaterDressedInGoal,
         DuplicateRosterPlayer,
@@ -370,6 +371,16 @@ public sealed class SaveAndLoadTests
                         .ToList(),
                 },
                 Away = homeScored.Away with { PowerPlayOpportunities = 0 },
+            }),
+            EmptyNetGoalChargedToTheGoalie => WithResult(save, homeScored, homeScored with
+            {
+                // The goal becomes an empty-net goal, but the away goalie still has it against.
+                Home = homeScored.Home with
+                {
+                    Skaters = homeScored.Home.Skaters
+                        .Select(skater => skater == homeScorer ? skater with { EmptyNetGoals = skater.EmptyNetGoals + 1 } : skater)
+                        .ToList(),
+                },
             }),
             DressedPlayerNotOnRoster => WithFirstTeam(save, firstTeam with
             {

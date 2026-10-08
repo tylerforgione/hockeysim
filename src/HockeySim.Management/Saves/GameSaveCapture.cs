@@ -105,7 +105,8 @@ internal static class GameSaveCapture
             skater.PowerPlayGoals,
             skater.PowerPlayAssists,
             skater.ShorthandedGoals,
-            skater.ShorthandedAssists);
+            skater.ShorthandedAssists,
+            skater.EmptyNetGoals);
 
     // Box-score times are whole seconds, so this is exact.
     private static int WholeSeconds(TimeSpan time) => (int)(time.Ticks / TimeSpan.TicksPerSecond);

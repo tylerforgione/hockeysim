@@ -70,5 +70,6 @@ internal static class LeagueDay
             skater.PowerPlayGoals,
             skater.PowerPlayAssists,
             skater.ShorthandedGoals,
-            skater.ShorthandedAssists);
+            skater.ShorthandedAssists,
+            skater.EmptyNetGoals);
 }

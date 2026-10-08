@@ -33,7 +33,8 @@ internal static class TestResults
         int powerPlayGoals = 0,
         int powerPlayAssists = 0,
         int shorthandedGoals = 0,
-        int shorthandedAssists = 0)
+        int shorthandedAssists = 0,
+        int emptyNetGoals = 0)
     {
         var shotsOnGoal = shots ?? goals;
         return new SkaterBoxScore(
@@ -55,7 +56,8 @@ internal static class TestResults
             powerPlayGoals,
             powerPlayAssists,
             shorthandedGoals,
-            shorthandedAssists);
+            shorthandedAssists,
+            emptyNetGoals);
     }
 
     public static GoalieBoxScore Goalie(PlayerId playerId, int shotsAgainst, int goalsAgainst, double expectedGoalsAgainst = 0) =>

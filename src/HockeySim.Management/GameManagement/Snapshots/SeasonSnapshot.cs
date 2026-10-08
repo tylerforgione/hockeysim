@@ -140,6 +140,7 @@ public sealed class CompletedMatchTeamSnapshot
 /// </param>
 /// <param name="PowerPlayGoals">Power-play goals, counted among the goals.</param>
 /// <param name="ShorthandedGoals">Shorthanded goals, counted among the goals.</param>
+/// <param name="EmptyNetGoals">Goals into a net whose goalie was pulled, counted among the goals.</param>
 /// <param name="Shots">Shots on goal, including goals.</param>
 /// <param name="ShotAttempts">Shots on goal, missed shots, and blocked attempts.</param>
 /// <param name="BlockedShots">The opponent's attempts this skater blocked.</param>
@@ -162,7 +163,8 @@ public sealed record SkaterBoxScoreSnapshot(
     int PowerPlayGoals,
     int PowerPlayAssists,
     int ShorthandedGoals,
-    int ShorthandedAssists)
+    int ShorthandedAssists,
+    int EmptyNetGoals)
 {
     public int Points => Goals + Assists;
 
@@ -190,7 +192,8 @@ public sealed record SkaterBoxScoreSnapshot(
             boxScore.PowerPlayGoals,
             boxScore.PowerPlayAssists,
             boxScore.ShorthandedGoals,
-            boxScore.ShorthandedAssists);
+            boxScore.ShorthandedAssists,
+            boxScore.EmptyNetGoals);
 }
 
 public sealed record GoalieBoxScoreSnapshot(

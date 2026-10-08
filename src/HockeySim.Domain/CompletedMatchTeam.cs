@@ -88,6 +88,9 @@ public sealed class CompletedMatchTeam
 
     public int ShorthandedGoals => _skaters.Sum(skater => skater.ShorthandedGoals);
 
+    /// <summary>Goals scored while the opponent's goalie was pulled for an extra attacker.</summary>
+    public int EmptyNetGoals => _skaters.Sum(skater => skater.EmptyNetGoals);
+
     public int PenaltyMinutes => _skaters.Sum(skater => skater.PenaltyMinutes);
 
     public IReadOnlyList<SkaterBoxScore> Skaters => _skaters;

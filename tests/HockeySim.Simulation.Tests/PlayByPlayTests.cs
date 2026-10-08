@@ -178,7 +178,7 @@ public sealed class PlayByPlayTests
     }
 
     [Fact]
-    public void OnlyUnblockedAttemptsCarryAnExpectedGoalValue()
+    public void OnlyUnblockedAttemptsAtAGoalieCarryAnExpectedGoalValue()
     {
         var attempts = Results.SelectMany(result => result.Events).OfType<ShotAttemptEvent>().ToList();
 
@@ -192,12 +192,29 @@ public sealed class PlayByPlayTests
             else
             {
                 Assert.Null(attempt.BlockerId);
-                Assert.InRange(attempt.ExpectedGoals!.Value, double.Epsilon, 1.0);
+                if (attempt.Context.IsEmptyNet)
+                {
+                    Assert.Null(attempt.ExpectedGoals);
+                }
+                else
+                {
+                    Assert.InRange(attempt.ExpectedGoals!.Value, double.Epsilon, 1.0);
+                }
             }
 
             Assert.Equal(attempt.Outcome == ShotOutcome.Saved, attempt.IsOnGoal);
         });
-        Assert.All(Results.SelectMany(result => result.Goals), goal => Assert.InRange(goal.ExpectedGoals, double.Epsilon, 1.0));
+        Assert.All(Results.SelectMany(result => result.Goals), goal =>
+        {
+            if (goal.IsEmptyNet)
+            {
+                Assert.Null(goal.ExpectedGoals);
+            }
+            else
+            {
+                Assert.InRange(goal.ExpectedGoals!.Value, double.Epsilon, 1.0);
+            }
+        });
     }
 
     [Fact]
@@ -207,7 +224,7 @@ public sealed class PlayByPlayTests
             .Select(matchEvent => matchEvent switch
             {
                 ShotAttemptEvent { ExpectedGoals: { } value } attempt => (attempt.Context, Value: value),
-                GoalEvent goal => (goal.Context, Value: goal.ExpectedGoals),
+                GoalEvent { ExpectedGoals: { } value } goal => (goal.Context, Value: value),
                 _ => ((ShotContext Context, double Value)?)null,
             })
             .OfType<(ShotContext Context, double Value)>()

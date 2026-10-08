@@ -180,6 +180,16 @@ internal static class MatchTuning
     // attacking edge, so a power play shoots more, from better ice, and a penalty kill clears.
     public const double ManpowerEdgePerSkater = 65;
 
+    // Pulling the goalie: a team trailing by one goal pulls with two minutes of the third period
+    // left, and by two goals with three and a half, close to recent NHL averages.
+    public const int PullGoalieOneGoalDownSeconds = 2 * 60;
+    public const int PullGoalieTwoGoalsDownSeconds = (3 * 60) + 30;
+
+    // Facing an empty net, the chance per step that a team with the puck short of the attacking
+    // zone shoots for it from distance, and the chance a reference shooter's attempt reaches it.
+    public const double LongEmptyNetShotChance = 0.15;
+    public const double LongEmptyNetShotOnNetChance = 0.4;
+
     // Penalties in the run of play: the chance per step that the defending or the attacking team
     // commits one, before discipline and the play adjust it. Defenders who are being beaten foul
     // more, and every skater fouls more when tired, since fatigue lowers their effective discipline.

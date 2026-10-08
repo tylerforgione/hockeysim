@@ -9,4 +9,8 @@ namespace HockeySim.Simulation.Events;
 /// A penalty shot: alone against the goalie, like a shootout attempt. Always high danger, never a
 /// rebound or a rush.
 /// </param>
-public readonly record struct ShotContext(ShotDanger Danger, bool IsRebound, bool IsRush, bool IsPenaltyShot = false);
+/// <param name="IsEmptyNet">
+/// Taken at a net whose goalie was pulled for an extra attacker. It scores if it reaches the net,
+/// and, as in public NHL models, has no expected-goal value.
+/// </param>
+public readonly record struct ShotContext(ShotDanger Danger, bool IsRebound, bool IsRush, bool IsPenaltyShot = false, bool IsEmptyNet = false);

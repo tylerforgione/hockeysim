@@ -19,6 +19,11 @@ namespace HockeySim.Simulation.Play;
 /// offenders touch the puck or play stops, and a goal in that time wipes out a minor. Each team
 /// plays a skater short for every penalty it is serving, up to two, and the strength state picks
 /// the units on the ice.
+/// <para>
+/// Late in the third period a team trailing by one or two goals pulls its goalie for an extra
+/// attacker, on top of whatever strength state the penalties allow, and the leading team shoots
+/// at the empty net, from distance if it must.
+/// </para>
 /// </remarks>
 internal sealed class MatchPlay
 {
@@ -113,6 +118,7 @@ internal sealed class MatchPlay
 
         while (true)
         {
+            PullGoaliesToTieTheMatch(periodSeconds);
             if (_faceoffPending)
             {
                 ChangeLines(side => side.ChangeAtStoppage());
@@ -156,13 +162,74 @@ internal sealed class MatchPlay
         }
     }
 
-    /// <summary>A delayed penalty still pending at the end of a period is called as it ends.</summary>
+    /// <summary>
+    /// A delayed penalty still pending at the end of a period is called as it ends, and a goalie
+    /// pulled to tie the match goes back to the bench with the rest of the team.
+    /// </summary>
     private void EndPeriod()
     {
         if (_delayedAgainst is not null)
         {
             EndDelayedPenalty(_delayedPenalties.ToList());
         }
+
+        ReturnGoaliesPulledToTieTheMatch();
+    }
+
+    /// <summary>
+    /// Late in the third period a team trailing by one or two goals pulls its goalie, earlier the
+    /// further behind it is. It pulls once it has the puck out of its own zone, or for a faceoff in
+    /// the attacking zone; the goalie comes back for a faceoff in the team's own zone and goes out
+    /// again once the rule allows. A goal puts both goalies back (see <see cref="ScoreGoal"/>).
+    /// </summary>
+    private void PullGoaliesToTieTheMatch(int periodSeconds)
+    {
+        if (_period != MatchResult.RegulationPeriodCount)
+        {
+            return;
+        }
+
+        var secondsLeft = periodSeconds - _clock;
+        PullOrReturnGoalie(_home, _awayGoals - _homeGoals, secondsLeft);
+        PullOrReturnGoalie(_away, _homeGoals - _awayGoals, secondsLeft);
+    }
+
+    private void PullOrReturnGoalie(MatchSide side, int deficit, int secondsLeft)
+    {
+        var shouldPull = deficit switch
+        {
+            1 => secondsLeft <= MatchTuning.PullGoalieOneGoalDownSeconds,
+            2 => secondsLeft <= MatchTuning.PullGoalieTwoGoalsDownSeconds,
+            _ => false,
+        };
+
+        var pulled = side.IsGoaliePulledToTieTheMatch;
+        bool pull;
+        if (!shouldPull)
+        {
+            pull = false;
+        }
+        else if (_faceoffPending)
+        {
+            pull = pulled ? _faceoffZoneOwner != side : _faceoffZoneOwner == Opponent(side);
+        }
+        else
+        {
+            pull = pulled || (_possessor == side && _zone != Zone.Defensive);
+        }
+
+        if (pull != pulled)
+        {
+            side.PullGoalieToTieTheMatch(pull);
+            _onIce = null;
+        }
+    }
+
+    private void ReturnGoaliesPulledToTieTheMatch()
+    {
+        _home.PullGoalieToTieTheMatch(false);
+        _away.PullGoalieToTieTheMatch(false);
+        _onIce = null;
     }
 
     private void ChangeLines(Func<MatchSide, bool> change)
@@ -211,6 +278,15 @@ internal sealed class MatchPlay
         if (TryFoul(out var scored))
         {
             return scored;
+        }
+
+        // Facing an empty net, a team that has the puck short of the attacking zone may shoot for
+        // it from distance.
+        if (_zone != Zone.Offensive
+            && Opponent(_possessor).IsGoaliePulled
+            && _random.Chance(MatchTuning.LongEmptyNetShotChance))
+        {
+            return Shoot(rush: false, isRebound: false, fromDistance: true);
         }
 
         return _zone switch
@@ -323,7 +399,7 @@ internal sealed class MatchPlay
         ]))
         {
             case 0:
-                return Shoot(rush, isRebound: false);
+                return Shoot(rush, isRebound: false, fromDistance: false);
             case 1:
                 Turnover(Zone.Defensive);
                 break;
@@ -346,7 +422,7 @@ internal sealed class MatchPlay
         _rebound = false;
         if (_random.Chance(MatchTuning.ReboundShotChance))
         {
-            return Shoot(rush: false, isRebound: true);
+            return Shoot(rush: false, isRebound: true, fromDistance: false);
         }
 
         // Nobody got a stick on it; the scramble goes either way.
@@ -358,13 +434,22 @@ internal sealed class MatchPlay
         return false;
     }
 
-    private bool Shoot(bool rush, bool isRebound)
+    /// <summary>
+    /// Plays a shot attempt. Returns whether it scored.
+    /// </summary>
+    /// <param name="fromDistance">
+    /// A shot at an empty net from short of the attacking zone. It reaches the net less often, and
+    /// a miss from the team's own zone is icing.
+    /// </param>
+    private bool Shoot(bool rush, bool isRebound, bool fromDistance)
     {
         var attacker = _possessor;
         var defender = Opponent(attacker);
-        var context = isRebound
-            ? new ShotContext(ShotDanger.High, IsRebound: true, IsRush: false)
+        var emptyNet = defender.IsGoaliePulled;
+        var context = isRebound ? new ShotContext(ShotDanger.High, IsRebound: true, IsRush: false)
+            : fromDistance ? new ShotContext(ShotDanger.Low, IsRebound: false, IsRush: false)
             : new ShotContext(DrawDanger(rush), IsRebound: false, IsRush: rush);
+        context = context with { IsEmptyNet = emptyNet };
         var shooter = ChooseShooter(attacker, context.Danger);
 
         var blocker = Choose(defender, slot =>
@@ -384,15 +469,19 @@ internal sealed class MatchPlay
             return false;
         }
 
-        var expectedGoals = ExpectedGoalsModel.ExpectedGoals(context);
-        var onNetBase = ExpectedGoalsModel.OnNetChance(context);
+        double? expectedGoals = emptyNet ? null : ExpectedGoalsModel.ExpectedGoals(context);
+        var onNetBase = fromDistance ? MatchTuning.LongEmptyNetShotOnNetChance : ExpectedGoalsModel.OnNetChance(context);
         var onNetChance = Probability.Adjust(
             onNetBase,
             MatchTuning.AccuracySensitivity * ((shooter.Accuracy * shooter.Performance) - MatchTuning.ReferenceRating));
         if (!_random.Chance(onNetChance))
         {
             Record(new ShotAttemptEvent(_period, Now, OnIce(), attacker.TeamId, shooter.Id, context, ShotOutcome.Missed, null, expectedGoals));
-            if (_random.Chance(MatchTuning.MissedShotStoppageChance))
+            if (fromDistance)
+            {
+                MissFromDistance(attacker, defender);
+            }
+            else if (_random.Chance(MatchTuning.MissedShotStoppageChance))
             {
                 Stoppage(zoneOwner: defender);
             }
@@ -404,10 +493,17 @@ internal sealed class MatchPlay
             return false;
         }
 
+        // With nobody in net, every shot that reaches it scores.
+        if (emptyNet)
+        {
+            ScoreGoal(attacker, shooter, context, expectedGoals);
+            return true;
+        }
+
         // Dividing by the reference on-net chance makes a reference shooter against a reference
         // goalie score exactly at the expected-goal rate.
         var goalChance = Probability.Adjust(
-            expectedGoals / onNetBase,
+            expectedGoals!.Value / onNetBase,
             (MatchTuning.FinishingSensitivity * ((shooter.Finishing * shooter.Performance) - MatchTuning.ReferenceRating))
             - (MatchTuning.GoaltendingSensitivity * (defender.Saving - MatchTuning.ReferenceRating)));
         if (_random.Chance(goalChance))
@@ -436,7 +532,23 @@ internal sealed class MatchPlay
         return false;
     }
 
-    private void ScoreGoal(MatchSide attacker, SkaterState scorer, ShotContext context, double expectedGoals)
+    /// <summary>
+    /// A long shot at an empty net that misses is icing from the team's own zone, unless the team
+    /// is killing a penalty; otherwise the defenders retrieve it in their zone.
+    /// </summary>
+    private void MissFromDistance(MatchSide attacker, MatchSide defender)
+    {
+        if (_zone == Zone.Defensive && Manpower(attacker) >= Manpower(defender))
+        {
+            Stoppage(zoneOwner: attacker);
+        }
+        else
+        {
+            GiveTo(defender, Zone.Defensive);
+        }
+    }
+
+    private void ScoreGoal(MatchSide attacker, SkaterState scorer, ShotContext context, double? expectedGoals)
     {
         var defender = Opponent(attacker);
         var situation = context.IsPenaltyShot ? GoalSituation.PenaltyShot
@@ -466,6 +578,10 @@ internal sealed class MatchPlay
         {
             _awayGoals++;
         }
+
+        // Both goalies go back to their nets for the faceoff; a team still trailing late pulls
+        // its goalie again once it has the puck.
+        ReturnGoaliesPulledToTieTheMatch();
 
         if (situation == GoalSituation.PowerPlay && _penaltyBox.EndMinorAfterPowerPlayGoal(defender))
         {
@@ -587,7 +703,10 @@ internal sealed class MatchPlay
         {
             var offender = ChooseOffender(defender);
             var onTheRush = _rush && _zone == Zone.Offensive;
-            if (onTheRush && _random.Chance(MatchTuning.PenaltyShotShare))
+
+            // A foul from behind with the net empty is penalized like any other; awarded goals are
+            // not modelled.
+            if (onTheRush && !defender.IsGoaliePulled && _random.Chance(MatchTuning.PenaltyShotShare))
             {
                 scored = TakePenaltyShot(defender, offender, DrawInfraction(MatchTuning.RushFouls));
                 return true;
@@ -694,7 +813,7 @@ internal sealed class MatchPlay
 
         _delayedAgainst = side;
         _delayedPenalties.AddRange(penalties);
-        Opponent(side).PullGoalie();
+        Opponent(side).PullGoalieForDelayedPenalty(true);
         _onIce = null;
     }
 
@@ -728,7 +847,7 @@ internal sealed class MatchPlay
         var offenders = _delayedAgainst!;
         _delayedAgainst = null;
         _delayedPenalties.Clear();
-        Opponent(offenders).ReturnGoalie();
+        Opponent(offenders).PullGoalieForDelayedPenalty(false);
         _onIce = null;
         AssessPenalties(penalties);
     }

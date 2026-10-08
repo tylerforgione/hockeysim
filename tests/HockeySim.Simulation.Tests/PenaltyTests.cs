@@ -268,11 +268,15 @@ public sealed class PenaltyTests
         var goalsDuringDelay = 0;
         foreach (var result in EvenResults.Concat(RowdyResults))
         {
+            // A team trailing late may have its goalie pulled to tie the match instead.
+            var pullRule = new GoaliePullRule(result);
             var events = result.Events;
             for (var index = 0; index < events.Count; index++)
             {
                 var pulledTeam = PulledTeam(result, events[index]);
-                if (pulledTeam is null || (index > 0 && PulledTeam(result, events[index - 1]) == pulledTeam))
+                if (pulledTeam is null
+                    || (index > 0 && PulledTeam(result, events[index - 1]) == pulledTeam)
+                    || pullRule.MayPull(events[index], pulledTeam.Value))
                 {
                     continue;
                 }
@@ -287,7 +291,9 @@ public sealed class PenaltyTests
                     Assert.True(matchEvent is not FaceoffEvent);
                     Assert.False(matchEvent is ShotAttemptEvent attempt && attempt.TeamId == offenders);
                     Assert.False(matchEvent is GoalEvent offendersGoal && offendersGoal.TeamId == offenders);
-                    Assert.False(matchEvent.OnIce.HomeGoalie is null && matchEvent.OnIce.AwayGoalie is null);
+                    Assert.True(
+                        !GoaliePullRule.IsPulled(result, matchEvent, offenders) || pullRule.MayPull(matchEvent, offenders),
+                        "The offenders' goalie is pulled only to tie the match.");
                     end++;
                 }
 

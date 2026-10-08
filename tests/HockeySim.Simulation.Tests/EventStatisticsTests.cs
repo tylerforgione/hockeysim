@@ -40,7 +40,7 @@ public sealed class EventStatisticsTests
                 Assert.Equal(events.OfType<TakeawayEvent>().Count(takeaway => takeaway.PlayerId == id), skater.Takeaways);
                 Assert.Equal(events.OfType<GiveawayEvent>().Count(giveaway => giveaway.PlayerId == id), skater.Giveaways);
                 Assert.Equal(
-                    goals.Sum(goal => goal.ExpectedGoals) + attempts.Sum(attempt => attempt.ExpectedGoals ?? 0),
+                    goals.Sum(goal => goal.ExpectedGoals ?? 0) + attempts.Sum(attempt => attempt.ExpectedGoals ?? 0),
                     skater.ExpectedGoals,
                     precision: 9);
                 Assert.True(skater.Goals <= skater.Shots && skater.Shots <= skater.ShotAttempts);
@@ -48,6 +48,7 @@ public sealed class EventStatisticsTests
                 Assert.Equal(events.OfType<PenaltyEvent>().Where(penalty => penalty.PlayerId == id).Sum(penalty => penalty.Minutes), skater.PenaltyMinutes);
                 Assert.Equal(goals.Count(goal => goal.Situation == GoalSituation.PowerPlay), skater.PowerPlayGoals);
                 Assert.Equal(goals.Count(goal => goal.Situation == GoalSituation.Shorthanded), skater.ShorthandedGoals);
+                Assert.Equal(goals.Count(goal => goal.IsEmptyNet), skater.EmptyNetGoals);
                 Assert.Equal(AssistsOn(result, id, GoalSituation.PowerPlay), skater.PowerPlayAssists);
                 Assert.Equal(AssistsOn(result, id, GoalSituation.Shorthanded), skater.ShorthandedAssists);
                 Assert.Equal(skater.PowerPlayGoals + skater.PowerPlayAssists, skater.PowerPlayPoints);
@@ -137,8 +138,11 @@ public sealed class EventStatisticsTests
             foreach (var (team, opponent) in new[] { (result.Home, result.Away), (result.Away, result.Home) })
             {
                 Assert.Equal(team.Skaters.Sum(skater => skater.Shots), team.Shots);
-                Assert.Equal(opponent.Shots, team.Goalie.ShotsAgainst);
-                Assert.Equal(opponent.Skaters.Sum(skater => skater.Goals), team.Goalie.GoalsAgainst);
+                // The goalie is not charged with goals scored into the empty net while pulled.
+                var emptyNetGoals = opponent.Skaters.Sum(skater => skater.EmptyNetGoals);
+                Assert.Equal(result.Goals.Count(goal => goal.TeamId == opponent.TeamId && goal.IsEmptyNet), emptyNetGoals);
+                Assert.Equal(opponent.Shots - emptyNetGoals, team.Goalie.ShotsAgainst);
+                Assert.Equal(opponent.Skaters.Sum(skater => skater.Goals) - emptyNetGoals, team.Goalie.GoalsAgainst);
                 Assert.Equal(opponent.Skaters.Sum(skater => skater.ExpectedGoals), team.Goalie.ExpectedGoalsAgainst, precision: 9);
                 Assert.Equal(team.Skaters.Sum(skater => skater.FaceoffsWon), opponent.Skaters.Sum(skater => skater.FaceoffsLost));
                 Assert.True(
@@ -199,8 +203,8 @@ public sealed class EventStatisticsTests
     public void ScoringTracksExpectedGoalsForReferenceRatedPlayers()
     {
         // With every player at the reference rating, rested players score at the xG rate; fatigue
-        // costs a little, so goals may trail xG slightly but never by much.
-        var goals = Results.Sum(result => result.Goals.Count);
+        // costs a little, so goals may trail xG slightly but never by much. Empty-net goals have no xG.
+        var goals = Results.Sum(result => result.Goals.Count(goal => !goal.IsEmptyNet));
         var expected = Results.Sum(result => result.Home.Goalie.ExpectedGoalsAgainst + result.Away.Goalie.ExpectedGoalsAgainst);
 
         Assert.InRange(goals / expected, 0.85, 1.1);

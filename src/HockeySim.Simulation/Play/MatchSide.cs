@@ -104,8 +104,17 @@ internal sealed class MatchSide
     public IReadOnlyList<Player> ShootoutOrder =>
         _shootoutOrder.Where(IsAvailable).Select(skater => skater.Player).ToList();
 
-    /// <summary>The goalie is on the bench for an extra attacker.</summary>
-    public bool IsGoaliePulled { get; private set; }
+    /// <summary>
+    /// The goalie is on the bench for an extra attacker, during a delayed penalty or late in a match
+    /// the team is losing. Either way there is one extra attacker.
+    /// </summary>
+    public bool IsGoaliePulled => IsGoaliePulledForDelayedPenalty || IsGoaliePulledToTieTheMatch;
+
+    /// <summary>Pulled while the opponent's delayed penalty is pending.</summary>
+    public bool IsGoaliePulledForDelayedPenalty { get; private set; }
+
+    /// <summary>Pulled late in regulation because the team is trailing.</summary>
+    public bool IsGoaliePulledToTieTheMatch { get; private set; }
 
     public int GoalieTimeOnIceSeconds { get; private set; }
 
@@ -152,15 +161,15 @@ internal sealed class MatchSide
         _availableSkaterCount = null;
     }
 
-    public void PullGoalie()
+    public void PullGoalieForDelayedPenalty(bool pulled)
     {
-        IsGoaliePulled = true;
+        IsGoaliePulledForDelayedPenalty = pulled;
         _onIce = null;
     }
 
-    public void ReturnGoalie()
+    public void PullGoalieToTieTheMatch(bool pulled)
     {
-        IsGoaliePulled = false;
+        IsGoaliePulledToTieTheMatch = pulled;
         _onIce = null;
     }
 

@@ -21,6 +21,10 @@ namespace HockeySim.Simulation;
 /// <param name="PowerPlayAssists">Assists on power-play goals; part of <paramref name="Assists"/>.</param>
 /// <param name="ShorthandedGoals">Goals scored shorthanded; part of <paramref name="Goals"/>.</param>
 /// <param name="ShorthandedAssists">Assists on shorthanded goals; part of <paramref name="Assists"/>.</param>
+/// <param name="EmptyNetGoals">
+/// Goals scored into a net whose goalie was pulled for an extra attacker; part of
+/// <paramref name="Goals"/>.
+/// </param>
 public sealed record SkaterMatchStatistics(
     PlayerId PlayerId,
     int Goals,
@@ -40,7 +44,8 @@ public sealed record SkaterMatchStatistics(
     int PowerPlayGoals,
     int PowerPlayAssists,
     int ShorthandedGoals,
-    int ShorthandedAssists)
+    int ShorthandedAssists,
+    int EmptyNetGoals)
 {
     /// <summary>
     /// Always one: an entry is an appearance. Exposed so season totals can sum it directly.
