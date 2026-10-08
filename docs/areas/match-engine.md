@@ -21,8 +21,8 @@ Paths are under `src/HockeySim.Simulation/`.
 | `Play/SkaterState.cs`, `Play/PlayerStrength.cs` | A skater's energy and composite strengths from ratings |
 | `Play/PenaltyBox.cs` | Timed penalties on the game clock |
 | `Play/ShootoutPlay.cs` | Shootouts (penalty shots reuse its attempt) |
-| `Play/ExpectedGoalsModel.cs` | xG by shot context |
-| `Play/MatchTuning.cs` | Every tuning constant |
+| `Play/ExpectedGoalsModel.cs` | xG by shot context (its values are in `MatchTuning`) |
+| `Play/MatchTuning.cs` | Every tuning constant, calibrated to NHL averages (see [Calibration](#calibration)) |
 | `Play/MatchStatisticsBuilder.cs` | Derives all statistics from the play-by-play |
 | `Play/OnIceSkater.cs`, `Play/Zone.cs`, `Play/Probability.cs` | Small helpers |
 | `Events/` | Play-by-play event records and their enums |
@@ -53,7 +53,7 @@ pull its goalie to tie a match). Keep them independent of the engine's code.
 | --- | --- |
 | `MatchResultInvariantTests.cs` | Result invariants across many seeds |
 | `MatchReproducibilityTests.cs` | Determinism, unchanged inputs |
-| `MatchStrengthTests.cs` | Statistical bands for lineup strength and goalie quality |
+| `MatchStrengthTests.cs` | Relative statistical checks for lineup strength and goalie quality |
 | `PlayByPlayTests.cs` | Event order, faceoff restarts, on-ice players, xG on shots |
 | `EventStatisticsTests.cs`, `MatchStatisticsTests.cs` | Statistics recounted from the events and reconciled |
 | `OvertimeTests.cs` | Three-on-three, shootouts, playoff overtime |
@@ -62,7 +62,10 @@ pull its goalie to tie a match). Keep them independent of the engine's code.
 | `GoaliePullTests.cs` | Pulls, empty-net goals, extra attackers, checked against `GoaliePullRule` |
 | `TestTeams.cs`, `TestMatches.cs`, `TestBiography.cs` | Builders |
 
-Management's `FullSeasonTests.cs` plays a whole season through the engine.
+Management's `FullSeasonTests.cs` plays a whole season through the engine, and
+its `CalibrationTests.cs` plays a generated league's season and checks its league
+averages against the NHL targets in `NhlTargets.cs`, measured by
+`LeagueMeasurements.cs` (see [Calibration](#calibration)).
 
 ## Using the engine
 
@@ -97,8 +100,10 @@ at rates set by stamina, and a tired skater plays below their ratings. A group
 changes when it tires or has been out for a long shift, on the fly when its team
 is not attacking or at a stoppage once it has been out a while; the coach then
 sends out the rested group furthest behind its target share of ice time (forward
-lines 36/30/21/13%, pairs 40/34/26%). Higher lines therefore play more, and a
-low-stamina group has shorter shifts and plays less. Skaters recover partly in
+lines 36/24/22/18%, pairs 48/31/21%). Fatigue evens out what the groups actually
+play, so across a season forward lines get about 32/28/22/19% of the forwards'
+ice time and pairs about 37/34/29% of the defence's. Higher lines therefore play
+more, and a low-stamina group has shorter shifts and plays less. Skaters recover partly in
 each intermission.
 
 A shot attempt draws a context (see below) and a shooter from the skaters on
@@ -116,12 +121,9 @@ over 6'1" and per four pounds over 200 lb, within limits, and also helps a puck
 carrier keep the puck through a hit.
 
 The tuning values live together in `Simulation/Play/MatchTuning.cs`, measured
-from a reference rating of 65, the centre of generated talent. They are
-provisional: in a generated league's season, teams average about 3.3 goals
-(0.65 on the power play), 30 shots, 3.0 power-play opportunities at a 22% success
-rate, and 8.6 penalty minutes each, with about 0.2 fights, 0.03 penalty shots, and
-0.22 empty-net goals a match, but 81% of matches end in regulation against about
-77% in the NHL. Calibration to NHL averages is #53.
+from a reference rating of 65, the centre of generated talent, and calibrated so
+a generated league's season approximates recent NHL league averages (see
+[Calibration](#calibration)).
 
 A match tied after regulation is decided by its `OvertimeFormat`. Regular-season
 overtime is five minutes of three-on-three sudden death with the lineup's
@@ -222,6 +224,7 @@ The `MatchResult` carries the play-by-play: faceoffs, shot attempts (saved,
 missed, or blocked), goals, hits, takeaways, giveaways, and penalties, each
 with its period, time, strength state, and the players on the ice for both
 sides; a goalie pulled for an extra attacker is shown as an empty net. A
+faceoff records where it was taken: at centre ice or in a team's defensive zone. A
 penalty records the team, skater, infraction, and kind (minor, double minor,
 major, misconduct, game misconduct, or penalty shot) at the whistle; a fight is
 a fighting major to each fighter. A goal records its situation: even strength,
@@ -273,26 +276,91 @@ it was taken from, and whether it was a rebound or on the rush:
 
 | Context | xG |
 | --- | ---: |
-| Low danger (point, perimeter) | 0.020 |
-| Medium danger (faceoff circles) | 0.055 |
-| High danger (slot, crease) | 0.140 |
-| Rebound (always high danger) | odds × 2.0 (0.246) |
-| Rush | odds × 1.3 (low 0.026, medium 0.070, high 0.175) |
+| Low danger (point, perimeter) | 0.016 |
+| Medium danger (faceoff circles) | 0.045 |
+| High danger (slot, crease) | 0.118 |
+| Rebound (always high danger) | odds × 2.0 (0.211) |
+| Rush | odds × 1.3 (low 0.021, medium 0.058, high 0.148) |
 | Penalty shot | 0.320, a reference shootout attempt; always on goal |
 
 The engine splits an attempt's xG into reaching the net and beating the goalie.
-A reference shooter reaches the net with a fixed chance for the context (66%
-low, 72% medium, 76% high, 80% rebound), and a shot on goal scores with the xG
+A reference shooter reaches the net with a fixed chance for the context (62%
+low, 68% medium, 72% high, 78% rebound), and a shot on goal scores with the xG
 divided by that chance, so the two together give exactly the xG. The shooter's
 accuracy then shifts the first chance, and the shooter's finishing against the
 goalie's saving shifts the second, each in log-odds from the reference rating.
 Skilled shooters and weak goalies therefore score above their xG and the reverse
-below it, which is what goals saved above expected will measure (#54). How
-often each context arises depends on the play: better attackers get to the slot
-more often and better defenders keep them to the outside.
+below it, which is what goals saved above expected will measure (#54). Tired
+skaters play below their ratings, so league-wide goals other than empty-net goals
+run a few percent under xG. How often each context arises depends on the play:
+better attackers get to the slot more often and better defenders keep them to
+the outside.
 
-Simulating a 1,344-match season takes about 1.7 seconds of engine time (about
-1.2 ms a match, 260 events each), measured on an Apple-silicon Mac in a Release
-build, so a 16-match league day plays in well under a second. The Management
-full-season test, which also builds a snapshot after each day, takes about three
-seconds.
+Simulating a 1,344-match season takes about 1.2 to 1.7 seconds of engine time
+(about 1 ms a match, 267 events each), measured on an Apple-silicon Mac in a
+Release build, so a 16-match league day plays in well under a second. The
+Management full-season and calibration tests, which also build a snapshot after
+each day, each take about three seconds.
+
+### Calibration
+
+The tuning values are calibrated so a generated league's regular season
+approximates the averages of the 2023-24, 2024-25, and 2025-26 NHL regular
+seasons. Management's `CalibrationTests` play one generated season (seed 2026)
+and check each target within a wide tolerance (in `NhlTargets.cs`), so a test
+fails on broken tuning rather than on small rebalancing. The measured column is
+that season; other seeds vary by about 0.1 goals and two points of regulation
+share. Values are per team per game unless marked per match; standings points
+are scaled from 82 games to 84.
+
+| Target | NHL | Measured | Source |
+| --- | ---: | ---: | --- |
+| Goals (with shootout winners) | 3.06 | 3.02 | Hockey-Reference |
+| Shots on goal | 28.8 | 29.3 | Hockey-Reference |
+| Shot attempts | 59.5 | 59.5 | NHL.com team real-time |
+| Expected goals | 3.12 | 3.09 | MoneyPuck, all situations |
+| Save percentage | .900 | .904 | Hockey-Reference |
+| Regulation / overtime / shootout share of matches | 78.0 / 15.0 / 7.1% | 79.5 / 12.1 / 8.4% | Hockey-Reference games |
+| Power-play opportunities | 2.87 | 2.89 | Hockey-Reference |
+| Power-play percentage | 21.2% | 20.5% | Hockey-Reference |
+| Penalty minutes | 8.84 | 8.53 | NHL.com team penalties |
+| Fights per match | about 0.20 | 0.20 | NHL.com majors, most for fighting |
+| Hits | 21.5 | 21.7 | NHL.com team real-time |
+| Blocked shots | 15.1 | 15.3 | NHL.com team real-time |
+| Takeaways | 4.7 | 4.8 | NHL.com, 2024-25 and 2025-26 |
+| Giveaways | 14.8 | 15.0 | NHL.com, 2024-25 and 2025-26 |
+| Faceoffs per match | 56.4 | 57.5 | NHL.com team faceoffs |
+| Centre-ice share of faceoffs | 30% | 29% | NHL.com neutral-zone faceoffs |
+| Empty-net goals per match | 0.375 | 0.369 | NHL.com team real-time |
+| Forward lines' share of forward ice time | 31/27/23/19% | 32/28/22/19% | NHL.com skater time on ice |
+| Defence pairs' share of defence ice time | 39/34/28% | 37/34/29% | NHL.com skater time on ice |
+| Standings points: spread, fewest, most | 15.4, 54, 120 | 17.4, 52, 128 | Hockey-Reference standings |
+
+Sources: [Hockey-Reference league averages](https://www.hockey-reference.com/leagues/stats.html),
+season pages and game results; the NHL.com statistics API (`api.nhle.com/stats/rest/en/team/`
+`realtime`, `summary`, `faceoffpercentages`, and `penalties`, and `skater/summary` and
+`skater/penalties`); and [MoneyPuck](https://moneypuck.com/data.htm) team data. Notes on the
+targets:
+
+- NHL.com changed how it tracks takeaways and giveaways after 2023-24 (about 7.0
+  and 7.3 that season), so those targets use the two later seasons.
+- Fights are estimated from major penalties, which are mostly fighting majors;
+  NHL.com does not report fights separately.
+- MoneyPuck's xG includes empty-net attempts, which this engine leaves without xG.
+- Line and pair shares rank each team's regulars by time on ice per game and
+  group forwards in threes and defence in twos, which only approximates real
+  lines.
+
+Known gaps: too few matches reach overtime and too few overtime matches are
+decided before a shootout, so regulation share runs a point or two high and
+overtime share about three points low. The engine has no score effects (a
+trailing team pressing, a leading one sitting back), which narrow margins in real
+matches. The top defence pair plays a little less than the NHL's, because
+fatigue limits how much more a pair can play than its target.
+
+To print every measurement beside its target, run the calibration tests with
+live output from the Release build:
+
+```sh
+tests/HockeySim.Management.Tests/bin/Release/net10.0/HockeySim.Management.Tests -class "HockeySim.Management.Tests.CalibrationTests" -showLiveOutput
+```

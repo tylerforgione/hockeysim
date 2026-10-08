@@ -15,17 +15,16 @@ be played.
 ## Configurable match tuning
 
 Match simulation is driven by tuning values that are currently fixed constants
-in `HockeySim.Simulation`, kept together in `Play/MatchTuning.cs` and the
-expected-goal model: possession outcome weights, how strongly rating differences
-shift them, shot danger, blocking, and finishing chances, fatigue and shift
-lengths, open-ice overtime effects, shootout scoring, probability bounds, and
-the forward-line, defence-pair, and three-on-three usage shares.
+in `HockeySim.Simulation`, kept together in `Play/MatchTuning.cs`: possession
+outcome weights, how strongly rating differences shift them, shot danger, the
+expected-goal model, blocking, and finishing chances, fatigue and shift lengths,
+open-ice overtime effects, shootout scoring, probability bounds, and the
+forward-line, defence-pair, and three-on-three usage shares. The defaults are
+calibrated to recent NHL seasons (see
+[match engine calibration](areas/match-engine.md#calibration)).
 
-Two goals build on making these values configurable:
+Making these values configurable would allow:
 
-- **Calibration to real NHL data.** Planned for v0.2.0 alongside the event-based
-  engine: tune the defaults so aggregate outcomes approximate recent NHL seasons,
-  and assert against the calibrated targets with wide tolerances.
 - **User-facing league settings.** Let the user adjust a small set of
   understandable options, such as "Offensive output", when creating a game or in
   league settings. Each option maps to one or more underlying tuning values (for

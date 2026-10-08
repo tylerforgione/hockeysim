@@ -52,7 +52,10 @@ failures indicate changed behavior rather than unlucky randomness:
   expectations hold, such as a much stronger team winning most matches and
   evenly matched teams splitting results. Prefer relative assertions over exact
   targets so deliberate rebalancing does not break them; bands catch broken
-  tuning, not small balance changes.
+  tuning, not small balance changes. League averages are checked once, against
+  the NHL calibration targets, by Management's calibration tests over a generated
+  season (see [match engine calibration](areas/match-engine.md#calibration)),
+  rather than by hand-picked ranges in each engine test.
 
 Avoid exact golden-master comparisons of seeded output while balance is still
 changing; every deliberate tuning change would invalidate them. Revisit them

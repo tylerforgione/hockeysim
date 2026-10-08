@@ -46,7 +46,8 @@ rules and compare the expected strength, box occupancy, power-play
 opportunities, and time on ice with the engine's output, rather than exposing
 engine internals to tests.
 
-The rates are provisional tuning values in `MatchTuning`, calibrated so a
-generated league averages about three power-play opportunities a team at a 20%
-success rate; calibration is #53. Changing them changes seeded results, an
-engine version change for [reproducible saves](0002-reproducible-saves.md).
+The rates are tuning values in `MatchTuning`, calibrated so a generated league
+approaches recent NHL power-play opportunities and success rates (see the
+[match engine](../areas/match-engine.md#calibration)). Changing them changes
+seeded results, an engine version change for
+[reproducible saves](0002-reproducible-saves.md).
