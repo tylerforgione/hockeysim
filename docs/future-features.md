@@ -207,7 +207,8 @@ Direction:
 
 ## Playoff odds and projections
 
-The standings show current records only.
+The standings show current records and guaranteed clinch and elimination
+markers only.
 
 Estimate each team's chance of making the playoffs, winning its division, and
 winning the championship, and project final points, by simulating the rest of

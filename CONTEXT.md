@@ -344,6 +344,22 @@ tie-breakers: fewer games played, regulation wins, regulation and overtime wins,
 wins, head-to-head points among the tied clubs, goal differential, and goals
 for. Teams level on all of them share a rank.
 
+**Playoff qualification**:
+The sixteen teams that reach the playoffs: the top three of each division
+(division qualifiers) and, in each conference, the two best of its other teams
+(the wild cards), each group ranked by the standings.
+
+**Wild-card race**:
+A conference's teams outside its divisions' top three, ranked among themselves
+for the two wild cards.
+
+**Playoff status**:
+What the remaining schedule can no longer change about a team's playoff
+qualification: clinched a playoff spot (x), the division (y), the conference
+(z), or the best record in the league (p), or eliminated (e). A status is shown
+only once guaranteed; until then the team is undecided. _Avoid_: magic number
+for the status itself.
+
 **Head-to-head**:
 The standings points tied clubs earned in games among themselves. Where two
 clubs have met an odd number of times, the first game in the city that hosted

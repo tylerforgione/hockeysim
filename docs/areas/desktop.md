@@ -36,7 +36,7 @@ games, plus a headless Avalonia walkthrough.
 | `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup, navigation, browsing teams |
 | `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings |
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, a full season |
-| `StandingsAndStatisticsTests.cs` | Standings scopes, season totals |
+| `StandingsAndStatisticsTests.cs` | Standings scopes including the wild card, playoff markers, season totals |
 | `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, the team strip |
 | `SaveAndLoadTests.cs` | Save and load screens, unsaved progress, confirmations |
 | `PlayerBiographyDisplayTests.cs`, `AppVersionTests.cs` | Formatting, version display |
@@ -86,8 +86,12 @@ saves, save percentage, xG against, goals saved above expected, time on ice), an
 each team's power play (goals of opportunities) and penalty minutes under its
 shots; the two teams are stacked, away first, because each table needs the full
 width.
-The standings page presents Management's division, conference, or league tables
-as ranked, without re-sorting them. Each roster starts with a strip of the team's
+The standings page presents Management's division, wild-card, conference, or
+league tables as ranked, without re-sorting them. The wild-card view lists each
+division's top three, then each conference's wild-card race with a line under
+the second wild card. Every table marks each team's playoff status with the
+NHL's letter (x, y, z, p, or e) before its name, with the meaning in a tooltip
+and a legend beneath the tables. Each roster starts with a strip of the team's
 season statistics: power-play, penalty-kill, and faceoff percentages and its
 five-on-five Corsi, Fenwick, shot, and xG shares, then the team's injury report:
 each injury that has not healed, players who cannot play first, with its status
