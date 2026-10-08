@@ -57,6 +57,10 @@ public sealed class SaveAndLoadTests
         MissingUnit,
         UndefinedSituation,
         MissingExtraAttackers,
+        MissingInjuries,
+        InjuryRecoveryOutsideItsRange,
+        InjuryToAPlayerWhoDidNotAppear,
+        UndefinedBodyPart,
     }
 
     [Fact]
@@ -144,6 +148,24 @@ public sealed class SaveAndLoadTests
 
         Assert.Equal(Describe(expected), Describe(actual));
         Assert.NotEqual(store.Saved!.RandomState, actual.RandomState);
+    }
+
+    [Fact]
+    public void InjuriesAndWearAreSavedAndRebuiltFromTheCompletedMatches()
+    {
+        var manager = new GameManager();
+        StartGame(manager);
+        Advance(manager, 15);
+        var first = new MemorySaveStore();
+        manager.SaveGame(first);
+
+        var (loaded, _) = SaveAndLoadIntoNewManager(manager);
+        var second = new MemorySaveStore();
+        loaded.SaveGame(second);
+
+        Assert.Contains(first.Saved!.CompletedMatches, result => result.Injuries.Count > 0);
+        Assert.All(first.Saved.CompletedMatches, result => Assert.NotEmpty(result.Wear));
+        Assert.Equal(DescribeHealth(first.Saved), DescribeHealth(second.Saved!));
     }
 
     [Fact]
@@ -397,6 +419,19 @@ public sealed class SaveAndLoadTests
                     .ToList(),
             }),
             MissingSummary => WithFirstResult(save, firstResult with { Penalties = null! }),
+            MissingInjuries => WithFirstResult(save, firstResult with { Injuries = null! }),
+            InjuryRecoveryOutsideItsRange => WithFirstResult(save, firstResult with
+            {
+                Injuries = [new SavedInjury(1, 60, firstResult.Home.TeamId, firstResult.Home.Skaters[0].PlayerId, InjuryType.Concussion, 999)],
+            }),
+            InjuryToAPlayerWhoDidNotAppear => WithFirstResult(save, firstResult with
+            {
+                Injuries = [new SavedInjury(1, 60, firstResult.Home.TeamId, firstResult.Away.Skaters[0].PlayerId, InjuryType.BruisedFoot, 3)],
+            }),
+            UndefinedBodyPart => WithFirstResult(save, firstResult with
+            {
+                Wear = [new SavedWearGain(firstResult.Home.Skaters[0].PlayerId, (BodyPart)99, 1)],
+            }),
             ShotTotalsNotMatchingOpponent => WithFirstResult(save, firstResult with
             {
                 Home = firstResult.Home with
@@ -539,6 +574,11 @@ public sealed class SaveAndLoadTests
             .SelectMany(division => division.Teams)
             .SelectMany(team => team.Roster);
 
+    private static IEnumerable<string> DescribeHealth(GameSave save) =>
+        save.CompletedMatches.SelectMany(result =>
+            result.Injuries.Select(injury => $"{result.Date} {injury}")
+                .Concat(result.Wear.Select(gain => $"{result.Date} {gain}")));
+
     private static IEnumerable<string> DescribeRatings(GameSave save) =>
         SavedPlayers(save).Select(player =>
             $"{player.Id} " + string.Join(",", player.Ratings.OrderBy(rating => rating.Key).Select(rating => $"{rating.Key}={rating.Value}")));
@@ -603,10 +643,10 @@ public sealed class SaveAndLoadTests
     {
         private readonly Simulation.MatchSimulator _engine = new();
 
-        public Simulation.MatchResult Simulate(Match match, Simulation.OvertimeFormat overtime, Simulation.Randomness.RandomState randomState)
+        public Simulation.MatchResult Simulate(Match match, Simulation.OvertimeFormat overtime, Simulation.MatchHealth health, Simulation.Randomness.RandomState randomState)
         {
             beforeMatch();
-            return _engine.Simulate(match, overtime, randomState);
+            return _engine.Simulate(match, overtime, health, randomState);
         }
     }
 }

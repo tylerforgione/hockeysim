@@ -15,8 +15,8 @@ public sealed class MatchReproducibilityTests
 
         for (var seed = 0UL; seed < 50; seed++)
         {
-            var first = new MatchSimulator().Simulate(match, OvertimeFormat.RegularSeason, new RandomState(seed));
-            var second = new MatchSimulator().Simulate(match, OvertimeFormat.RegularSeason, new RandomState(seed));
+            var first = new MatchSimulator().Simulate(match, OvertimeFormat.RegularSeason, MatchHealth.AllHealthy, new RandomState(seed));
+            var second = new MatchSimulator().Simulate(match, OvertimeFormat.RegularSeason, MatchHealth.AllHealthy, new RandomState(seed));
 
             Assert.Equal(Fingerprint(first), Fingerprint(second));
             Assert.Equal(first.RandomState, second.RandomState);
@@ -30,8 +30,8 @@ public sealed class MatchReproducibilityTests
 
         for (var seed = 0UL; seed < 50; seed++)
         {
-            var first = new MatchSimulator().Simulate(match, OvertimeFormat.Playoff, new RandomState(seed));
-            var second = new MatchSimulator().Simulate(match, OvertimeFormat.Playoff, new RandomState(seed));
+            var first = new MatchSimulator().Simulate(match, OvertimeFormat.Playoff, MatchHealth.AllHealthy, new RandomState(seed));
+            var second = new MatchSimulator().Simulate(match, OvertimeFormat.Playoff, MatchHealth.AllHealthy, new RandomState(seed));
 
             Assert.Equal(Fingerprint(first), Fingerprint(second));
         }
@@ -41,7 +41,7 @@ public sealed class MatchReproducibilityTests
     public void AnUndefinedOvertimeFormatIsRejected()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new MatchSimulator().Simulate(TestMatches.EvenMatch(), (OvertimeFormat)7, new RandomState(1)));
+            new MatchSimulator().Simulate(TestMatches.EvenMatch(), (OvertimeFormat)7, MatchHealth.AllHealthy, new RandomState(1)));
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public sealed class MatchReproducibilityTests
         var simulator = new MatchSimulator();
 
         var fingerprints = Enumerable.Range(0, 20)
-            .Select(seed => Fingerprint(simulator.Simulate(match, OvertimeFormat.RegularSeason, new RandomState((ulong)seed))))
+            .Select(seed => Fingerprint(simulator.Simulate(match, OvertimeFormat.RegularSeason, MatchHealth.AllHealthy, new RandomState((ulong)seed))))
             .Distinct()
             .Count();
 
@@ -65,8 +65,8 @@ public sealed class MatchReproducibilityTests
         var simulator = new MatchSimulator();
         var initialState = new RandomState(7);
 
-        var first = simulator.Simulate(match, OvertimeFormat.RegularSeason, initialState);
-        var second = simulator.Simulate(match, OvertimeFormat.RegularSeason, first.RandomState);
+        var first = simulator.Simulate(match, OvertimeFormat.RegularSeason, MatchHealth.AllHealthy, initialState);
+        var second = simulator.Simulate(match, OvertimeFormat.RegularSeason, MatchHealth.AllHealthy, first.RandomState);
 
         Assert.NotEqual(initialState, first.RandomState);
         Assert.NotEqual(Fingerprint(first), Fingerprint(second));
@@ -84,7 +84,7 @@ public sealed class MatchReproducibilityTests
 
         for (var seed = 0UL; seed < 50; seed++)
         {
-            new MatchSimulator().Simulate(match, OvertimeFormat.RegularSeason, new RandomState(seed));
+            new MatchSimulator().Simulate(match, OvertimeFormat.RegularSeason, MatchHealth.AllHealthy, new RandomState(seed));
         }
 
         Assert.Same(home, match.Home);
