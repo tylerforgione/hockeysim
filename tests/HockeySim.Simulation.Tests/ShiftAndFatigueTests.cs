@@ -27,23 +27,6 @@ public sealed class ShiftAndFatigueTests
     }
 
     [Fact]
-    public void LinemateTimeOnIceMatchesBecauseLinesChangeTogether()
-    {
-        var match = TestMatches.EvenMatch();
-        var regulation = TestMatches.SimulateMany(match, MatchCount)
-            .Where(result => result.Decision == MatchDecision.Regulation);
-
-        Assert.All(regulation, result =>
-        {
-            var minutes = result.Home.Skaters.ToDictionary(skater => skater.PlayerId, skater => skater.TimeOnIce);
-            Assert.All(match.Home.Lineup.ForwardLines, line =>
-                Assert.Single(line.Players.Select(player => minutes[player.Id]).Distinct()));
-            Assert.All(match.Home.Lineup.DefencePairs, pair =>
-                Assert.Single(pair.Players.Select(player => minutes[player.Id]).Distinct()));
-        });
-    }
-
-    [Fact]
     public void ALowStaminaLineTiresSoonerAndPlaysLessThanAHighStaminaLine()
     {
         Team WithTopLineStamina(string name, int stamina) => TestTeams.Create(name, (role, rating) =>

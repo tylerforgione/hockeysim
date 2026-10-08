@@ -65,21 +65,47 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
     [Fact]
     public void EveryBoxScoreAccountsForTheTimePlayed()
     {
-        // Regulation is five-on-five and regular-season overtime three-on-three, so each team's
-        // skaters share five times regulation and three times any overtime, and both goalies
-        // play the whole match.
+        // Each team has three to five skaters a side, and six while its goalie is pulled for an
+        // extra attacker during a delayed penalty, so its skaters share between three and six
+        // times the time played. A goalie is off the ice only while pulled.
         const int RegulationSeconds = 60 * 60;
         Assert.All(Season.Results, result =>
         {
-            var playingSeconds = (int)result.Home.Goalie.TimeOnIce.TotalSeconds;
-            var overtimeSeconds = playingSeconds - RegulationSeconds;
+            // The box score does not record when an overtime winner was scored, only that it was
+            // within the five minutes.
+            var (shortest, longest) = result.Decision switch
+            {
+                MatchDecision.Regulation => (RegulationSeconds, RegulationSeconds),
+                MatchDecision.Shootout => (RegulationSeconds + (5 * 60), RegulationSeconds + (5 * 60)),
+                _ => (RegulationSeconds, RegulationSeconds + (5 * 60)),
+            };
 
-            Assert.Equal(result.Home.Goalie.TimeOnIce, result.Away.Goalie.TimeOnIce);
-            Assert.InRange(overtimeSeconds, 0, result.Decision == MatchDecision.Regulation ? 0 : 5 * 60);
-            Assert.All(new[] { result.Home, result.Away }, side => Assert.Equal(
-                (5 * RegulationSeconds) + (3 * overtimeSeconds),
-                side.Skaters.Sum(skater => (int)skater.TimeOnIce.TotalSeconds)));
+            Assert.All(new[] { result.Home, result.Away }, side =>
+            {
+                Assert.InRange((int)side.Goalie.TimeOnIce.TotalSeconds, shortest - (5 * 60), longest);
+                Assert.InRange(side.Skaters.Sum(skater => (int)skater.TimeOnIce.TotalSeconds), 3 * shortest, 6 * longest);
+            });
         });
+    }
+
+    [Fact]
+    public void SpecialTeamsStatisticsReconcileAcrossTheSeason()
+    {
+        var sides = Season.Results.SelectMany(result => new[] { (Team: result.Home, Opponent: result.Away), (Team: result.Away, Opponent: result.Home) }).ToList();
+
+        Assert.All(sides, pair =>
+        {
+            Assert.True(pair.Team.PowerPlayGoals == 0 || pair.Team.PowerPlayOpportunities > 0);
+            Assert.True(pair.Team.Skaters.Sum(skater => skater.ShorthandedGoals) == 0 || pair.Opponent.PowerPlayOpportunities > 0);
+            Assert.All(pair.Team.Skaters, skater =>
+            {
+                Assert.InRange(skater.PowerPlayGoals + skater.ShorthandedGoals, 0, skater.Goals);
+                Assert.InRange(skater.PowerPlayAssists + skater.ShorthandedAssists, 0, skater.Assists);
+            });
+        });
+        Assert.Contains(sides, pair => pair.Team.PowerPlayGoals > 0);
+        Assert.Contains(sides, pair => pair.Team.Skaters.Any(skater => skater.ShorthandedGoals > 0));
+        Assert.Contains(sides, pair => pair.Team.PenaltyMinutes > 0);
     }
 
     [Fact]

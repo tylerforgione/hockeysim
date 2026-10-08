@@ -28,7 +28,12 @@ internal static class TestResults
         int plusMinus = 0,
         int blockedShots = 0,
         int faceoffsWon = 0,
-        int faceoffsLost = 0)
+        int faceoffsLost = 0,
+        int penaltyMinutes = 0,
+        int powerPlayGoals = 0,
+        int powerPlayAssists = 0,
+        int shorthandedGoals = 0,
+        int shorthandedAssists = 0)
     {
         var shotsOnGoal = shots ?? goals;
         return new SkaterBoxScore(
@@ -45,7 +50,12 @@ internal static class TestResults
             faceoffsLost,
             takeaways: 0,
             giveaways: 0,
-            expectedGoals);
+            expectedGoals,
+            penaltyMinutes,
+            powerPlayGoals,
+            powerPlayAssists,
+            shorthandedGoals,
+            shorthandedAssists);
     }
 
     public static GoalieBoxScore Goalie(PlayerId playerId, int shotsAgainst, int goalsAgainst, double expectedGoalsAgainst = 0) =>
@@ -82,7 +92,7 @@ internal static class TestResults
                     ? Skater(player.Id, playerGoals, shots: Shots, expectedGoals: TeamExpectedGoals)
                     : Skater(player.Id));
             var goalie = Goalie(team.Lineup.StartingGoalie.Id, Shots, opponentGoals, TeamExpectedGoals);
-            return new CompletedMatchTeam(team.Id, score, Shots, skaters, goalie);
+            return new CompletedMatchTeam(team.Id, score, Shots, powerPlayOpportunities: 0, skaters, goalie);
         }
     }
 

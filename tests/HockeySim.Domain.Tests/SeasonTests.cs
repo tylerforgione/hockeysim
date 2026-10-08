@@ -117,7 +117,7 @@ public sealed class SeasonTests
         var scorer = valid.Home.Skaters[0];
         var skaters = valid.Home.Skaters.Skip(1).Prepend(
             TestResults.Skater(outsider, scorer.Goals, shots: scorer.Shots, expectedGoals: scorer.ExpectedGoals));
-        var home = new CompletedMatchTeam(_first.Id, 1, valid.Home.Shots, skaters, valid.Home.Goalie);
+        var home = new CompletedMatchTeam(_first.Id, 1, valid.Home.Shots, 0, skaters, valid.Home.Goalie);
         var invalid = new CompletedMatch(_openingFirst, home, valid.Away, MatchDecision.Regulation);
 
         var error = Record.Exception(() => _season.CompleteDay([invalid, Result(_openingSecond, 1, 0)]));
@@ -132,7 +132,7 @@ public sealed class SeasonTests
         var valid = Result(_openingFirst, 1, 0);
         var backup = TestResults.Skater(_first.Lineup.BackupGoalie.Id);
         var home = new CompletedMatchTeam(
-            _first.Id, 1, valid.Home.Shots, valid.Home.Skaters.Append(backup), valid.Home.Goalie);
+            _first.Id, 1, valid.Home.Shots, 0, valid.Home.Skaters.Append(backup), valid.Home.Goalie);
         var invalid = new CompletedMatch(_openingFirst, home, valid.Away, MatchDecision.Regulation);
 
         Assert.Throws<ArgumentException>(() => _season.CompleteDay([invalid, Result(_openingSecond, 1, 0)]));
@@ -294,7 +294,7 @@ public sealed class SeasonTests
     {
         var valid = Result(_openingFirst, 2, 1);
         var goalie = TestResults.Goalie(valid.Home.Goalie.PlayerId, valid.Away.Shots + 1, valid.Home.Goalie.GoalsAgainst, valid.Home.Goalie.ExpectedGoalsAgainst);
-        var home = new CompletedMatchTeam(_first.Id, 2, valid.Home.Shots, valid.Home.Skaters, goalie);
+        var home = new CompletedMatchTeam(_first.Id, 2, valid.Home.Shots, 0, valid.Home.Skaters, goalie);
 
         Assert.Throws<ArgumentException>(() => new CompletedMatch(
             _openingFirst, home, valid.Away, MatchDecision.Regulation));
@@ -311,7 +311,7 @@ public sealed class SeasonTests
         };
 
         Assert.Throws<ArgumentException>(() => new CompletedMatchTeam(
-            _first.Id, 1, 10, skaters, TestResults.Goalie(_first.Lineup.StartingGoalie.Id, 10, 0)));
+            _first.Id, 1, 10, 0, skaters, TestResults.Goalie(_first.Lineup.StartingGoalie.Id, 10, 0)));
     }
 
     private void PlayOpeningDay() =>

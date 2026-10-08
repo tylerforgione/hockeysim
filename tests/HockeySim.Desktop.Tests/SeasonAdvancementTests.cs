@@ -121,7 +121,10 @@ public sealed class SeasonAdvancementTests
                     line.BlockedShots,
                     MatchDisplay.Faceoffs(line.FaceoffsWon, line.FaceoffsLost),
                     line.Takeaways,
-                    line.Giveaways)),
+                    line.Giveaways,
+                    line.PenaltyMinutes,
+                    line.PowerPlayGoals,
+                    line.ShorthandedGoals)),
                 side.Skaters.Select(skater => (
                     skater.PlusMinus,
                     skater.TimeOnIce,
@@ -132,7 +135,12 @@ public sealed class SeasonAdvancementTests
                     skater.BlockedShots,
                     skater.Faceoffs,
                     skater.Takeaways,
-                    skater.Giveaways)));
+                    skater.Giveaways,
+                    skater.PenaltyMinutes,
+                    skater.PowerPlayGoals,
+                    skater.ShorthandedGoals)));
+            Assert.Equal(MatchDisplay.PowerPlay(snapshot.PowerPlayGoals, snapshot.PowerPlayOpportunities), side.PowerPlay);
+            Assert.Equal(snapshot.Skaters.Sum(line => line.PenaltyMinutes), side.PenaltyMinutes);
             Assert.Equal(MatchDisplay.ExpectedGoals(snapshot.Goalie.ExpectedGoalsAgainst), side.Goalie.ExpectedGoalsAgainst);
             Assert.Equal(MatchDisplay.TimeOnIce(snapshot.Goalie.TimeOnIce), side.Goalie.TimeOnIce);
             Assert.All(side.Skaters, skater => Assert.Equal(skater.Goals + skater.Assists, skater.Points));
@@ -278,6 +286,15 @@ public sealed class SeasonAdvancementTests
     public void PlusMinusShowsItsSign(int plusMinus, string expected)
     {
         Assert.Equal(expected, MatchDisplay.PlusMinus(plusMinus));
+    }
+
+    [Theory]
+    [InlineData(0, 0, "0/0")]
+    [InlineData(1, 3, "1/3")]
+    [InlineData(2, 2, "2/2")]
+    public void APowerPlayShowsGoalsOfOpportunities(int goals, int opportunities, string expected)
+    {
+        Assert.Equal(expected, MatchDisplay.PowerPlay(goals, opportunities));
     }
 
     [Theory]
