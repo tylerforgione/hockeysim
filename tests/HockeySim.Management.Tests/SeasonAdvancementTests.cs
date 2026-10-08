@@ -158,7 +158,9 @@ public sealed class SeasonAdvancementTests
     public async Task AdvancementsFromDifferentThreadsDoNotOverlap()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
-        using var firstDayStarted = new ManualResetEventSlim();
+        // Generous timeouts: CI runs test projects in parallel on slow runners.
+        var timeout = TimeSpan.FromSeconds(30);
+        var firstDayStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var releaseFirstDay = new ManualResetEventSlim();
         var simulator = new InterceptingSimulator();
         var manager = new GameManager(simulator);
@@ -167,19 +169,19 @@ public sealed class SeasonAdvancementTests
         {
             if (call == 1)
             {
-                firstDayStarted.Set();
-                releaseFirstDay.Wait(TimeSpan.FromSeconds(10));
+                firstDayStarted.TrySetResult();
+                releaseFirstDay.Wait(timeout);
             }
         };
 
         var first = Task.Run(manager.AdvanceDay, cancellationToken);
-        Assert.True(firstDayStarted.Wait(TimeSpan.FromSeconds(10), cancellationToken));
+        await firstDayStarted.Task.WaitAsync(timeout, cancellationToken);
         var second = Task.Run(manager.AdvanceDay, cancellationToken);
 
         var finishedFirst = await Task.WhenAny(second, Task.Delay(200, cancellationToken));
         Assert.NotSame(second, finishedFirst);
         releaseFirstDay.Set();
-        await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+        await Task.WhenAll(first, second).WaitAsync(timeout, cancellationToken);
 
         var final = manager.GetSnapshot();
         Assert.Equal(OpeningDay.AddDays(2), final.Season.CurrentDate);

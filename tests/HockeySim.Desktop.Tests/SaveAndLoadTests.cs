@@ -199,7 +199,7 @@ public sealed class SaveAndLoadTests : IDisposable
         var shell = new GameShellViewModel(new GameSession(StartManager(new GameManager(engine)), "Career"), saves: _saves.Library);
 
         var advancing = shell.AdvanceDayCommand.ExecuteAsync(null);
-        engine.WaitUntilPlaying();
+        await engine.WaitUntilPlayingAsync();
 
         Assert.False(shell.SaveGameCommand.CanExecute(null));
         Assert.False(shell.ShowMainMenuCommand.CanExecute(null));

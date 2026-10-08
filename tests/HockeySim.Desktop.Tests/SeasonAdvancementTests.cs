@@ -210,7 +210,7 @@ public sealed class SeasonAdvancementTests
         var shell = new GameShellViewModel(session);
 
         var advancing = shell.AdvanceDayCommand.ExecuteAsync(null);
-        engine.WaitUntilPlaying();
+        await engine.WaitUntilPlayingAsync();
 
         Assert.True(session.IsAdvancing);
         Assert.Equal("Playing…", shell.ContinueLabel);
