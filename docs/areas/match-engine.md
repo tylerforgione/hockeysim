@@ -3,11 +3,13 @@
 `HockeySim.Simulation`: plays one match from two lineups and a random state and
 returns the result. It never changes the game world; Management applies results
 ([ADR 0001](../adr/0001-headless-game-ownership.md)). Design decisions:
-[ADR 0006](../adr/0006-event-based-match-engine.md) (event-based engine) and
+[ADR 0006](../adr/0006-event-based-match-engine.md) (event-based engine),
 [ADR 0007](../adr/0007-manpower-from-penalties-served.md) (manpower from
-penalties served), and
+penalties served),
 [ADR 0008](../adr/0008-health-derived-from-completed-matches.md) (player health
-derived from completed matches).
+derived from completed matches), and
+[ADR 0010](../adr/0010-match-engine-parts-share-one-match-state.md) (engine
+parts sharing one match state).
 
 ## Code map
 
@@ -18,7 +20,16 @@ Paths are under `src/HockeySim.Simulation/`.
 | `IMatchSimulator.cs`, `MatchSimulator.cs` | The entry point Management calls; builds a `MatchPlay` |
 | `OvertimeFormat.cs` | Regular-season or playoff overtime |
 | `MatchHealth.cs` | The players' health going into a match, and whether the match can injure them |
-| `Play/MatchPlay.cs` | The match loop and every play decision (see below) |
+| `Play/MatchPlay.cs` | The match loop: periods and the clock, line changes, overtime and the result; builds and coordinates the parts below |
+| `Play/ZonePlay.cs` | Each step of possession: play in each zone, rebounds, turnovers, and hits |
+| `Play/MatchState.cs` | The match state those parts share: both sides, clock and score, the puck, a pending faceoff, a delayed penalty, and the play-by-play |
+| `Play/Possession.cs` | Giving the puck to a team, stoppages, and faceoffs; a stoppage or the offenders touching the puck calls a delayed penalty |
+| `Play/ShotPlay.cs` | Shot attempts, blocks, misses, saves, rebounds, goals and assists, and penalty shots |
+| `Play/FoulPlay.cs` | Which fouls are committed: in a step of possession, after a hit (illegal hits, scrums, fights), and delayed penalties |
+| `Play/PenaltyAssessment.cs` | Assessing called penalties, ending delayed penalties, manpower and strength states, power-play opportunities |
+| `Play/GoaliePulls.cs` | Pulling the goalie late to tie the match, and returning it |
+| `Play/InjuryPlay.cs` | Applying injuries from contacts and strains during play |
+| `Play/SkillComparison.cs` | The attacking edge and hit rate from the skaters on the ice |
 | `Play/MatchSide.cs` | One team during a match: who is on the ice, line changes, strength state, pulled goalie |
 | `Play/Rotation.cs` | The groups rotated through one set of positions, and target ice-time shares |
 | `Play/SkaterState.cs`, `Play/PlayerStrength.cs`, `Play/EffectiveRatings.cs` | A skater's energy and composite strengths from ratings, less injury reductions |
@@ -34,19 +45,15 @@ Paths are under `src/HockeySim.Simulation/`.
 | `MatchResult.cs`, `MatchTeamResult.cs`, `SkaterMatchStatistics.cs`, `GoalieMatchStatistics.cs`, `Shootout*.cs` | The returned result |
 | `Randomness/ControlledRandom.cs`, `RandomState.cs` | The single deterministic generator, also used by Management |
 
-`MatchPlay.cs` is large, so it helps to search by method rather than read it
-whole:
-
-| Concern | Methods |
-| --- | --- |
-| Periods and clock | `Play`, `PlayPeriod`, `EndPeriod`, `Elapse`, `StepSeconds` |
-| Possession by zone | `PlayStep`, `PlayDefensiveZone`, `PlayNeutralZone`, `PlayOffensiveZone`, `PlayRebound`, `Turnover`, `GiveTo`, `Stoppage`, `TakeFaceoff` |
-| Shots and goals | `Shoot`, `MissFromDistance`, `ScoreGoal`, `ChooseAssist`, `DrawDanger`, `ChooseShooter`, `BaseBlockChance` |
-| Physical play | `Hit`, `AfterHit` |
-| Penalties and manpower | `TryFoul`, `CommitFoul`, `TakePenaltyShot`, `EndDelayedPenalty`, `AssessPenalties`, `ExpirePenalties`, `ApplyManpower`, `CountPowerPlay`, `Manpower` |
-| Pulling the goalie | `PullGoaliesToTieTheMatch`, `PullOrReturnGoalie`, `ReturnGoaliesPulledToTieTheMatch` |
-| Injuries | `Contact`, `Strain`, `RecordInjury` |
-| Skill comparison | `AttackingEdge`, `SkillEdge`, `AttackingEdgeFactor`, `HitRateFactor` |
+`MatchPlay` builds the parts in dependency order, each taking the `MatchState`
+and only the parts it calls
+([ADR 0010](../adr/0010-match-engine-parts-share-one-match-state.md)):
+`SkillComparison`, `GoaliePulls`, `InjuryPlay`, and `PenaltyAssessment` need
+only the state; `Possession` uses `PenaltyAssessment`; `ShotPlay` uses all of
+those; `FoulPlay` uses `ShotPlay` too (for penalty shots); and `ZonePlay` uses
+`FoulPlay` as well. Every random draw comes from the state's single
+`ControlledRandom`, so moving code between parts must keep the draws in the
+same order.
 
 ## Tests
 

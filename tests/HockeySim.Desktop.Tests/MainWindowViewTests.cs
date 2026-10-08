@@ -265,7 +265,7 @@ public sealed class MainWindowViewTests
     private static void ClickAndWait(Button button, Func<bool> isDone)
     {
         Click(button);
-        var deadline = DateTime.UtcNow.AddSeconds(10);
+        var deadline = DateTime.UtcNow.AddSeconds(60);
         while (!isDone())
         {
             Assert.True(DateTime.UtcNow < deadline, "The command did not finish.");

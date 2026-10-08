@@ -480,8 +480,8 @@ Direction:
   `InjuryCatalogue` entry, and a weight in the cause's `InjuryTuning` lists. A
   new body part is an enum value plus its place in those lists.
 - A new cause is play logic: an `InjuryCause` value, its base chance and
-  struck parts in `InjuryTuning`, and a call to the injury roll at the right
-  moment in `MatchPlay`.
+  struck parts in `InjuryTuning`, and a call to `InjuryPlay` at the right
+  moment in play (see the [match engine code map](areas/match-engine.md#code-map)).
 - Decide how season-ending injuries interact with
   [season rollover](#season-rollover) (recovery carrying into the next season),
   [long-term injured reserve](#full-injury-and-health-system), and
