@@ -47,6 +47,7 @@ public sealed class InboxMessageViewModel
         InboxSenderRole.AssistantGeneralManager => "Front office",
         InboxSenderRole.HeadScout => "Scouting",
         InboxSenderRole.Captain => "Player",
+        InboxSenderRole.HeadTrainer => "Medical staff",
         _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Unknown sender role."),
     };
 }

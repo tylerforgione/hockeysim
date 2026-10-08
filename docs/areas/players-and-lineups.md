@@ -18,10 +18,10 @@ commands).
 | `Domain/SpecialSituation*.cs`, `SkaterRole.cs`, `DefaultSpecialSituationUnits.cs` | Special-situation units and their defaults |
 | `Management/NewGame/LeagueGenerator.cs` | Builds the league |
 | `Management/NewGame/PlayerRatingGenerator.cs`, `PlayerBiographyGenerator.cs`, `PlayerOriginData.cs`, `FictionalLeagueData.cs` | Generated players, names, and teams |
-| `Management/Lineups/` | `SetLineupCommand` and its selections |
-| `Management/Inbox/`, `Snapshots/InboxMessageSnapshot.cs` | Inbox messages and the new-game messages |
+| `Management/Lineups/` | `SetLineupCommand` and its selections; `MatchDayLineup` (players who cannot play, AI teams' replacements) and `UnavailablePlayersException` |
+| `Management/Inbox/`, `Snapshots/InboxMessageSnapshot.cs` | Inbox messages: the new-game messages and the head trainer's `InjuryMessages` |
 | `Management/GameManagement/GameManager.cs` | Commands: new game, select team, set lineup, read message |
-| `Management/GameManagement/Snapshots/GameSnapshot.cs` | `PlayerSnapshot`, team, and lineup snapshots |
+| `Management/GameManagement/Snapshots/GameSnapshot.cs` | `PlayerSnapshot` with its injuries, team and lineup snapshots, and `PlayersToReplace` |
 
 Domain paths are under `src/HockeySim.Domain/`, Management paths under
 `src/HockeySim.Management/`.
@@ -37,6 +37,8 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | `Management.Tests/PlayerRatingGenerationTests.cs`, `PlayerBiographyGenerationTests.cs` | Generated distributions over several seeds |
 | `Management.Tests/LineupTests.cs`, `SpecialSituationUnitTests.cs` | Lineup commands, rejected changes, snapshot isolation |
 | `Management.Tests/InboxTests.cs` | Inbox messages |
+| `Management.Tests/InjuredPlayerTests.cs` | Rejected days, replacing injured players, AI teams' replacements and restored lineups, injury and recovery messages, injuries in snapshots |
+| `Management.Tests/InjuredPlayerReplacement.cs` (copied in the Infrastructure and Desktop tests) | Plays days as a user would, replacing players who cannot play |
 
 ## The new game and lineups
 
@@ -49,7 +51,11 @@ league and roster rules that use them.
 Management also delivers inbox messages to the user. New-game messages are
 derived from the generated managed team, so they never describe state the game
 does not hold; selecting a different managed team replaces them with messages
-for that team. Marking a message read is a Management command.
+for that team. After each league day the head trainer reports every injury the
+managed team suffered in its match, with whether the player can play through it
+and the expected return, and every managed-team injury that has healed by the
+next day, on days without matches too. Marking a message read is a Management
+command.
 Domain's `Lineup` also holds the special-situation units and two extra
 attackers. `SpecialSituationFormat` fixes each situation's unit count and the
 skater role of every slot (5-on-4 and 5-on-3: LW C RW / LD RD; 4-on-3, 4-on-5,
@@ -84,12 +90,36 @@ matching units (see [Penalties and special teams](match-engine.md#penalties-and-
 and sends on an extra attacker whenever a goalie is pulled, during a delayed
 penalty or late in a match (see [Pulling the goalie](match-engine.md#pulling-the-goalie)).
 
+## Injured players in lineups
+
+A player who cannot play (an injury they cannot play through has not healed) is
+never dressed for a match; a player playing through an injury may be.
+Management's `SetLineup` still accepts a lineup holding such players, because a
+lineup is a plan that injuries overtake and partial fixes should save. Instead,
+`AdvanceDay` rejects the day with `UnavailablePlayersException`, changing
+nothing, when the managed team plays on the current date with any of them
+dressed. On a day the team does not play they may heal in time, so they do not
+hold it up. `GameSnapshot.PlayersToReplace` names them, in lineup order, and is
+empty on such days.
+
+AI teams (every team but the managed one) replace such players themselves.
+Their own `Team.Lineup` stays the lineup they prefer; `MatchDayLineup` works out
+each day the lineup they dress: each player who cannot play, in lineup order,
+gives way to the healthy scratch who best suits their place (a goalie for a
+goalie; for a skater the best position fit for the slot's role, then the highest
+overall rating, then roster order), who also takes their unit and extra-attacker
+slots. Because it is worked out afresh from health, the preferred lineup returns
+by itself as players heal, and nothing extra is saved. The injury cap
+guarantees enough healthy scratches. AI teams' snapshots show the match-day
+lineup. See [ADR 0009](../adr/0009-ai-match-day-lineups-derived-from-health.md).
+
 ## Player ratings
 
 Domain's `Player` holds a 0-100 value for every `Rating`: the skater skills,
 the three goaltending ratings, and faceoffs, discipline, stamina, durability,
 and toughness. The match engine uses faceoffs, stamina, and toughness; discipline
-drives penalties, and durability waits for injuries. A new game
+drives penalties, and durability lowers the chance of injury (see
+[injuries](match-engine.md#injuries)). A new game
 generates ratings by position in Management's `PlayerRatingGenerator`. Each
 player draws one talent level that the position's skills follow, shifted by a
 position profile with a little variation per rating. For example, centres take

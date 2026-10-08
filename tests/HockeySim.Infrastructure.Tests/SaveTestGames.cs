@@ -25,7 +25,7 @@ internal static class SaveTestGames
         var snapshot = manager.GetSnapshot();
         for (var day = 0; day < days && !snapshot.Season.IsComplete; day++)
         {
-            snapshot = manager.AdvanceDay();
+            snapshot = manager.AdvanceDayReplacingInjured();
         }
 
         return snapshot;
@@ -55,7 +55,7 @@ internal static class SaveTestGames
         var lines = new List<string>
         {
             $"date {snapshot.Season.CurrentDate:yyyy-MM-dd}, complete {snapshot.Season.IsComplete}, "
-            + $"managed {snapshot.ManagedTeamId}, {snapshot.RandomState}",
+            + $"managed {snapshot.ManagedTeamId}, {snapshot.RandomState}, to replace {string.Join(",", snapshot.PlayersToReplace)}",
         };
 
         foreach (var team in snapshot.League.Teams)
@@ -66,7 +66,8 @@ internal static class SaveTestGames
                 + $"extra attackers {string.Join(",", team.Lineup.ExtraAttackerIds)}");
             lines.AddRange(team.Roster.Select(player =>
                 $"  {player.Id} {player.FirstName} {player.LastName} {player.Position} {player.Age} {player.Biography} #{player.Number} "
-                + string.Join(",", player.Ratings.OrderBy(rating => rating.Key).Select(rating => rating.Value))));
+                + string.Join(",", player.Ratings.OrderBy(rating => rating.Key).Select(rating => rating.Value))
+                + $" injuries {string.Join(";", player.Injuries)}"));
         }
 
         lines.AddRange(snapshot.Schedule.Matches.Select(match => match.ToString()));

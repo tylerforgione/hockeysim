@@ -81,13 +81,17 @@ public sealed record SavedScheduledMatch(DateOnly Date, TeamId HomeTeamId, TeamI
 /// </summary>
 /// <param name="Goals">The scoring summary, in the order scored.</param>
 /// <param name="Penalties">The penalty summary, in the order called.</param>
+/// <param name="Injuries">The injuries suffered, in the order they happened.</param>
+/// <param name="Wear">The hidden wear players' body parts took; loading rebuilds health from it.</param>
 public sealed record SavedCompletedMatch(
     DateOnly Date,
     MatchDecision Decision,
     SavedMatchSide Home,
     SavedMatchSide Away,
     IReadOnlyList<SavedGoal> Goals,
-    IReadOnlyList<SavedPenalty> Penalties);
+    IReadOnlyList<SavedPenalty> Penalties,
+    IReadOnlyList<SavedInjury> Injuries,
+    IReadOnlyList<SavedWearGain> Wear);
 
 /// <param name="TimeInPeriodSeconds">Elapsed time in the period in whole seconds.</param>
 public sealed record SavedGoal(
@@ -108,6 +112,17 @@ public sealed record SavedPenalty(
     PlayerId PlayerId,
     Infraction Infraction,
     PenaltyKind Kind);
+
+/// <param name="TimeInPeriodSeconds">Elapsed time in the period in whole seconds.</param>
+public sealed record SavedInjury(
+    int Period,
+    int TimeInPeriodSeconds,
+    TeamId TeamId,
+    PlayerId PlayerId,
+    InjuryType Type,
+    int RecoveryDays);
+
+public sealed record SavedWearGain(PlayerId PlayerId, BodyPart BodyPart, int Points);
 
 /// <param name="ShotTotals">Both teams' shot totals by strength situation, from this side.</param>
 public sealed record SavedMatchSide(

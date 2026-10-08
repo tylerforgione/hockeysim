@@ -39,20 +39,22 @@ version in `GameSaveFile`.
 
 Management saves and loads games through its own contracts in `Saves/`: the
 `GameSave` model and the `IGameSaveStore` interface. `SaveGame` copies the
-world, lineups (with their units and extra attackers), schedule, current date, completed matches (with
-their full box scores, on-ice and team shot totals by situation, and scoring and
-penalty summaries, times in whole seconds), inbox, and random state into a
+world, lineups (with their units and extra attackers; AI teams' preferred lineups, since their match-day
+lineups are worked out from health), schedule, current date, completed matches (with
+their full box scores, on-ice and team shot totals by situation, scoring and
+penalty summaries, injuries, and hidden wear, times in whole seconds), inbox, and random state into a
 detached save, then hands it to the store. The rest of the play-by-play is not
 saved. Save format version 4 added the event engine's box-score statistics,
 version 5 penalty minutes, power-play and shorthanded goals and assists, and
-power-play opportunities, version 6 empty-net goals, and version 7 the shot
-totals and summaries. The shot totals roughly triple a save's size: a complete
+power-play opportunities, version 6 empty-net goals, version 7 the shot
+totals and summaries, and version 8 injuries and wear. The head trainer's sender role (#57) needed no new
+version: sender roles are saved by name, so older version 8 saves still load. The shot totals roughly triple a save's size: a complete
 season is about 3 MB compressed (70 MB of JSON) rather than 1 MB, and loads in
 about half a second. `LoadGame` rebuilds the
 league through Domain constructors and replays each saved league day through
 `Season.CompleteDay`, so a loaded game is held to the same invariants as a
 played one, and team records, season statistics, and standings are derived
-from the history rather than read from the file. The active game is replaced
+from the history rather than read from the file, as is each player's health. The active game is replaced
 only after the whole save has been rebuilt; an unreadable, unsupported, or
 invalid save raises a `GameSaveException` and leaves the active game
 unchanged. Continuing a loaded game with the same commands gives the same

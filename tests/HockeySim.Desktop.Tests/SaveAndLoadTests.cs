@@ -179,7 +179,7 @@ public sealed class SaveAndLoadTests : IDisposable
         var gameManager = StartManager(new GameManager());
         while (!gameManager.GetSnapshot().Season.IsComplete)
         {
-            gameManager.AdvanceDay();
+            gameManager.AdvanceDayReplacingInjured();
         }
 
         var shell = new GameShellViewModel(new GameSession(gameManager, "Champions"), saves: _saves.Library);
@@ -305,7 +305,7 @@ public sealed class SaveAndLoadTests : IDisposable
         var (main, gameManager, before) = TryLoadingOverASavedGame("Future");
 
         Assert.Equal(
-            "'Future' was saved by a different version of HockeySim (save format 999). This version reads save format 7 only. Your current game is unchanged.",
+            "'Future' was saved by a different version of HockeySim (save format 999). This version reads save format 8 only. Your current game is unchanged.",
             main.LoadGame!.ErrorMessage);
         AssertActiveGameKept(main, gameManager, before);
     }
@@ -489,7 +489,7 @@ public sealed class SaveAndLoadTests : IDisposable
         manager.StartNewGame(new NewGameCommand(2026, new RandomState(seed), teamName));
         for (var day = 0; day < days; day++)
         {
-            manager.AdvanceDay();
+            manager.AdvanceDayReplacingInjured();
         }
 
         manager.SaveGame(_saves.Library.Open(SaveName.Parse(name)));

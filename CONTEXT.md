@@ -56,6 +56,10 @@ management game.
 The one team the user controls. Only its lineup can be changed by the user;
 other teams are read-only.
 
+**AI team**:
+Any team other than the managed team. The game sets its lineup, and it replaces
+injured players itself (see match-day lineup).
+
 **Rating**:
 A 0-100 measure of one player ability, such as skating, faceoffs, discipline
 (how rarely the player takes penalties), stamina (how slowly they tire),
@@ -68,7 +72,7 @@ A player's ratings summarised as one 0-100 value, weighted for their position.
 It never includes durability.
 
 **Hidden information**:
-Game state the user cannot see, such as a player's durability. It is kept out
+Game state the user cannot see, such as a player's durability and wear. It is kept out
 of everything Desktop displays and out of anything shown that could reveal it.
 
 **Lineup**:
@@ -76,7 +80,15 @@ A team's dressed players for a match: four forward lines (left wing, centre,
 right wing), three defence pairs, a starting goalie, and a backup goalie. Any
 skater can fill any line or pair slot, whatever their position. It also names
 who plays in each special situation: its special-situation units and two extra
-attackers.
+attackers. A player who cannot play through an injury is never dressed for a
+match; a player playing through one may be.
+
+**Match-day lineup**:
+The lineup a team dresses on a given day. The managed team's is the lineup the
+user set, which must leave out players who cannot play before the team plays. An
+AI team's is its preferred lineup with each player who cannot play replaced by
+the healthy scratch who best suits their place, so the preferred lineup returns
+as players heal.
 
 **Special situation**:
 Any manpower situation other than five-on-five, named from the team's own side:
@@ -115,13 +127,13 @@ expected-goal value.
 
 **Match result**:
 The outcome of a simulated match: a decisive score, how it was decided
-(regulation, overtime, or shootout), shots, the play-by-play, any shootout, and
-each appearing player's match statistics.
+(regulation, overtime, or shootout), shots, the play-by-play, any shootout,
+each appearing player's match statistics, and the hidden wear players took.
 A shootout winner is credited one deciding goal that no player scored.
 
 **Play-by-play**:
 The timed events of a match in order: faceoffs, shot attempts, goals, hits,
-takeaways, giveaways, and penalties, each with its period, time, strength state,
+takeaways, giveaways, penalties, and injuries, each with its period, time, strength state,
 and the players on the ice for both teams. Only the match result holds it; a completed
 match keeps the box score and the scoring and penalty summaries.
 
@@ -187,6 +199,39 @@ A stretch a skater spends on the ice before changing. Forward lines and defence
 pairs change separately, on the fly or at a stoppage; tired skaters play below
 their ratings, and stamina sets how fast they tire and recover.
 
+**Injury**:
+Harm to one body part, such as a concussion or a sprained ankle, suffered in a
+match from a hit (taken or given), a blocked shot, a fight, or a non-contact
+strain. Each kind has a range of recovery times; how long a particular injury
+takes is its severity. An injured player either cannot play until it heals or can
+play through it at reduced ratings. Injuries happen only in matches that count:
+never in the preseason, and not away from the rink.
+
+**Recovery time**:
+The league days an injury takes to heal, counted from the date of its match
+whether or not the team plays: hurt on the 1st with seven days' recovery, a
+player is healthy again on the 8th. It is hidden; the user sees the expected
+return.
+
+**Expected return**:
+The staff's estimate of when an injured player will be healthy: a range of dates
+that always holds the actual return date, about a quarter of the recovery time
+either side of it.
+
+**Playing through an injury**:
+Playing while an injury heals, with a few points off the ratings it affects. A
+player who cannot play through an injury is out of the match in which it
+happens and of every match before it heals, and must not be dressed until then.
+
+**Wear**:
+Hidden damage a player's body part accumulates from impacts and injuries. It
+never recovers and makes that part likelier to be injured again.
+
+**Injury cap**:
+The rule that every team keeps at least 18 skaters and 2 goalies able to play.
+An injury that would break it does not happen, so with two goalies on a roster,
+goalies only suffer injuries they can play through.
+
 **Shot attempt**:
 Any shot toward the net: on goal (saved or scored), missed, or blocked by a
 defending skater. A shot on goal is one the goalie must stop.
@@ -216,7 +261,9 @@ always high danger.
 
 **Appearance**:
 Taking part in a match, which counts as one game played. Every dressed skater
-and the starting goalie appear; the dressed backup goalie and scratches do not.
+able to play and the starting goalie appear; a dressed skater who cannot play
+through an injury, the dressed backup goalie, and scratches do not. When the
+starting goalie cannot play, the backup starts instead.
 
 **Match statistics**:
 An appearing player's individual production in one match. Skaters record goals,
@@ -265,7 +312,8 @@ A day's results are applied together or not at all.
 **Completed match**:
 The canonical record of a scheduled match after it is played: the scheduled
 date and teams, how it was decided, each side's score, shots, and shot totals,
-the box score of every appearing player, and the scoring and penalty summaries.
+the box score of every appearing player, the scoring and penalty summaries, and
+the injuries and hidden wear the match caused.
 A scheduled match is completed at most once.
 
 **Scoring summary**:
@@ -351,4 +399,5 @@ A rostered player who is not dressed in the current lineup.
 **Inbox message**:
 A message delivered to the user from someone in the game world, such as the
 owner, staff, or a player. Messages describe real game state and can be marked
-read.
+read. The head trainer reports each injury to a managed-team player, with its
+expected return, and each recovery.

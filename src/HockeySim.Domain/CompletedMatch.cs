@@ -10,7 +10,8 @@ namespace HockeySim.Domain;
 /// one team's faceoff wins are the other's losses, a team scores shorthanded only when the
 /// opponent had a power play, and each team's shot totals are the other's seen from the opposite
 /// side. The scoring and penalty summaries account for exactly the goals, assists, and penalty
-/// minutes in the box scores.
+/// minutes in the box scores. Injuries and wear (the match's health changes) belong to appearing
+/// players of their team.
 /// </summary>
 public sealed class CompletedMatch
 {
@@ -19,13 +20,15 @@ public sealed class CompletedMatch
 
     /// <param name="goals">Every goal scored by a player, in the order scored.</param>
     /// <param name="penalties">Every penalty assessed, in the order called.</param>
+    /// <param name="health">The injuries and wear the match caused; none when omitted.</param>
     public CompletedMatch(
         ScheduledMatch scheduledMatch,
         CompletedMatchTeam home,
         CompletedMatchTeam away,
         MatchDecision decision,
         IEnumerable<MatchGoal> goals,
-        IEnumerable<MatchPenalty> penalties)
+        IEnumerable<MatchPenalty> penalties,
+        MatchHealthChanges? health = null)
     {
         ArgumentNullException.ThrowIfNull(scheduledMatch);
         ArgumentNullException.ThrowIfNull(home);
@@ -99,12 +102,16 @@ public sealed class CompletedMatch
         var penaltyList = penalties.ToList();
         ThrowIfSummaryDiffers(goalList, penaltyList, home, away);
 
+        health ??= MatchHealthChanges.None;
+        ThrowIfHealthChangesAreNotForAppearingPlayers(health, home, away);
+
         ScheduledMatch = scheduledMatch;
         Home = home;
         Away = away;
         Decision = decision;
         _goals = goalList.AsReadOnly();
         _penalties = penaltyList.AsReadOnly();
+        Health = health;
     }
 
     public ScheduledMatch ScheduledMatch { get; }
@@ -126,6 +133,29 @@ public sealed class CompletedMatch
 
     /// <summary>The penalty summary: every penalty assessed, in the order called.</summary>
     public IReadOnlyList<MatchPenalty> Penalties => _penalties;
+
+    /// <summary>The injuries suffered and the hidden wear taken in the match.</summary>
+    public MatchHealthChanges Health { get; }
+
+    /// <summary>
+    /// Only a player who appeared can be injured or take wear, and each injury belongs to that
+    /// player's team.
+    /// </summary>
+    private static void ThrowIfHealthChangesAreNotForAppearingPlayers(
+        MatchHealthChanges health,
+        CompletedMatchTeam home,
+        CompletedMatchTeam away)
+    {
+        var appearing = new[] { home, away }
+            .SelectMany(side => side.Skaters.Select(skater => skater.PlayerId).Append(side.Goalie.PlayerId)
+                .Select(playerId => (playerId, side.TeamId)))
+            .ToDictionary(entry => entry.playerId, entry => entry.TeamId);
+        if (health.Injuries.Any(injury => !appearing.TryGetValue(injury.PlayerId, out var teamId) || teamId != injury.TeamId)
+            || health.Wear.Any(gain => !appearing.ContainsKey(gain.PlayerId)))
+        {
+            throw new ArgumentException("Every injury and wear must belong to an appearing player of that team.", nameof(health));
+        }
+    }
 
     /// <summary>
     /// The summaries must be in time order and credit exactly the box scores' goals, assists,

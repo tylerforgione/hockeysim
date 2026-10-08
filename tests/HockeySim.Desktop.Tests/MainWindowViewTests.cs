@@ -175,6 +175,7 @@ public sealed class MainWindowViewTests
         AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
         var rosterView = Single<TeamRosterView>(window);
         Assert.True(rosterView.FindControl<Border>("TeamStatistics")?.IsEffectivelyVisible);
+        Assert.True(rosterView.FindControl<Border>("InjuryReport")?.IsEffectivelyVisible);
         var ratingsTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkatersTable"));
         var basicTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkaterBasicTable"));
         var advancedTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkaterAdvancedTable"));
@@ -195,6 +196,9 @@ public sealed class MainWindowViewTests
         Assert.Equal(
             Assert.IsType<PlayerDetailViewModel>(playerDetail.DataContext).Overall.ToString(CultureInfo.InvariantCulture),
             overallText!.Text);
+        Assert.Equal(
+            Assert.IsType<PlayerDetailViewModel>(playerDetail.DataContext).Health,
+            playerDetail.FindControl<TextBlock>("HealthText")?.Text);
         var seasonStatistics = playerDetail.FindControl<StackPanel>("SeasonStatistics");
         Assert.True(seasonStatistics?.IsEffectivelyVisible);
         Assert.Equal(

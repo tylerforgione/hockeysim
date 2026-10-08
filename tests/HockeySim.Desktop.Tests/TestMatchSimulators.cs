@@ -11,7 +11,7 @@ internal sealed class FailingMatchSimulator : IMatchSimulator
 {
     public const string FailureMessage = "The match engine is unavailable.";
 
-    public MatchResult Simulate(Match match, OvertimeFormat overtime, RandomState randomState) =>
+    public MatchResult Simulate(Match match, OvertimeFormat overtime, MatchHealth health, RandomState randomState) =>
         throw new InvalidOperationException(FailureMessage);
 }
 
@@ -44,7 +44,7 @@ internal sealed class GatedMatchSimulator : IMatchSimulator, IDisposable
 
     public void Release() => _release.Set();
 
-    public MatchResult Simulate(Match match, OvertimeFormat overtime, RandomState randomState)
+    public MatchResult Simulate(Match match, OvertimeFormat overtime, MatchHealth health, RandomState randomState)
     {
         _entered.TrySetResult();
         if (!_release.Wait(Timeout))
@@ -52,7 +52,7 @@ internal sealed class GatedMatchSimulator : IMatchSimulator, IDisposable
             throw new TimeoutException("The test did not release the league day.");
         }
 
-        return _engine.Simulate(match, overtime, randomState);
+        return _engine.Simulate(match, overtime, health, randomState);
     }
 
     public void Dispose() => _release.Dispose();

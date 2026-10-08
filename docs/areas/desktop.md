@@ -19,8 +19,8 @@ view model together.
 | `Startup/`, `NewGame/`, `Saves/` | The startup menu, new-game setup, save and load screens |
 | `Game/` | `GameSession` (commands, snapshots, unsaved progress) and the in-game shell |
 | `Home/`, `Inbox/`, `Roster/`, `Lines/`, `Teams/`, `Standings/`, `Schedule/` | The shell's pages |
-| `Players/` | Player profile, season totals as displayed (`PlayerSeasonTotals`), and shared player formatting (`PlayerDisplay`) |
-| `Roster/TeamStatisticsDisplay.cs` | The team statistics strip above each roster |
+| `Players/` | Player profile, season totals as displayed (`PlayerSeasonTotals`), and shared player and injury formatting (`PlayerDisplay`, `InjuryDisplay`) |
+| `Roster/TeamStatisticsDisplay.cs`, `InjuryReportRowViewModel.cs` | The team statistics strip and injury report above each roster |
 | `Schedule/MatchDetail*`, `MatchDisplay.cs` | The box score with its summaries, and shared match and statistic formatting |
 | `Confirmation/` | The confirmation shown over every screen |
 | `Theme/` | Colours, control styles, icons |
@@ -40,7 +40,8 @@ games, plus a headless Avalonia walkthrough.
 | `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, the team strip |
 | `SaveAndLoadTests.cs` | Save and load screens, unsaved progress, confirmations |
 | `PlayerBiographyDisplayTests.cs`, `AppVersionTests.cs` | Formatting, version display |
-| `GameTestData.cs`, `TestMatchSimulators.cs`, `TemporarySaveDirectory.cs` | Builders and test engines |
+| `InjuryDisplayTests.cs` | Continue waiting for replacements, Lines-page injury warnings, roster markers, the injury report, the profile's health |
+| `GameTestData.cs`, `TestMatchSimulators.cs`, `TemporarySaveDirectory.cs`, `InjuredPlayerReplacement.cs` | Builders, test engines, and replacing injured players between days |
 
 ## Behaviour
 
@@ -54,15 +55,21 @@ for other clubs, on tabs for even strength, power play, penalty kill, and the
 other situations (4-on-4, 3-on-3, extra attacker); each unit shows its forwards
 in front of its defence. Every skater slot offers every skater, and goalie slots
 only goalies; each choice shows the player's natural position.
-A slot warns beneath its choice when the player is out of position (a defenceman
-at forward or a forward on defence is named as such). Handedness is not shown or
-warned about there; the roster and player profile show it.
+A slot warns beneath its choice when the player is injured (in red when they
+cannot play, in amber when they are playing through it) and when they are out of
+position (a defenceman at forward or a forward on defence is named as such), and
+each choice marks an injured player OUT or INJ. Handedness is not shown or
+warned about there; the roster and player profile show it. AI teams' lineups are
+shown as they dress today, with injured players already replaced.
 Choosing a player already in the same line set, unit, or
 extra-attacker pair swaps the two; dressing a scratched player hands them the
 replaced player's unit slots. Unsaved edits survive browsing other teams. The title bar's Continue button plays the
 current league day off the UI thread; the session rejects a second request while
 one runs and then publishes Management's latest snapshot, since a command
 issued meanwhile waits on Management's lock and may have produced newer state.
+While Management's `PlayersToReplace` is not empty, Continue is disabled and a
+banner under the title bar names the injured players to replace, with a button
+to the Lines page; it clears once a saved lineup leaves them out.
 A failed day is shown as an error banner; Management applied nothing, so the
 pages still show the unplayed day. Once the season is complete, Continue is
 disabled and every page remains browsable. The schedule page lists one team's
@@ -82,7 +89,13 @@ width.
 The standings page presents Management's division, conference, or league tables
 as ranked, without re-sorting them. Each roster starts with a strip of the team's
 season statistics: power-play, penalty-kill, and faceoff percentages and its
-five-on-five Corsi, Fenwick, shot, and xG shares. Roster tables for every team
+five-on-five Corsi, Fenwick, shot, and xG shares, then the team's injury report:
+each injury that has not healed, players who cannot play first, with its status
+and expected return. Roster tables mark an injured player OUT or INJ beside
+their name, with the details in a tooltip, and the player profile shows the
+player's health: each injury, its expected return, and either that the player
+cannot play or the rating points it costs while playing through. The exact
+recovery time, wear, and durability are never shown. Roster tables for every team
 switch between ratings, basic season totals (skater GP, G, A, P, +/-, PIM, PPP,
 SHP, shots, TOI per game, FO%; goalie GP, SA, SV, GA, SV%, GAA, shutouts), and
 advanced figures (skater five-on-five on-ice Corsi and Fenwick for, against, and

@@ -52,11 +52,11 @@ public sealed class CalibrationTests(CalibrationTests.CalibratedSeason season)
             var snapshot = StartGame(manager, seed: 2026);
             for (var advances = 0; !snapshot.Season.IsComplete && advances < MaximumAdvances; advances++)
             {
-                snapshot = manager.AdvanceDay();
+                snapshot = manager.AdvanceDayReplacingInjured();
             }
 
             Results = simulator.Results;
-            Measurements = new LeagueMeasurements(Results, snapshot.Season.TeamRecords);
+            Measurements = new LeagueMeasurements(Results, snapshot.Season.TeamRecords, simulator.PlayersOut);
         }
 
         public IReadOnlyList<MatchResult> Results { get; }
@@ -64,7 +64,10 @@ public sealed class CalibrationTests(CalibrationTests.CalibratedSeason season)
         internal LeagueMeasurements Measurements { get; }
     }
 
-    /// <summary>Plays matches with the real engine and keeps every full result, play-by-play included.</summary>
+    /// <summary>
+    /// Plays matches with the real engine and keeps every full result, play-by-play included, and
+    /// how many rostered players were out injured for each match.
+    /// </summary>
     private sealed class RecordingMatchSimulator : IMatchSimulator
     {
         private readonly MatchSimulator _simulator = new();
@@ -72,9 +75,13 @@ public sealed class CalibrationTests(CalibrationTests.CalibratedSeason season)
 
         public IReadOnlyList<MatchResult> Results => _results;
 
-        public MatchResult Simulate(Match match, OvertimeFormat overtime, RandomState randomState)
+        /// <summary>Rostered players who could not play, summed over both teams of every match.</summary>
+        public int PlayersOut { get; private set; }
+
+        public MatchResult Simulate(Match match, OvertimeFormat overtime, MatchHealth health, RandomState randomState)
         {
-            var result = _simulator.Simulate(match, overtime, randomState);
+            PlayersOut += match.Home.Roster.Concat(match.Away.Roster).Count(player => !health.CanPlay(player.Id));
+            var result = _simulator.Simulate(match, overtime, health, randomState);
             _results.Add(result);
             return result;
         }

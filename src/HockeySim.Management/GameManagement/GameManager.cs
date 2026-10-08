@@ -190,6 +190,9 @@ public sealed class GameManager
     /// The day is all-or-nothing: if any match fails, no result is applied, the date does not
     /// move, and the random state is not advanced.
     /// </remarks>
+    /// <exception cref="UnavailablePlayersException">
+    /// The managed team plays today and its lineup dresses players who cannot play.
+    /// </exception>
     /// <exception cref="InvalidOperationException">
     /// No game has started, the season is complete, or a day is already being advanced.
     /// </exception>
@@ -205,15 +208,24 @@ public sealed class GameManager
                 throw new InvalidOperationException("The regular season is complete; no further days can be played.");
             }
 
+            var unavailable = ManagedPlayersToReplace(season);
+            if (unavailable.Count > 0)
+            {
+                throw new UnavailablePlayersException(unavailable);
+            }
+
+            var playedDate = season.CurrentDate;
             _isAdvancing = true;
             try
             {
-                _randomState = LeagueDay.Play(season, _matchSimulator, _randomState);
+                _randomState = LeagueDay.Play(season, _managedTeamId, _matchSimulator, _randomState);
             }
             finally
             {
                 _isAdvancing = false;
             }
+
+            InjuryMessages.Deliver(_inbox, season, _managedTeamId, playedDate);
 
             return CreateSnapshot();
         }
@@ -282,8 +294,27 @@ public sealed class GameManager
         }
     }
 
-    private GameSnapshot CreateSnapshot() =>
-        GameSnapshot.Create(GetSeason(), _managedTeamId, _randomState, _inbox);
+    /// <summary>
+    /// The managed team's dressed players who cannot play, if the team plays today. On a day the
+    /// team does not play they may still heal in time, so they do not hold up the day.
+    /// </summary>
+    private IReadOnlyList<Player> ManagedPlayersToReplace(Season season)
+    {
+        var playsToday = season.CurrentDateMatches.Any(
+            match => match.HomeTeamId == _managedTeamId || match.AwayTeamId == _managedTeamId);
+        return playsToday ? MatchDayLineup.UnavailablePlayers(GetManagedTeam(), season) : [];
+    }
+
+    private GameSnapshot CreateSnapshot()
+    {
+        var season = GetSeason();
+        return GameSnapshot.Create(
+            season,
+            _managedTeamId,
+            ManagedPlayersToReplace(season).Select(player => player.Id).ToList(),
+            _randomState,
+            _inbox);
+    }
 
     private Season GetSeason() =>
         _season ?? throw new InvalidOperationException("Start a new game before requesting game state.");

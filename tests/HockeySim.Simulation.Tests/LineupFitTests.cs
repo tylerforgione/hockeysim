@@ -8,7 +8,8 @@ namespace HockeySim.Simulation.Tests;
 
 /// <summary>
 /// Statistical checks that skaters out of position or on their off-hand side play below their
-/// ratings. Each compares teams of identical ratings that differ only in where their skaters play.
+/// ratings. Each compares teams of identical ratings that differ only in where their skaters play,
+/// with injuries off so nobody leaves the lineup being compared.
 /// </summary>
 public sealed class LineupFitTests
 {
@@ -100,7 +101,7 @@ public sealed class LineupFitTests
         var match = TestTeams.CreateMatch(home, away);
         var simulator = new MatchSimulator();
         return Enumerable.Range(0, count)
-            .Select(seed => simulator.Simulate(match, OvertimeFormat.RegularSeason, new RandomState((ulong)seed)))
+            .Select(seed => simulator.Simulate(match, OvertimeFormat.RegularSeason, TestMatches.WithoutInjuries, new RandomState((ulong)seed)))
             .ToList();
     }
 }

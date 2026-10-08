@@ -12,7 +12,7 @@ public sealed partial class LineupSlotViewModel : ObservableObject
     private readonly Action<LineupSlotViewModel, PlayerOptionViewModel?> _selectionChanged;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(FitNote), nameof(HasFitNote))]
+    [NotifyPropertyChangedFor(nameof(FitNote), nameof(HasFitNote), nameof(InjuryNote), nameof(HasInjuryNote), nameof(IsOutNote))]
     private PlayerOptionViewModel? _selectedPlayer;
 
     /// <param name="role">The skater role the slot plays, or none for a goalie slot.</param>
@@ -45,6 +45,21 @@ public sealed partial class LineupSlotViewModel : ObservableObject
         : null;
 
     public bool HasFitNote => FitNote is not null;
+
+    /// <summary>
+    /// Gets a warning when the chosen player is injured: one who cannot play must be replaced
+    /// before the team's next match, and one playing through it plays below their ratings.
+    /// </summary>
+    public string? InjuryNote => SelectedPlayer switch
+    {
+        { IsOut: true } => "Injured · cannot play",
+        { IsPlayingHurt: true } => "Playing through an injury",
+        _ => null,
+    };
+
+    public bool HasInjuryNote => InjuryNote is not null;
+
+    public bool IsOutNote => SelectedPlayer?.IsOut == true;
 
     /// <summary>
     /// Gets every roster player who can be chosen for this slot, dressed or scratched.

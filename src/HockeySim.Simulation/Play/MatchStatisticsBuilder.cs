@@ -55,7 +55,7 @@ internal sealed class MatchStatisticsBuilder
     {
         var team = Team(side.TeamId);
         var against = Team(opponent.TeamId);
-        var skaters = side.Skaters.Select(skater =>
+        var skaters = side.AppearingSkaters.Select(skater =>
         {
             var tally = Skater(skater.Id);
             return new SkaterMatchStatistics(

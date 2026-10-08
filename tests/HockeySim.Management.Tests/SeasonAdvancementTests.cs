@@ -216,7 +216,7 @@ public sealed class SeasonAdvancementTests
             var start = StartGame(manager);
             for (var day = 0; day < 10; day++)
             {
-                manager.AdvanceDay();
+                manager.AdvanceDayReplacingInjured();
             }
 
             var team = ManagedTeam(manager.GetSnapshot());
@@ -230,7 +230,7 @@ public sealed class SeasonAdvancementTests
             GameSnapshot snapshot = start;
             for (var day = 0; day < 10; day++)
             {
-                snapshot = manager.AdvanceDay();
+                snapshot = manager.AdvanceDayReplacingInjured();
             }
 
             return snapshot;
@@ -308,10 +308,10 @@ public sealed class SeasonAdvancementTests
 
         public Action<int>? BeforeMatch { get; set; }
 
-        public MatchResult Simulate(Match match, OvertimeFormat overtime, RandomState randomState)
+        public MatchResult Simulate(Match match, OvertimeFormat overtime, MatchHealth health, RandomState randomState)
         {
             BeforeMatch?.Invoke(Interlocked.Increment(ref _calls));
-            return _engine.Simulate(match, overtime, randomState);
+            return _engine.Simulate(match, overtime, health, randomState);
         }
     }
 }

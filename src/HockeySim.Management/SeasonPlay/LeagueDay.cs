@@ -1,4 +1,5 @@
 using HockeySim.Domain;
+using HockeySim.Management.Lineups;
 using HockeySim.Simulation;
 using HockeySim.Simulation.Events;
 using HockeySim.Simulation.Randomness;
@@ -14,25 +15,47 @@ internal static class LeagueDay
     /// Simulates the day's matches in schedule order on one continuous random stream, with
     /// regular-season overtime, then hands the whole day to the season. The play-by-play stays
     /// with the Simulation result; the completed match keeps the box score and the scoring and
-    /// penalty summaries. Simulation never changes the teams, so if any match fails the season is
-    /// untouched and the caller keeps its original random state.
+    /// penalty summaries, and the injuries and hidden wear that the season applies to the players'
+    /// health. Each match plays from the players' health on the current date. AI teams dress their
+    /// <see cref="MatchDayLineup"/>; the managed team dresses its own lineup, which the caller has
+    /// checked. Simulation never changes the teams, so if any match fails the season is untouched
+    /// and the caller keeps its original random state.
     /// </summary>
     /// <returns>The random state after the day's final match.</returns>
-    public static RandomState Play(Season season, IMatchSimulator simulator, RandomState randomState)
+    public static RandomState Play(
+        Season season,
+        TeamId managedTeamId,
+        IMatchSimulator simulator,
+        RandomState randomState)
     {
-        var teams = season.League.Teams.ToDictionary(team => team.Id);
+        var teams = season.League.Teams.ToDictionary(
+            team => team.Id,
+            team => team.Id == managedTeamId ? team : DressedForToday(team, season));
         var results = new List<CompletedMatch>();
 
         foreach (var scheduledMatch in season.CurrentDateMatches)
         {
             var match = new Match(teams[scheduledMatch.HomeTeamId], teams[scheduledMatch.AwayTeamId]);
-            var result = simulator.Simulate(match, OvertimeFormat.RegularSeason, randomState);
+            var health = new MatchHealth(
+                season.CurrentDate,
+                match.Home.Roster.Concat(match.Away.Roster).Select(player => season.HealthOf(player.Id)));
+            var result = simulator.Simulate(match, OvertimeFormat.RegularSeason, health, randomState);
             results.Add(ToCompletedMatch(scheduledMatch, result));
             randomState = result.RandomState;
         }
 
         season.CompleteDay(results);
         return randomState;
+    }
+
+    /// <summary>
+    /// The team as it takes the ice today. The match is given a copy dressed in the match-day
+    /// lineup, so the team's own preferred lineup is left as it is.
+    /// </summary>
+    private static Team DressedForToday(Team team, Season season)
+    {
+        var lineup = MatchDayLineup.ForAiTeam(team, season);
+        return ReferenceEquals(lineup, team.Lineup) ? team : new Team(team.Id, team.Name, team.Roster, lineup);
     }
 
     private static CompletedMatch ToCompletedMatch(ScheduledMatch scheduledMatch, MatchResult result) =>
@@ -56,7 +79,16 @@ internal static class LeagueDay
                 penalty.TeamId,
                 penalty.PlayerId,
                 penalty.Infraction,
-                penalty.Kind)));
+                penalty.Kind)),
+            new MatchHealthChanges(
+                result.Injuries.Select(injury => new MatchInjury(
+                    injury.Period,
+                    injury.TimeInPeriod,
+                    injury.TeamId,
+                    injury.PlayerId,
+                    injury.Type,
+                    injury.RecoveryDays)),
+                result.Wear));
 
     private static CompletedMatchTeam ToCompletedMatchTeam(MatchTeamResult side) =>
         new(

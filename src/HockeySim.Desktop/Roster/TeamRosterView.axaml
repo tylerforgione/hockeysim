@@ -6,7 +6,7 @@
              x:DataType="roster:TeamRosterViewModel">
   <!-- Header and row templates share each table's ColumnDefinitions so columns align. -->
   <Grid ColumnDefinitions="*,280" ColumnSpacing="8">
-    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
       <Border x:Name="TeamStatistics" Classes="panel" Padding="12,6">
         <DockPanel>
           <TextBlock DockPanel.Dock="Left"
@@ -33,7 +33,35 @@
         </DockPanel>
       </Border>
 
-      <Border Grid.Row="1" Classes="panel">
+      <Border x:Name="InjuryReport" Grid.Row="1" Classes="panel" Padding="12,6">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Left"
+                     Classes="panel-title"
+                     Margin="0,0,16,0"
+                     Text="INJURIES"
+                     ToolTip.Tip="Injuries that have not healed, with the staff's expected return" />
+          <TextBlock Classes="caption" Text="No injuries." IsVisible="{Binding !HasInjuries}" />
+          <ItemsControl ItemsSource="{Binding InjuryReport}" IsVisible="{Binding HasInjuries}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="roster:InjuryReportRowViewModel">
+                <Grid ColumnDefinitions="180,36,150,110,*" Margin="0,1">
+                  <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                  <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding Position}" />
+                  <TextBlock Grid.Column="2" Classes="cell" Text="{Binding Injury}" />
+                  <TextBlock Grid.Column="3"
+                             Classes="cell"
+                             Classes.error="{Binding IsOut}"
+                             Classes.warning="{Binding !IsOut}"
+                             Text="{Binding Status}" />
+                  <TextBlock Grid.Column="4" Classes="cell muted" Text="{Binding ExpectedReturn, StringFormat='Expected back {0}'}" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </DockPanel>
+      </Border>
+
+      <Border Grid.Row="2" Classes="panel">
         <DockPanel>
           <Border DockPanel.Dock="Top" Classes="panel-header">
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
@@ -96,7 +124,17 @@
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
                     <Grid ColumnDefinitions="36,*,36,38,40,30,64,38,38,38,38,38,38,38,38,38,38,38">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                      <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
+                        <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                        <Border Grid.Column="1"
+                                Classes="pill"
+                                Classes.injury-out="{Binding IsOut}"
+                                Classes.injury-playing="{Binding IsPlayingHurt}"
+                                IsVisible="{Binding HasInjury}"
+                                ToolTip.Tip="{Binding InjurySummary}">
+                          <TextBlock Text="{Binding InjuryMarker}" />
+                        </Border>
+                      </Grid>
                       <Border Grid.Column="2" Classes="position"><TextBlock Text="{Binding Position}" /></Border>
                       <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Age}" />
                       <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
@@ -149,7 +187,17 @@
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
                     <Grid ColumnDefinitions="36,*,36,38,40,30,64,40,40,40,40,40,40,40,40,40,56,48">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                      <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
+                        <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                        <Border Grid.Column="1"
+                                Classes="pill"
+                                Classes.injury-out="{Binding IsOut}"
+                                Classes.injury-playing="{Binding IsPlayingHurt}"
+                                IsVisible="{Binding HasInjury}"
+                                ToolTip.Tip="{Binding InjurySummary}">
+                          <TextBlock Text="{Binding InjuryMarker}" />
+                        </Border>
+                      </Grid>
                       <Border Grid.Column="2" Classes="position"><TextBlock Text="{Binding Position}" /></Border>
                       <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Age}" />
                       <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
@@ -202,7 +250,17 @@
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
                     <Grid ColumnDefinitions="36,*,36,38,40,30,64,40,40,40,48,40,40,48,48,48,52,48">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                      <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
+                        <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                        <Border Grid.Column="1"
+                                Classes="pill"
+                                Classes.injury-out="{Binding IsOut}"
+                                Classes.injury-playing="{Binding IsPlayingHurt}"
+                                IsVisible="{Binding HasInjury}"
+                                ToolTip.Tip="{Binding InjurySummary}">
+                          <TextBlock Text="{Binding InjuryMarker}" />
+                        </Border>
+                      </Grid>
                       <Border Grid.Column="2" Classes="position"><TextBlock Text="{Binding Position}" /></Border>
                       <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Age}" />
                       <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
@@ -228,7 +286,7 @@
         </DockPanel>
       </Border>
 
-      <Border Grid.Row="2" Classes="panel">
+      <Border Grid.Row="3" Classes="panel">
         <DockPanel>
           <Border DockPanel.Dock="Top" Classes="panel-header">
             <TextBlock Classes="panel-title" Text="GOALIES" />
@@ -258,7 +316,17 @@
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
                     <Grid ColumnDefinitions="36,*,38,40,30,64,38,38,38,38">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                      <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
+                        <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                        <Border Grid.Column="1"
+                                Classes="pill"
+                                Classes.injury-out="{Binding IsOut}"
+                                Classes.injury-playing="{Binding IsPlayingHurt}"
+                                IsVisible="{Binding HasInjury}"
+                                ToolTip.Tip="{Binding InjurySummary}">
+                          <TextBlock Text="{Binding InjuryMarker}" />
+                        </Border>
+                      </Grid>
                       <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Age}" />
                       <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
                       <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Handedness}" />
@@ -299,7 +367,17 @@
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
                     <Grid ColumnDefinitions="36,*,38,40,30,64,40,48,48,48,56,52,40">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                      <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
+                        <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                        <Border Grid.Column="1"
+                                Classes="pill"
+                                Classes.injury-out="{Binding IsOut}"
+                                Classes.injury-playing="{Binding IsPlayingHurt}"
+                                IsVisible="{Binding HasInjury}"
+                                ToolTip.Tip="{Binding InjurySummary}">
+                          <TextBlock Text="{Binding InjuryMarker}" />
+                        </Border>
+                      </Grid>
                       <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Age}" />
                       <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
                       <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Handedness}" />
@@ -342,7 +420,17 @@
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
                     <Grid ColumnDefinitions="36,*,38,40,30,64,40,64,52,48,60,56">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                      <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
+                        <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                        <Border Grid.Column="1"
+                                Classes="pill"
+                                Classes.injury-out="{Binding IsOut}"
+                                Classes.injury-playing="{Binding IsPlayingHurt}"
+                                IsVisible="{Binding HasInjury}"
+                                ToolTip.Tip="{Binding InjurySummary}">
+                          <TextBlock Text="{Binding InjuryMarker}" />
+                        </Border>
+                      </Grid>
                       <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Age}" />
                       <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
                       <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Handedness}" />

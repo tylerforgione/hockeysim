@@ -5,13 +5,19 @@
              x:Class="HockeySim.Desktop.Lines.LinesPageView"
              x:DataType="lines:LinesPageViewModel">
   <UserControl.Resources>
-    <!-- A slot's player choice with a warning beneath when the player is out of position. -->
+    <!-- A slot's player choice with warnings beneath when the player is injured or out of position. -->
     <DataTemplate x:Key="SlotPicker" x:DataType="lines:LineupSlotViewModel">
       <StackPanel Spacing="1">
         <ComboBox HorizontalAlignment="Stretch"
                   ItemsSource="{Binding Options}"
                   SelectedItem="{Binding SelectedPlayer}"
                   IsEnabled="{Binding IsEditable}" />
+        <TextBlock Classes="caption"
+                   Classes.error="{Binding IsOutNote}"
+                   Classes.warning="{Binding !IsOutNote}"
+                   Text="{Binding InjuryNote}"
+                   IsVisible="{Binding HasInjuryNote}"
+                   TextTrimming="CharacterEllipsis" />
         <TextBlock Classes="caption warning"
                    Text="{Binding FitNote}"
                    IsVisible="{Binding HasFitNote}"
@@ -22,16 +28,25 @@
 
   <UserControl.DataTemplates>
     <!-- Scratched skaters stay listed for unit slots, dimmed, because only dressed skaters can be saved there.
-         Each player shows their natural position. -->
+         Each player shows their natural position, and injured players are marked. -->
     <DataTemplate x:DataType="lines:PlayerOptionViewModel">
-      <Grid ColumnDefinitions="34,*,Auto">
+      <Grid ColumnDefinitions="34,*,Auto,Auto">
         <TextBlock Classes="cell muted" Text="{Binding Number}" />
         <TextBlock Grid.Column="1"
                    Classes="cell"
                    Classes.muted="{Binding IsScratched}"
                    Text="{Binding Name}"
                    TextTrimming="CharacterEllipsis" />
-        <TextBlock Grid.Column="2" Classes="cell muted" Margin="6,0,0,0" Text="{Binding PositionAbbreviation}" />
+        <Border Grid.Column="2"
+                Classes="pill"
+                Classes.injury-out="{Binding IsOut}"
+                Classes.injury-playing="{Binding IsPlayingHurt}"
+                Margin="6,0,0,0"
+                IsVisible="{Binding HasInjury}"
+                ToolTip.Tip="{Binding InjurySummary}">
+          <TextBlock Text="{Binding InjuryMarker}" />
+        </Border>
+        <TextBlock Grid.Column="3" Classes="cell muted" Margin="6,0,0,0" Text="{Binding PositionAbbreviation}" />
       </Grid>
     </DataTemplate>
 

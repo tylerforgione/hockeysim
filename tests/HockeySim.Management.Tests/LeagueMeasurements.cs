@@ -11,7 +11,10 @@ namespace HockeySim.Management.Tests;
 /// </summary>
 internal sealed class LeagueMeasurements
 {
-    public LeagueMeasurements(IReadOnlyList<MatchResult> results, IReadOnlyList<TeamRecordSnapshot> records)
+    private const int DressedSkaters = (3 * Lineup.RequiredForwardLineCount) + (2 * Lineup.RequiredDefencePairCount);
+
+    /// <param name="playersOut">Rostered players who could not play, summed over both teams of every match.</param>
+    public LeagueMeasurements(IReadOnlyList<MatchResult> results, IReadOnlyList<TeamRecordSnapshot> records, int playersOut)
     {
         if (results.Count == 0)
         {
@@ -58,9 +61,21 @@ internal sealed class LeagueMeasurements
 
         EmptyNetGoalsPerMatch = PerMatch(skaters.Sum(skater => skater.EmptyNetGoals));
 
-        // Skaters are listed in lineup order: the forward lines, then the defence pairs.
-        ForwardLineTimeShares = TimeShares(sides, first: 0, groupSize: 3, groupCount: Lineup.RequiredForwardLineCount);
-        DefencePairTimeShares = TimeShares(sides, first: 3 * Lineup.RequiredForwardLineCount, groupSize: 2, groupCount: Lineup.RequiredDefencePairCount);
+        // Skaters are listed in lineup order: the forward lines, then the defence pairs. Only full
+        // lineups are measured, since a skater who leaves a match injured leaves a gap the other
+        // groups fill.
+        var fullSides = sides.Where(side => side.Skaters.Count == DressedSkaters).ToList();
+        ForwardLineTimeShares = TimeShares(fullSides, first: 0, groupSize: 3, groupCount: Lineup.RequiredForwardLineCount);
+        DefencePairTimeShares = TimeShares(fullSides, first: 3 * Lineup.RequiredForwardLineCount, groupSize: 2, groupCount: Lineup.RequiredDefencePairCount);
+
+        // An injury that cannot be played through costs the matches the team plays before the
+        // player's return date; a team plays about every other day.
+        var injuries = results.SelectMany(result => result.Injuries).ToList();
+        var outInjuries = injuries.Where(injury => !InjuryCatalogue.For(injury.Type).CanPlayThrough).ToList();
+        InjuriesMissingMatches = PerTeam(outInjuries.Count);
+        PlayThroughInjuries = PerTeam(injuries.Count - outInjuries.Count);
+        MeanRecoveryDays = outInjuries.Count == 0 ? 0 : outInjuries.Average(injury => injury.RecoveryDays);
+        ManGamesLost = PerTeam(playersOut);
 
         var points = records.Select(record => (double)record.Points).ToList();
         var meanPoints = points.Average();
@@ -115,6 +130,18 @@ internal sealed class LeagueMeasurements
     public IReadOnlyList<double> DefencePairTimeShares { get; }
 
     /// <summary>The spread of the teams' points in the final standings.</summary>
+    /// <summary>Injuries that cannot be played through, per team per game.</summary>
+    public double InjuriesMissingMatches { get; }
+
+    /// <summary>Injuries played through, per team per game.</summary>
+    public double PlayThroughInjuries { get; }
+
+    /// <summary>The mean recovery time of injuries that cannot be played through, in league days.</summary>
+    public double MeanRecoveryDays { get; }
+
+    /// <summary>Rostered players out injured, per team per game: man-games lost.</summary>
+    public double ManGamesLost { get; }
+
     public double PointsStandardDeviation { get; }
 
     public double FewestPoints { get; }
