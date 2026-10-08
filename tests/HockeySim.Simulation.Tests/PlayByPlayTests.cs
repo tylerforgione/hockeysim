@@ -24,7 +24,10 @@ public sealed class PlayByPlayTests
                     ? TimeSpan.FromMinutes(5)
                     : TimeSpan.FromMinutes(20);
                 Assert.InRange(matchEvent.Period, 1, MatchResult.OvertimePeriod);
-                Assert.InRange(matchEvent.TimeInPeriod, TimeSpan.Zero, periodLength - TimeSpan.FromSeconds(1));
+
+                // Only a delayed penalty called as the period ends is recorded at its full length.
+                var latest = matchEvent is PenaltyEvent ? periodLength : periodLength - TimeSpan.FromSeconds(1);
+                Assert.InRange(matchEvent.TimeInPeriod, TimeSpan.Zero, latest);
                 Assert.Equal(0, matchEvent.TimeInPeriod.Ticks % TimeSpan.TicksPerSecond);
             });
 
@@ -47,9 +50,21 @@ public sealed class PlayByPlayTests
 
             for (var index = 0; index < result.Events.Count - 1; index++)
             {
-                if (result.Events[index] is GoalEvent goal && result.Events[index + 1].Period == goal.Period)
+                if (result.Events[index] is not GoalEvent goal)
                 {
-                    var restart = Assert.IsType<FaceoffEvent>(result.Events[index + 1]);
+                    continue;
+                }
+
+                // Penalties still standing from a delayed penalty are assessed before the restart.
+                var next = index + 1;
+                while (next < result.Events.Count && result.Events[next] is PenaltyEvent penalty && penalty.TimeInPeriod == goal.TimeInPeriod)
+                {
+                    next++;
+                }
+
+                if (next < result.Events.Count && result.Events[next].Period == goal.Period)
+                {
+                    var restart = Assert.IsType<FaceoffEvent>(result.Events[next]);
                     Assert.Equal(goal.TimeInPeriod, restart.TimeInPeriod);
                 }
             }
@@ -57,7 +72,7 @@ public sealed class PlayByPlayTests
     }
 
     [Fact]
-    public void EveryEventShowsFiveDressedSkatersAndTheStartingGoalieForEachSideInRegulation()
+    public void EveryEventShowsDistinctDressedSkatersAndTheStartingGoalieOrAnExtraAttackerForEachSide()
     {
         var homeSkaters = TestMatches.DressedSkaterIds(Match.Home);
         var awaySkaters = TestMatches.DressedSkaterIds(Match.Away);
@@ -65,17 +80,21 @@ public sealed class PlayByPlayTests
         Assert.All(Results.SelectMany(result => result.Events), matchEvent =>
         {
             var onIce = matchEvent.OnIce;
-            var skaters = matchEvent.Period <= MatchResult.RegulationPeriodCount ? 5 : 3;
 
-            Assert.Equal(new StrengthState(skaters, skaters), matchEvent.Strength);
-            Assert.True(matchEvent.Strength.IsEvenStrength);
-            Assert.Equal(skaters, onIce.HomeSkaters.Distinct().Count());
-            Assert.Equal(skaters, onIce.AwaySkaters.Distinct().Count());
+            Assert.Equal(new StrengthState(onIce.HomeSkaters.Count, onIce.AwaySkaters.Count), matchEvent.Strength);
+            Assert.InRange(onIce.HomeSkaters.Count, 3, 6);
+            Assert.InRange(onIce.AwaySkaters.Count, 3, 6);
+            Assert.Equal(onIce.HomeSkaters.Count, onIce.HomeSkaters.Distinct().Count());
+            Assert.Equal(onIce.AwaySkaters.Count, onIce.AwaySkaters.Distinct().Count());
             Assert.All(onIce.HomeSkaters, id => Assert.Contains(id, homeSkaters));
             Assert.All(onIce.AwaySkaters, id => Assert.Contains(id, awaySkaters));
-            Assert.Equal(Match.Home.Lineup.StartingGoalie.Id, onIce.HomeGoalie);
-            Assert.Equal(Match.Away.Lineup.StartingGoalie.Id, onIce.AwayGoalie);
+            Assert.Contains(onIce.HomeGoalie, new PlayerId?[] { Match.Home.Lineup.StartingGoalie.Id, null });
+            Assert.Contains(onIce.AwayGoalie, new PlayerId?[] { Match.Away.Lineup.StartingGoalie.Id, null });
         });
+
+        // Most of regulation is five-on-five and regular-season overtime three-on-three.
+        var regulation = Results.SelectMany(result => result.Events).Where(matchEvent => matchEvent.Period <= MatchResult.RegulationPeriodCount).ToList();
+        Assert.True(regulation.Count(matchEvent => matchEvent.Strength == new StrengthState(5, 5)) > regulation.Count * 0.6);
     }
 
     [Fact]
@@ -130,6 +149,11 @@ public sealed class PlayByPlayTests
                 case GiveawayEvent giveaway:
                     Assert.Contains(giveaway.PlayerId, SkatersFor(giveaway, giveaway.TeamId));
                     break;
+                case PenaltyEvent penalty:
+                    // A delayed penalty is recorded at the whistle, when the offender may be on the bench.
+                    var team = penalty.TeamId == Match.Home.Id ? Match.Home : Match.Away;
+                    Assert.Contains(penalty.PlayerId, TestMatches.DressedSkaterIds(team));
+                    break;
                 default:
                     Assert.Fail($"Unexpected event {matchEvent.GetType().Name}.");
                     break;
@@ -147,6 +171,7 @@ public sealed class PlayByPlayTests
         Assert.Contains(events, matchEvent => matchEvent is HitEvent);
         Assert.Contains(events, matchEvent => matchEvent is TakeawayEvent);
         Assert.Contains(events, matchEvent => matchEvent is GiveawayEvent);
+        Assert.Contains(events, matchEvent => matchEvent is PenaltyEvent);
         Assert.Equal(
             Enum.GetValues<ShotOutcome>().ToHashSet(),
             events.OfType<ShotAttemptEvent>().Select(attempt => attempt.Outcome).ToHashSet());

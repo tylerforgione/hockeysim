@@ -13,17 +13,14 @@ public sealed class OvertimeTests
     public void RegularSeasonOvertimeIsThreeOnThreeWithTheThreeOnThreeUnits()
     {
         var match = TestMatches.EvenMatch();
-        var overtimeEvents = TestMatches.SimulateMany(match, SeedCount)
-            .SelectMany(result => result.Events)
-            .Where(matchEvent => matchEvent.Period == MatchResult.OvertimePeriod)
-            .ToList();
         var homeUnits = UnitPlayerSets(match.Home);
         var awayUnits = UnitPlayerSets(match.Away);
+        var overtimeEvents = ThreeOnThreeOvertimeEvents(TestMatches.SimulateMany(match, SeedCount), homeUnits.Concat(awayUnits))
+            .ToList();
 
         Assert.NotEmpty(overtimeEvents);
         Assert.All(overtimeEvents, matchEvent =>
         {
-            Assert.Equal(new StrengthState(3, 3), matchEvent.Strength);
             Assert.Contains(homeUnits, unit => unit.SetEquals(matchEvent.OnIce.HomeSkaters));
             Assert.Contains(awayUnits, unit => unit.SetEquals(matchEvent.OnIce.AwaySkaters));
         });
@@ -59,9 +56,9 @@ public sealed class OvertimeTests
             home.Lineup.ExtraAttackers));
         var expected = new[] { fourthLine.Centre.Id, fourthLine.LeftWing.Id, thirdPair.LeftDefence.Id }.ToHashSet();
 
-        var overtimeEvents = TestMatches.SimulateMany(TestTeams.CreateMatch(home, TestTeams.Create("Away")), SeedCount)
-            .SelectMany(result => result.Events)
-            .Where(matchEvent => matchEvent.Period == MatchResult.OvertimePeriod)
+        var overtimeEvents = ThreeOnThreeOvertimeEvents(
+                TestMatches.SimulateMany(TestTeams.CreateMatch(home, TestTeams.Create("Away")), SeedCount),
+                [expected])
             .ToList();
 
         Assert.NotEmpty(overtimeEvents);
@@ -85,7 +82,7 @@ public sealed class OvertimeTests
     }
 
     [Fact]
-    public void PlayoffOvertimeIsUnlimitedFiveOnFiveSuddenDeathWithoutAShootout()
+    public void PlayoffOvertimeIsUnlimitedFiveASideSuddenDeathWithoutAShootout()
     {
         var match = TestMatches.EvenMatch();
         var results = TestMatches.SimulateMany(match, SeedCount, OvertimeFormat.Playoff);
@@ -111,16 +108,19 @@ public sealed class OvertimeTests
                 TimeSpan.FromMinutes(60 + (20 * (periods - 1))) + winningGoal.TimeInPeriod,
                 result.PlayingTime);
 
-            Assert.All(result.Events.Where(matchEvent => matchEvent.Period >= MatchResult.OvertimePeriod), matchEvent =>
+            // Overtime is five a side, less any penalties being served.
+            var replay = new ManpowerReplay(result, OvertimeFormat.Playoff);
+            Assert.All(replay.Checkpoints.Where(checkpoint => checkpoint.Event.Period >= MatchResult.OvertimePeriod), checkpoint =>
             {
-                Assert.Equal(new StrengthState(5, 5), matchEvent.Strength);
-                Assert.InRange(matchEvent.TimeInPeriod, TimeSpan.Zero, TimeSpan.FromMinutes(20) - TimeSpan.FromSeconds(1));
+                Assert.Equal(checkpoint.ExpectedStrength, checkpoint.Event.Strength);
+                Assert.InRange(checkpoint.Event.TimeInPeriod, TimeSpan.Zero, TimeSpan.FromMinutes(20));
             });
 
             foreach (var team in new[] { result.Home, result.Away })
             {
-                Assert.Equal(5 * result.PlayingTime.TotalSeconds, team.Skaters.Sum(skater => skater.TimeOnIce.TotalSeconds));
-                Assert.Equal(result.PlayingTime, team.Goalie.TimeOnIce);
+                Assert.Equal(
+                    replay.ManpowerSeconds(team.TeamId) + (result.PlayingTime - team.Goalie.TimeOnIce).TotalSeconds,
+                    team.Skaters.Sum(skater => skater.TimeOnIce.TotalSeconds));
             }
         });
     }
@@ -160,6 +160,23 @@ public sealed class OvertimeTests
 
         Assert.True(shootouts.Count >= 40, $"Only {shootouts.Count} shootouts.");
         Assert.True(shootouts.Count(result => result.WinnerId == shooters.Id) > shootouts.Count * 0.6);
+    }
+
+    /// <summary>
+    /// Overtime events at three-on-three with both goalies in and none of the given units' skaters
+    /// in the box, so no substitute has had to replace one.
+    /// </summary>
+    private static IEnumerable<MatchEvent> ThreeOnThreeOvertimeEvents(IEnumerable<MatchResult> results, IEnumerable<HashSet<PlayerId>> units)
+    {
+        var unitPlayers = units.SelectMany(unit => unit).ToHashSet();
+        return results
+            .SelectMany(result => new ManpowerReplay(result).Checkpoints)
+            .Where(checkpoint => checkpoint.Event.Period == MatchResult.OvertimePeriod
+                && checkpoint.Event.Strength == new StrengthState(3, 3)
+                && checkpoint.Event.OnIce.HomeGoalie is not null
+                && checkpoint.Event.OnIce.AwayGoalie is not null
+                && !checkpoint.Unavailable.Overlaps(unitPlayers))
+            .Select(checkpoint => checkpoint.Event);
     }
 
     private static List<HashSet<PlayerId>> UnitPlayerSets(Team team) =>

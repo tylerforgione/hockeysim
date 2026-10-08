@@ -59,6 +59,8 @@ public sealed class MatchSideViewModel
         TeamName = teamName;
         Score = side.Score;
         Shots = side.Shots;
+        PowerPlay = MatchDisplay.PowerPlay(side.PowerPlayGoals, side.PowerPlayOpportunities);
+        PenaltyMinutes = side.PenaltyMinutes;
         IsWinner = isWinner;
         Skaters = side.Skaters
             .Select(line =>
@@ -79,7 +81,10 @@ public sealed class MatchSideViewModel
                     line.BlockedShots,
                     MatchDisplay.Faceoffs(line.FaceoffsWon, line.FaceoffsLost),
                     line.Takeaways,
-                    line.Giveaways);
+                    line.Giveaways,
+                    line.PenaltyMinutes,
+                    line.PowerPlayGoals,
+                    line.ShorthandedGoals);
             })
             .ToList();
 
@@ -102,6 +107,11 @@ public sealed class MatchSideViewModel
 
     public int Shots { get; }
 
+    /// <summary>Power-play goals of opportunities, such as "1/3".</summary>
+    public string PowerPlay { get; }
+
+    public int PenaltyMinutes { get; }
+
     public bool IsWinner { get; }
 
     /// <summary>Every skater who appeared, in box-score order.</summary>
@@ -115,6 +125,8 @@ public sealed class MatchSideViewModel
 /// <param name="ShotAttempts">Shots on goal, missed, and blocked.</param>
 /// <param name="BlockedShots">Opponent attempts the skater blocked.</param>
 /// <param name="Faceoffs">Faceoffs won and lost, or a dash when none were taken.</param>
+/// <param name="PowerPlayGoals">Goals on the power play, counted among the goals.</param>
+/// <param name="ShorthandedGoals">Goals while shorthanded, counted among the goals.</param>
 public sealed record SkaterBoxScoreRowViewModel(
     string Name,
     string Position,
@@ -130,7 +142,10 @@ public sealed record SkaterBoxScoreRowViewModel(
     int BlockedShots,
     string Faceoffs,
     int Takeaways,
-    int Giveaways);
+    int Giveaways,
+    int PenaltyMinutes,
+    int PowerPlayGoals,
+    int ShorthandedGoals);
 
 public sealed record GoalieBoxScoreRowViewModel(
     string Name,

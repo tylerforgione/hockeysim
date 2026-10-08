@@ -122,8 +122,10 @@ draw on the top lines and pairs, penalty kills on the second to fourth lines'
 centres and left wings, and the first two centres are the extra attackers.
 Management's `SetLineup` replaces the whole lineup, units included, so a lines
 change that scratches a unit player is rejected unless its units change too.
-The event engine plays regular-season overtime with the three-on-three units;
-the other units wait for penalties (#51) and pulling the goalie (#52).
+The event engine plays every strength state that penalties create with the
+matching units (see [Penalties and special teams](#penalties-and-special-teams))
+and uses the extra attackers during delayed penalties; pulling the goalie late
+in a match is #52.
 
 A new game also generates the regular-season schedule from the same controlled
 random stream, after the league. Domain's `SeasonSchedule` holds scheduled
@@ -193,9 +195,11 @@ disabled and every page remains browsable. The schedule page lists one team's
 score; these are single-match figures, kept apart from season totals. The box
 score lists each team's skaters (goals, assists, points, plus/minus, time on ice,
 shots, shot attempts, xG, hits, blocks, faceoffs won and lost, takeaways,
-giveaways) and starting goalie (shots and goals against, saves, save percentage,
-xG against, time on ice); the two teams are stacked, away first, because each
-table needs the full width.
+giveaways, penalty minutes, power-play and shorthanded goals) and starting goalie
+(shots and goals against, saves, save percentage, xG against, time on ice), and
+each team's power play (goals of opportunities) and penalty minutes under its
+shots; the two teams are stacked, away first, because each table needs the full
+width.
 The standings page presents Management's division, conference, or league tables
 as ranked, without re-sorting them. Roster tables for every team switch between
 ratings and current-season totals (skater GP/G/A/P, goalie GP/SA/SV/GA/SV%), and
@@ -215,7 +219,9 @@ Management saves and loads games through its own contracts in `Saves/`: the
 world, lineups (with their units and extra attackers), schedule, current date, completed matches (with
 their full box scores, time on ice in whole seconds), inbox, and random
 state into a detached save, then hands it to the store. The play-by-play is not
-saved. Save format version 4 added the event engine's box-score statistics. `LoadGame` rebuilds the
+saved. Save format version 4 added the event engine's box-score statistics, and
+version 5 penalty minutes, power-play and shorthanded goals and assists, and
+power-play opportunities. `LoadGame` rebuilds the
 league through Domain constructors and replays each saved league day through
 `Season.CompleteDay`, so a loaded game is held to the same invariants as a
 played one, and team records, season statistics, and standings are derived
@@ -273,8 +279,10 @@ turn the puck over less. Turnovers are recorded as the defender's takeaway or
 the carrier's giveaway only some of the time; the rest are loose pucks credited
 to nobody, as in NHL scoring.
 
-Play is five-on-five in regulation. Forward lines and defence pairs rotate
-independently. Each skater's energy falls on the ice and recovers on the bench,
+Play is five-on-five in regulation unless penalties are being served (see
+[Penalties and special teams](#penalties-and-special-teams)). At five-on-five,
+forward lines and defence pairs rotate independently; every other strength
+state rotates the lineup's units for it. Each skater's energy falls on the ice and recovers on the bench,
 at rates set by stamina, and a tired skater plays below their ratings. A group
 changes when it tires or has been out for a long shift, on the fly when its team
 is not attacking or at a stoppage once it has been out a while; the coach then
@@ -299,41 +307,111 @@ carrier keep the puck through a hit.
 
 The tuning values live together in `Simulation/Play/MatchTuning.cs`, measured
 from a reference rating of 65, the centre of generated talent. They are
-provisional: evenly matched teams average about 3.1 goals, 28 shots, 53 shot
-attempts, 13 blocked attempts, 20 hits, and a .890 save percentage each, but 84%
-of matches end in regulation against about 77% in the NHL. Calibration to NHL
-averages is #53.
+provisional: in a generated league's season, teams average about 3.1 goals
+(0.6 on the power play), 30 shots, 2.9 power-play opportunities at a 20% success
+rate, and 8.5 penalty minutes each, with 0.2 fights and 0.03 penalty shots a
+match, but 84% of matches end in regulation against about 77% in the NHL.
+Calibration to NHL averages is #53.
 
 A match tied after regulation is decided by its `OvertimeFormat`. Regular-season
 overtime is five minutes of three-on-three sudden death with the lineup's
 three-on-three units, then a shootout: three rounds, then sudden-death rounds,
 with shooters in order of shootout strength (accuracy and puck control) against
-the goalie's goaltending. Playoff overtime is as many twenty-minute five-on-five
-sudden-death periods as it takes, with no shootout. Regulation is played
-identically under either format. Penalties and every other strength state are
-#51; pulling the goalie is #52.
+the goalie's goaltending; a skater ejected or still serving a penalty when
+overtime ends does not shoot. Playoff overtime is as many twenty-minute
+five-a-side sudden-death periods as it takes, with no shootout. Regulation is
+played identically under either format. Penalties carry over from regulation
+into either overtime. Pulling the goalie late in a match is #52.
+
+#### Penalties and special teams
+
+Penalties come from the play. In each step of possession the defending team
+may foul (more often when it is being beaten on skill, the manpower advantage
+aside) and the attacking team may too, each more often when its skaters on the
+ice are undisciplined or tired, since fatigue lowers effective discipline. The
+offender is drawn from the skaters on the ice, favouring the undisciplined, and
+the infraction from the situation: hooking, tripping, holding, and interference
+against a rush; those and stick fouls, cross-checking, and roughing in the
+defending zone; delay of game (over the glass) by a team with the puck in its own
+zone. Some high-sticking is a double minor, and a dangerous foul is sometimes a
+major, which always carries a game misconduct (an ejection) unless it is for
+fighting. After a hit, the hitter may be penalized (boarding, charging,
+elbowing, roughing, interference), the two players may take coincidental
+roughing minors in a scrum (sometimes with ten-minute misconducts), or the
+toughest skater of the hit team may fight the hitter, more likely between tough
+players and in a match three or more goals apart; both fighters take five-minute
+majors. Neither fights nor scrums happen in overtime. A foul from behind on a
+rush is sometimes awarded a penalty shot instead: the fouled team's shooter
+alone against the goalie, decided like a shootout attempt.
+
+A foul by the team with the puck stops play at once. A foul by the other team is
+a delayed penalty: the team with the puck pulls its goalie for its first
+available extra attacker and plays six skaters until the offenders touch the
+puck or play stops, then the penalty is called with the faceoff in the
+offenders' zone. A goal in that time wipes out a minor (and one minor of a double
+minor); a delayed penalty still pending as a period ends is called then.
+
+`PenaltyBox` keeps the timed penalties on the game clock, so they carry over
+between periods. A team serves at most two penalties that leave it short at
+once; a further one waits and starts, at its full length, when one ends. A
+power-play goal ends the conceding team's running minor with the least time
+left (only the current half of a double minor), never a major. Penalties on
+both teams at one stoppage are coincidental and leave neither team short,
+except one minor each at full strength with no other penalties, which plays
+four-on-four. Misconducts never leave a team short, and start once the player's
+other penalties are over. In regulation and playoff overtime a team has five
+skaters less its penalties; in regular-season overtime it has three plus one for
+each penalty the opponent serves beyond its own, so a penalty there makes
+four-on-three, and a team never has fewer than three. Each strength state
+(5-on-4, 5-on-3, 4-on-3 and their penalty-kill sides, 4-on-4, 3-on-3) plays the
+lineup's units for it, the first power-play unit 60% of the time when rested and
+the 4-on-5 units 40/35/25%. A skater in the box or ejected cannot go on; the
+most rested available skater of the same kind (forward or defence) takes the
+place in their group. Each extra skater on the ice adds to the attackers' edge,
+so power plays shoot more from better ice, and a team killing a penalty may ice
+the puck. Penalties are not called on a team with fewer than eight available
+skaters, so a substitute always exists. Goalie and bench penalties and
+instigator rules are not modelled (see
+[future features](future-features.md#goalie-bench-and-instigator-penalties)),
+nor are suspensions ([off-ice events](future-features.md#off-ice-events)).
 
 #### Play-by-play and match statistics
 
 The `MatchResult` carries the play-by-play: faceoffs, shot attempts (saved,
-missed, or blocked), goals, hits, takeaways, and giveaways, each with its
-period, time, strength state, and the players on the ice for both sides. Only
+missed, or blocked), goals, hits, takeaways, giveaways, and penalties, each
+with its period, time, strength state, and the players on the ice for both
+sides; a goalie pulled for an extra attacker is shown as an empty net. A
+penalty records the team, skater, infraction, and kind (minor, double minor,
+major, misconduct, game misconduct, or penalty shot) at the whistle; a fight is
+a fighting major to each fighter. A goal records its situation: even strength,
+power play, or shorthanded, decided by the penalties being served rather than by
+who is on the ice, so an extra attacker during a delayed penalty does not make
+a power play; or a penalty shot, which counts as neither, ends no penalty, and
+is unassisted. Only
 Simulation holds the play-by-play; Management keeps the box score in the
 completed match and saves, and Desktop shows the box score. Every individual
 statistic is derived from the play-by-play, except time on ice, which comes from
-the shifts, so they reconcile by construction. Skaters record goals, assists,
+the shifts, and power-play opportunities, which come from the penalties being
+served, so they reconcile by construction. Skaters record goals, assists,
 plus/minus (goals for less goals against while on the ice, excluding power-play
-goals), time on ice, shots on goal, shot attempts, hits, blocked shots,
-faceoffs won and lost, takeaways, giveaways, and individual xG. The starting
-goalie plays the whole match and records shots and goals against, xG against,
-and time on ice. Shootout attempts count toward no player.
+and penalty-shot goals), time on ice, shots on goal, shot attempts, hits,
+blocked shots, faceoffs won and lost, takeaways, giveaways, individual xG,
+penalty minutes, and power-play and shorthanded goals and assists. A team
+records its power-play opportunities: each opponent penalty counts once, the
+first time the team has more skaters while it is served, so a 5-on-3 is two and
+coincidental penalties are none. The starting goalie plays the whole match,
+apart from any time pulled during a delayed penalty, and records shots and goals
+against, xG against, and time on ice. Shootout attempts count toward no player.
 
 Domain's `CompletedMatch` holds every one of these statistics and rejects a
 match that does not reconcile: a team's shots must equal its skaters' shots on
 goal, each goalie's shots, goals, and xG against must match the opponent's
 skaters, one team's faceoff wins must be the other's losses, a team cannot block
-more attempts than the opponent failed to get on goal, and no skater's
-plus/minus can exceed the goals scored. Time on ice is kept in whole seconds and
+more attempts than the opponent failed to get on goal, no skater's plus/minus
+can exceed the goals scored, power-play and shorthanded goals and assists are
+counted among a skater's goals and assists (at most two assists per such goal),
+a team scores on the power play only with a power-play opportunity, and it
+scores shorthanded only if the opponent had one. Time on ice is kept in whole seconds and
 xG totals are compared within a rounding tolerance. Season totals still
 accumulate only games, goals, assists, and the goalie's shots and goals against;
 the new statistics' season totals are #54.
@@ -353,6 +431,7 @@ it was taken from, and whether it was a rebound or on the rush:
 | High danger (slot, crease) | 0.140 |
 | Rebound (always high danger) | odds × 2.0 (0.246) |
 | Rush | odds × 1.3 (low 0.026, medium 0.070, high 0.175) |
+| Penalty shot | 0.320, a reference shootout attempt; always on goal |
 
 The engine splits an attempt's xG into reaching the net and beating the goalie.
 A reference shooter reaches the net with a fixed chance for the context (66%
@@ -365,18 +444,18 @@ below it, which is what goals saved above expected will measure (#54). How
 often each context arises depends on the play: better attackers get to the slot
 more often and better defenders keep them to the outside.
 
-Simulating a 1,344-match season takes about 1.2 seconds of engine time (about
-0.9 ms a match, 245 events each), measured on an Apple-silicon Mac in a Release
+Simulating a 1,344-match season takes about 1.7 seconds of engine time (about
+1.2 ms a match, 260 events each), measured on an Apple-silicon Mac in a Release
 build, so a 16-match league day plays in well under a second. The Management
 full-season test, which also builds a snapshot after each day, takes about three
-seconds, as it did with the previous engine.
+seconds.
 
 ### Player ratings
 
 Domain's `Player` holds a 0-100 value for every `Rating`: the skater skills,
 the three goaltending ratings, and faceoffs, discipline, stamina, durability,
 and toughness. The match engine uses faceoffs, stamina, and toughness; discipline
-waits for penalties (#51) and durability for injuries. A new game
+drives penalties, and durability waits for injuries. A new game
 generates ratings by position in Management's `PlayerRatingGenerator`. Each
 player draws one talent level that the position's skills follow, shifted by a
 position profile with a little variation per rating. For example, centres take

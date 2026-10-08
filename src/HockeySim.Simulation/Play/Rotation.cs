@@ -2,7 +2,7 @@ namespace HockeySim.Simulation.Play;
 
 /// <summary>
 /// The groups a coach rotates through one set of positions: the forward lines, the defence pairs,
-/// or the three-on-three units. One group is on the ice at a time.
+/// or the units for one special situation. One group is on the ice at a time.
 /// </summary>
 /// <remarks>
 /// Each group has a target share of the rotation's ice time. When the group on the ice is due to
@@ -46,8 +46,11 @@ internal sealed class Rotation
         _elapsedSeconds += seconds;
     }
 
-    /// <summary>Sends out the group for the start of a period; any group may start.</summary>
-    public void StartPeriod() => SendOut(ChooseGroup(excluded: -1));
+    /// <summary>
+    /// Sends out a group at the start of a period or when its strength state begins; any group may
+    /// go, including the one that was last on the ice.
+    /// </summary>
+    public void Deploy() => SendOut(ChooseGroup(excluded: -1));
 
     /// <summary>Replaces the group on the ice with the next one.</summary>
     public void Change() => SendOut(ChooseGroup(excluded: Current));

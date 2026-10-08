@@ -58,7 +58,7 @@ public sealed class MatchResult
 
     /// <summary>
     /// The game time played in regulation and overtime, up to an overtime winner. Each starting
-    /// goalie's time on ice.
+    /// goalie's time on ice, less any time pulled for an extra attacker.
     /// </summary>
     public TimeSpan PlayingTime { get; }
 

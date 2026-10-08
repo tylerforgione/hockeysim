@@ -15,9 +15,9 @@ public sealed class OnIcePlayers
 
     internal OnIcePlayers(
         IEnumerable<PlayerId> homeSkaters,
-        PlayerId homeGoalie,
+        PlayerId? homeGoalie,
         IEnumerable<PlayerId> awaySkaters,
-        PlayerId awayGoalie)
+        PlayerId? awayGoalie)
     {
         _homeSkaters = homeSkaters.ToList().AsReadOnly();
         _awaySkaters = awaySkaters.ToList().AsReadOnly();
@@ -27,14 +27,16 @@ public sealed class OnIcePlayers
 
     public IReadOnlyList<PlayerId> HomeSkaters => _homeSkaters;
 
-    public PlayerId HomeGoalie { get; }
+    /// <summary>The home goalie in net, or <see langword="null"/> while pulled for an extra attacker.</summary>
+    public PlayerId? HomeGoalie { get; }
 
     public IReadOnlyList<PlayerId> AwaySkaters => _awaySkaters;
 
-    public PlayerId AwayGoalie { get; }
+    /// <summary>The away goalie in net, or <see langword="null"/> while pulled for an extra attacker.</summary>
+    public PlayerId? AwayGoalie { get; }
 
     public StrengthState Strength => new(_homeSkaters.Count, _awaySkaters.Count);
 
     public override string ToString() =>
-        $"[{string.Join(" ", _homeSkaters)} G {HomeGoalie}] v [{string.Join(" ", _awaySkaters)} G {AwayGoalie}]";
+        $"[{string.Join(" ", _homeSkaters)} G {HomeGoalie?.ToString() ?? "pulled"}] v [{string.Join(" ", _awaySkaters)} G {AwayGoalie?.ToString() ?? "pulled"}]";
 }

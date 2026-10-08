@@ -26,6 +26,8 @@ internal sealed class SkaterState
         PuckControl = player.GetRating(Rating.PuckControl).Value;
         Physicality = PlayerStrength.Physicality(player);
         PuckProtection = PlayerStrength.PuckProtection(player);
+        Discipline = player.GetRating(Rating.Discipline).Value;
+        Toughness = player.GetRating(Rating.Toughness).Value;
 
         // Stamina 50 is average; stamina 0 and 100 move the rates by the full spread either way.
         var stamina = (player.GetRating(Rating.Stamina).Value - 50) / 50.0;
@@ -59,6 +61,15 @@ internal sealed class SkaterState
 
     public double PuckProtection { get; }
 
+    /// <summary>How rarely the skater takes penalties.</summary>
+    public double Discipline { get; }
+
+    /// <summary>How willing and able the skater is to fight.</summary>
+    public double Toughness { get; }
+
+    /// <summary>Ejected by a game misconduct; the skater takes no further part in the match.</summary>
+    public bool IsEjected { get; private set; }
+
     /// <summary>From one when rested to zero when exhausted.</summary>
     public double Energy { get; private set; } = 1;
 
@@ -77,4 +88,6 @@ internal sealed class SkaterState
         Energy = Math.Min(1, Energy + (seconds * MatchTuning.EnergyRecoveryPerSecond * _recoveryFactor));
 
     public void RestForIntermission() => Energy = Math.Min(1, Energy + MatchTuning.IntermissionRecovery);
+
+    public void Eject() => IsEjected = true;
 }

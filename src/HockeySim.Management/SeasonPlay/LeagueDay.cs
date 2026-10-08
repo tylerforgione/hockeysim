@@ -41,6 +41,7 @@ internal static class LeagueDay
             side.TeamId,
             side.Score,
             side.Shots,
+            side.PowerPlayOpportunities,
             side.Skaters.Select(ToBoxScore),
             new GoalieBoxScore(
                 side.Goalie.PlayerId,
@@ -64,5 +65,10 @@ internal static class LeagueDay
             skater.FaceoffsLost,
             skater.Takeaways,
             skater.Giveaways,
-            skater.ExpectedGoals);
+            skater.ExpectedGoals,
+            skater.PenaltyMinutes,
+            skater.PowerPlayGoals,
+            skater.PowerPlayAssists,
+            skater.ShorthandedGoals,
+            skater.ShorthandedAssists);
 }

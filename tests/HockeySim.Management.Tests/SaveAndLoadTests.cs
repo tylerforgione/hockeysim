@@ -29,6 +29,9 @@ public sealed class SaveAndLoadTests
         ExpectedGoalsAgainstNotMatchingOpponent,
         UnmatchedFaceoffs,
         NegativeTimeOnIce,
+        NegativePenaltyMinutes,
+        PowerPlayGoalWithoutOpportunity,
+        ShorthandedGoalWithoutOpponentPowerPlay,
         DressedPlayerNotOnRoster,
         SkaterDressedInGoal,
         DuplicateRosterPlayer,
@@ -280,6 +283,8 @@ public sealed class SaveAndLoadTests
     private static GameSave Corrupt(GameSave save, InvalidSave invalidSave)
     {
         var firstResult = save.CompletedMatches[0];
+        var homeScored = save.CompletedMatches.First(result => result.Home.Skaters.Any(skater => skater.Goals > 0));
+        var homeScorer = homeScored.Home.Skaters.First(skater => skater.Goals > 0);
         var regulationResult = save.CompletedMatches.First(result => result.Decision == MatchDecision.Regulation);
         var firstTeam = save.Conferences[0].Divisions[0].Teams[0];
         var firstPlayer = firstTeam.Roster[0];
@@ -338,6 +343,33 @@ public sealed class SaveAndLoadTests
             NegativeTimeOnIce => WithFirstResult(save, firstResult with
             {
                 Home = firstResult.Home with { Goalie = firstResult.Home.Goalie with { TimeOnIceSeconds = -1 } },
+            }),
+            NegativePenaltyMinutes => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    Skaters = [firstResult.Home.Skaters[0] with { PenaltyMinutes = -2 }, .. firstResult.Home.Skaters.Skip(1)],
+                },
+            }),
+            PowerPlayGoalWithoutOpportunity => WithResult(save, homeScored, homeScored with
+            {
+                Home = homeScored.Home with
+                {
+                    PowerPlayOpportunities = 0,
+                    Skaters = homeScored.Home.Skaters
+                        .Select(skater => skater == homeScorer ? skater with { PowerPlayGoals = 1, ShorthandedGoals = 0 } : skater)
+                        .ToList(),
+                },
+            }),
+            ShorthandedGoalWithoutOpponentPowerPlay => WithResult(save, homeScored, homeScored with
+            {
+                Home = homeScored.Home with
+                {
+                    Skaters = homeScored.Home.Skaters
+                        .Select(skater => skater == homeScorer ? skater with { PowerPlayGoals = 0, ShorthandedGoals = 1 } : skater)
+                        .ToList(),
+                },
+                Away = homeScored.Away with { PowerPlayOpportunities = 0 },
             }),
             DressedPlayerNotOnRoster => WithFirstTeam(save, firstTeam with
             {

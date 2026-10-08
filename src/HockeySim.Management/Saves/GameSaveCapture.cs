@@ -76,6 +76,7 @@ internal static class GameSaveCapture
             side.TeamId,
             side.Score,
             side.Shots,
+            side.PowerPlayOpportunities,
             side.Skaters.Select(CaptureSkater).ToList(),
             new SavedGoalieBoxScore(
                 side.Goalie.PlayerId,
@@ -99,7 +100,12 @@ internal static class GameSaveCapture
             skater.FaceoffsLost,
             skater.Takeaways,
             skater.Giveaways,
-            skater.ExpectedGoals);
+            skater.ExpectedGoals,
+            skater.PenaltyMinutes,
+            skater.PowerPlayGoals,
+            skater.PowerPlayAssists,
+            skater.ShorthandedGoals,
+            skater.ShorthandedAssists);
 
     // Box-score times are whole seconds, so this is exact.
     private static int WholeSeconds(TimeSpan time) => (int)(time.Ticks / TimeSpan.TicksPerSecond);

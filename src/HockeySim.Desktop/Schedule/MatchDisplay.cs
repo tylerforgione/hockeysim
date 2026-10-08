@@ -71,6 +71,10 @@ public static class MatchDisplay
     public static string ExpectedGoals(double expectedGoals) =>
         expectedGoals.ToString("0.00", CultureInfo.CurrentCulture);
 
+    /// <summary>Formats a team's power play as goals of opportunities ("1/3").</summary>
+    public static string PowerPlay(int goals, int opportunities) =>
+        string.Create(CultureInfo.CurrentCulture, $"{goals}/{opportunities}");
+
     /// <summary>
     /// Formats faceoffs as won and lost ("8–5"), or a dash for a skater who took none.
     /// </summary>

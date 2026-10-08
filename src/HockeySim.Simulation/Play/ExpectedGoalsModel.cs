@@ -28,8 +28,16 @@ internal static class ExpectedGoalsModel
     public const double HighDangerOnNetChance = 0.76;
     public const double ReboundOnNetChance = 0.80;
 
+    /// <summary>A penalty shot is a one-on-one attempt, scored as often as a reference shootout attempt.</summary>
+    public const double PenaltyShotExpectedGoals = MatchTuning.BaseShootoutGoalChance;
+
     public static double ExpectedGoals(ShotContext context)
     {
+        if (context.IsPenaltyShot)
+        {
+            return PenaltyShotExpectedGoals;
+        }
+
         var logOdds = Probability.Logit(BaseExpectedGoals(context.Danger));
         if (context.IsRebound)
         {

@@ -1,3 +1,4 @@
+using HockeySim.Domain;
 using HockeySim.Simulation.Randomness;
 
 namespace HockeySim.Simulation.Play;
@@ -42,20 +43,25 @@ internal sealed class ShootoutPlay(MatchSide home, MatchSide away, ControlledRan
         return CreateResult(homeGoals, awayGoals);
     }
 
-    private static bool IsDecided(int homeGoals, int awayGoals, int homeRemaining, int awayRemaining) =>
-        homeGoals > awayGoals + awayRemaining || awayGoals > homeGoals + homeRemaining;
-
-    private int TakeAttempt(MatchSide shooting, MatchSide defending, int round)
-    {
-        var shooter = shooting.ShootoutOrder[round % shooting.ShootoutOrder.Count];
-        var goalChance = Math.Clamp(
+    /// <summary>
+    /// The chance a shooter alone against the goalie scores, in a shootout or on a penalty shot: a
+    /// reference shooter against a reference goalie scores at the base rate.
+    /// </summary>
+    public static double OneOnOneGoalChance(Player shooter, MatchSide defending) =>
+        Math.Clamp(
             Probability.Logistic(
                 Probability.Logit(MatchTuning.BaseShootoutGoalChance)
                 + (MatchTuning.FinishingSensitivity * (PlayerStrength.Shootout(shooter) - defending.Goaltending))),
             MatchTuning.MinimumShootoutChance,
             MatchTuning.MaximumShootoutChance);
 
-        var scored = random.Chance(goalChance);
+    private static bool IsDecided(int homeGoals, int awayGoals, int homeRemaining, int awayRemaining) =>
+        homeGoals > awayGoals + awayRemaining || awayGoals > homeGoals + homeRemaining;
+
+    private int TakeAttempt(MatchSide shooting, MatchSide defending, int round)
+    {
+        var shooter = shooting.ShootoutOrder[round % shooting.ShootoutOrder.Count];
+        var scored = random.Chance(OneOnOneGoalChance(shooter, defending));
         _attempts.Add(new ShootoutAttempt(shooting.TeamId, shooter.Id, defending.Goalie.Id, scored));
         return scored ? 1 : 0;
     }

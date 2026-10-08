@@ -44,20 +44,38 @@ public sealed class EventStatisticsTests
                     skater.ExpectedGoals,
                     precision: 9);
                 Assert.True(skater.Goals <= skater.Shots && skater.Shots <= skater.ShotAttempts);
+
+                Assert.Equal(events.OfType<PenaltyEvent>().Where(penalty => penalty.PlayerId == id).Sum(penalty => penalty.Minutes), skater.PenaltyMinutes);
+                Assert.Equal(goals.Count(goal => goal.Situation == GoalSituation.PowerPlay), skater.PowerPlayGoals);
+                Assert.Equal(goals.Count(goal => goal.Situation == GoalSituation.Shorthanded), skater.ShorthandedGoals);
+                Assert.Equal(AssistsOn(result, id, GoalSituation.PowerPlay), skater.PowerPlayAssists);
+                Assert.Equal(AssistsOn(result, id, GoalSituation.Shorthanded), skater.ShorthandedAssists);
+                Assert.Equal(skater.PowerPlayGoals + skater.PowerPlayAssists, skater.PowerPlayPoints);
+                Assert.Equal(skater.ShorthandedGoals + skater.ShorthandedAssists, skater.ShorthandedPoints);
+            }
+
+            foreach (var team in new[] { result.Home, result.Away })
+            {
+                Assert.Equal(result.Goals.Count(goal => goal.TeamId == team.TeamId && goal.Situation == GoalSituation.PowerPlay), team.PowerPlayGoals);
+                Assert.Equal(new ManpowerReplay(result).PowerPlayOpportunities(team.TeamId), team.PowerPlayOpportunities);
             }
         });
     }
 
     [Fact]
-    public void PlusMinusCountsEachEvenStrengthGoalForEverySkaterOnTheIce()
+    public void PlusMinusCountsEachEvenStrengthAndShorthandedGoalForEverySkaterOnTheIce()
     {
         Assert.All(Results, result =>
         {
+            // Power-play and penalty-shot goals do not count.
+            var counted = result.Goals
+                .Where(goal => goal.Situation is GoalSituation.EvenStrength or GoalSituation.Shorthanded)
+                .ToList();
             foreach (var (team, isHome) in new[] { (result.Home, true), (result.Away, false) })
             {
                 foreach (var skater in team.Skaters)
                 {
-                    var expected = result.Goals.Sum(goal =>
+                    var expected = counted.Sum(goal =>
                     {
                         var (ownSkaters, scoredByOwnTeam) = isHome
                             ? (goal.OnIce.HomeSkaters, goal.TeamId == result.Home.TeamId)
@@ -67,12 +85,11 @@ public sealed class EventStatisticsTests
                     Assert.Equal(expected, skater.PlusMinus);
                 }
 
-                // Every goal is at even strength, so each team's plus/minus nets to its goal
-                // difference times the skaters on the ice.
-                var regulationGoals = result.Goals.Where(goal => goal.Period <= MatchResult.RegulationPeriodCount);
-                var overtimeGoals = result.Goals.Where(goal => goal.Period > MatchResult.RegulationPeriodCount);
-                int Net(IEnumerable<GoalEvent> goals) => goals.Sum(goal => goal.TeamId == team.TeamId ? 1 : -1);
-                Assert.Equal((5 * Net(regulationGoals)) + (3 * Net(overtimeGoals)), team.Skaters.Sum(skater => skater.PlusMinus));
+                // Each counted goal moves the team's plus/minus by the number of its skaters on the ice.
+                Assert.Equal(
+                    counted.Sum(goal => (goal.TeamId == team.TeamId ? 1 : -1)
+                        * (isHome ? goal.OnIce.HomeSkaters.Count : goal.OnIce.AwaySkaters.Count)),
+                    team.Skaters.Sum(skater => skater.PlusMinus));
             }
         });
     }
@@ -97,13 +114,17 @@ public sealed class EventStatisticsTests
                     break;
             }
 
+            // The skaters share the time each player the penalties allowed was on the ice, plus the
+            // time an extra attacker replaced the goalie.
+            var replay = new ManpowerReplay(result);
             foreach (var team in new[] { result.Home, result.Away })
             {
+                var pulledSeconds = (result.PlayingTime - team.Goalie.TimeOnIce).TotalSeconds;
                 Assert.Equal(
-                    (5 * RegulationSeconds) + (3 * overtimeSeconds),
+                    replay.ManpowerSeconds(team.TeamId) + pulledSeconds,
                     team.Skaters.Sum(skater => skater.TimeOnIce.TotalSeconds));
                 Assert.All(team.Skaters, skater => Assert.InRange(skater.TimeOnIce, TimeSpan.FromSeconds(1), result.PlayingTime));
-                Assert.Equal(result.PlayingTime, team.Goalie.TimeOnIce);
+                Assert.InRange(team.Goalie.TimeOnIce, result.PlayingTime - TimeSpan.FromMinutes(5), result.PlayingTime);
             }
         });
     }
@@ -128,20 +149,30 @@ public sealed class EventStatisticsTests
     }
 
     [Fact]
-    public void OnlyCentresTakeFaceoffsInRegulation()
+    public void CentresTakeEvenStrengthFaceoffsUnlessOneIsInTheBox()
     {
         var centres = Match.Home.Lineup.ForwardLines.Concat(Match.Away.Lineup.ForwardLines)
             .Select(line => line.Centre.Id)
             .ToHashSet();
+        var checkpoints = Results.SelectMany(result => new ManpowerReplay(result).Checkpoints)
+            .Where(checkpoint => checkpoint.Event is FaceoffEvent { Period: <= MatchResult.RegulationPeriodCount }
+                && checkpoint.Event.Strength == new StrengthState(5, 5))
+            .ToList();
 
-        Assert.All(
-            Results.SelectMany(result => result.Events).OfType<FaceoffEvent>().Where(faceoff => faceoff.Period <= MatchResult.RegulationPeriodCount),
-            faceoff =>
-            {
-                Assert.Contains(faceoff.WinnerId, centres);
-                Assert.Contains(faceoff.LoserId, centres);
-            });
+        // With every centre available, a line's centre takes its faceoffs; a forward stands in for
+        // one who is serving a penalty.
+        var allCentresAvailable = checkpoints.Where(checkpoint => !checkpoint.Unavailable.Overlaps(centres)).ToList();
+        Assert.NotEmpty(allCentresAvailable);
+        Assert.All(allCentresAvailable, checkpoint =>
+        {
+            var faceoff = (FaceoffEvent)checkpoint.Event;
+            Assert.Contains(faceoff.WinnerId, centres);
+            Assert.Contains(faceoff.LoserId, centres);
+        });
     }
+
+    private static int AssistsOn(MatchResult result, PlayerId playerId, GoalSituation situation) =>
+        result.Goals.Count(goal => goal.Situation == situation && (goal.PrimaryAssistId == playerId || goal.SecondaryAssistId == playerId));
 
     [Fact]
     public void AggregateTotalsArePlausibleForEvenlyMatchedTeams()

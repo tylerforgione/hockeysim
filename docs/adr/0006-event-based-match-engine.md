@@ -19,7 +19,8 @@ can grow strength states, penalties, and pulled goalies (#51, #52) by changing
 who is on the ice and how often each outcome happens.
 
 **Every statistic is derived from the play-by-play**, except time on ice, which
-comes from the shifts. Reconciliation (shots against equal to the opponent's
+comes from the shifts, and power-play opportunities, which come from the
+penalties being served ([ADR 0007](0007-manpower-from-penalties-served.md)). Reconciliation (shots against equal to the opponent's
 shots, faceoff wins equal to the opponent's losses, plus/minus following the
 players on the ice at each goal) therefore holds by construction instead of
 being kept in step by hand. Domain still checks it, because completed matches
