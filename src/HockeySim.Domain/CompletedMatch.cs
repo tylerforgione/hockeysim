@@ -4,8 +4,9 @@ namespace HockeySim.Domain;
 /// The canonical record of a scheduled match that has been played. The score is always decisive,
 /// and individual statistics reconcile with it: only a shootout winner's score exceeds its player
 /// goals, by exactly the one deciding goal. Each goalie's shots, goals, and expected goals against
-/// match the opponent's skaters, one team's faceoff wins are the other's losses, and a team scores
-/// shorthanded only when the opponent had a power play.
+/// match the opponent's skaters, apart from the empty-net goals scored while the goalie was pulled,
+/// one team's faceoff wins are the other's losses, and a team scores shorthanded only when the
+/// opponent had a power play.
 /// </summary>
 public sealed class CompletedMatch
 {
@@ -50,7 +51,7 @@ public sealed class CompletedMatch
         if (!GoalieFacedOpponent(home.Goalie, away) || !GoalieFacedOpponent(away.Goalie, home))
         {
             throw new ArgumentException(
-                "Each goalie's shots, goals, and expected goals against must match the opponent's totals.");
+                "Each goalie's shots, goals, and expected goals against must match the opponent's totals, less its empty-net goals.");
         }
 
         if (FaceoffsWon(home) != FaceoffsLost(away) || FaceoffsWon(away) != FaceoffsLost(home))
@@ -96,9 +97,13 @@ public sealed class CompletedMatch
 
     public CompletedMatchTeam Loser => Home.Score > Away.Score ? Away : Home;
 
+    /// <summary>
+    /// The goalie faced every opponent shot and goal except the empty-net goals scored while they
+    /// were pulled. Empty-net attempts carry no expected goals, so those match in full.
+    /// </summary>
     private static bool GoalieFacedOpponent(GoalieBoxScore goalie, CompletedMatchTeam opponent) =>
-        goalie.ShotsAgainst == opponent.Shots
-        && goalie.GoalsAgainst == opponent.PlayerGoals
+        goalie.ShotsAgainst == opponent.Shots - opponent.EmptyNetGoals
+        && goalie.GoalsAgainst == opponent.PlayerGoals - opponent.EmptyNetGoals
         && ExpectedGoalTotals.AreEqual(goalie.ExpectedGoalsAgainst, opponent.ExpectedGoals);
 
     private static int FaceoffsWon(CompletedMatchTeam team) => team.Skaters.Sum(skater => skater.FaceoffsWon);

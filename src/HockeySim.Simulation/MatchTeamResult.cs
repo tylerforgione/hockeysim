@@ -7,7 +7,8 @@ namespace HockeySim.Simulation;
 /// <summary>
 /// One team's side of a match result, including the individual statistics of every player who
 /// appeared. Individual statistics reconcile with the team totals: skater goals sum to the
-/// team's goal events, and the goalie's shots and goals against match the opponent's totals.
+/// team's goal events, and the goalie's shots and goals against match the opponent's totals less
+/// its empty-net goals.
 /// </summary>
 public sealed class MatchTeamResult
 {

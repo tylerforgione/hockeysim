@@ -20,6 +20,9 @@ public sealed record SkaterBoxScore
     /// <param name="powerPlayAssists">Assists on power-play goals, counted among the assists.</param>
     /// <param name="shorthandedGoals">Goals scored shorthanded, counted among the goals.</param>
     /// <param name="shorthandedAssists">Assists on shorthanded goals, counted among the assists.</param>
+    /// <param name="emptyNetGoals">
+    /// Goals scored into a net whose goalie was pulled for an extra attacker, counted among the goals.
+    /// </param>
     public SkaterBoxScore(
         PlayerId playerId,
         int goals,
@@ -39,7 +42,8 @@ public sealed record SkaterBoxScore
         int powerPlayGoals,
         int powerPlayAssists,
         int shorthandedGoals,
-        int shorthandedAssists)
+        int shorthandedAssists,
+        int emptyNetGoals)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(goals);
         ArgumentOutOfRangeException.ThrowIfNegative(assists);
@@ -60,6 +64,8 @@ public sealed record SkaterBoxScore
         ArgumentOutOfRangeException.ThrowIfNegative(shorthandedAssists);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(powerPlayGoals + shorthandedGoals, goals, nameof(shorthandedGoals));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(powerPlayAssists + shorthandedAssists, assists, nameof(shorthandedAssists));
+        ArgumentOutOfRangeException.ThrowIfNegative(emptyNetGoals);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(emptyNetGoals, goals);
 
         PlayerId = playerId;
         Goals = goals;
@@ -80,6 +86,7 @@ public sealed record SkaterBoxScore
         PowerPlayAssists = powerPlayAssists;
         ShorthandedGoals = shorthandedGoals;
         ShorthandedAssists = shorthandedAssists;
+        EmptyNetGoals = emptyNetGoals;
     }
 
     public PlayerId PlayerId { get; }
@@ -125,4 +132,6 @@ public sealed record SkaterBoxScore
     public int ShorthandedAssists { get; }
 
     public int ShorthandedPoints => ShorthandedGoals + ShorthandedAssists;
+
+    public int EmptyNetGoals { get; }
 }

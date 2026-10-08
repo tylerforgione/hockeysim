@@ -5,7 +5,8 @@ namespace HockeySim.Simulation.Play;
 /// <summary>
 /// The expected-goal (xG) model: the chance that an unblocked shot attempt scores, from its
 /// context alone, for a league-average shooter against a league-average goalie. Blocked attempts
-/// have no xG, as in public NHL models built on unblocked (Fenwick) attempts.
+/// have no xG, as in public NHL models built on unblocked (Fenwick) attempts, and neither do
+/// attempts at an empty net, which those models also leave out.
 /// </summary>
 /// <remarks>
 /// Each danger level has a base chance. A rebound multiplies the odds of scoring by

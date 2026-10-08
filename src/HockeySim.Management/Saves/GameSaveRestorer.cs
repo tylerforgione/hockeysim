@@ -197,7 +197,8 @@ internal static class GameSaveRestorer
             skater.PowerPlayGoals,
             skater.PowerPlayAssists,
             skater.ShorthandedGoals,
-            skater.ShorthandedAssists);
+            skater.ShorthandedAssists,
+            skater.EmptyNetGoals);
 
     private static InboxMessages RestoreInbox(GameSave save) =>
         InboxMessages.Restore(Items(save.Inbox, "inbox messages").Select(saved =>

@@ -75,12 +75,15 @@ internal sealed class MatchStatisticsBuilder
                 tally.PowerPlayGoals,
                 tally.PowerPlayAssists,
                 tally.ShorthandedGoals,
-                tally.ShorthandedAssists);
+                tally.ShorthandedAssists,
+                tally.EmptyNetGoals);
         });
+
+        // Empty-net goals were scored with the goalie on the bench, so they are not held against them.
         var goalie = new GoalieMatchStatistics(
             side.Goalie.Id,
-            ShotsAgainst: against.Shots,
-            GoalsAgainst: against.Goals,
+            ShotsAgainst: against.Shots - against.EmptyNetGoals,
+            GoalsAgainst: against.Goals - against.EmptyNetGoals,
             ExpectedGoalsAgainst: against.ExpectedGoals,
             TimeOnIce: TimeSpan.FromSeconds(side.GoalieTimeOnIceSeconds));
 
@@ -93,7 +96,12 @@ internal sealed class MatchStatisticsBuilder
         scorer.Goals++;
         scorer.Shots++;
         scorer.ShotAttempts++;
-        scorer.ExpectedGoals += goal.ExpectedGoals;
+        scorer.ExpectedGoals += goal.ExpectedGoals ?? 0;
+        if (goal.IsEmptyNet)
+        {
+            scorer.EmptyNetGoals++;
+        }
+
         if (goal.Situation == GoalSituation.PowerPlay)
         {
             scorer.PowerPlayGoals++;
@@ -123,7 +131,11 @@ internal sealed class MatchStatisticsBuilder
         var team = Team(goal.TeamId);
         team.Goals++;
         team.Shots++;
-        team.ExpectedGoals += goal.ExpectedGoals;
+        team.ExpectedGoals += goal.ExpectedGoals ?? 0;
+        if (goal.IsEmptyNet)
+        {
+            team.EmptyNetGoals++;
+        }
 
         AddPlusMinus(goal);
     }
@@ -237,6 +249,8 @@ internal sealed class MatchStatisticsBuilder
         public int ShorthandedGoals { get; set; }
 
         public int ShorthandedAssists { get; set; }
+
+        public int EmptyNetGoals { get; set; }
     }
 
     private sealed class TeamTally
@@ -246,5 +260,7 @@ internal sealed class MatchStatisticsBuilder
         public int Shots { get; set; }
 
         public double ExpectedGoals { get; set; }
+
+        public int EmptyNetGoals { get; set; }
     }
 }
