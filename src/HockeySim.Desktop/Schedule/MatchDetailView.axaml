@@ -14,8 +14,7 @@
             <TextBlock Grid.Column="3" Text="A" ToolTip.Tip="Assists" HorizontalAlignment="Center" />
             <TextBlock Grid.Column="4" Text="P" ToolTip.Tip="Points" HorizontalAlignment="Center" />
             <TextBlock Grid.Column="5" Text="+/-" ToolTip.Tip="Plus/minus" HorizontalAlignment="Center" />
-            <TextBlock Grid.Column="6" Text="GSAx" ToolTip.Tip="Goals saved above expected: expected goals against less goals against" HorizontalAlignment="Center" />
-            <TextBlock Grid.Column="7" Text="TOI" ToolTip.Tip="Time on ice" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="6" Text="TOI" ToolTip.Tip="Time on ice" HorizontalAlignment="Center" />
             <TextBlock Grid.Column="7" Text="SOG" ToolTip.Tip="Shots on goal" HorizontalAlignment="Center" />
             <TextBlock Grid.Column="8" Text="ATT" ToolTip.Tip="Shot attempts: on goal, missed, and blocked" HorizontalAlignment="Center" />
             <TextBlock Grid.Column="9" Text="xG" ToolTip.Tip="Expected goals" HorizontalAlignment="Center" />
