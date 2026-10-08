@@ -63,15 +63,15 @@ public sealed partial class LineupEditorViewModel : ObservableObject
         ForwardLines = _savedLineup.ForwardLines
             .Select((line, index) => new ForwardLineRowViewModel(
                 $"LINE {index + 1}",
-                DressedSlot("LW", SkaterRole.Wing, SkaterSide.Left, line.LeftWingId),
-                DressedSlot("C", SkaterRole.Centre, side: null, line.CentreId),
-                DressedSlot("RW", SkaterRole.Wing, SkaterSide.Right, line.RightWingId)))
+                DressedSlot("LW", SkaterRole.Wing, line.LeftWingId),
+                DressedSlot("C", SkaterRole.Centre, line.CentreId),
+                DressedSlot("RW", SkaterRole.Wing, line.RightWingId)))
             .ToList();
         DefencePairs = _savedLineup.DefencePairs
             .Select((pair, index) => new DefencePairRowViewModel(
                 $"PAIR {index + 1}",
-                DressedSlot("LD", SkaterRole.Defence, SkaterSide.Left, pair.LeftDefenceId),
-                DressedSlot("RD", SkaterRole.Defence, SkaterSide.Right, pair.RightDefenceId)))
+                DressedSlot("LD", SkaterRole.Defence, pair.LeftDefenceId),
+                DressedSlot("RD", SkaterRole.Defence, pair.RightDefenceId)))
             .ToList();
         StartingGoalie = GoalieSlot("STARTER", _savedLineup.StartingGoalieId);
         BackupGoalie = GoalieSlot("BACKUP", _savedLineup.BackupGoalieId);
@@ -80,14 +80,9 @@ public sealed partial class LineupEditorViewModel : ObservableObject
         PowerPlay = CreateGroups(PowerPlaySituations);
         PenaltyKill = CreateGroups(PenaltyKillSituations);
         OtherSituationUnits = CreateGroups(OtherSituations);
-        // The extra attacker joins the forwards, so the match engine plays them as a wing without a side.
+        // The extra attacker joins the forwards, so the match engine plays them as a wing.
         ExtraAttackers = _savedLineup.ExtraAttackerIds
-            .Select((id, index) => Slot(
-                index == 0 ? "1ST CHOICE" : "2ND CHOICE",
-                _skaterOptions,
-                id,
-                SkaterRole.Wing,
-                side: null))
+            .Select((id, index) => Slot(index == 0 ? "1ST CHOICE" : "2ND CHOICE", _skaterOptions, id, SkaterRole.Wing))
             .ToList();
         AddSwapGroup(ExtraAttackers);
 
@@ -163,13 +158,12 @@ public sealed partial class LineupEditorViewModel : ObservableObject
         string label,
         IReadOnlyList<PlayerOptionViewModel> options,
         PlayerId id,
-        SkaterRole? role,
-        SkaterSide? side) =>
-        new(label, options, _optionsById[id], role, side, IsEditable, OnSlotChanged);
+        SkaterRole? role) =>
+        new(label, options, _optionsById[id], role, IsEditable, OnSlotChanged);
 
-    private LineupSlotViewModel DressedSlot(string label, SkaterRole role, SkaterSide? side, PlayerId id)
+    private LineupSlotViewModel DressedSlot(string label, SkaterRole role, PlayerId id)
     {
-        var slot = Slot(label, _skaterOptions, id, role, side);
+        var slot = Slot(label, _skaterOptions, id, role);
         _dressedSlots.Add(slot);
         return slot;
     }
@@ -177,7 +171,7 @@ public sealed partial class LineupEditorViewModel : ObservableObject
     private LineupSlotViewModel GoalieSlot(string label, PlayerId id)
     {
         var options = _rosterOptions.Where(option => option.Position == Position.Goalie).ToList();
-        var slot = Slot(label, options, id, role: null, side: null);
+        var slot = Slot(label, options, id, role: null);
         _dressedSlots.Add(slot);
         return slot;
     }
@@ -200,8 +194,7 @@ public sealed partial class LineupEditorViewModel : ObservableObject
                 SlotLabel(roles[slot], format.Sides[slot]),
                 _skaterOptions,
                 id,
-                roles[slot],
-                format.Sides[slot]))
+                roles[slot]))
             .ToList();
         var view = new SpecialUnitViewModel(
             situation,

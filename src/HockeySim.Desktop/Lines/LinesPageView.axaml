@@ -5,7 +5,7 @@
              x:Class="HockeySim.Desktop.Lines.LinesPageView"
              x:DataType="lines:LinesPageViewModel">
   <UserControl.Resources>
-    <!-- A slot's player choice with a warning beneath when the player is out of position or off-hand. -->
+    <!-- A slot's player choice with a warning beneath when the player is out of position. -->
     <DataTemplate x:Key="SlotPicker" x:DataType="lines:LineupSlotViewModel">
       <StackPanel Spacing="1">
         <ComboBox HorizontalAlignment="Stretch"
@@ -22,9 +22,9 @@
 
   <UserControl.DataTemplates>
     <!-- Scratched skaters stay listed for unit slots, dimmed, because only dressed skaters can be saved there.
-         Each player shows their natural position and handedness. -->
+         Each player shows their natural position. -->
     <DataTemplate x:DataType="lines:PlayerOptionViewModel">
-      <Grid ColumnDefinitions="34,*,Auto,Auto">
+      <Grid ColumnDefinitions="34,*,Auto">
         <TextBlock Classes="cell muted" Text="{Binding Number}" />
         <TextBlock Grid.Column="1"
                    Classes="cell"
@@ -32,11 +32,10 @@
                    Text="{Binding Name}"
                    TextTrimming="CharacterEllipsis" />
         <TextBlock Grid.Column="2" Classes="cell muted" Margin="6,0,0,0" Text="{Binding PositionAbbreviation}" />
-        <TextBlock Grid.Column="3" Classes="cell muted" Margin="4,0,0,0" Text="{Binding HandednessAbbreviation}" />
       </Grid>
     </DataTemplate>
 
-    <!-- One unit slot: its role above the player chosen for it, and any out-of-position or off-hand warning. -->
+    <!-- One unit slot: its role above the player chosen for it, and any out-of-position warning. -->
     <DataTemplate x:DataType="lines:LineupSlotViewModel">
       <StackPanel Width="190" Spacing="2">
         <TextBlock Classes="label" Text="{Binding Label}" HorizontalAlignment="Center" />

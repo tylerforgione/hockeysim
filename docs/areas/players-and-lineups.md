@@ -66,7 +66,7 @@ them. Roster rules are unchanged. Domain's `SkaterFit` judges each assignment:
 forwards and defence, and a skater is off-hand on the side opposite their
 handedness. The match engine plays an ill-suited skater a little below their
 ratings (see [Positions and handedness](match-engine.md#positions-and-handedness)),
-and the Lines page warns about each such slot. The lineup rejects a line, pair,
+and the Lines page warns when a skater is out of position. The lineup rejects a line, pair,
 or unit that holds a goalie or the same player twice, a unit with a scratched
 skater, and a lineup without exactly the required units. Generated teams
 get line-derived defaults from `Lineup.CreateWithDefaultUnits`, which lives in

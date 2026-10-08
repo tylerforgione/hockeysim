@@ -34,7 +34,7 @@ games, plus a headless Avalonia walkthrough.
 | --- | --- |
 | `MainWindowViewTests.cs` | Headless walkthrough of every page, saving, loading, closing |
 | `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup, navigation, browsing teams |
-| `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position and off-hand warnings |
+| `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings |
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, a full season |
 | `StandingsAndStatisticsTests.cs` | Standings scopes, season totals |
 | `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, the team strip |
@@ -53,9 +53,10 @@ Management validates every change. The lines page shows any team's lineup, read-
 for other clubs, on tabs for even strength, power play, penalty kill, and the
 other situations (4-on-4, 3-on-3, extra attacker); each unit shows its forwards
 in front of its defence. Every skater slot offers every skater, and goalie slots
-only goalies; each choice shows the player's natural position and handedness.
+only goalies; each choice shows the player's natural position.
 A slot warns beneath its choice when the player is out of position (a defenceman
-at forward or a forward on defence is named as such) or on their off-hand side.
+at forward or a forward on defence is named as such). Handedness is not shown or
+warned about there; the roster and player profile show it.
 Choosing a player already in the same line set, unit, or
 extra-attacker pair swaps the two; dressing a scratched player hands them the
 replaced player's unit slots. Unsaved edits survive browsing other teams. The title bar's Continue button plays the

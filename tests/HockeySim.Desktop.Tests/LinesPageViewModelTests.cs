@@ -67,43 +67,42 @@ public sealed class LinesPageViewModelTests
     }
 
     [Fact]
-    public void SlotsWarnWhenAPlayerIsOutOfPositionOrOffHand()
+    public void SlotsWarnOnlyWhenAPlayerIsOutOfPosition()
     {
-        var lines = new LinesPageViewModel(GameTestData.StartSession());
+        var session = GameTestData.StartSession();
+        var lines = new LinesPageViewModel(session);
         var line = lines.Lineup.ForwardLines[0];
         var pair = lines.Lineup.DefencePairs[0];
         var options = line.LeftWing.Options;
         PlayerOptionViewModel Skater(Position position, Handedness handedness) =>
-            options.First(option => option.Position == position && option.Handedness == handedness);
+            options.First(option => option.Position == position
+                && session.ManagedTeam.Roster.Single(player => player.Id == option.Id).Biography.Handedness == handedness);
 
         line.LeftWing.SelectedPlayer = Skater(Position.Wing, Handedness.Left);
         Assert.Null(line.LeftWing.FitNote);
         Assert.False(line.LeftWing.HasFitNote);
 
+        // Handedness is left to the manager, so an off-hand wing gets no warning.
         line.LeftWing.SelectedPlayer = Skater(Position.Wing, Handedness.Right);
-        Assert.Equal("Off-hand side", line.LeftWing.FitNote);
+        Assert.Null(line.LeftWing.FitNote);
 
         line.LeftWing.SelectedPlayer = Skater(Position.Centre, Handedness.Left);
         Assert.Equal("Out of position", line.LeftWing.FitNote);
 
         line.LeftWing.SelectedPlayer = Skater(Position.Defence, Handedness.Right);
-        Assert.Equal("Defenceman at forward · off-hand side", line.LeftWing.FitNote);
+        Assert.Equal("Defenceman at forward", line.LeftWing.FitNote);
         Assert.True(line.LeftWing.HasFitNote);
 
         pair.RightDefence.SelectedPlayer = Skater(Position.Wing, Handedness.Right);
         Assert.Equal("Forward on defence", pair.RightDefence.FitNote);
 
-        // A centre has no side, and neither does a lone wing in a unit.
         line.Centre.SelectedPlayer = Skater(Position.Centre, Handedness.Right);
         Assert.Null(line.Centre.FitNote);
-        var threeOnThreeWing = lines.Lineup.OtherSituationUnits[1].Units[0].Slots[1];
-        threeOnThreeWing.SelectedPlayer = Skater(Position.Wing, Handedness.Right);
-        Assert.Null(threeOnThreeWing.FitNote);
         Assert.Null(lines.Lineup.StartingGoalie.FitNote);
     }
 
     [Fact]
-    public void PlayerChoicesShowNaturalPositionAndHandedness()
+    public void PlayerChoicesShowNaturalPosition()
     {
         var session = GameTestData.StartSession();
         var lines = new LinesPageViewModel(session);
@@ -112,7 +111,6 @@ public sealed class LinesPageViewModelTests
         var option = lines.Lineup.ForwardLines[0].LeftWing.Options.Single(option => option.Id == player.Id);
 
         Assert.Equal("D", option.PositionAbbreviation);
-        Assert.Equal(player.Biography.Handedness == Handedness.Left ? "L" : "R", option.HandednessAbbreviation);
     }
 
     [Fact]
