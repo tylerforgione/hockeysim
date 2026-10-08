@@ -285,7 +285,9 @@ branch push and every PR to `main`, including configuration and documentation
 changes. It checks formatting once and builds/tests on all three operating
 systems. Test commands run each discovered `tests/**/*.Tests.csproj` against the
 Release build; a project omitted from the solution cannot silently count as a
-successful solution test run. CodeQL analyzes the normal PR checkout using an
+successful solution test run. The projects run in parallel, so the test step
+takes about as long as the slowest project; each project's output is printed as
+a collapsible log group, and any failing project fails the step. CodeQL analyzes the normal PR checkout using an
 explicit build with the pinned SDK.
 
 Formatting failures, build warnings/errors, and test failures must block merge.

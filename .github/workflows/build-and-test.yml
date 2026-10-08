@@ -41,12 +41,24 @@ jobs:
         if: hashFiles('tests/**/*.Tests.csproj') != ''
         shell: pwsh
         run: |
-          $testProjects = Get-ChildItem tests -Recurse -Filter *.Tests.csproj
-          foreach ($project in $testProjects) {
-            $coverageFile = "$($project.BaseName).cobertura.xml"
-            dotnet test --project $project.FullName --configuration Release --no-build --no-restore --minimum-expected-tests 1 --coverage --coverage-output $coverageFile --coverage-output-format cobertura
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $testProjects = @(Get-ChildItem tests -Recurse -Filter *.Tests.csproj)
+          # Run the projects at the same time; each project's output is printed as one group after all finish.
+          $results = $testProjects | ForEach-Object -ThrottleLimit $testProjects.Count -Parallel {
+            $coverageFile = "$($_.BaseName).cobertura.xml"
+            $output = dotnet test --project $_.FullName --configuration Release --no-build --no-restore --minimum-expected-tests 1 --coverage --coverage-output $coverageFile --coverage-output-format cobertura 2>&1
+            [pscustomobject]@{ Name = $_.BaseName; ExitCode = $LASTEXITCODE; Output = $output }
           }
+          $failed = $false
+          foreach ($result in $results | Sort-Object Name) {
+            "::group::$($result.Name) (exit code $($result.ExitCode))"
+            $result.Output | ForEach-Object { "$_" }
+            "::endgroup::"
+            if ($result.ExitCode -ne 0) {
+              "::error::$($result.Name) failed with exit code $($result.ExitCode)."
+              $failed = $true
+            }
+          }
+          if ($failed) { exit 1 }
       - name: Upload coverage reports
         if: hashFiles('tests/**/*.Tests.csproj') != ''
         uses: actions/upload-artifact@v7
