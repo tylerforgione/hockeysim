@@ -125,6 +125,23 @@ public sealed class NewGameTests
     private static NewGameCommand CreateCommand(ulong seed) =>
         new(2026, new RandomState(seed), InitialManagedTeam);
 
+    [Fact]
+    public void GeneratedLinesAndPairsPutPlayersOnTheirNaturalSideWhereTheyCan()
+    {
+        var snapshot = new GameManager().StartNewGame(new NewGameCommand(2026, new RandomState(12345), InitialManagedTeam));
+
+        // A left and a right shot together always play on their forehand sides; a pair that
+        // shoots the same way has one player off-hand.
+        foreach (var team in snapshot.League.Teams)
+        {
+            var handedness = team.Roster.ToDictionary(player => player.Id, player => player.Biography.Handedness);
+            var sides = team.Lineup.ForwardLines.Select(line => (line.LeftWingId, line.RightWingId))
+                .Concat(team.Lineup.DefencePairs.Select(pair => (pair.LeftDefenceId, pair.RightDefenceId)));
+            Assert.All(sides, pair => Assert.False(
+                handedness[pair.Item1] == Handedness.Right && handedness[pair.Item2] == Handedness.Left));
+        }
+    }
+
     private static void AssertValidTeam(TeamSnapshot team)
     {
         Assert.False(string.IsNullOrWhiteSpace(team.Name));

@@ -47,13 +47,57 @@ public sealed class LineupTests
     }
 
     [Fact]
-    public void DefencePairRejectsAPlayerInTheWrongPosition()
+    public void LinesAndPairsAcceptAnySkaterInAnyPlace()
+    {
+        var roster = CreateRoster();
+        var centres = roster.Where(player => player.Position == Position.Centre).ToList();
+        var wings = roster.Where(player => player.Position == Position.Wing).ToList();
+        var defence = roster.Where(player => player.Position == Position.Defence).ToList();
+        var goalies = roster.Where(player => player.Position == Position.Goalie).ToList();
+
+        // Every line and pair below mixes positions; the lineup still dresses 18 distinct skaters.
+        var forwardLines = new List<ForwardLine>
+        {
+            new(centres[0], wings[0], defence[0]),
+            new(wings[1], defence[1], centres[1]),
+            new(defence[2], centres[2], wings[2]),
+            new(wings[3], wings[4], wings[5]),
+        };
+        var defencePairs = new List<DefencePair>
+        {
+            new(centres[3], wings[6]),
+            new(defence[3], centres[4]),
+            new(wings[7], defence[4]),
+        };
+
+        var lineup = Lineup.CreateWithDefaultUnits(forwardLines, defencePairs, goalies[0], goalies[1]);
+
+        Assert.Equal(defence[0], lineup.ForwardLines[0].RightWing);
+        Assert.Equal(centres[3], lineup.DefencePairs[0].LeftDefence);
+        Assert.Equal(Lineup.RequiredDressedPlayerCount, lineup.DressedPlayers.Count);
+    }
+
+    [Fact]
+    public void ForwardLineRejectsAGoalie()
     {
         var roster = CreateRoster();
         var centre = roster.First(player => player.Position == Position.Centre);
-        var defence = roster.First(player => player.Position == Position.Defence);
+        var wing = roster.First(player => player.Position == Position.Wing);
+        var goalie = roster.First(player => player.Position == Position.Goalie);
 
-        Assert.Throws<ArgumentException>(() => new DefencePair(centre, defence));
+        Assert.Throws<ArgumentException>(() => new ForwardLine(wing, centre, goalie));
+        Assert.Throws<ArgumentException>(() => new ForwardLine(wing, goalie, centre));
+    }
+
+    [Fact]
+    public void DefencePairRejectsAGoalie()
+    {
+        var roster = CreateRoster();
+        var defence = roster.First(player => player.Position == Position.Defence);
+        var goalie = roster.First(player => player.Position == Position.Goalie);
+
+        Assert.Throws<ArgumentException>(() => new DefencePair(goalie, defence));
+        Assert.Throws<ArgumentException>(() => new DefencePair(defence, goalie));
     }
 
     [Fact]

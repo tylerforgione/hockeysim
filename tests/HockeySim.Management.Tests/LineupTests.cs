@@ -86,19 +86,65 @@ public sealed class LineupTests
     }
 
     [Fact]
-    public void SetLineupRejectsAnOutOfPositionAssignmentWithoutChangingState()
+    public void SetLineupAcceptsSkatersInAnySkaterRole()
+    {
+        var manager = new GameManager();
+        var managedBefore = GetManagedTeam(StartGame(manager));
+        var command = CreateCommand(managedBefore.Lineup);
+        var firstLine = command.ForwardLines[0];
+        var firstPair = command.DefencePairs[0];
+
+        // The first line's left wing and the first pair's left defence trade places, and the
+        // line's centre and right wing swap.
+        command = command with
+        {
+            ForwardLines = command.ForwardLines
+                .Select((line, index) => index == 0
+                    ? new ForwardLineSelection(firstPair.LeftDefenceId, firstLine.RightWingId, firstLine.CentreId)
+                    : line)
+                .ToList(),
+            DefencePairs = command.DefencePairs
+                .Select((pair, index) => index == 0 ? pair with { LeftDefenceId = firstLine.LeftWingId } : pair)
+                .ToList(),
+        };
+
+        var managedAfter = GetManagedTeam(manager.SetLineup(command));
+
+        AssertCommandApplied(command, managedAfter.Lineup);
+        var rosterById = managedAfter.Roster.ToDictionary(player => player.Id);
+        Assert.Equal(Position.Defence, rosterById[managedAfter.Lineup.ForwardLines[0].LeftWingId].Position);
+        Assert.Equal(Position.Wing, rosterById[managedAfter.Lineup.ForwardLines[0].CentreId].Position);
+        Assert.Equal(Position.Wing, rosterById[managedAfter.Lineup.DefencePairs[0].LeftDefenceId].Position);
+    }
+
+    [Fact]
+    public void SetLineupRejectsAGoalieInASkaterRoleWithoutChangingState()
     {
         var manager = new GameManager();
         var before = StartGame(manager);
         var managedBefore = GetManagedTeam(before);
-        var centreId = managedBefore.Roster.First(player => player.Position == Position.Centre).Id;
+        var scratchedGoalieId = managedBefore.ScratchedPlayerIds.Single(
+            id => managedBefore.Roster.Single(player => player.Id == id).Position == Position.Goalie);
         var command = CreateCommand(managedBefore.Lineup);
         command = command with
         {
-            ForwardLines = command.ForwardLines
-                .Select((line, index) => index == 0 ? line with { LeftWingId = centreId } : line)
+            DefencePairs = command.DefencePairs
+                .Select((pair, index) => index == 2 ? pair with { RightDefenceId = scratchedGoalieId } : pair)
                 .ToList(),
         };
+
+        AssertRejectedWithoutChangingState(manager, command, before);
+    }
+
+    [Fact]
+    public void SetLineupRejectsASkaterInAGoalieRoleWithoutChangingState()
+    {
+        var manager = new GameManager();
+        var before = StartGame(manager);
+        var managedBefore = GetManagedTeam(before);
+        var scratchedSkaterId = managedBefore.ScratchedPlayerIds.First(
+            id => managedBefore.Roster.Single(player => player.Id == id).Position != Position.Goalie);
+        var command = CreateCommand(managedBefore.Lineup) with { BackupGoalieId = scratchedSkaterId };
 
         AssertRejectedWithoutChangingState(manager, command, before);
     }

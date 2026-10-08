@@ -34,6 +34,15 @@ internal static class TestTeams
         Func<LineupRole, PlayerBiography>? biographyFor = null)
     {
         biographyFor ??= _ => TestBiography.Create();
+        return Build(name, ratingFor, (role, _, _) => biographyFor(role));
+    }
+
+    /// <param name="biographyFor">A player's biography, given their role, position, and index among that position.</param>
+    private static Team Build(
+        string name,
+        Func<LineupRole, Rating, int> ratingFor,
+        Func<LineupRole, Position, int, PlayerBiography> biographyFor)
+    {
         var roster = new List<Player>(Team.RequiredRosterSize);
 
         List<Player> AddPlayers(Position position, int count, Func<int, LineupRole> roleForIndex)
@@ -42,7 +51,7 @@ internal static class TestTeams
                 .Select(index =>
                 {
                     var role = roleForIndex(index);
-                    return CreatePlayer(position, roster.Count + index + 1, rating => ratingFor(role, rating), biographyFor(role));
+                    return CreatePlayer(position, roster.Count + index + 1, rating => ratingFor(role, rating), biographyFor(role, position, index));
                 })
                 .ToList();
             roster.AddRange(players);
@@ -64,6 +73,33 @@ internal static class TestTeams
     }
 
     public static Match CreateMatch(Team home, Team away) => new(home, away);
+
+    /// <summary>
+    /// Creates an average team whose wings and defence shoot from the side they play, or, when
+    /// <paramref name="offHand"/>, from the other side. Centres shoot left.
+    /// </summary>
+    public static Team CreateWithHandedSides(string name, bool offHand)
+    {
+        var (onSide, otherSide) = offHand ? (Handedness.Right, Handedness.Left) : (Handedness.Left, Handedness.Right);
+
+        // Lines and pairs take wings and defence in roster order, left side first.
+        return Build(name, (_, _) => AverageRating, (_, position, index) => TestBiography.Create(
+            handedness: position is Position.Wing or Position.Defence && index % 2 == 1 ? otherSide : onSide));
+    }
+
+    /// <summary>
+    /// Replaces the team's lines and pairs with ones rearranged from its dressed skaters, deriving
+    /// the units from them as for a generated team.
+    /// </summary>
+    public static Team WithLines(
+        Team team,
+        Func<IReadOnlyList<ForwardLine>, IReadOnlyList<DefencePair>, (IEnumerable<ForwardLine> Lines, IEnumerable<DefencePair> Pairs)> rearrange)
+    {
+        var lineup = team.Lineup;
+        var (lines, pairs) = rearrange(lineup.ForwardLines, lineup.DefencePairs);
+        team.SetLineup(Lineup.CreateWithDefaultUnits(lines, pairs, lineup.StartingGoalie, lineup.BackupGoalie));
+        return team;
+    }
 
     private static LineupRole ForwardRole(int index) =>
         index < Lineup.RequiredForwardLineCount ? new LineupRole(LineupRoleKind.ForwardLine, index) : LineupRole.Scratch;
