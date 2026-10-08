@@ -44,6 +44,7 @@ internal static class SaveTestData
         lines.AddRange(snapshot.Schedule.Matches.Select(match => $"scheduled {match}"));
         lines.Add(SeasonAdvancementTests.Fingerprint(snapshot));
         lines.AddRange(snapshot.Season.TeamRecords.Select(record => record.ToString()));
+        lines.AddRange(snapshot.Season.TeamStatistics.Select(statistics => statistics.ToString()));
         lines.Add($"league {Ranking(snapshot.Season.Standings.League)}");
         foreach (var conference in snapshot.Season.Standings.Conferences)
         {

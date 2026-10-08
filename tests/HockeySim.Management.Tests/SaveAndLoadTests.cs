@@ -33,6 +33,11 @@ public sealed class SaveAndLoadTests
         PowerPlayGoalWithoutOpportunity,
         ShorthandedGoalWithoutOpponentPowerPlay,
         EmptyNetGoalChargedToTheGoalie,
+        GoalMissingFromSummary,
+        PenaltyMissingFromSummary,
+        MissingSummary,
+        ShotTotalsNotMatchingOpponent,
+        MissingOnIceShotTotals,
         DressedPlayerNotOnRoster,
         SkaterDressedInGoal,
         DuplicateRosterPlayer,
@@ -287,6 +292,7 @@ public sealed class SaveAndLoadTests
         var homeScored = save.CompletedMatches.First(result => result.Home.Skaters.Any(skater => skater.Goals > 0));
         var homeScorer = homeScored.Home.Skaters.First(skater => skater.Goals > 0);
         var regulationResult = save.CompletedMatches.First(result => result.Decision == MatchDecision.Regulation);
+        var penalized = save.CompletedMatches.First(result => result.Penalties.Any(penalty => penalty.Kind != PenaltyKind.PenaltyShot));
         var firstTeam = save.Conferences[0].Divisions[0].Teams[0];
         var firstPlayer = firstTeam.Roster[0];
         var unknownPlayerId = new PlayerId(Guid.NewGuid());
@@ -380,6 +386,35 @@ public sealed class SaveAndLoadTests
                     Skaters = homeScored.Home.Skaters
                         .Select(skater => skater == homeScorer ? skater with { EmptyNetGoals = skater.EmptyNetGoals + 1 } : skater)
                         .ToList(),
+                },
+            }),
+            GoalMissingFromSummary => WithResult(save, homeScored, homeScored with { Goals = homeScored.Goals.Skip(1).ToList() }),
+            PenaltyMissingFromSummary => WithResult(save, penalized, penalized with
+            {
+                // A penalty shot carries no minutes, so remove one that does.
+                Penalties = penalized.Penalties
+                    .Where(penalty => penalty != penalized.Penalties.First(timed => timed.Kind != PenaltyKind.PenaltyShot))
+                    .ToList(),
+            }),
+            MissingSummary => WithFirstResult(save, firstResult with { Penalties = null! }),
+            ShotTotalsNotMatchingOpponent => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    ShotTotals = firstResult.Home.ShotTotals with
+                    {
+                        FiveOnFive = firstResult.Home.ShotTotals.FiveOnFive with
+                        {
+                            AttemptsAgainst = firstResult.Home.ShotTotals.FiveOnFive.AttemptsAgainst + 1,
+                        },
+                    },
+                },
+            }),
+            MissingOnIceShotTotals => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    Skaters = [firstResult.Home.Skaters[0] with { OnIce = null! }, .. firstResult.Home.Skaters.Skip(1)],
                 },
             }),
             DressedPlayerNotOnRoster => WithFirstTeam(save, firstTeam with

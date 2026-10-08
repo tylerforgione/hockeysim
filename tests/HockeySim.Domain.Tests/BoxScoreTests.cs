@@ -97,8 +97,8 @@ public sealed class BoxScoreTests
         var skaters = new[] { TestResults.Skater(Id(), 1, shots: 10), TestResults.Skater(Id(), shots: 5) };
         var goalie = TestResults.Goalie(Id(), 20, 2);
 
-        Assert.Equal(15, new CompletedMatchTeam(League.Teams[0].Id, 1, 15, 0, skaters, goalie).Shots);
-        Assert.Throws<ArgumentException>(() => new CompletedMatchTeam(League.Teams[0].Id, 1, 16, 0, skaters, goalie));
+        Assert.Equal(15, new CompletedMatchTeam(League.Teams[0].Id, 1, 15, 0, skaters, goalie, SituationalShotTotals.None).Shots);
+        Assert.Throws<ArgumentException>(() => new CompletedMatchTeam(League.Teams[0].Id, 1, 16, 0, skaters, goalie, SituationalShotTotals.None));
     }
 
     [Fact]
@@ -146,7 +146,8 @@ public sealed class BoxScoreTests
     public void PowerPlayOpportunitiesCannotBeNegative()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new CompletedMatchTeam(
-            League.Teams[0].Id, 0, 0, -1, [Skater()], TestResults.Goalie(Id(), 0, 0)));
+            League.Teams[0].Id, 0, 0, -1, [Skater()], TestResults.Goalie(Id(), 0, 0),
+            SituationalShotTotals.None));
     }
 
     [Fact]
@@ -181,7 +182,8 @@ public sealed class BoxScoreTests
                 TestResults.Skater(Id(), 0, 2, powerPlayAssists: 2),
                 TestResults.Skater(Id(), 0, 1, powerPlayAssists: 1),
             ],
-            goalie));
+            goalie,
+            SituationalShotTotals.None));
         Assert.Throws<ArgumentException>(() => new CompletedMatchTeam(
             team,
             2,
@@ -192,7 +194,8 @@ public sealed class BoxScoreTests
                 TestResults.Skater(Id(), 0, 2, shorthandedAssists: 2),
                 TestResults.Skater(Id(), 0, 1, shorthandedAssists: 1),
             ],
-            goalie));
+            goalie,
+            SituationalShotTotals.None));
     }
 
     [Fact]
@@ -254,7 +257,8 @@ public sealed class BoxScoreTests
                     penaltyMinutes: 4, powerPlayGoals: homePowerPlayGoals, shorthandedGoals: homeShorthandedGoals,
                     emptyNetGoals: homeEmptyNetGoals),
             ],
-            TestResults.Goalie(Id(), 15, 1, homeGoalieExpectedGoalsAgainst));
+            TestResults.Goalie(Id(), 15, 1, homeGoalieExpectedGoalsAgainst),
+            SituationalShotTotals.None);
         var away = new CompletedMatchTeam(
             League.Teams[1].Id,
             1,
@@ -265,9 +269,10 @@ public sealed class BoxScoreTests
                     Id(), 1, shots: 15, shotAttempts: 25, expectedGoals: 1.25, plusMinus: -1,
                     blockedShots: 4, faceoffsWon: 8, faceoffsLost: 10),
             ],
-            TestResults.Goalie(Id(), awayGoalieShotsAgainst, awayGoalieGoalsAgainst, 1.5));
+            TestResults.Goalie(Id(), awayGoalieShotsAgainst, awayGoalieGoalsAgainst, 1.5),
+            SituationalShotTotals.None);
 
-        return new CompletedMatch(Scheduled, home, away, MatchDecision.Regulation);
+        return TestResults.Match(Scheduled, home, away, MatchDecision.Regulation);
     }
 
     private static SkaterBoxScore Skater(
@@ -308,7 +313,8 @@ public sealed class BoxScoreTests
             powerPlayAssists,
             shorthandedGoals,
             shorthandedAssists,
-            emptyNetGoals);
+            emptyNetGoals,
+            SituationalShotTotals.None);
 
     private static PlayerId Id() => new(Guid.NewGuid());
 }
