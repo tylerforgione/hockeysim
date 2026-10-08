@@ -116,7 +116,7 @@ for the build and versioning decisions.
 
 ## Engineering guide
 
-- [Architecture and repository structure](docs/architecture.md)
+- [Architecture and repository structure](docs/architecture.md), with an [area document](docs/areas/) for each part of the game
 - [Technology stack and deferred choices](docs/tech-stack.md)
 - [Coding conventions](docs/conventions.md)
 - [Testing and validation](docs/testing.md)

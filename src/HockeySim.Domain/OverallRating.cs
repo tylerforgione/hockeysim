@@ -11,7 +11,7 @@ namespace HockeySim.Domain;
 /// in every weighted rating has that value as their overall. Ratings a position does not use
 /// (a wing's faceoffs, a goalie's skater ratings) carry no weight. Durability is hidden from the
 /// user and never carries weight, so the overall reveals nothing about it. The weights are
-/// documented in <c>docs/architecture.md</c> under "Player ratings"; keep both in step.
+/// documented in <c>docs/areas/players-and-lineups.md</c> under "Player ratings"; keep both in step.
 /// </remarks>
 public static class OverallRating
 {

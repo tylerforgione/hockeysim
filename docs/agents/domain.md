@@ -7,7 +7,10 @@ This repo uses a single-context layout:
 
 ## Before exploring
 
-Read `CONTEXT.md` and the ADRs relevant to the area being explored.
+Search `CONTEXT.md` for the terms the task touches, and read the ADRs that the
+relevant [area document](../architecture.md#current-implementation) links. Read
+`CONTEXT.md` in full when writing an issue or spec, or when naming a new domain
+concept.
 
 If these files or directories do not exist, proceed silently.
 The domain-modeling skill creates them when terminology or decisions

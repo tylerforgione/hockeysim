@@ -40,7 +40,7 @@ goalie, each shifted by the shooter's and goalie's ratings from a reference
 rating. A reference shooter against a reference goalie therefore scores exactly
 at the xG rate, so the gap between goals and xG measures finishing and
 goaltending, which is what goals saved above expected (#54) reports. The model
-and its values are documented in [architecture](../architecture.md#expected-goals).
+and its values are documented in [architecture](../areas/match-engine.md#expected-goals).
 
 Overtime is an input (`OvertimeFormat`) rather than a rule inside the engine, so
 playoff overtime (unlimited twenty-minute five-on-five sudden-death periods) is

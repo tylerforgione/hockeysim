@@ -13,7 +13,7 @@ namespace HockeySim.Simulation.Play;
 /// <see cref="ReboundOddsMultiplier"/> and a rush by <see cref="RushOddsMultiplier"/>. The engine
 /// then splits the xG into reaching the net and beating the goalie, adjusting each by the
 /// shooter's and goalie's ratings, so a reference-rated shooter against a reference-rated goalie
-/// scores exactly as often as the xG says. See docs/architecture.md.
+/// scores exactly as often as the xG says. See docs/areas/match-engine.md.
 /// </remarks>
 internal static class ExpectedGoalsModel
 {

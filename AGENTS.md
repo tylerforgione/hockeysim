@@ -2,13 +2,24 @@
 
 ## Explore and change code
 
-- Before exploring, read [domain guidance](docs/agents/domain.md), then
-  [architecture](docs/architecture.md). The existing application is provisional
-  scaffolding; architecture distinguishes current and planned projects.
-- Before changing code or dependencies, read [conventions](docs/conventions.md)
-  and [technology stack](docs/tech-stack.md), including dependency approval policy.
+Read only what the task needs. Every task:
+
+- Read [domain guidance](docs/agents/domain.md), then
+  [architecture](docs/architecture.md). Architecture's area table names the
+  [area document](docs/architecture.md#current-implementation) for each part of
+  the game. Read the one(s) your task touches. Each starts with a code map;
+  use it to open the right files instead of exploring the tree.
+- Before changing code, read [conventions](docs/conventions.md).
+
+Only when relevant:
+
+- Before adding or changing dependencies, the SDK, or build configuration, read
+  [technology stack](docs/tech-stack.md), including dependency approval policy.
 - Before adding tests or validating changes, read [testing](docs/testing.md).
   Report the commands actually run and distinguish missing tests from passing tests.
+- Read an ADR or a [future features](docs/future-features.md) entry when a
+  document you are reading links to it, or when the task concerns it. Read the
+  linked section, not the whole file.
 
 ## Issues and delivery
 
@@ -36,9 +47,13 @@ the change before implementation and update the relevant documentation. Record
 resolved domain terminology in `CONTEXT.md` and consequential architecture
 tradeoffs in `docs/adr/`, following the single-context layout.
 
+When behaviour changes, rewrite the area document in place and keep its code
+and test maps current; see
+[keeping the area documents useful](docs/architecture.md#keeping-the-area-documents-useful).
+
 Features and game-design decisions intentionally left out of v1 live in
-[future features](docs/future-features.md). Check it before proposing new scope,
-and add an entry there instead of implementing out-of-scope work.
+[future features](docs/future-features.md). Check its headings before proposing
+new scope, and add an entry there instead of implementing out-of-scope work.
 
 ## Subagents
 
