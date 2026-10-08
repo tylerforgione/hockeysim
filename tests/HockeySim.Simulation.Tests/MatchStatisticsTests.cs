@@ -207,9 +207,11 @@ public sealed class MatchStatisticsTests
             Assert.True(skater.Goals >= 0 && skater.Assists >= 0);
         });
 
+        // Goals into an empty net are not held against the goalie.
+        var emptyNetGoals = result.Goals.Count(goal => goal.TeamId == opponent.TeamId && goal.IsEmptyNet);
         var goalie = team.Goalie;
-        Assert.Equal(opponent.Shots, goalie.ShotsAgainst);
-        Assert.Equal(opponentGoalCount, goalie.GoalsAgainst);
+        Assert.Equal(opponent.Shots - emptyNetGoals, goalie.ShotsAgainst);
+        Assert.Equal(opponentGoalCount - emptyNetGoals, goalie.GoalsAgainst);
         Assert.Equal(goalie.ShotsAgainst, goalie.Saves + goalie.GoalsAgainst);
         Assert.True(goalie.Saves >= 0);
         if (goalie.ShotsAgainst > 0)

@@ -170,8 +170,15 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
             Assert.Equal(84 * 18, skaters.Sum(skater => skater.GamesPlayed));
             Assert.Equal(84, goalies.Sum(goalie => goalie.GamesPlayed));
             Assert.Equal(record.GoalsFor - record.ShootoutWins, skaters.Sum(skater => skater.Goals));
-            Assert.Equal(record.GoalsAgainst - record.ShootoutLosses, goalies.Sum(goalie => goalie.GoalsAgainst));
+
+            // Goals into an empty net count against the team but not its goalie.
+            var emptyNetGoalsAgainst = Season.Results
+                .Where(result => result.Home.TeamId == record.TeamId || result.Away.TeamId == record.TeamId)
+                .Sum(result => Opponent(result, record.TeamId).Skaters.Sum(skater => skater.EmptyNetGoals));
+            Assert.Equal(record.GoalsAgainst - record.ShootoutLosses - emptyNetGoalsAgainst, goalies.Sum(goalie => goalie.GoalsAgainst));
         });
+
+        Assert.Contains(Season.Results, result => result.Home.Skaters.Concat(result.Away.Skaters).Any(skater => skater.EmptyNetGoals > 0));
     }
 
     [Fact]
