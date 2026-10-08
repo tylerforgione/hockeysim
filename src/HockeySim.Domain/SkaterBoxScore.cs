@@ -8,13 +8,18 @@ public sealed record SkaterBoxScore
 {
     /// <param name="plusMinus">
     /// Goals the team scored while the skater was on the ice, less those it conceded, excluding
-    /// power-play goals.
+    /// power-play and penalty-shot goals.
     /// </param>
     /// <param name="timeOnIce">Time on the ice in regulation and overtime, in whole seconds.</param>
     /// <param name="shots">Shots on goal, including goals.</param>
     /// <param name="shotAttempts">Shots on goal, missed shots, and shots that were blocked.</param>
     /// <param name="blockedShots">The opponent's shot attempts this skater blocked.</param>
     /// <param name="expectedGoals">The summed expected-goal value of the skater's unblocked attempts.</param>
+    /// <param name="penaltyMinutes">Minutes of every penalty assessed to the skater.</param>
+    /// <param name="powerPlayGoals">Goals scored on the power play, counted among the goals.</param>
+    /// <param name="powerPlayAssists">Assists on power-play goals, counted among the assists.</param>
+    /// <param name="shorthandedGoals">Goals scored shorthanded, counted among the goals.</param>
+    /// <param name="shorthandedAssists">Assists on shorthanded goals, counted among the assists.</param>
     public SkaterBoxScore(
         PlayerId playerId,
         int goals,
@@ -29,7 +34,12 @@ public sealed record SkaterBoxScore
         int faceoffsLost,
         int takeaways,
         int giveaways,
-        double expectedGoals)
+        double expectedGoals,
+        int penaltyMinutes,
+        int powerPlayGoals,
+        int powerPlayAssists,
+        int shorthandedGoals,
+        int shorthandedAssists)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(goals);
         ArgumentOutOfRangeException.ThrowIfNegative(assists);
@@ -43,6 +53,13 @@ public sealed record SkaterBoxScore
         ArgumentOutOfRangeException.ThrowIfNegative(takeaways);
         ArgumentOutOfRangeException.ThrowIfNegative(giveaways);
         ExpectedGoalTotals.ThrowIfInvalid(expectedGoals, nameof(expectedGoals));
+        ArgumentOutOfRangeException.ThrowIfNegative(penaltyMinutes);
+        ArgumentOutOfRangeException.ThrowIfNegative(powerPlayGoals);
+        ArgumentOutOfRangeException.ThrowIfNegative(powerPlayAssists);
+        ArgumentOutOfRangeException.ThrowIfNegative(shorthandedGoals);
+        ArgumentOutOfRangeException.ThrowIfNegative(shorthandedAssists);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(powerPlayGoals + shorthandedGoals, goals, nameof(shorthandedGoals));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(powerPlayAssists + shorthandedAssists, assists, nameof(shorthandedAssists));
 
         PlayerId = playerId;
         Goals = goals;
@@ -58,6 +75,11 @@ public sealed record SkaterBoxScore
         Takeaways = takeaways;
         Giveaways = giveaways;
         ExpectedGoals = expectedGoals;
+        PenaltyMinutes = penaltyMinutes;
+        PowerPlayGoals = powerPlayGoals;
+        PowerPlayAssists = powerPlayAssists;
+        ShorthandedGoals = shorthandedGoals;
+        ShorthandedAssists = shorthandedAssists;
     }
 
     public PlayerId PlayerId { get; }
@@ -89,4 +111,18 @@ public sealed record SkaterBoxScore
     public int Giveaways { get; }
 
     public double ExpectedGoals { get; }
+
+    public int PenaltyMinutes { get; }
+
+    public int PowerPlayGoals { get; }
+
+    public int PowerPlayAssists { get; }
+
+    public int PowerPlayPoints => PowerPlayGoals + PowerPlayAssists;
+
+    public int ShorthandedGoals { get; }
+
+    public int ShorthandedAssists { get; }
+
+    public int ShorthandedPoints => ShorthandedGoals + ShorthandedAssists;
 }

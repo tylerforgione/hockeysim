@@ -89,6 +89,7 @@ public sealed record SavedMatchSide(
     TeamId TeamId,
     int Score,
     int Shots,
+    int PowerPlayOpportunities,
     IReadOnlyList<SavedSkaterBoxScore> Skaters,
     SavedGoalieBoxScore Goalie);
 
@@ -107,7 +108,12 @@ public sealed record SavedSkaterBoxScore(
     int FaceoffsLost,
     int Takeaways,
     int Giveaways,
-    double ExpectedGoals);
+    double ExpectedGoals,
+    int PenaltyMinutes,
+    int PowerPlayGoals,
+    int PowerPlayAssists,
+    int ShorthandedGoals,
+    int ShorthandedAssists);
 
 /// <param name="TimeOnIceSeconds">Time in net in whole seconds.</param>
 public sealed record SavedGoalieBoxScore(

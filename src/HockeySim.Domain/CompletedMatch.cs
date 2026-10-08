@@ -4,7 +4,8 @@ namespace HockeySim.Domain;
 /// The canonical record of a scheduled match that has been played. The score is always decisive,
 /// and individual statistics reconcile with it: only a shootout winner's score exceeds its player
 /// goals, by exactly the one deciding goal. Each goalie's shots, goals, and expected goals against
-/// match the opponent's skaters, and one team's faceoff wins are the other's losses.
+/// match the opponent's skaters, one team's faceoff wins are the other's losses, and a team scores
+/// shorthanded only when the opponent had a power play.
 /// </summary>
 public sealed class CompletedMatch
 {
@@ -60,6 +61,12 @@ public sealed class CompletedMatch
         if (BlockedShots(home) > UnsuccessfulAttempts(away) || BlockedShots(away) > UnsuccessfulAttempts(home))
         {
             throw new ArgumentException("A team cannot block more shots than the opponent attempted without reaching the net.");
+        }
+
+        if ((home.ShorthandedGoals > 0 && away.PowerPlayOpportunities == 0)
+            || (away.ShorthandedGoals > 0 && home.PowerPlayOpportunities == 0))
+        {
+            throw new ArgumentException("A team cannot score shorthanded unless the opponent had a power play.");
         }
 
         // Every goal changes a skater's plus/minus by at most one.

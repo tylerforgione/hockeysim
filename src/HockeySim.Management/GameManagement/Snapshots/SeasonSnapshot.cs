@@ -93,12 +93,14 @@ public sealed class CompletedMatchTeamSnapshot
         TeamId teamId,
         int score,
         int shots,
+        int powerPlayOpportunities,
         IReadOnlyList<SkaterBoxScoreSnapshot> skaters,
         GoalieBoxScoreSnapshot goalie)
     {
         TeamId = teamId;
         Score = score;
         Shots = shots;
+        PowerPlayOpportunities = powerPlayOpportunities;
         _skaters = new ReadOnlyCollection<SkaterBoxScoreSnapshot>(skaters.ToList());
         Goalie = goalie;
     }
@@ -111,6 +113,13 @@ public sealed class CompletedMatchTeamSnapshot
     /// <summary>Shots on goal in regulation and overtime; shootout attempts are excluded.</summary>
     public int Shots { get; }
 
+    /// <summary>Opponent penalties that gave the team a manpower advantage, each counted once.</summary>
+    public int PowerPlayOpportunities { get; }
+
+    public int PowerPlayGoals => _skaters.Sum(skater => skater.PowerPlayGoals);
+
+    public int PenaltyMinutes => _skaters.Sum(skater => skater.PenaltyMinutes);
+
     public IReadOnlyList<SkaterBoxScoreSnapshot> Skaters => _skaters;
 
     public GoalieBoxScoreSnapshot Goalie { get; }
@@ -120,11 +129,17 @@ public sealed class CompletedMatchTeamSnapshot
             team.TeamId,
             team.Score,
             team.Shots,
+            team.PowerPlayOpportunities,
             team.Skaters.Select(SkaterBoxScoreSnapshot.Create).ToList(),
             GoalieBoxScoreSnapshot.Create(team.Goalie));
 }
 
-/// <param name="PlusMinus">Even-strength and shorthanded goals for, less those against, while on the ice.</param>
+/// <param name="PlusMinus">
+/// Even-strength and shorthanded goals for, less those against, while on the ice; power-play and
+/// penalty-shot goals do not count.
+/// </param>
+/// <param name="PowerPlayGoals">Power-play goals, counted among the goals.</param>
+/// <param name="ShorthandedGoals">Shorthanded goals, counted among the goals.</param>
 /// <param name="Shots">Shots on goal, including goals.</param>
 /// <param name="ShotAttempts">Shots on goal, missed shots, and blocked attempts.</param>
 /// <param name="BlockedShots">The opponent's attempts this skater blocked.</param>
@@ -142,9 +157,18 @@ public sealed record SkaterBoxScoreSnapshot(
     int FaceoffsLost,
     int Takeaways,
     int Giveaways,
-    double ExpectedGoals)
+    double ExpectedGoals,
+    int PenaltyMinutes,
+    int PowerPlayGoals,
+    int PowerPlayAssists,
+    int ShorthandedGoals,
+    int ShorthandedAssists)
 {
     public int Points => Goals + Assists;
+
+    public int PowerPlayPoints => PowerPlayGoals + PowerPlayAssists;
+
+    public int ShorthandedPoints => ShorthandedGoals + ShorthandedAssists;
 
     internal static SkaterBoxScoreSnapshot Create(SkaterBoxScore boxScore) =>
         new(
@@ -161,7 +185,12 @@ public sealed record SkaterBoxScoreSnapshot(
             boxScore.FaceoffsLost,
             boxScore.Takeaways,
             boxScore.Giveaways,
-            boxScore.ExpectedGoals);
+            boxScore.ExpectedGoals,
+            boxScore.PenaltyMinutes,
+            boxScore.PowerPlayGoals,
+            boxScore.PowerPlayAssists,
+            boxScore.ShorthandedGoals,
+            boxScore.ShorthandedAssists);
 }
 
 public sealed record GoalieBoxScoreSnapshot(

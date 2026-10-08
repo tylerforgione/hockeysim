@@ -5,7 +5,8 @@ namespace HockeySim.Simulation.Play;
 
 /// <summary>
 /// Derives every individual and team statistic from the play-by-play, so they always reconcile
-/// with the events and with each other. Only time on ice comes from the skaters' shifts.
+/// with the events and with each other. Only time on ice, which comes from the shifts, and
+/// power-play opportunities, which come from the penalties being served, are kept by the match.
 /// </summary>
 internal sealed class MatchStatisticsBuilder
 {
@@ -40,12 +41,15 @@ internal sealed class MatchStatisticsBuilder
                 case GiveawayEvent giveaway:
                     Skater(giveaway.PlayerId).Giveaways++;
                     break;
+                case PenaltyEvent penalty:
+                    Skater(penalty.PlayerId).PenaltyMinutes += penalty.Minutes;
+                    break;
             }
         }
     }
 
     /// <param name="score">The final score, including a shootout deciding goal.</param>
-    public MatchTeamResult TeamResult(MatchSide side, MatchSide opponent, int score, TimeSpan playingTime)
+    public MatchTeamResult TeamResult(MatchSide side, MatchSide opponent, int score)
     {
         var team = Team(side.TeamId);
         var against = Team(opponent.TeamId);
@@ -66,16 +70,21 @@ internal sealed class MatchStatisticsBuilder
                 tally.FaceoffsLost,
                 tally.Takeaways,
                 tally.Giveaways,
-                tally.ExpectedGoals);
+                tally.ExpectedGoals,
+                tally.PenaltyMinutes,
+                tally.PowerPlayGoals,
+                tally.PowerPlayAssists,
+                tally.ShorthandedGoals,
+                tally.ShorthandedAssists);
         });
         var goalie = new GoalieMatchStatistics(
             side.Goalie.Id,
             ShotsAgainst: against.Shots,
             GoalsAgainst: against.Goals,
             ExpectedGoalsAgainst: against.ExpectedGoals,
-            TimeOnIce: playingTime);
+            TimeOnIce: TimeSpan.FromSeconds(side.GoalieTimeOnIceSeconds));
 
-        return new MatchTeamResult(side.TeamId, score, team.Shots, skaters, goalie);
+        return new MatchTeamResult(side.TeamId, score, team.Shots, side.PowerPlayOpportunities, skaters, goalie);
     }
 
     private void AddGoal(GoalEvent goal)
@@ -85,12 +94,29 @@ internal sealed class MatchStatisticsBuilder
         scorer.Shots++;
         scorer.ShotAttempts++;
         scorer.ExpectedGoals += goal.ExpectedGoals;
+        if (goal.Situation == GoalSituation.PowerPlay)
+        {
+            scorer.PowerPlayGoals++;
+        }
+        else if (goal.Situation == GoalSituation.Shorthanded)
+        {
+            scorer.ShorthandedGoals++;
+        }
 
         foreach (var assist in new[] { goal.PrimaryAssistId, goal.SecondaryAssistId })
         {
             if (assist is { } assistId)
             {
-                Skater(assistId).Assists++;
+                var assister = Skater(assistId);
+                assister.Assists++;
+                if (goal.Situation == GoalSituation.PowerPlay)
+                {
+                    assister.PowerPlayAssists++;
+                }
+                else if (goal.Situation == GoalSituation.Shorthanded)
+                {
+                    assister.ShorthandedAssists++;
+                }
             }
         }
 
@@ -104,18 +130,20 @@ internal sealed class MatchStatisticsBuilder
 
     /// <summary>
     /// Credits plus one to the scoring team's skaters on the ice and minus one to the conceding
-    /// team's, except for a power-play goal, which counts toward neither.
+    /// team's, except for a power-play or penalty-shot goal, which counts toward neither. An extra
+    /// attacker during a delayed penalty is on the ice like any other skater.
     /// </summary>
     private void AddPlusMinus(GoalEvent goal)
     {
+        if (goal.Situation is GoalSituation.PowerPlay or GoalSituation.PenaltyShot)
+        {
+            return;
+        }
+
         var onIce = goal.OnIce;
         var (scoring, conceding) = goal.TeamId == _homeTeamId
             ? (onIce.HomeSkaters, onIce.AwaySkaters)
             : (onIce.AwaySkaters, onIce.HomeSkaters);
-        if (scoring.Count > conceding.Count)
-        {
-            return;
-        }
 
         foreach (var playerId in scoring)
         {
@@ -199,6 +227,16 @@ internal sealed class MatchStatisticsBuilder
         public int Giveaways { get; set; }
 
         public double ExpectedGoals { get; set; }
+
+        public int PenaltyMinutes { get; set; }
+
+        public int PowerPlayGoals { get; set; }
+
+        public int PowerPlayAssists { get; set; }
+
+        public int ShorthandedGoals { get; set; }
+
+        public int ShorthandedAssists { get; set; }
     }
 
     private sealed class TeamTally

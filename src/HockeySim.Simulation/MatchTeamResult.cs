@@ -17,12 +17,14 @@ public sealed class MatchTeamResult
         TeamId teamId,
         int score,
         int shots,
+        int powerPlayOpportunities,
         IEnumerable<SkaterMatchStatistics> skaters,
         GoalieMatchStatistics goalie)
     {
         TeamId = teamId;
         Score = score;
         Shots = shots;
+        PowerPlayOpportunities = powerPlayOpportunities;
         _skaters = skaters.ToList().AsReadOnly();
         Goalie = goalie;
     }
@@ -37,6 +39,15 @@ public sealed class MatchTeamResult
 
     /// <summary>Shots on goal in regulation and overtime; shootout attempts are excluded.</summary>
     public int Shots { get; }
+
+    /// <summary>
+    /// Opponent penalties that gave this team a manpower advantage: each one counts once, the first
+    /// time the team has more skaters available while it is being served.
+    /// </summary>
+    public int PowerPlayOpportunities { get; }
+
+    /// <summary>Goals scored on the power play.</summary>
+    public int PowerPlayGoals => _skaters.Sum(skater => skater.PowerPlayGoals);
 
     /// <summary>Every dressed skater, in lineup order: forward lines, then defence pairs.</summary>
     public IReadOnlyList<SkaterMatchStatistics> Skaters => _skaters;

@@ -1,3 +1,6 @@
+using HockeySim.Domain;
+using HockeySim.Simulation.Events;
+
 namespace HockeySim.Simulation.Play;
 
 /// <summary>
@@ -24,6 +27,8 @@ internal static class MatchTuning
     public static readonly double[] ForwardLineUsage = [0.36, 0.30, 0.21, 0.13];
     public static readonly double[] DefencePairUsage = [0.40, 0.34, 0.26];
     public static readonly double[] ThreeOnThreeUnitUsage = [0.45, 0.35, 0.20];
+    public static readonly double[] PenaltyKillUnitUsage = [0.40, 0.35, 0.25];
+    public static readonly double[] TwoUnitUsage = [0.60, 0.40];
 
     // Fatigue. Energy runs from one (rested) to zero. A skater of average stamina tires to the
     // change threshold in under a minute and recovers on the bench in about two minutes.
@@ -171,7 +176,110 @@ internal static class MatchTuning
     public const double MinimumShootoutChance = 0.05;
     public const double MaximumShootoutChance = 0.95;
 
+    // Special teams. Each skater a team has over the opponent counts as this many rating points of
+    // attacking edge, so a power play shoots more, from better ice, and a penalty kill clears.
+    public const double ManpowerEdgePerSkater = 65;
+
+    // Penalties in the run of play: the chance per step that the defending or the attacking team
+    // commits one, before discipline and the play adjust it. Defenders who are being beaten foul
+    // more, and every skater fouls more when tired, since fatigue lowers their effective discipline.
+    public const double DefendingPenaltyChance = 0.0047;
+    public const double AttackingPenaltyChance = 0.0019;
+    public const double PenaltyEdgeSensitivity = 0.02;
+    public const double DisciplineSensitivity = 0.03;
+
+    /// <summary>Keeps every skater on the ice a possible offender, however disciplined.</summary>
+    public const double MinimumIndisciplineWeight = 10;
+
+    /// <summary>A foul on a rush that is awarded a penalty shot rather than a minor.</summary>
+    public const double PenaltyShotShare = 0.12;
+
+    // Severity: some high-sticking draws blood (a double minor), and a dangerous foul can be a
+    // major, which always carries a game misconduct when it is not for fighting.
+    public const double DoubleMinorHighStickingChance = 0.2;
+    public const double DangerousHitMajorChance = 0.06;
+    public const double StickFoulMajorChance = 0.01;
+
+    // Incidents after a hit: an illegal hit, a scrum where both players take roughing minors, or
+    // a fight where both take fighting majors. Fights are likelier between tough players and in
+    // lopsided matches, and do not happen in overtime.
+    public const double IllegalHitChance = 0.025;
+    public const double ScrumChance = 0.009;
+    public const double FightChance = 0.0045;
+    public const double FightToughnessSensitivity = 0.05;
+    public const int BlowoutGoalDifference = 3;
+    public const double BlowoutFightMultiplier = 2.5;
+    public const double ScrumMisconductChance = 0.12;
+
+    /// <summary>Penalties are not called on a team with fewer available skaters than this.</summary>
+    public const int MinimumAvailableSkaters = 8;
+
+    // The infractions behind each kind of foul, with their relative frequency.
+    public static readonly (Infraction Infraction, double Weight)[] RushFouls =
+    [
+        (Infraction.Hooking, 0.30),
+        (Infraction.Tripping, 0.30),
+        (Infraction.Holding, 0.20),
+        (Infraction.Interference, 0.20),
+    ];
+
+    public static readonly (Infraction Infraction, double Weight)[] DefendingZoneFouls =
+    [
+        (Infraction.Hooking, 0.18),
+        (Infraction.Holding, 0.15),
+        (Infraction.Tripping, 0.15),
+        (Infraction.Interference, 0.10),
+        (Infraction.CrossChecking, 0.12),
+        (Infraction.Slashing, 0.12),
+        (Infraction.HighSticking, 0.10),
+        (Infraction.Roughing, 0.08),
+    ];
+
+    public static readonly (Infraction Infraction, double Weight)[] ForecheckingFouls =
+    [
+        (Infraction.Interference, 0.30),
+        (Infraction.Holding, 0.20),
+        (Infraction.Hooking, 0.20),
+        (Infraction.Slashing, 0.15),
+        (Infraction.HighSticking, 0.15),
+    ];
+
+    public static readonly (Infraction Infraction, double Weight)[] OwnZoneFoulsWithThePuck =
+    [
+        (Infraction.DelayOfGame, 0.35),
+        (Infraction.Interference, 0.20),
+        (Infraction.Holding, 0.15),
+        (Infraction.Slashing, 0.15),
+        (Infraction.HighSticking, 0.15),
+    ];
+
+    public static readonly (Infraction Infraction, double Weight)[] AttackingFouls =
+    [
+        (Infraction.Interference, 0.30),
+        (Infraction.Slashing, 0.25),
+        (Infraction.HighSticking, 0.20),
+        (Infraction.Tripping, 0.15),
+        (Infraction.Hooking, 0.10),
+    ];
+
+    public static readonly (Infraction Infraction, double Weight)[] IllegalHits =
+    [
+        (Infraction.Boarding, 0.30),
+        (Infraction.Charging, 0.20),
+        (Infraction.Elbowing, 0.15),
+        (Infraction.Roughing, 0.20),
+        (Infraction.Interference, 0.15),
+    ];
+
     // Keep every event possible but never certain, however lopsided the ratings.
     public const double MinimumChance = 0.005;
     public const double MaximumChance = 0.995;
+
+    /// <summary>Each unit's share of a special situation's ice time when rested.</summary>
+    public static double[] UnitUsage(SpecialSituation situation) => situation switch
+    {
+        SpecialSituation.ThreeOnThree => ThreeOnThreeUnitUsage,
+        SpecialSituation.PenaltyKill4On5 => PenaltyKillUnitUsage,
+        _ => TwoUnitUsage,
+    };
 }

@@ -7,7 +7,10 @@ namespace HockeySim.Domain;
 public sealed record GoalieBoxScore
 {
     /// <param name="expectedGoalsAgainst">The summed expected-goal value of the opponent's unblocked attempts.</param>
-    /// <param name="timeOnIce">Time in net in regulation and overtime, in whole seconds.</param>
+    /// <param name="timeOnIce">
+    /// Time in net in regulation and overtime, in whole seconds, less any time pulled for an extra
+    /// attacker.
+    /// </param>
     public GoalieBoxScore(
         PlayerId playerId,
         int shotsAgainst,

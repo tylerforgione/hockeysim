@@ -7,7 +7,7 @@
     <DataTemplate x:DataType="schedule:MatchSideViewModel">
       <StackPanel>
         <Border Classes="table-header">
-          <Grid ColumnDefinitions="*,36,32,32,32,36,52,36,36,44,36,36,48,32,32">
+          <Grid ColumnDefinitions="*,36,32,32,32,36,52,36,36,44,36,36,48,32,32,36,36,36">
             <TextBlock Text="{Binding TeamName}" />
             <TextBlock Grid.Column="1" Text="POS" ToolTip.Tip="Position" HorizontalAlignment="Center" />
             <TextBlock Grid.Column="2" Text="G" ToolTip.Tip="Goals" HorizontalAlignment="Center" />
@@ -23,12 +23,15 @@
             <TextBlock Grid.Column="12" Text="FO" ToolTip.Tip="Faceoffs won–lost" HorizontalAlignment="Center" />
             <TextBlock Grid.Column="13" Text="TK" ToolTip.Tip="Takeaways" HorizontalAlignment="Center" />
             <TextBlock Grid.Column="14" Text="GV" ToolTip.Tip="Giveaways" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="15" Text="PIM" ToolTip.Tip="Penalty minutes" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="16" Text="PPG" ToolTip.Tip="Power-play goals" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="17" Text="SHG" ToolTip.Tip="Shorthanded goals" HorizontalAlignment="Center" />
           </Grid>
         </Border>
         <ItemsControl ItemsSource="{Binding Skaters}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="schedule:SkaterBoxScoreRowViewModel">
-              <Grid ColumnDefinitions="*,36,32,32,32,36,52,36,36,44,36,36,48,32,32" Height="22" Margin="8,0">
+              <Grid ColumnDefinitions="*,36,32,32,32,36,52,36,36,44,36,36,48,32,32,36,36,36" Height="22" Margin="8,0">
                 <TextBlock Classes="cell" Text="{Binding Name}" />
                 <TextBlock Grid.Column="1" Classes="cell-center muted" Text="{Binding Position}" />
                 <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Goals}" />
@@ -44,6 +47,9 @@
                 <TextBlock Grid.Column="12" Classes="cell-center" Text="{Binding Faceoffs}" />
                 <TextBlock Grid.Column="13" Classes="cell-center" Text="{Binding Takeaways}" />
                 <TextBlock Grid.Column="14" Classes="cell-center" Text="{Binding Giveaways}" />
+                <TextBlock Grid.Column="15" Classes="cell-center" Text="{Binding PenaltyMinutes}" />
+                <TextBlock Grid.Column="16" Classes="cell-center" Text="{Binding PowerPlayGoals}" />
+                <TextBlock Grid.Column="17" Classes="cell-center" Text="{Binding ShorthandedGoals}" />
               </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
@@ -91,7 +97,11 @@
               <TextBlock Classes="caption" HorizontalAlignment="Right">
                 <Run Text="Away ·" />
                 <Run Text="{Binding Away.Shots}" />
-                <Run Text="shots" />
+                <Run Text="shots · PP" />
+                <Run Text="{Binding Away.PowerPlay}" />
+                <Run Text="·" />
+                <Run Text="{Binding Away.PenaltyMinutes}" />
+                <Run Text="PIM" />
               </TextBlock>
             </StackPanel>
             <Border Classes="badge" Width="40" Height="40">
@@ -120,7 +130,11 @@
               <TextBlock Classes="caption">
                 <Run Text="Home ·" />
                 <Run Text="{Binding Home.Shots}" />
-                <Run Text="shots" />
+                <Run Text="shots · PP" />
+                <Run Text="{Binding Home.PowerPlay}" />
+                <Run Text="·" />
+                <Run Text="{Binding Home.PenaltyMinutes}" />
+                <Run Text="PIM" />
               </TextBlock>
             </StackPanel>
           </StackPanel>

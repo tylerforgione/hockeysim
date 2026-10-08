@@ -18,15 +18,20 @@ public sealed class CompletedMatchTeam
     /// Shots on goal in regulation and overtime, equal to the skaters' shots; shootout attempts are
     /// excluded.
     /// </param>
+    /// <param name="powerPlayOpportunities">
+    /// Opponent penalties that gave the team a manpower advantage, each counted once.
+    /// </param>
     public CompletedMatchTeam(
         TeamId teamId,
         int score,
         int shots,
+        int powerPlayOpportunities,
         IEnumerable<SkaterBoxScore> skaters,
         GoalieBoxScore goalie)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(score);
         ArgumentOutOfRangeException.ThrowIfNegative(shots);
+        ArgumentOutOfRangeException.ThrowIfNegative(powerPlayOpportunities);
         ArgumentNullException.ThrowIfNull(skaters);
         ArgumentNullException.ThrowIfNull(goalie);
 
@@ -50,14 +55,23 @@ public sealed class CompletedMatchTeam
         var playerGoals = skaterList.Sum(skater => skater.Goals);
 
         // Each goal credits at most a primary and a secondary assist.
-        if (skaterList.Sum(skater => skater.Assists) > 2 * playerGoals)
+        if (skaterList.Sum(skater => skater.Assists) > 2 * playerGoals
+            || skaterList.Sum(skater => skater.PowerPlayAssists) > 2 * skaterList.Sum(skater => skater.PowerPlayGoals)
+            || skaterList.Sum(skater => skater.ShorthandedAssists) > 2 * skaterList.Sum(skater => skater.ShorthandedGoals))
         {
             throw new ArgumentException("A team cannot record more than two assists per goal.", nameof(skaters));
+        }
+
+        // A power-play goal needs a power play.
+        if (powerPlayOpportunities == 0 && skaterList.Any(skater => skater.PowerPlayGoals > 0))
+        {
+            throw new ArgumentException("A team cannot score on the power play without a power-play opportunity.", nameof(skaters));
         }
 
         TeamId = teamId;
         Score = score;
         Shots = shots;
+        PowerPlayOpportunities = powerPlayOpportunities;
         _skaters = skaterList.AsReadOnly();
         Goalie = goalie;
     }
@@ -67,6 +81,14 @@ public sealed class CompletedMatchTeam
     public int Score { get; }
 
     public int Shots { get; }
+
+    public int PowerPlayOpportunities { get; }
+
+    public int PowerPlayGoals => _skaters.Sum(skater => skater.PowerPlayGoals);
+
+    public int ShorthandedGoals => _skaters.Sum(skater => skater.ShorthandedGoals);
+
+    public int PenaltyMinutes => _skaters.Sum(skater => skater.PenaltyMinutes);
 
     public IReadOnlyList<SkaterBoxScore> Skaters => _skaters;
 

@@ -16,6 +16,7 @@ namespace HockeySim.Simulation.Events;
 /// A second on-ice teammate credited with an assist. Present only with a primary assist.
 /// </param>
 /// <param name="ExpectedGoals">The scoring shot's expected-goal value.</param>
+/// <param name="Situation">Whether it was an even-strength, power-play, shorthanded, or penalty-shot goal.</param>
 public sealed record GoalEvent(
     int Period,
     TimeSpan TimeInPeriod,
@@ -25,5 +26,6 @@ public sealed record GoalEvent(
     PlayerId? PrimaryAssistId,
     PlayerId? SecondaryAssistId,
     ShotContext Context,
-    double ExpectedGoals)
+    double ExpectedGoals,
+    GoalSituation Situation)
     : MatchEvent(Period, TimeInPeriod, OnIce);
