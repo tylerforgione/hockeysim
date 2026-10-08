@@ -3,11 +3,13 @@
 `HockeySim.Simulation`: plays one match from two lineups and a random state and
 returns the result. It never changes the game world; Management applies results
 ([ADR 0001](../adr/0001-headless-game-ownership.md)). Design decisions:
-[ADR 0006](../adr/0006-event-based-match-engine.md) (event-based engine) and
+[ADR 0006](../adr/0006-event-based-match-engine.md) (event-based engine),
 [ADR 0007](../adr/0007-manpower-from-penalties-served.md) (manpower from
-penalties served), and
+penalties served),
 [ADR 0008](../adr/0008-health-derived-from-completed-matches.md) (player health
-derived from completed matches).
+derived from completed matches), and
+[ADR 0010](../adr/0010-match-engine-parts-share-one-match-state.md) (engine
+parts sharing one match state).
 
 ## Code map
 
@@ -44,12 +46,14 @@ Paths are under `src/HockeySim.Simulation/`.
 | `Randomness/ControlledRandom.cs`, `RandomState.cs` | The single deterministic generator, also used by Management |
 
 `MatchPlay` builds the parts in dependency order, each taking the `MatchState`
-and only the parts it calls: `SkillComparison`, `GoaliePulls`, `InjuryPlay`, and
-`PenaltyAssessment` need only the state; `Possession` uses `PenaltyAssessment`;
-`ShotPlay` uses all of those; `FoulPlay` uses `ShotPlay` too (for penalty
-shots); and `ZonePlay` uses `FoulPlay` as well. Every random draw comes from the
-state's single `ControlledRandom`, so moving code between parts must keep the
-draws in the same order.
+and only the parts it calls
+([ADR 0010](../adr/0010-match-engine-parts-share-one-match-state.md)):
+`SkillComparison`, `GoaliePulls`, `InjuryPlay`, and `PenaltyAssessment` need
+only the state; `Possession` uses `PenaltyAssessment`; `ShotPlay` uses all of
+those; `FoulPlay` uses `ShotPlay` too (for penalty shots); and `ZonePlay` uses
+`FoulPlay` as well. Every random draw comes from the state's single
+`ControlledRandom`, so moving code between parts must keep the draws in the
+same order.
 
 ## Tests
 
