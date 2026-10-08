@@ -77,6 +77,30 @@
       <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Nationality}" FontWeight="SemiBold" />
     </Grid>
 
+    <StackPanel x:Name="Health" DockPanel.Dock="Top" Margin="12,0,12,10" Spacing="3">
+      <TextBlock Classes="label" Text="HEALTH" />
+      <TextBlock x:Name="HealthText"
+                 Text="{Binding Health}"
+                 FontWeight="SemiBold"
+                 Classes.error="{Binding IsOut}"
+                 Classes.warning="{Binding IsPlayingHurt}" />
+      <ItemsControl ItemsSource="{Binding Injuries}" IsVisible="{Binding HasInjuries}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="players:PlayerInjuryViewModel">
+            <StackPanel Margin="0,2,0,0" Spacing="1">
+              <TextBlock FontWeight="SemiBold">
+                <Run Text="{Binding Name}" />
+                <Run Text="·" Foreground="{DynamicResource SecondaryTextBrush}" />
+                <Run Text="{Binding Status}" />
+              </TextBlock>
+              <TextBlock Classes="caption" Text="{Binding ExpectedReturn}" />
+              <TextBlock Classes="caption" Text="{Binding Effect}" TextWrapping="Wrap" />
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+
     <Border DockPanel.Dock="Top" Classes="divider" />
 
     <!-- The full statistic line is long, so it scrolls together with the ratings. -->

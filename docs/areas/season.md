@@ -10,7 +10,7 @@ is in [match engine](match-engine.md).
 | File | Holds |
 | --- | --- |
 | `Domain/Season.cs` | The season aggregate: `CompleteDay`, records, season statistics, player health |
-| `Domain/PlayerHealth.cs`, `Injury.cs`, `InjuryCatalogue.cs`, `InjuryDefinition.cs`, `InjuryType.cs`, `BodyPart.cs`, `InjuryCap.cs` | Injuries, healing by date, hidden wear, and the injury cap |
+| `Domain/PlayerHealth.cs`, `Injury.cs`, `InjuryCatalogue.cs`, `InjuryDefinition.cs`, `InjuryType.cs`, `BodyPart.cs`, `InjuryCap.cs`, `ExpectedReturn.cs` | Injuries, healing by date, the staff's expected return, hidden wear, and the injury cap |
 | `Domain/MatchHealthChanges.cs`, `MatchInjury.cs`, `WearGain.cs` | A completed match's injuries and wear |
 | `Domain/SeasonSchedule.cs`, `ScheduledMatch.cs`, `Match.cs` | The schedule and its invariants |
 | `Domain/CompletedMatch.cs`, `CompletedMatchTeam.cs`, `SkaterBoxScore.cs`, `GoalieBoxScore.cs`, `ExpectedGoalTotals.cs`, `MatchTime.cs` | A completed match's box score and its reconciliation rules |
@@ -32,7 +32,7 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | File | Covers |
 | --- | --- |
 | `Domain.Tests/SeasonTests.cs` | Day atomicity, points per decision, terminal state |
-| `Domain.Tests/InjuryTests.cs`, `SeasonHealthTests.cs` | The injury catalogue, healing, playing through, wear, the cap, and applying a day's health changes |
+| `Domain.Tests/InjuryTests.cs`, `SeasonHealthTests.cs` | The injury catalogue, healing, expected returns, playing through, wear, the cap, and applying a day's health changes |
 | `Domain.Tests/BoxScoreTests.cs` | Completed-match reconciliation rules |
 | `Domain.Tests/MatchSummaryTests.cs` | Summaries agreeing with the box scores, shot totals across teams and skaters |
 | `Domain.Tests/ShotTotalsTests.cs` | Shot totals, their shares, reversing, and adding |
@@ -70,10 +70,15 @@ whole day (scheduled teams, decisive scores, statistics that reconcile with the
 score, rostered players, no appearance by a player who cannot play, and the
 injury cap) before changing anything, applies each match's injuries and wear to
 the players' health, and then moves to the next calendar day; a scheduled match therefore cannot be completed twice, and a day
-is never partly applied. Management's `AdvanceDay` command simulates the day's
-matches in schedule order from the current lineups and the players' health on
-the current date on one continuous random stream, converts each Simulation result into a Domain completed match, and
-commits the random state only after the season accepts the day. `GameManager`
+is never partly applied. Management's `AdvanceDay` command first rejects the day,
+changing nothing, if the managed team plays on the current date with a dressed
+player who cannot play (see
+[injured players in lineups](players-and-lineups.md#injured-players-in-lineups)).
+It then simulates the day's matches in schedule order, the managed team from its
+lineup and each AI team from its match-day lineup, with the players' health on
+the current date, on one continuous random stream; converts each Simulation
+result into a Domain completed match; commits the random state only after the
+season accepts the day; and then delivers the head trainer's injury reports. `GameManager`
 serializes its commands, rejects commands issued from inside a day being played,
 and rejects advancement once the season is complete. The engine is injected
 through Simulation's `IMatchSimulator`; `MatchDecision`, `GoalSituation`,
@@ -92,8 +97,14 @@ later, so injuries heal on days without matches too; a player can play on a date
 unless an active injury cannot be played through, and plays through the rest at
 the sum of their rating reductions. Wear only grows. `CompleteDay` rejects
 injuries that would leave a team fewer than 18 skaters or 2 goalies able to play
-(`InjuryCap`), and injuries or wear for players who did not appear. Health is
-hidden from snapshots for now; showing injuries is #57, and wear is never shown.
+(`InjuryCap`), and injuries or wear for players who did not appear.
+
+Each `PlayerSnapshot` lists the player's injuries that have not healed on the
+current date: type, body part, whether it can be played through, its match date,
+and the staff's `ExpectedReturn`, a range a quarter of the recovery time either
+side of the return date, kept within the injury's catalogue range. The range is
+worked out from the injury alone, so it uses no randomness. The exact recovery
+time and wear are hidden and never reach a snapshot.
 
 A completed match keeps the box score and, from the play-by-play, a scoring
 summary (each player goal's period, time, team, scorer, assists, situation, and

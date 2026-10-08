@@ -81,7 +81,7 @@ internal static class NhlTargets
         // about every other day, so about 11 days is five or six matches.
         new("Injuries missing matches", 0.30, 0.12, measured => measured.InjuriesMissingMatches),
         new("Recovery days of injuries missing matches", 11.0, 4.0, measured => measured.MeanRecoveryDays),
-        new("Dressed skaters missing the match through injury", 1.67, 0.6, measured => measured.MissedAppearances),
+        new("Players out injured (man-games lost)", 1.67, 0.6, measured => measured.ManGamesLost),
 
         // Hockey-Reference final standings: the spread between strong and weak teams.
         new("Standard deviation of standings points", 15.0 * SeasonLengthScale, 6.0, measured => measured.PointsStandardDeviation),

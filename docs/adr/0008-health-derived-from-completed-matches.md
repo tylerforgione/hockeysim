@@ -35,3 +35,6 @@ treats them like an ejected skater from the opening faceoff: substitutes fill
 their slots and they do not appear. #57 keeps such players out of lineups and
 adjusts AI teams, after which this case arises only for the user's team, which
 Management will reject.
+
+Since #57, Management never dresses such a player; see
+[ADR 0009](0009-ai-match-day-lineups-derived-from-health.md).

@@ -77,6 +77,31 @@ public sealed class InjuryTests
     }
 
     [Fact]
+    public void TheExpectedReturnHoldsTheReturnDateWithinTheInjurysRange()
+    {
+        foreach (var definition in InjuryCatalogue.All)
+        {
+            for (var days = definition.MinimumRecoveryDays; days <= definition.MaximumRecoveryDays; days++)
+            {
+                var injury = new Injury(definition.Type, MatchDate, days);
+                var expected = injury.ExpectedReturn;
+
+                Assert.InRange(injury.ReturnDate, expected.Earliest, expected.Latest);
+                Assert.True(expected.Earliest >= MatchDate.AddDays(definition.MinimumRecoveryDays));
+                Assert.True(expected.Latest <= MatchDate.AddDays(definition.MaximumRecoveryDays));
+            }
+        }
+    }
+
+    [Fact]
+    public void TheExpectedReturnIsAQuarterOfTheRecoveryTimeEitherSide()
+    {
+        var expected = new Injury(InjuryType.Concussion, MatchDate, recoveryDays: 20).ExpectedReturn;
+
+        Assert.Equal(new ExpectedReturn(MatchDate.AddDays(15), MatchDate.AddDays(25)), expected);
+    }
+
+    [Fact]
     public void APlayerCannotPlayWithAnInjuryThatCannotBePlayedThroughUntilItHeals()
     {
         var health = PlayerHealth.Healthy(Player).Add(new Injury(InjuryType.SprainedKnee, MatchDate, 10));

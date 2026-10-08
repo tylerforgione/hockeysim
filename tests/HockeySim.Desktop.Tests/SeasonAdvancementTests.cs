@@ -234,9 +234,15 @@ public sealed class SeasonAdvancementTests
         var session = GameTestData.StartSession();
         var shell = new GameShellViewModel(session);
 
-        // 84 rounds, every other day, finish 167 days after opening night.
-        for (var day = 0; day < 200 && shell.AdvanceDayCommand.CanExecute(null); day++)
+        // 84 rounds, every other day, finish 167 days after opening night. Injured players are
+        // replaced whenever Continue waits for it, as the user would.
+        for (var day = 0; day < 200 && !session.Snapshot.Season.IsComplete; day++)
         {
+            if (shell.HasPlayersToReplace)
+            {
+                session.SetLineup(InjuredPlayerReplacement.ReplacingInjured(session.Snapshot));
+            }
+
             await shell.AdvanceDayCommand.ExecuteAsync(null);
             Assert.Null(shell.AdvanceError);
         }

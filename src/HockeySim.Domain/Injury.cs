@@ -34,4 +34,20 @@ public sealed record Injury
     public DateOnly ReturnDate => Date.AddDays(RecoveryDays);
 
     public bool IsActiveOn(DateOnly date) => date >= Date && date < ReturnDate;
+
+    /// <summary>
+    /// The staff's estimate of the return date: a quarter of the recovery time either side of it,
+    /// kept within the injury's range in the catalogue. The estimate is worked out from the injury
+    /// alone, so it never consumes the game's random state and is the same after a reload.
+    /// </summary>
+    public ExpectedReturn ExpectedReturn
+    {
+        get
+        {
+            var margin = RecoveryDays / 4.0;
+            var earliestDays = Math.Max(Definition.MinimumRecoveryDays, (int)Math.Floor(RecoveryDays - margin));
+            var latestDays = Math.Min(Definition.MaximumRecoveryDays, (int)Math.Ceiling(RecoveryDays + margin));
+            return new ExpectedReturn(Date.AddDays(earliestDays), Date.AddDays(latestDays));
+        }
+    }
 }

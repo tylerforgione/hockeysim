@@ -56,6 +56,10 @@ management game.
 The one team the user controls. Only its lineup can be changed by the user;
 other teams are read-only.
 
+**AI team**:
+Any team other than the managed team. The game sets its lineup, and it replaces
+injured players itself (see match-day lineup).
+
 **Rating**:
 A 0-100 measure of one player ability, such as skating, faceoffs, discipline
 (how rarely the player takes penalties), stamina (how slowly they tire),
@@ -76,7 +80,15 @@ A team's dressed players for a match: four forward lines (left wing, centre,
 right wing), three defence pairs, a starting goalie, and a backup goalie. Any
 skater can fill any line or pair slot, whatever their position. It also names
 who plays in each special situation: its special-situation units and two extra
-attackers.
+attackers. A player who cannot play through an injury is never dressed for a
+match; a player playing through one may be.
+
+**Match-day lineup**:
+The lineup a team dresses on a given day. The managed team's is the lineup the
+user set, which must leave out players who cannot play before the team plays. An
+AI team's is its preferred lineup with each player who cannot play replaced by
+the healthy scratch who best suits their place, so the preferred lineup returns
+as players heal.
 
 **Special situation**:
 Any manpower situation other than five-on-five, named from the team's own side:
@@ -198,13 +210,18 @@ never in the preseason, and not away from the rink.
 **Recovery time**:
 The league days an injury takes to heal, counted from the date of its match
 whether or not the team plays: hurt on the 1st with seven days' recovery, a
-player is healthy again on the 8th.
+player is healthy again on the 8th. It is hidden; the user sees the expected
+return.
+
+**Expected return**:
+The staff's estimate of when an injured player will be healthy: a range of dates
+that always holds the actual return date, about a quarter of the recovery time
+either side of it.
 
 **Playing through an injury**:
 Playing while an injury heals, with a few points off the ratings it affects. A
 player who cannot play through an injury is out of the match in which it
-happens and of every match before it heals; a dressed player who cannot play
-does not appear.
+happens and of every match before it heals, and must not be dressed until then.
 
 **Wear**:
 Hidden damage a player's body part accumulates from impacts and injuries. It
@@ -382,4 +399,5 @@ A rostered player who is not dressed in the current lineup.
 **Inbox message**:
 A message delivered to the user from someone in the game world, such as the
 owner, staff, or a player. Messages describe real game state and can be marked
-read.
+read. The head trainer reports each injury to a managed-team player, with its
+expected return, and each recovery.

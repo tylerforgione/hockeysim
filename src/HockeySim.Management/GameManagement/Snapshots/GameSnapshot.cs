@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 
 using HockeySim.Domain;
 using HockeySim.Management.Inbox;
+using HockeySim.Management.Lineups;
 using HockeySim.Simulation.Randomness;
 
 namespace HockeySim.Management.GameManagement.Snapshots;
@@ -9,12 +10,14 @@ namespace HockeySim.Management.GameManagement.Snapshots;
 public sealed class GameSnapshot
 {
     private readonly ReadOnlyCollection<InboxMessageSnapshot> _inbox;
+    private readonly ReadOnlyCollection<PlayerId> _playersToReplace;
 
     private GameSnapshot(
         LeagueSnapshot league,
         ScheduleSnapshot schedule,
         SeasonSnapshot season,
         TeamId managedTeamId,
+        IReadOnlyList<PlayerId> playersToReplace,
         RandomState randomState,
         IReadOnlyList<InboxMessageSnapshot> inbox)
     {
@@ -22,6 +25,7 @@ public sealed class GameSnapshot
         Schedule = schedule;
         Season = season;
         ManagedTeamId = managedTeamId;
+        _playersToReplace = new ReadOnlyCollection<PlayerId>(playersToReplace.ToList());
         RandomState = randomState;
         _inbox = new ReadOnlyCollection<InboxMessageSnapshot>(inbox.ToList());
     }
@@ -33,6 +37,12 @@ public sealed class GameSnapshot
     public SeasonSnapshot Season { get; }
 
     public TeamId ManagedTeamId { get; }
+
+    /// <summary>
+    /// Gets the managed team's dressed players who cannot play today, in lineup order. The day
+    /// cannot be played until they are replaced. Empty when the team does not play today.
+    /// </summary>
+    public IReadOnlyList<PlayerId> PlayersToReplace => _playersToReplace;
 
     /// <summary>
     /// Gets the random state to preserve with the game world for deterministic continuation.
@@ -47,13 +57,15 @@ public sealed class GameSnapshot
     internal static GameSnapshot Create(
         Season season,
         TeamId managedTeamId,
+        IReadOnlyList<PlayerId> playersToReplace,
         RandomState randomState,
         InboxMessages inbox) =>
         new(
-            LeagueSnapshot.Create(season.League, season.CurrentDate),
+            LeagueSnapshot.Create(season, managedTeamId),
             ScheduleSnapshot.Create(season.Schedule),
             SeasonSnapshot.Create(season),
             managedTeamId,
+            playersToReplace,
             randomState,
             inbox.Messages.Select(InboxMessageSnapshot.Create).ToList());
 }
@@ -79,11 +91,14 @@ public sealed class LeagueSnapshot
 
     public IReadOnlyList<TeamSnapshot> Teams => _teams;
 
-    /// <param name="currentDate">The game's current date, which players' ages are given on.</param>
-    internal static LeagueSnapshot Create(League league, DateOnly currentDate)
+    /// <summary>
+    /// The league on the season's current date, which players' ages and injuries are given on.
+    /// </summary>
+    internal static LeagueSnapshot Create(Season season, TeamId managedTeamId)
     {
+        var league = season.League;
         var teams = league.Teams
-            .Select(team => TeamSnapshot.Create(team, currentDate))
+            .Select(team => TeamSnapshot.Create(team, season, team.Id == managedTeamId))
             .ToDictionary(team => team.Id);
         var conferences = league.Conferences
             .Select(conference => ConferenceSnapshot.Create(conference, teams))
@@ -166,11 +181,17 @@ public sealed class TeamSnapshot
 
     public IReadOnlyList<PlayerId> ScratchedPlayerIds => _scratchedPlayerIds;
 
+    /// <summary>
+    /// Gets the lineup the team dresses today. The managed team's is the lineup the user set, even
+    /// if it holds players who cannot play (see <see cref="GameSnapshot.PlayersToReplace"/>); an AI
+    /// team's has them replaced from its healthy scratches.
+    /// </summary>
     public LineupSnapshot Lineup { get; }
 
-    internal static TeamSnapshot Create(Team team, DateOnly currentDate)
+    internal static TeamSnapshot Create(Team team, Season season, bool isManaged)
     {
-        var dressedPlayerIds = team.Lineup.DressedPlayers.Select(
+        var lineup = isManaged ? team.Lineup : MatchDayLineup.ForAiTeam(team, season);
+        var dressedPlayerIds = lineup.DressedPlayers.Select(
             player => player.Id
         ).ToHashSet();
 
@@ -181,22 +202,25 @@ public sealed class TeamSnapshot
         return new(
             team.Id,
             team.Name,
-            team.Roster.Select(player => PlayerSnapshot.Create(player, currentDate)).ToList(),
+            team.Roster.Select(player => PlayerSnapshot.Create(player, season)).ToList(),
             scratchedPlayerIds,
-            LineupSnapshot.Create(team.Lineup));
+            LineupSnapshot.Create(lineup));
     }
 }
 
 /// <summary>
 /// A player as the user may see them. Durability is hidden information, so it is absent from
-/// <see cref="Ratings"/>; every other rating is present.
+/// <see cref="Ratings"/>; every other rating is present. Wear is hidden too, and so is how long
+/// each injury will take: only the staff's <see cref="InjurySnapshot.ExpectedReturn"/> is shown.
 /// </summary>
 /// <remarks>
-/// <see cref="Age"/> is the player's age on the game's current date when the snapshot was taken.
+/// <see cref="Age"/> and <see cref="Injuries"/> are as of the game's current date when the
+/// snapshot was taken.
 /// </remarks>
 public sealed class PlayerSnapshot
 {
     private readonly ReadOnlyDictionary<Rating, int> _ratings;
+    private readonly ReadOnlyCollection<InjurySnapshot> _injuries;
 
     private PlayerSnapshot(
         PlayerId id,
@@ -207,7 +231,8 @@ public sealed class PlayerSnapshot
         int age,
         int number,
         int overall,
-        IReadOnlyDictionary<Rating, int> ratings)
+        IReadOnlyDictionary<Rating, int> ratings,
+        IReadOnlyList<InjurySnapshot> injuries)
     {
         Id = id;
         FirstName = firstName;
@@ -218,6 +243,7 @@ public sealed class PlayerSnapshot
         Number = number;
         Overall = overall;
         _ratings = new ReadOnlyDictionary<Rating, int>(new Dictionary<Rating, int>(ratings));
+        _injuries = new ReadOnlyCollection<InjurySnapshot>(injuries.ToList());
     }
 
     public PlayerId Id { get; }
@@ -241,8 +267,16 @@ public sealed class PlayerSnapshot
     /// <summary>Every rating visible to the user, which excludes <see cref="Rating.Durability"/>.</summary>
     public IReadOnlyDictionary<Rating, int> Ratings => _ratings;
 
-    internal static PlayerSnapshot Create(Player player, DateOnly currentDate) =>
-        new(
+    /// <summary>The injuries not yet healed, in the order suffered.</summary>
+    public IReadOnlyList<InjurySnapshot> Injuries => _injuries;
+
+    /// <summary>Whether every injury the player has is one they can play through.</summary>
+    public bool CanPlay => _injuries.All(injury => injury.CanPlayThrough);
+
+    internal static PlayerSnapshot Create(Player player, Season season)
+    {
+        var currentDate = season.CurrentDate;
+        return new(
             player.Id,
             player.FirstName,
             player.LastName,
@@ -253,7 +287,30 @@ public sealed class PlayerSnapshot
             player.Overall.Value,
             player.Ratings
                 .Where(pair => pair.Key != Rating.Durability)
-                .ToDictionary(pair => pair.Key, pair => pair.Value.Value));
+                .ToDictionary(pair => pair.Key, pair => pair.Value.Value),
+            season.HealthOf(player.Id).InjuriesOn(currentDate).Select(InjurySnapshot.Create).ToList());
+    }
+}
+
+/// <summary>An injury a player has not yet recovered from.</summary>
+/// <param name="Date">The date of the match in which it happened.</param>
+/// <param name="ExpectedReturn">
+/// The staff's estimate of when the player recovers; the actual recovery time is hidden.
+/// </param>
+public sealed record InjurySnapshot(
+    InjuryType Type,
+    BodyPart BodyPart,
+    bool CanPlayThrough,
+    DateOnly Date,
+    ExpectedReturn ExpectedReturn)
+{
+    internal static InjurySnapshot Create(Injury injury) =>
+        new(
+            injury.Type,
+            injury.Definition.BodyPart,
+            injury.Definition.CanPlayThrough,
+            injury.Date,
+            injury.ExpectedReturn);
 }
 
 public sealed class LineupSnapshot

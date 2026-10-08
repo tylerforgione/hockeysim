@@ -9,4 +9,5 @@ public enum InboxSenderRole
     AssistantGeneralManager,
     HeadScout,
     Captain,
+    HeadTrainer,
 }
