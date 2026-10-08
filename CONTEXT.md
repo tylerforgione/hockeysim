@@ -87,13 +87,58 @@ A shootout winner is credited one deciding goal that no player scored.
 
 **Play-by-play**:
 The timed events of a match in order: faceoffs, shot attempts, goals, hits,
-takeaways, and giveaways, each with its period, time, strength state, and the
-players on the ice for both teams. Only the match result holds it; a completed
+takeaways, giveaways, and penalties, each with its period, time, strength state,
+and the players on the ice for both teams. Only the match result holds it; a completed
 match keeps the box score.
 
 **Strength state**:
 How many skaters each team has on the ice, such as five-on-five or
-three-on-three. Goalies are not counted.
+three-on-three. Goalies are not counted, but an extra attacker for a pulled
+goalie is.
+
+**Penalty**:
+A sanction on a skater for an infraction, such as hooking or fighting: a minor
+(two minutes), double minor (four), major (five), misconduct (ten, without
+leaving the team short), game misconduct (ejection, recorded as ten minutes),
+or a penalty shot. A team serves at most two penalties that leave it short at
+once; a further one waits until one ends.
+_Avoid_: Calling a penalty shot or misconduct a power play.
+
+**Penalty minutes**:
+The minutes of every penalty assessed to a skater; a penalty shot carries none.
+
+**Power play**:
+Play in which a team has more skaters than the opponent because the opponent is
+serving penalties. The other side is on the penalty kill, or shorthanded. A
+power-play goal ends the shorthanded team's minor with the least time left, but
+never a major. An extra attacker during a delayed penalty is not a power play.
+
+**Power-play opportunity**:
+An opponent penalty that gives a team the manpower advantage, counted once the
+first time it does; coincidental penalties give none.
+
+**Power-play goal**, **shorthanded goal**:
+A goal scored on the power play, or while shorthanded. Assists on them are
+power-play and shorthanded assists. Every other goal is at even strength or on
+a penalty shot.
+
+**Coincidental penalties**:
+Penalties to both teams at the same stoppage, which leave neither team short,
+except one minor each at full strength, which plays four-on-four.
+
+**Delayed penalty**:
+A foul by the team without the puck. Play continues, with the other team's
+goalie pulled for an extra attacker, until the offenders touch the puck; a goal
+in that time wipes out a minor.
+
+**Penalty shot**:
+A shooter alone against the goalie, awarded instead of a minor for a foul from
+behind on a scoring chance. Its goal is unassisted, is neither a power-play nor
+a shorthanded goal, and does not count toward plus/minus.
+
+**Fight**:
+Two skaters, one from each team, fighting; each takes a five-minute fighting
+major, which leaves neither team short.
 
 **Shift**:
 A stretch a skater spends on the ice before changing. Forward lines and defence
@@ -123,19 +168,22 @@ and the starting goalie appear; the dressed backup goalie and scratches do not.
 **Match statistics**:
 An appearing player's individual production in one match. Skaters record goals,
 assists, points, plus/minus, time on ice, shots on goal, shot attempts, hits,
-blocked shots, faceoffs won and lost, takeaways, giveaways, and xG; the starting
-goalie records shots against, saves, goals against, xG against, and time on ice.
+blocked shots, faceoffs won and lost, takeaways, giveaways, xG, penalty minutes,
+and power-play and shorthanded goals and assists; the starting goalie records
+shots against, saves, goals against, xG against, and time on ice. A team also
+records its power-play opportunities.
 They are derived from the play-by-play and reconcile with the score and shots,
 excluding the shootout: shootout attempts and the deciding goal count toward no
 player.
 
 **Plus/minus**:
 For a skater, the goals their team scored while they were on the ice less the
-goals it conceded, not counting power-play goals.
+goals it conceded, not counting power-play or penalty-shot goals.
 
 **Time on ice**:
 How long a player was on the ice in regulation and overtime, in whole seconds.
-The starting goalie's is the whole match.
+The starting goalie's is the whole match, less any time pulled during a delayed
+penalty.
 
 **Schedule**:
 The ordered regular-season calendar of matches. Every team plays 84: four
