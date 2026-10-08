@@ -99,7 +99,8 @@ collections. Namespaces follow the owning project and folder.
 All five projects exist. A new game generates a fictional league, its players,
 and a balanced 84-game schedule. Each league day plays its matches through the
 event-based engine, applies the results to the season, and updates standings,
-season totals, and player health (injuries and hidden wear). Games save to and load from local files. The Desktop app
+season totals, and player health (injuries and hidden wear). AI teams replace injured players
+from their healthy scratches, and the user must replace their own before playing. Games save to and load from local files. The Desktop app
 covers the new-game flow, team management pages, daily advancement, box scores,
 and named saves.
 
