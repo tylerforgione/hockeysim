@@ -89,7 +89,8 @@ penalty or late in a match (see [Pulling the goalie](match-engine.md#pulling-the
 Domain's `Player` holds a 0-100 value for every `Rating`: the skater skills,
 the three goaltending ratings, and faceoffs, discipline, stamina, durability,
 and toughness. The match engine uses faceoffs, stamina, and toughness; discipline
-drives penalties, and durability waits for injuries. A new game
+drives penalties, and durability lowers the chance of injury (see
+[injuries](match-engine.md#injuries)). A new game
 generates ratings by position in Management's `PlayerRatingGenerator`. Each
 player draws one talent level that the position's skills follow, shifted by a
 position profile with a little variation per rating. For example, centres take
