@@ -18,7 +18,8 @@ Paths are under `src/HockeySim.Simulation/`.
 | `IMatchSimulator.cs`, `MatchSimulator.cs` | The entry point Management calls; builds a `MatchPlay` |
 | `OvertimeFormat.cs` | Regular-season or playoff overtime |
 | `MatchHealth.cs` | The players' health going into a match, and whether the match can injure them |
-| `Play/MatchPlay.cs` | The match loop: periods and the clock, line changes, possession steps through the zones, turnovers, and hits; builds and coordinates the parts below |
+| `Play/MatchPlay.cs` | The match loop: periods and the clock, line changes, overtime and the result; builds and coordinates the parts below |
+| `Play/ZonePlay.cs` | Each step of possession: play in each zone, rebounds, turnovers, and hits |
 | `Play/MatchState.cs` | The match state those parts share: both sides, clock and score, the puck, a pending faceoff, a delayed penalty, and the play-by-play |
 | `Play/Possession.cs` | Giving the puck to a team, stoppages, and faceoffs; a stoppage or the offenders touching the puck calls a delayed penalty |
 | `Play/ShotPlay.cs` | Shot attempts, blocks, misses, saves, rebounds, goals and assists, and penalty shots |
@@ -45,9 +46,10 @@ Paths are under `src/HockeySim.Simulation/`.
 `MatchPlay` builds the parts in dependency order, each taking the `MatchState`
 and only the parts it calls: `SkillComparison`, `GoaliePulls`, `InjuryPlay`, and
 `PenaltyAssessment` need only the state; `Possession` uses `PenaltyAssessment`;
-`ShotPlay` uses all of those; and `FoulPlay` uses `ShotPlay` too (for penalty
-shots). Every random draw comes from the state's single `ControlledRandom`, so
-moving code between parts must keep the draws in the same order.
+`ShotPlay` uses all of those; `FoulPlay` uses `ShotPlay` too (for penalty
+shots); and `ZonePlay` uses `FoulPlay` as well. Every random draw comes from the
+state's single `ControlledRandom`, so moving code between parts must keep the
+draws in the same order.
 
 ## Tests
 
