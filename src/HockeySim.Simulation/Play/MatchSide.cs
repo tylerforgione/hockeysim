@@ -8,16 +8,17 @@ namespace HockeySim.Simulation.Play;
 /// </summary>
 /// <remarks>
 /// Each strength state has its own rotation: the forward lines and defence pairs at five-on-five,
-/// and the lineup's units for every special situation. A skater who is serving a penalty or has
-/// been ejected cannot go on, so the most rested available skater of the same kind (forward or
-/// defence) takes their place in the group.
+/// and the lineup's units for every special situation. A skater who is serving a penalty, has
+/// been ejected, or is out injured cannot go on, so the most rested available skater of the same
+/// kind (forward or defence) takes their place in the group. A dressed skater who cannot play on
+/// the match date is out from the start and does not appear; if the starting goalie cannot play,
+/// the backup starts.
 /// </remarks>
 internal sealed class MatchSide
 {
     private readonly PenaltyBox _penaltyBox;
     private readonly Dictionary<Player, SkaterState> _skatersByPlayer;
     private readonly IReadOnlyList<SkaterState> _extraAttackers;
-    private readonly IReadOnlyList<SkaterState> _shootoutOrder;
     private readonly Rotation[] _evenStrength;
     private readonly Dictionary<SpecialSituation, Rotation[]> _specialSituations;
     private Rotation[] _active;
@@ -26,22 +27,33 @@ internal sealed class MatchSide
     private double[] _onIceDrain = [];
     private int? _availableSkaterCount;
 
-    public MatchSide(Team team, PenaltyBox penaltyBox)
+    public MatchSide(Team team, PenaltyBox penaltyBox, MatchHealth health)
     {
         var lineup = team.Lineup;
 
         _penaltyBox = penaltyBox;
         TeamId = team.Id;
-        Goalie = lineup.StartingGoalie;
-        Saving = PlayerStrength.Saving(Goalie);
-        ReboundControl = Goalie.GetRating(Rating.GoalieReboundControl).Value;
-        Goaltending = PlayerStrength.Goaltending(Goalie);
+        Goalie = health.CanPlay(lineup.StartingGoalie.Id) ? lineup.StartingGoalie
+            : health.CanPlay(lineup.BackupGoalie.Id) ? lineup.BackupGoalie
+            : throw new ArgumentException("A team needs a dressed goalie who can play.", nameof(team));
+        RateGoalie(health.For(Goalie.Id).RatingReductionsOn(health.Date));
 
         Skaters = lineup.ForwardLines
             .SelectMany(line => line.Players)
             .Concat(lineup.DefencePairs.SelectMany(pair => pair.Players))
-            .Select(player => new SkaterState(player))
+            .Select(player =>
+            {
+                var skater = new SkaterState(player, health.For(player.Id).RatingReductionsOn(health.Date));
+                if (!health.CanPlay(player.Id))
+                {
+                    skater.MissMatch();
+                }
+
+                return skater;
+            })
             .ToList();
+        AbleSkaters = team.Roster.Count(player => player.Position != Position.Goalie && health.CanPlay(player.Id));
+        AbleGoalies = team.Roster.Count(player => player.Position == Position.Goalie && health.CanPlay(player.Id));
         _skatersByPlayer = Skaters.ToDictionary(skater => skater.Player);
         _extraAttackers = lineup.ExtraAttackers.Select(player => _skatersByPlayer[player]).ToList();
 
@@ -76,10 +88,6 @@ internal sealed class MatchSide
                     drainMultiplier: 1),
             });
         _active = _evenStrength;
-
-        // OrderByDescending is stable, so equally rated shooters keep their lineup order and
-        // the shootout order is deterministic.
-        _shootoutOrder = Skaters.OrderByDescending(skater => PlayerStrength.Shootout(skater.Player)).ToList();
     }
 
     public TeamId TeamId { get; }
@@ -87,22 +95,38 @@ internal sealed class MatchSide
     public Player Goalie { get; }
 
     /// <summary>The goalie's ability to stop shots on goal.</summary>
-    public double Saving { get; }
+    public double Saving { get; private set; }
 
-    public double ReboundControl { get; }
+    public double ReboundControl { get; private set; }
 
     /// <summary>The goalie's overall strength in net, used in the shootout and on penalty shots.</summary>
-    public double Goaltending { get; }
+    public double Goaltending { get; private set; }
 
     /// <summary>The dressed skaters in lineup order: forward lines, then defence pairs.</summary>
     public IReadOnlyList<SkaterState> Skaters { get; }
 
+    /// <summary>The dressed skaters who could play, so appear in the match, in lineup order.</summary>
+    public IEnumerable<SkaterState> AppearingSkaters => Skaters.Where(skater => !skater.MissedMatch);
+
     /// <summary>
-    /// The shootout shooters in order: dressed skaters by shootout strength, without anyone ejected
-    /// or still serving a penalty when overtime ends.
+    /// Rostered skaters able to play, scratches included: those not out injured before or during
+    /// the match. The injury cap keeps it from falling below <see cref="InjuryCap.MinimumAbleSkaters"/>.
     /// </summary>
-    public IReadOnlyList<Player> ShootoutOrder =>
-        _shootoutOrder.Where(IsAvailable).Select(skater => skater.Player).ToList();
+    public int AbleSkaters { get; private set; }
+
+    /// <summary>Rostered goalies able to play; see <see cref="AbleSkaters"/>.</summary>
+    public int AbleGoalies { get; private set; }
+
+    /// <summary>
+    /// The shootout shooters in order: dressed skaters by shootout strength, without anyone ejected,
+    /// injured, or still serving a penalty when overtime ends.
+    /// </summary>
+    /// <remarks>
+    /// OrderByDescending is stable, so equally rated shooters keep their lineup order and the
+    /// shootout order is deterministic.
+    /// </remarks>
+    public IReadOnlyList<SkaterState> ShootoutOrder =>
+        Skaters.Where(IsAvailable).OrderByDescending(skater => skater.Shootout).ToList();
 
     /// <summary>
     /// The goalie is on the bench for an extra attacker, during a delayed penalty or late in a match
@@ -222,7 +246,39 @@ internal sealed class MatchSide
         return total / onIce.Count;
     }
 
-    public bool IsAvailable(SkaterState skater) => !skater.IsEjected && !_penaltyBox.IsServing(skater);
+    public bool IsAvailable(SkaterState skater) =>
+        !skater.IsEjected && !skater.IsInjured && !_penaltyBox.IsServing(skater);
+
+    /// <summary>
+    /// A skater hurt in the match leaves it, or plays on at reduced ratings; either way the skaters
+    /// on the ice are composed again.
+    /// </summary>
+    public void Injure(SkaterState skater, InjuryDefinition injury, IReadOnlyDictionary<Rating, int> reductions)
+    {
+        if (injury.CanPlayThrough)
+        {
+            skater.PlayThrough(reductions);
+        }
+        else
+        {
+            skater.LeaveInjured();
+            AbleSkaters--;
+        }
+
+        _onIce = null;
+        _availableSkaterCount = null;
+    }
+
+    /// <summary>The goalie in net plays on through an injury at reduced ratings.</summary>
+    public void InjureGoalie(IReadOnlyDictionary<Rating, int> reductions) => RateGoalie(reductions);
+
+    private void RateGoalie(IReadOnlyDictionary<Rating, int> reductions)
+    {
+        var ratings = new EffectiveRatings(Goalie, reductions);
+        Saving = PlayerStrength.Saving(ratings);
+        ReboundControl = ratings[Rating.GoalieReboundControl];
+        Goaltending = PlayerStrength.Goaltending(ratings);
+    }
 
     private static SpecialSituation? SituationFor(int skaters, int opponentSkaters) => (skaters, opponentSkaters) switch
     {

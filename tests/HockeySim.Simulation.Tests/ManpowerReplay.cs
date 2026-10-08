@@ -33,7 +33,7 @@ internal sealed class ManpowerReplay
     private readonly MatchResult _result;
     private readonly OvertimeFormat _overtime;
     private readonly List<Served> _box = [];
-    private readonly HashSet<PlayerId> _ejected = [];
+    private readonly HashSet<PlayerId> _leftMatch = [];
     private readonly Dictionary<TeamId, int> _powerPlayOpportunities = [];
     private readonly Dictionary<TeamId, long> _manpowerSeconds = [];
     private readonly List<Checkpoint> _checkpoints = [];
@@ -104,6 +104,10 @@ internal sealed class ManpowerReplay
                     index--;
                     Assess(batch);
                     break;
+                case InjuryEvent injury when !InjuryCatalogue.For(injury.Type).CanPlayThrough:
+                    // A player who cannot play through an injury is out for the rest of the match.
+                    _leftMatch.Add(injury.PlayerId);
+                    break;
                 case GoalEvent { Situation: GoalSituation.PowerPlay } goal:
                     EndMinorAfterPowerPlayGoal(Opponent(goal.TeamId));
                     break;
@@ -117,7 +121,7 @@ internal sealed class ManpowerReplay
         matchEvent,
         Manpower(Home),
         Manpower(Away),
-        _box.Select(served => served.Player).Concat(_ejected).ToHashSet(),
+        _box.Select(served => served.Player).Concat(_leftMatch).ToHashSet(),
         _box.Where(served => served.AffectsManpower).GroupBy(served => served.Team).ToDictionary(group => group.Key, group => group.Count()));
 
     private void Assess(List<PenaltyEvent> batch)
@@ -136,7 +140,7 @@ internal sealed class ManpowerReplay
             switch (penalty.Kind)
             {
                 case PenaltyKind.GameMisconduct:
-                    _ejected.Add(penalty.PlayerId);
+                    _leftMatch.Add(penalty.PlayerId);
                     break;
                 case PenaltyKind.PenaltyShot:
                     break;

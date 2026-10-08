@@ -308,10 +308,10 @@ public sealed class SeasonAdvancementTests
 
         public Action<int>? BeforeMatch { get; set; }
 
-        public MatchResult Simulate(Match match, OvertimeFormat overtime, RandomState randomState)
+        public MatchResult Simulate(Match match, OvertimeFormat overtime, MatchHealth health, RandomState randomState)
         {
             BeforeMatch?.Invoke(Interlocked.Increment(ref _calls));
-            return _engine.Simulate(match, overtime, randomState);
+            return _engine.Simulate(match, overtime, health, randomState);
         }
     }
 }

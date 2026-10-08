@@ -72,9 +72,9 @@ public sealed class CalibrationTests(CalibrationTests.CalibratedSeason season)
 
         public IReadOnlyList<MatchResult> Results => _results;
 
-        public MatchResult Simulate(Match match, OvertimeFormat overtime, RandomState randomState)
+        public MatchResult Simulate(Match match, OvertimeFormat overtime, MatchHealth health, RandomState randomState)
         {
-            var result = _simulator.Simulate(match, overtime, randomState);
+            var result = _simulator.Simulate(match, overtime, health, randomState);
             _results.Add(result);
             return result;
         }

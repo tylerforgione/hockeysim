@@ -255,7 +255,14 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
             var skaters = Season.SkaterStatistics.Where(skater => skater.TeamId == record.TeamId).ToList();
             var goalies = Season.GoalieStatistics.Where(goalie => goalie.TeamId == record.TeamId).ToList();
 
-            Assert.Equal(84 * 18, skaters.Sum(skater => skater.GamesPlayed));
+            // A dressed skater who cannot play through an injury misses the match; the injury cap
+            // leaves at most three of a team's 21 skaters unable to play.
+            var appearances = Season.Results
+                .SelectMany(result => new[] { result.Home, result.Away })
+                .Where(side => side.TeamId == record.TeamId)
+                .Sum(side => side.Skaters.Count);
+            Assert.Equal(appearances, skaters.Sum(skater => skater.GamesPlayed));
+            Assert.InRange(appearances, 84 * (18 - 3), 84 * 18);
             Assert.Equal(84, goalies.Sum(goalie => goalie.GamesPlayed));
             Assert.Equal(record.GoalsFor - record.ShootoutWins, skaters.Sum(skater => skater.Goals));
 

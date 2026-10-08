@@ -13,9 +13,15 @@ internal static class TestMatches
     {
         var simulator = new MatchSimulator();
         return Enumerable.Range(0, count)
-            .Select(seed => simulator.Simulate(match, overtime, new RandomState((ulong)seed)))
+            .Select(seed => simulator.Simulate(match, overtime, MatchHealth.AllHealthy, new RandomState((ulong)seed)))
             .ToList();
     }
+
+    /// <summary>
+    /// Healthy players in a match that cannot injure them, for checks that compare lineups and
+    /// would only gain noise from players leaving injured.
+    /// </summary>
+    public static MatchHealth WithoutInjuries { get; } = new(DateOnly.MinValue, [], injuriesPossible: false);
 
     public static Match EvenMatch() => TestTeams.CreateMatch(TestTeams.Create("Home"), TestTeams.Create("Away"));
 

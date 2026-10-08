@@ -127,7 +127,7 @@ public sealed class MatchStrengthTests
         var match = TestTeams.CreateMatch(home, away);
         var simulator = new MatchSimulator();
         return Enumerable.Range(0, count)
-            .Select(seed => simulator.Simulate(match, OvertimeFormat.RegularSeason, new RandomState((ulong)seed)))
+            .Select(seed => simulator.Simulate(match, OvertimeFormat.RegularSeason, MatchHealth.AllHealthy, new RandomState((ulong)seed)))
             .ToList();
     }
 }

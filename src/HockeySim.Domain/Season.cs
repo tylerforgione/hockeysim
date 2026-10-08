@@ -4,7 +4,7 @@ namespace HockeySim.Domain;
 
 /// <summary>
 /// The regular season in progress: the current date, the completed-match history, and the
-/// current-season team and player totals derived from it. The season advances one league day at a time; a day's
+/// current-season team and player totals and player health derived from it. The season advances one league day at a time; a day's
 /// results are applied together or not at all, so the history never holds part of a day and a
 /// scheduled match can be completed only once.
 /// </summary>
@@ -16,6 +16,7 @@ public sealed class Season
     private readonly Dictionary<TeamId, TeamSeasonStatistics> _teamStatistics;
     private readonly Dictionary<PlayerId, SkaterSeasonStatistics> _skaterStatistics = [];
     private readonly Dictionary<PlayerId, GoalieSeasonStatistics> _goalieStatistics = [];
+    private readonly Dictionary<PlayerId, PlayerHealth> _health;
 
     public Season(League league, SeasonSchedule schedule)
     {
@@ -50,6 +51,9 @@ public sealed class Season
         _completedMatchesView = _completedMatches.AsReadOnly();
         _teamRecords = league.Teams.ToDictionary(team => team.Id, team => new TeamRecord(team.Id));
         _teamStatistics = league.Teams.ToDictionary(team => team.Id, team => new TeamSeasonStatistics(team.Id));
+        _health = league.Teams
+            .SelectMany(team => team.Roster)
+            .ToDictionary(player => player.Id, player => PlayerHealth.Healthy(player.Id));
     }
 
     public League League { get; }
@@ -113,6 +117,15 @@ public sealed class Season
     public IReadOnlyList<GoalieSeasonStatistics> GoalieStatistics => InRosterOrder(_goalieStatistics);
 
     /// <summary>
+    /// A rostered player's injuries and hidden wear, from every completed match so far. Injuries
+    /// heal by date, so ask the health about <see cref="CurrentDate"/>.
+    /// </summary>
+    public PlayerHealth HealthOf(PlayerId playerId) =>
+        _health.TryGetValue(playerId, out var health)
+            ? health
+            : throw new ArgumentException("The player is not rostered in the league.", nameof(playerId));
+
+    /// <summary>
     /// Records the results of every match scheduled on <see cref="CurrentDate"/> and moves to the
     /// next calendar day. The whole day is validated before anything changes.
     /// </summary>
@@ -162,6 +175,36 @@ public sealed class Season
         {
             ValidateAppearances(result.Home);
             ValidateAppearances(result.Away);
+            ValidateInjuryCap(result, result.Home.TeamId);
+            ValidateInjuryCap(result, result.Away.TeamId);
+        }
+    }
+
+    /// <summary>
+    /// The match's injuries that cannot be played through must leave the team at least
+    /// <see cref="InjuryCap.MinimumAbleSkaters"/> skaters and <see cref="InjuryCap.MinimumAbleGoalies"/>
+    /// goalies able to play.
+    /// </summary>
+    private void ValidateInjuryCap(CompletedMatch result, TeamId teamId)
+    {
+        var roster = League.Teams.Single(team => team.Id == teamId).Roster;
+        var newlyUnable = result.Health.Injuries
+            .Where(injury => injury.TeamId == teamId && !injury.Definition.CanPlayThrough)
+            .Select(injury => injury.PlayerId)
+            .ToHashSet();
+
+        foreach (var goalies in new[] { true, false })
+        {
+            var able = roster
+                .Where(player => (player.Position == Position.Goalie) == goalies && _health[player.Id].CanPlayOn(CurrentDate))
+                .ToList();
+            var lost = able.Count(player => newlyUnable.Contains(player.Id));
+            var minimum = goalies ? InjuryCap.MinimumAbleGoalies : InjuryCap.MinimumAbleSkaters;
+            if (lost > 0 && able.Count - lost < minimum)
+            {
+                throw new ArgumentException(
+                    $"Injuries cannot leave a team with fewer than {InjuryCap.MinimumAbleSkaters} skaters and {InjuryCap.MinimumAbleGoalies} goalies able to play.");
+            }
         }
     }
 
@@ -176,6 +219,12 @@ public sealed class Season
         {
             throw new ArgumentException(
                 "Every appearing player must be a rostered skater or goalie of their team.");
+        }
+
+        if (side.Skaters.Select(skater => skater.PlayerId).Append(side.Goalie.PlayerId)
+            .Any(playerId => !_health[playerId].CanPlayOn(CurrentDate)))
+        {
+            throw new ArgumentException("A player with an injury they cannot play through cannot appear.");
         }
     }
 
@@ -198,6 +247,16 @@ public sealed class Season
             var goalieTotals = _goalieStatistics.GetValueOrDefault(side.Goalie.PlayerId)
                 ?? new GoalieSeasonStatistics(side.Goalie.PlayerId, side.TeamId);
             _goalieStatistics[side.Goalie.PlayerId] = goalieTotals.Add(side.Goalie);
+        }
+
+        foreach (var injury in match.Health.Injuries)
+        {
+            _health[injury.PlayerId] = _health[injury.PlayerId].Add(new Injury(injury.Type, match.Date, injury.RecoveryDays));
+        }
+
+        foreach (var gain in match.Health.Wear)
+        {
+            _health[gain.PlayerId] = _health[gain.PlayerId].AddWear(gain.BodyPart, gain.Points);
         }
     }
 

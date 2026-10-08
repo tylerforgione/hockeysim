@@ -174,7 +174,16 @@ internal static class GameSaveRestorer
                 penalty.TeamId,
                 penalty.PlayerId,
                 penalty.Infraction,
-                penalty.Kind)));
+                penalty.Kind)),
+            new MatchHealthChanges(
+                Items(saved.Injuries, "injuries").Select(injury => new MatchInjury(
+                    injury.Period,
+                    TimeSpan.FromSeconds(injury.TimeInPeriodSeconds),
+                    injury.TeamId,
+                    injury.PlayerId,
+                    injury.Type,
+                    injury.RecoveryDays)),
+                Items(saved.Wear, "wear").Select(gain => new WearGain(gain.PlayerId, gain.BodyPart, gain.Points))));
 
     private static CompletedMatchTeam RestoreSide(SavedMatchSide saved)
     {

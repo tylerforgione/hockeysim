@@ -76,6 +76,13 @@ internal static class NhlTargets
         new("Second defence pair's share of defence ice time", 0.335, 0.04, measured => measured.DefencePairTimeShares[1]),
         new("Third defence pair's share of defence ice time", 0.275, 0.04, measured => measured.DefencePairTimeShares[2]),
 
+        // Injuries in matches, estimated from public man-games-lost tallies (about 140 a team a
+        // season) less the share not suffered in games. Recovery is in league days; a team plays
+        // about every other day, so about 11 days is five or six matches.
+        new("Injuries missing matches", 0.30, 0.12, measured => measured.InjuriesMissingMatches),
+        new("Recovery days of injuries missing matches", 11.0, 4.0, measured => measured.MeanRecoveryDays),
+        new("Dressed skaters missing the match through injury", 1.67, 0.6, measured => measured.MissedAppearances),
+
         // Hockey-Reference final standings: the spread between strong and weak teams.
         new("Standard deviation of standings points", 15.0 * SeasonLengthScale, 6.0, measured => measured.PointsStandardDeviation),
         new("Fewest standings points", 52.3 * SeasonLengthScale, 18.0, measured => measured.FewestPoints),

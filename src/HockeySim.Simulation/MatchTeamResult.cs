@@ -52,7 +52,10 @@ public sealed class MatchTeamResult
     /// <summary>Goals scored on the power play.</summary>
     public int PowerPlayGoals => _skaters.Sum(skater => skater.PowerPlayGoals);
 
-    /// <summary>Every dressed skater, in lineup order: forward lines, then defence pairs.</summary>
+    /// <summary>
+    /// Every appearing skater, in lineup order: forward lines, then defence pairs. A dressed skater
+    /// who could not play from the start does not appear.
+    /// </summary>
     public IReadOnlyList<SkaterMatchStatistics> Skaters => _skaters;
 
     /// <summary>The starting goalie, who plays the entire match.</summary>

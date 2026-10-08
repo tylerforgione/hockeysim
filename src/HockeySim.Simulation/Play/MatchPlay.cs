@@ -24,6 +24,11 @@ namespace HockeySim.Simulation.Play;
 /// attacker, on top of whatever strength state the penalties allow, and the leading team shoots
 /// at the empty net, from distance if it must.
 /// </para>
+/// <para>
+/// Hits, blocked shots, fights, and strains can injure players (see <see cref="MatchInjuries"/>).
+/// A player whose injury cannot be played through takes no further shifts; the rest play on at
+/// reduced ratings.
+/// </para>
 /// </remarks>
 internal sealed class MatchPlay
 {
@@ -32,6 +37,7 @@ internal sealed class MatchPlay
     private readonly MatchSide _home;
     private readonly MatchSide _away;
     private readonly PenaltyBox _penaltyBox = new();
+    private readonly MatchInjuries _injuries;
     private readonly List<MatchEvent> _events = [];
     private readonly List<CalledPenalty> _delayedPenalties = [];
 
@@ -60,12 +66,13 @@ internal sealed class MatchPlay
     // The team that has committed a delayed penalty, while play continues.
     private MatchSide? _delayedAgainst;
 
-    public MatchPlay(Match match, OvertimeFormat overtime, RandomState randomState)
+    public MatchPlay(Match match, OvertimeFormat overtime, MatchHealth health, RandomState randomState)
     {
         _random = new ControlledRandom(randomState);
         _overtime = overtime;
-        _home = new MatchSide(match.Home, _penaltyBox);
-        _away = new MatchSide(match.Away, _penaltyBox);
+        _injuries = new MatchInjuries(health, _random);
+        _home = new MatchSide(match.Home, _penaltyBox, health);
+        _away = new MatchSide(match.Away, _penaltyBox, health);
         _possessor = _home;
     }
 
@@ -155,6 +162,7 @@ internal sealed class MatchPlay
             }
 
             Elapse(seconds);
+            Strain(seconds);
             if (PlayStep() && suddenDeath)
             {
                 return;
@@ -462,6 +470,7 @@ internal sealed class MatchPlay
         if (_random.Chance(blockChance))
         {
             Record(new ShotAttemptEvent(_period, Now, OnIce(), attacker.TeamId, shooter.Id, context, ShotOutcome.Blocked, blocker.Id, null));
+            Contact(defender, blocker, InjuryCause.BlockedShot);
             if (_random.Chance(MatchTuning.BlockedShotRecoveryChance))
             {
                 GiveTo(defender, Zone.Defensive);
@@ -655,6 +664,74 @@ internal sealed class MatchPlay
         {
             AfterHit(defender, hitter, attacker, carrier);
         }
+
+        Contact(attacker, carrier, InjuryCause.Hit);
+        Contact(defender, hitter, InjuryCause.Collision);
+    }
+
+    /// <summary>A contact that may injure a skater, unless they have already left the match injured.</summary>
+    private void Contact(MatchSide side, SkaterState skater, InjuryCause cause)
+    {
+        if (skater.IsInjured || _injuries.TryInjure(skater.Player, cause, 1, canLeave: true, side.AbleSkaters) is not { } injury)
+        {
+            return;
+        }
+
+        RecordInjury(side, skater.Player, injury);
+        side.Injure(skater, injury.Definition, injury.Reductions);
+    }
+
+    /// <summary>
+    /// Each second played gives every skater on the ice and each goalie in net a small chance of a
+    /// moment of strain, which may injure them; tired skaters strain more often. The goalie in net
+    /// suffers only strains they can play through.
+    /// </summary>
+    private void Strain(int seconds)
+    {
+        if (!_injuries.InjuriesPossible)
+        {
+            return;
+        }
+
+        var players = new List<(MatchSide Side, SkaterState? Skater)>();
+        foreach (var side in new[] { _home, _away })
+        {
+            players.AddRange(side.OnIce.Select(slot => (side, (SkaterState?)slot.Skater)));
+            if (!side.IsGoaliePulled)
+            {
+                players.Add((side, null));
+            }
+        }
+
+        if (!_random.Chance(InjuryTuning.StrainMomentsPerPlayerSecond * seconds * players.Count))
+        {
+            return;
+        }
+
+        var (strainedSide, skater) = players[_random.NextInt(0, players.Count)];
+        if (skater is null)
+        {
+            if (_injuries.TryInjure(strainedSide.Goalie, InjuryCause.Strain, 1, canLeave: false, strainedSide.AbleGoalies) is { } goalieInjury)
+            {
+                RecordInjury(strainedSide, strainedSide.Goalie, goalieInjury);
+                strainedSide.InjureGoalie(goalieInjury.Reductions);
+            }
+
+            return;
+        }
+
+        var fatigue = 1 + (InjuryTuning.ExhaustedStrainIncrease * (1 - skater.Energy));
+        if (_injuries.TryInjure(skater.Player, InjuryCause.Strain, fatigue, canLeave: true, strainedSide.AbleSkaters) is { } injury)
+        {
+            RecordInjury(strainedSide, skater.Player, injury);
+            strainedSide.Injure(skater, injury.Definition, injury.Reductions);
+        }
+    }
+
+    private void RecordInjury(MatchSide side, Player player, DrawnInjury injury)
+    {
+        Record(new InjuryEvent(_period, Now, OnIce(), side.TeamId, player.Id, injury.Definition.Type, injury.RecoveryDays));
+        _onIce = null;
     }
 
     private void TakeFaceoff()
@@ -790,6 +867,8 @@ internal sealed class MatchPlay
                     new CalledPenalty(hitSide, responder, Infraction.Fighting, PenaltyKind.Major),
                 ]);
                 Stoppage(zoneOwner: null);
+                Contact(hitterSide, hitter, InjuryCause.Fight);
+                Contact(hitSide, responder, InjuryCause.Fight);
                 break;
         }
     }
@@ -835,7 +914,7 @@ internal sealed class MatchPlay
         var shooter = ChooseShooter(attacker, ShotDanger.High).Skater;
         var context = new ShotContext(ShotDanger.High, IsRebound: false, IsRush: false, IsPenaltyShot: true);
         var expectedGoals = ExpectedGoalsModel.ExpectedGoals(context);
-        if (_random.Chance(ShootoutPlay.OneOnOneGoalChance(shooter.Player, defender)))
+        if (_random.Chance(ShootoutPlay.OneOnOneGoalChance(shooter, defender)))
         {
             ScoreGoal(attacker, shooter, context, expectedGoals);
             return true;
@@ -1137,6 +1216,7 @@ internal sealed class MatchPlay
             _events,
             playingTime,
             shootout,
+            _injuries.Wear,
             _random.State);
     }
 

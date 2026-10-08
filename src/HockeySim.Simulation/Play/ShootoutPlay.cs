@@ -47,11 +47,11 @@ internal sealed class ShootoutPlay(MatchSide home, MatchSide away, ControlledRan
     /// The chance a shooter alone against the goalie scores, in a shootout or on a penalty shot: a
     /// reference shooter against a reference goalie scores at the base rate.
     /// </summary>
-    public static double OneOnOneGoalChance(Player shooter, MatchSide defending) =>
+    public static double OneOnOneGoalChance(SkaterState shooter, MatchSide defending) =>
         Math.Clamp(
             Probability.Logistic(
                 Probability.Logit(MatchTuning.BaseShootoutGoalChance)
-                + (MatchTuning.FinishingSensitivity * (PlayerStrength.Shootout(shooter) - defending.Goaltending))),
+                + (MatchTuning.FinishingSensitivity * (shooter.Shootout - defending.Goaltending))),
             MatchTuning.MinimumShootoutChance,
             MatchTuning.MaximumShootoutChance);
 
@@ -60,7 +60,8 @@ internal sealed class ShootoutPlay(MatchSide home, MatchSide away, ControlledRan
 
     private int TakeAttempt(MatchSide shooting, MatchSide defending, int round)
     {
-        var shooter = shooting.ShootoutOrder[round % shooting.ShootoutOrder.Count];
+        var shooters = shooting.ShootoutOrder;
+        var shooter = shooters[round % shooters.Count];
         var scored = random.Chance(OneOnOneGoalChance(shooter, defending));
         _attempts.Add(new ShootoutAttempt(shooting.TeamId, shooter.Id, defending.Goalie.Id, scored));
         return scored ? 1 : 0;

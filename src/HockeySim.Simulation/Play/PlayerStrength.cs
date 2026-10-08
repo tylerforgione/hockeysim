@@ -3,8 +3,9 @@ using HockeySim.Domain;
 namespace HockeySim.Simulation.Play;
 
 /// <summary>
-/// Combines individual ratings into the composite strengths the match engine compares.
-/// Each composite is an unweighted mean on the same 0-100 scale as a single rating.
+/// Combines individual ratings, as reduced by any injury being played through, into the composite
+/// strengths the match engine compares. Each composite is an unweighted mean on the same 0-100
+/// scale as a single rating.
 /// </summary>
 internal static class PlayerStrength
 {
@@ -40,48 +41,48 @@ internal static class PlayerStrength
     private static readonly Rating[] PuckProtectionRatings = [Rating.PuckControl, Rating.Skating];
 
     /// <summary>Ability to create shots while on the ice.</summary>
-    public static double Offence(Player player) => Average(player, OffenceRatings);
+    public static double Offence(EffectiveRatings player) => Average(player, OffenceRatings);
 
     /// <summary>Ability to suppress the opponent's shots while on the ice.</summary>
-    public static double Defence(Player player) => Average(player, DefenceRatings);
+    public static double Defence(EffectiveRatings player) => Average(player, DefenceRatings);
 
     /// <summary>Ability to beat a goalie with a shot that reaches the net.</summary>
-    public static double Finishing(Player player) => Average(player, FinishingRatings);
+    public static double Finishing(EffectiveRatings player) => Average(player, FinishingRatings);
 
     /// <summary>Ability to set up a teammate's goal.</summary>
-    public static double Playmaking(Player player) => Average(player, PlaymakingRatings);
+    public static double Playmaking(EffectiveRatings player) => Average(player, PlaymakingRatings);
 
     /// <summary>Ability to beat a goalie one-on-one in a shootout.</summary>
-    public static double Shootout(Player player) => Average(player, ShootoutRatings);
+    public static double Shootout(EffectiveRatings player) => Average(player, ShootoutRatings);
 
     /// <summary>A goalie's ability to stop a shot on goal.</summary>
-    public static double Saving(Player goalie) => Average(goalie, SavingRatings);
+    public static double Saving(EffectiveRatings goalie) => Average(goalie, SavingRatings);
 
     /// <summary>
     /// A goalie's overall strength in net, including rebound control; used in the shootout.
     /// </summary>
-    public static double Goaltending(Player goalie) =>
-        (Saving(goalie) * SavingRatings.Length + goalie.GetRating(Rating.GoalieReboundControl).Value)
+    public static double Goaltending(EffectiveRatings goalie) =>
+        (Saving(goalie) * SavingRatings.Length + goalie[Rating.GoalieReboundControl])
         / (SavingRatings.Length + 1);
 
     /// <summary>How hard and how often a skater hits, including the effect of their size.</summary>
-    public static double Physicality(Player player) => Average(player, HittingRatings) + SizeEffect(player);
+    public static double Physicality(EffectiveRatings player) => Average(player, HittingRatings) + SizeEffect(player);
 
     /// <summary>How well a puck carrier keeps the puck through a hit, including the effect of their size.</summary>
-    public static double PuckProtection(Player player) => Average(player, PuckProtectionRatings) + SizeEffect(player);
+    public static double PuckProtection(EffectiveRatings player) => Average(player, PuckProtectionRatings) + SizeEffect(player);
 
     /// <summary>
     /// The effect of size on physical play in rating points: positive for players taller and
     /// heavier than the reference, negative for smaller ones, and bounded either way.
     /// </summary>
-    public static double SizeEffect(Player player)
+    public static double SizeEffect(EffectiveRatings player)
     {
-        var biography = player.Biography;
+        var biography = player.Player.Biography;
         var effect = ((biography.Height.Inches - MatchTuning.ReferenceHeightInches) * MatchTuning.SizePerInch)
             + ((biography.Weight.Pounds - MatchTuning.ReferenceWeightPounds) * MatchTuning.SizePerPound);
         return Math.Clamp(effect, -MatchTuning.MaximumSizeEffect, MatchTuning.MaximumSizeEffect);
     }
 
-    private static double Average(Player player, IEnumerable<Rating> ratings) =>
-        ratings.Average(rating => player.GetRating(rating).Value);
+    private static double Average(EffectiveRatings player, IEnumerable<Rating> ratings) =>
+        ratings.Average(rating => player[rating]);
 }

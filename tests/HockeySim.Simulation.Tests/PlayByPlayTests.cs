@@ -154,6 +154,11 @@ public sealed class PlayByPlayTests
                     var team = penalty.TeamId == Match.Home.Id ? Match.Home : Match.Away;
                     Assert.Contains(penalty.PlayerId, TestMatches.DressedSkaterIds(team));
                     break;
+                case InjuryEvent injury:
+                    // A fighter is hurt after leaving for the box, so may no longer be on the ice.
+                    var injuredTeam = injury.TeamId == Match.Home.Id ? Match.Home : Match.Away;
+                    Assert.Contains(injury.PlayerId, injuredTeam.Lineup.DressedPlayers.Select(player => player.Id));
+                    break;
                 default:
                     Assert.Fail($"Unexpected event {matchEvent.GetType().Name}.");
                     break;
