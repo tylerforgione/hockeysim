@@ -103,12 +103,20 @@ A shootout winner is credited one deciding goal that no player scored.
 The timed events of a match in order: faceoffs, shot attempts, goals, hits,
 takeaways, giveaways, and penalties, each with its period, time, strength state,
 and the players on the ice for both teams. Only the match result holds it; a completed
-match keeps the box score.
+match keeps the box score and the scoring and penalty summaries.
 
 **Strength state**:
 How many skaters each team has on the ice, such as five-on-five or
 three-on-three. Goalies are not counted, but an extra attacker for a pulled
 goalie is.
+
+**Strength situation**:
+How shot totals are split, from one team's side: five-on-five (both goalies in
+net), power play, penalty kill, or other (four-on-four, three-on-three, or equal
+manpower with a goalie pulled). Like a goal's situation, it follows the
+penalties being served, so an extra attacker never makes a power play.
+_Avoid_: Strength state, which counts the skaters on the ice including an extra
+attacker.
 
 **Penalty**:
 A sanction on a skater for an infraction, such as hooking or fighting: a minor
@@ -170,6 +178,17 @@ against a league-average goalie, from its danger level and whether it was a
 rebound or on the rush. Blocked attempts and attempts at an empty net have none.
 A player's or team's xG is the sum over their unblocked attempts.
 
+**On-ice shot totals**:
+Both teams' shot attempts, unblocked attempts, shots on goal, goals, and xG
+while a skater was on the ice, kept by strength situation. A team keeps the same
+totals for the whole match. Penalty shots are not counted.
+
+**Corsi**, **Fenwick**:
+Corsi counts shot attempts and Fenwick unblocked attempts, for (CF, FF) and
+against (CA, FA), on the ice or for a team. Their percentages (CF%, FF%) are the
+share for, as are the shot, goal, and xG percentages (SF%, GF%, xGF%). A share
+is undefined until either side has a count.
+
 **Shot danger**:
 How dangerous a shot attempt's location is: low from the point and perimeter,
 medium from the faceoff circles, and high from the slot and crease. A rebound is
@@ -190,6 +209,18 @@ opportunities.
 They are derived from the play-by-play and reconcile with the score and shots,
 excluding the shootout: shootout attempts and the deciding goal count toward no
 player.
+
+**Goals saved above expected (GSAx)**:
+A goalie's xG against less goals against: positive when the goalie stopped more
+than a league-average goalie would have.
+
+**Goals-against average (GAA)**:
+A goalie's goals against per sixty minutes in net. Undefined before any time in
+net.
+
+**Shutout**:
+A start in which the goalie is charged with no goal. Empty-net goals and a
+shootout are not charged to the goalie, so neither prevents one.
 
 **Plus/minus**:
 For a skater, the goals their team scored while they were on the ice less the
@@ -213,8 +244,18 @@ A day's results are applied together or not at all.
 
 **Completed match**:
 The canonical record of a scheduled match after it is played: the scheduled
-date and teams, how it was decided, each side's score and shots, and the box
-score of every appearing player. A scheduled match is completed at most once.
+date and teams, how it was decided, each side's score, shots, and shot totals,
+the box score of every appearing player, and the scoring and penalty summaries.
+A scheduled match is completed at most once.
+
+**Scoring summary**:
+Every goal scored by a player in a completed match, in order: period, time,
+team, scorer, assists, situation, and whether the net was empty. A shootout's
+deciding goal is not listed.
+
+**Penalty summary**:
+Every penalty in a completed match, in order: period, time, team, player,
+infraction, and kind.
 
 **Box score**:
 An appearing player's match statistics as recorded in a completed match.
@@ -242,8 +283,16 @@ the extra meeting (the odd game) is not counted. For more than two clubs, the
 share of available points is compared.
 
 **Season statistics**:
-A player's current-season totals, accumulated from their box scores. Like match
-statistics, they exclude the shootout.
+A player's current-season totals, accumulated from every statistic in their box
+scores, and the rates derived from them, such as faceoff percentage, time on ice
+per game, save percentage, and GAA. A team's season statistics are its power
+play, penalty kill, faceoffs, and shot totals. Like match statistics, they
+exclude the shootout.
+
+**Power-play percentage**, **penalty-kill percentage**:
+Power-play goals per power-play opportunity; and the share of the times a team
+was shorthanded (the opponents' opportunities) in which it did not concede a
+power-play goal.
 
 **Completed season**:
 The state after the final scheduled match is played. It can still be browsed

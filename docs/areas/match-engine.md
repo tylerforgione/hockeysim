@@ -25,7 +25,7 @@ Paths are under `src/HockeySim.Simulation/`.
 | `Play/MatchTuning.cs` | Every tuning constant, calibrated to NHL averages (see [Calibration](#calibration)) |
 | `Play/MatchStatisticsBuilder.cs` | Derives all statistics from the play-by-play |
 | `Play/OnIceSkater.cs`, `Play/Zone.cs`, `Play/Probability.cs` | Small helpers |
-| `Events/` | Play-by-play event records and their enums |
+| `Events/` | Play-by-play event records and their enums (goal situations, infractions, and penalty kinds are in Domain, since completed matches record them too) |
 | `MatchResult.cs`, `MatchTeamResult.cs`, `SkaterMatchStatistics.cs`, `GoalieMatchStatistics.cs`, `Shootout*.cs` | The returned result |
 | `Randomness/ControlledRandom.cs`, `RandomState.cs` | The single deterministic generator, also used by Management |
 
@@ -56,6 +56,7 @@ pull its goalie to tie a match). Keep them independent of the engine's code.
 | `MatchStrengthTests.cs` | Relative statistical checks for lineup strength and goalie quality |
 | `PlayByPlayTests.cs` | Event order, faceoff restarts, on-ice players, xG on shots |
 | `EventStatisticsTests.cs`, `MatchStatisticsTests.cs` | Statistics recounted from the events and reconciled |
+| `OnIceStatisticsTests.cs` | On-ice and team shot totals recounted by situation, with `ManpowerReplay` as the oracle |
 | `OvertimeTests.cs` | Three-on-three, shootouts, playoff overtime |
 | `ShiftAndFatigueTests.cs`, `PhysicalPlayTests.cs` | Ice-time shares, stamina, hits |
 | `PenaltyTests.cs` | Every manpower rule, replayed through `ManpowerReplay` |
@@ -250,6 +251,19 @@ against, xG against, and time on ice. As in NHL scoring, an empty-net goal is a
 shot and a goal for the scoring team but neither a shot nor a goal against the
 goalie. Shootout attempts count toward no player.
 
+Every skater also records on-ice shot totals: both teams' shot attempts,
+unblocked attempts, shots on goal, goals, and xG while they were on the ice,
+and each team records the same for the whole match. These are kept separately
+for each strength situation from the team's own side: five-on-five (both
+goalies in net), power play, penalty kill, and other (four-on-four,
+three-on-three, or equal manpower with a goalie pulled). As with goal
+situations, the manpower comes from the penalties being served, so an extra
+attacker is not counted: the builder takes each team's skaters on the ice less
+one for a pulled goalie. Penalty shots are left out, as they are from
+plus/minus, so the team's totals are its attempts less its penalty shots. Corsi
+(all attempts), Fenwick (unblocked attempts), and the other shares are derived
+from these totals; see [season](season.md).
+
 Domain's `CompletedMatch` holds every one of these statistics and rejects a
 match that does not reconcile: a team's shots must equal its skaters' shots on
 goal, each goalie's shots, goals, and xG against must match the opponent's
@@ -259,10 +273,13 @@ more attempts than the opponent failed to get on goal, no skater's plus/minus
 can exceed the goals scored, power-play and shorthanded goals and assists are
 counted among a skater's goals and assists (at most two assists per such goal),
 a team scores on the power play only with a power-play opportunity, and it
-scores shorthanded only if the opponent had one. Time on ice is kept in whole seconds and
-xG totals are compared within a rounding tolerance. Season totals still
-accumulate only games, goals, assists, and the goalie's shots and goals against;
-the new statistics' season totals are #54.
+scores shorthanded only if the opponent had one. Each team's shot totals must be
+the other's seen from the opposite side (for and against swapped, power play and
+penalty kill exchanged), cannot exceed its skaters' attempts, shots, goals, and
+xG, and bound every one of its skaters' on-ice totals. Time on ice is kept in
+whole seconds and xG totals are compared within a rounding tolerance. Management
+also keeps the goals and penalties from the play-by-play as the completed match's
+scoring and penalty summaries; see [season](season.md).
 
 ### Expected goals
 

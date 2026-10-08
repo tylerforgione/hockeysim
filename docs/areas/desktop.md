@@ -19,8 +19,9 @@ view model together.
 | `Startup/`, `NewGame/`, `Saves/` | The startup menu, new-game setup, save and load screens |
 | `Game/` | `GameSession` (commands, snapshots, unsaved progress) and the in-game shell |
 | `Home/`, `Inbox/`, `Roster/`, `Lines/`, `Teams/`, `Standings/`, `Schedule/` | The shell's pages |
-| `Players/` | Player profile and shared player formatting (`PlayerDisplay`) |
-| `Schedule/MatchDetail*`, `MatchDisplay.cs` | The box score and shared match formatting |
+| `Players/` | Player profile, season totals as displayed (`PlayerSeasonTotals`), and shared player formatting (`PlayerDisplay`) |
+| `Roster/TeamStatisticsDisplay.cs` | The team statistics strip above each roster |
+| `Schedule/MatchDetail*`, `MatchDisplay.cs` | The box score with its summaries, and shared match and statistic formatting |
 | `Confirmation/` | The confirmation shown over every screen |
 | `Theme/` | Colours, control styles, icons |
 
@@ -36,6 +37,7 @@ games, plus a headless Avalonia walkthrough.
 | `LinesPageViewModelTests.cs` | Lineup and unit editing |
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, a full season |
 | `StandingsAndStatisticsTests.cs` | Standings scopes, season totals |
+| `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, the team strip |
 | `SaveAndLoadTests.cs` | Save and load screens, unsaved progress, confirmations |
 | `PlayerBiographyDisplayTests.cs`, `AppVersionTests.cs` | Formatting, version display |
 | `GameTestData.cs`, `TestMatchSimulators.cs`, `TemporarySaveDirectory.cs` | Builders and test engines |
@@ -61,18 +63,30 @@ pages still show the unplayed day. Once the season is complete, Continue is
 disabled and every page remains browsable. The schedule page lists one team's
 84 matches with results and opens a completed match's score, decision, and box
 score; these are single-match figures, kept apart from season totals. The box
-score lists each team's skaters (goals, assists, points, plus/minus, time on ice,
+score starts with the scoring summary (each goal's period and time, team,
+scorer, assists, PP/SH/PS/EN marker, and the running score, away first) and the
+penalty summary (period and time, team, player, infraction, and length). It then
+lists each team's skaters (goals, assists, points, plus/minus, time on ice,
 shots, shot attempts, xG, hits, blocks, faceoffs won and lost, takeaways,
-giveaways, penalty minutes, power-play and shorthanded goals) and starting goalie
-(shots and goals against, saves, save percentage, xG against, time on ice), and
+giveaways, penalty minutes, power-play and shorthanded goals, and five-on-five
+on-ice Corsi and xG percentages) and starting goalie (shots and goals against,
+saves, save percentage, xG against, goals saved above expected, time on ice), and
 each team's power play (goals of opportunities) and penalty minutes under its
 shots; the two teams are stacked, away first, because each table needs the full
 width.
 The standings page presents Management's division, conference, or league tables
-as ranked, without re-sorting them. Roster tables for every team switch between
-ratings and current-season totals (skater GP/G/A/P, goalie GP/SA/SV/GA/SV%), and
-the player profile always shows the totals. A player who has not appeared shows
-zeros, and a save percentage or points percentage is a dash until it is defined.
+as ranked, without re-sorting them. Each roster starts with a strip of the team's
+season statistics: power-play, penalty-kill, and faceoff percentages and its
+five-on-five Corsi, Fenwick, shot, and xG shares. Roster tables for every team
+switch between ratings, basic season totals (skater GP, G, A, P, +/-, PIM, PPP,
+SHP, shots, TOI per game, FO%; goalie GP, SA, SV, GA, SV%, GAA, shutouts), and
+advanced figures (skater five-on-five on-ice Corsi and Fenwick for, against, and
+percentage, xG for, against, and percentage, and individual xG; goalie time in
+net, xG against, goals against, GSAx, and time per start). The player profile
+always shows the full statistic line in groups, scrolling with the ratings. A
+player who has not appeared shows zeros, and every percentage, average, and rate
+is a dash until it is defined. Advanced figures are five-on-five only; views by
+situation are a [future feature](../future-features.md#situational-statistics-views).
 Pages rebuild from whichever snapshot the session last published.
 Colours and control styles live in `HockeySim.Desktop/Theme/`; team identity
 colours are dynamic resources so a chosen team's colours can replace the
