@@ -11,6 +11,23 @@ The overall game in which the user manages a hockey team and matches are simulat
 A hockey athlete belonging to the simulated world.
 _Avoid_: Using player to mean the human user in domain documentation.
 
+**Position**:
+A player's natural position: centre, wing, defence, or goalie. Any skater can
+play any skater lineup role, but plays a little below their ratings out of
+position; goalies only play in goal.
+
+**Out of position**:
+A skater filling a lineup role other than their natural position: a centre on
+the wing or a winger at centre (a moderate penalty), or a forward on defence or
+a defenceman at forward (a larger one).
+
+**Off-hand side**:
+The side of the ice opposite a skater's handedness, such as a left shot at right
+wing or right defence. Their backhand faces the boards, which costs a little in
+board play, breakouts, and pinches, though an off-hand winger gets one-timers
+on the forehand. Only wing and defence slots with a side have one: a centre, a
+lone wing or defence player in a unit, and the extra attacker do not.
+
 **Biography**:
 A player's identifying details: birth date, birthplace (city, the state or
 province in Canada and the United States, and country), nationality,
@@ -56,9 +73,10 @@ of everything Desktop displays and out of anything shown that could reveal it.
 
 **Lineup**:
 A team's dressed players for a match: four forward lines (left wing, centre,
-right wing), three defence pairs, a starting goalie, and a backup goalie. It
-also names who plays in each special situation: its special-situation units and
-two extra attackers.
+right wing), three defence pairs, a starting goalie, and a backup goalie. Any
+skater can fill any line or pair slot, whatever their position. It also names
+who plays in each special situation: its special-situation units and two extra
+attackers.
 
 **Special situation**:
 Any manpower situation other than five-on-five, named from the team's own side:
@@ -70,8 +88,10 @@ The skaters a lineup sends out together in one special situation. A lineup holds
 two units for each power play, three 4-on-5 and two of each other penalty-kill
 units, two 4-on-4 units, and three 3-on-3 units. Each slot has a skater role
 (centre, wing, or defence) saying where that skater plays; the one centre takes
-faceoffs and defence players man the points. Any dressed skater can fill any
-slot, and a player may be in several units but only once in each.
+faceoffs and defence players man the points. Where a unit has two wings or two
+defence players, the first plays the left side and the second the right. Any
+dressed skater can fill any slot, and a player may be in several units but only
+once in each.
 _Avoid_: Line, when meaning a special-situation unit.
 
 **Extra attacker**:

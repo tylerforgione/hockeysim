@@ -24,7 +24,8 @@ Paths are under `src/HockeySim.Simulation/`.
 | `Play/ExpectedGoalsModel.cs` | xG by shot context (its values are in `MatchTuning`) |
 | `Play/MatchTuning.cs` | Every tuning constant, calibrated to NHL averages (see [Calibration](#calibration)) |
 | `Play/MatchStatisticsBuilder.cs` | Derives all statistics from the play-by-play |
-| `Play/OnIceSkater.cs`, `Play/Zone.cs`, `Play/Probability.cs` | Small helpers |
+| `Play/OnIceSkater.cs` | A skater in a slot: role, side, and strengths adjusted for out-of-position and off-hand play |
+| `Play/Zone.cs`, `Play/Probability.cs` | Small helpers |
 | `Events/` | Play-by-play event records and their enums (goal situations, infractions, and penalty kinds are in Domain, since completed matches record them too) |
 | `MatchResult.cs`, `MatchTeamResult.cs`, `SkaterMatchStatistics.cs`, `GoalieMatchStatistics.cs`, `Shootout*.cs` | The returned result |
 | `Randomness/ControlledRandom.cs`, `RandomState.cs` | The single deterministic generator, also used by Management |
@@ -59,6 +60,7 @@ pull its goalie to tie a match). Keep them independent of the engine's code.
 | `OnIceStatisticsTests.cs` | On-ice and team shot totals recounted by situation, with `ManpowerReplay` as the oracle |
 | `OvertimeTests.cs` | Three-on-three, shootouts, playoff overtime |
 | `ShiftAndFatigueTests.cs`, `PhysicalPlayTests.cs` | Ice-time shares, stamina, hits |
+| `LineupFitTests.cs` | Relative statistical checks for out-of-position and off-hand play |
 | `PenaltyTests.cs` | Every manpower rule, replayed through `ManpowerReplay` |
 | `GoaliePullTests.cs` | Pulls, empty-net goals, extra attackers, checked against `GoaliePullRule` |
 | `TestTeams.cs`, `TestMatches.cs`, `TestBiography.cs` | Builders |
@@ -121,6 +123,11 @@ toughness, and size; size moves physicality by about a rating point per inch
 over 6'1" and per four pounds over 200 lb, within limits, and also helps a puck
 carrier keep the puck through a hit.
 
+Every slot on the ice has a role (centre, wing, or defence) and, for a wing or
+defence slot that has one, a side; a skater plays a little below their ratings
+in a slot that does not suit them (see
+[Positions and handedness](#positions-and-handedness)).
+
 The tuning values live together in `Simulation/Play/MatchTuning.cs`, measured
 from a reference rating of 65, the centre of generated talent, and calibrated so
 a generated league's season approximates recent NHL league averages (see
@@ -135,6 +142,39 @@ overtime ends does not shoot. Playoff overtime is as many twenty-minute
 five-a-side sudden-death periods as it takes, with no shootout. Regulation is
 played identically under either format. Penalties carry over from regulation
 into either overtime. Goalies are pulled to tie a match only in regulation.
+
+### Positions and handedness
+
+Any skater can fill any skater slot. A forward line plays left wing, centre,
+and right wing; a pair, left and right defence; a unit, its format's roles and
+sides; and an extra attacker, a wing with no side. A skater's strengths in the
+slot are their ratings adjusted in rating points by `OnIceSkater`, then scaled
+by fatigue as usual:
+
+| Assignment | Effect in the slot |
+| --- | --- |
+| Centre on the wing, or winger at centre | Offence, defence, and faceoffs −3 |
+| Forward on defence, or defenceman at forward | Offence, defence, and faceoffs −8 |
+| Wing on the off-hand side | Defence −1.5 and puck protection −2.5 (board play, breakouts); finishing +1.5 (one-timers on the forehand) |
+| Defence on the off-hand side | Defence −2 (breakouts); offence −1.5 (pinches to keep the puck in) |
+
+A skater is off-hand on the side opposite their handedness. The centre, a lone
+wing or defence player in a unit, and an extra attacker have no side, so
+handedness does not matter there. The effects combine, so a right-shot
+defenceman at left wing takes both the larger position penalty and the off-hand
+wing effects. Offence and defence move the attacking edge (shot rates, danger,
+turnovers), faceoffs decide draws taken from the centre slot, puck protection
+keeps the puck through a hit, and finishing beats the goalie.
+
+Out of position matters a good deal: between equally rated teams, one with its
+wings and defence trading places on the top three lines and pairs wins about
+44% of matches. Off-hand play is deliberately small, as in the NHL, where many left
+shots play the right side: a team with every wing and defence player off-hand
+takes a little under half of the shot attempts (about 49.3%) against the same
+team on its natural sides. A
+substitute for a skater in the box or ejected takes the slot's role and side, so
+the effects apply to them too. Splitting positions by side is a
+[future feature](../future-features.md#side-specific-positions).
 
 ### Penalties and special teams
 
@@ -332,26 +372,26 @@ are scaled from 82 games to 84.
 
 | Target | NHL | Measured | Source |
 | --- | ---: | ---: | --- |
-| Goals (with shootout winners) | 3.06 | 3.02 | Hockey-Reference |
-| Shots on goal | 28.8 | 29.3 | Hockey-Reference |
-| Shot attempts | 59.5 | 59.5 | NHL.com team real-time |
-| Expected goals | 3.12 | 3.09 | MoneyPuck, all situations |
-| Save percentage | .900 | .904 | Hockey-Reference |
-| Regulation / overtime / shootout share of matches | 78.0 / 15.0 / 7.1% | 79.5 / 12.1 / 8.4% | Hockey-Reference games |
-| Power-play opportunities | 2.87 | 2.89 | Hockey-Reference |
-| Power-play percentage | 21.2% | 20.5% | Hockey-Reference |
-| Penalty minutes | 8.84 | 8.53 | NHL.com team penalties |
-| Fights per match | about 0.20 | 0.20 | NHL.com majors, most for fighting |
+| Goals (with shootout winners) | 3.06 | 3.03 | Hockey-Reference |
+| Shots on goal | 28.8 | 29.4 | Hockey-Reference |
+| Shot attempts | 59.5 | 59.7 | NHL.com team real-time |
+| Expected goals | 3.12 | 3.10 | MoneyPuck, all situations |
+| Save percentage | .900 | .905 | Hockey-Reference |
+| Regulation / overtime / shootout share of matches | 78.0 / 15.0 / 7.1% | 81.5 / 10.8 / 7.7% | Hockey-Reference games |
+| Power-play opportunities | 2.87 | 2.91 | Hockey-Reference |
+| Power-play percentage | 21.2% | 19.9% | Hockey-Reference |
+| Penalty minutes | 8.84 | 8.61 | NHL.com team penalties |
+| Fights per match | about 0.20 | 0.21 | NHL.com majors, most for fighting |
 | Hits | 21.5 | 21.7 | NHL.com team real-time |
-| Blocked shots | 15.1 | 15.3 | NHL.com team real-time |
+| Blocked shots | 15.1 | 15.4 | NHL.com team real-time |
 | Takeaways | 4.7 | 4.8 | NHL.com, 2024-25 and 2025-26 |
-| Giveaways | 14.8 | 15.0 | NHL.com, 2024-25 and 2025-26 |
-| Faceoffs per match | 56.4 | 57.5 | NHL.com team faceoffs |
+| Giveaways | 14.8 | 14.9 | NHL.com, 2024-25 and 2025-26 |
+| Faceoffs per match | 56.4 | 57.3 | NHL.com team faceoffs |
 | Centre-ice share of faceoffs | 30% | 29% | NHL.com neutral-zone faceoffs |
-| Empty-net goals per match | 0.375 | 0.369 | NHL.com team real-time |
+| Empty-net goals per match | 0.375 | 0.411 | NHL.com team real-time |
 | Forward lines' share of forward ice time | 31/27/23/19% | 32/28/22/19% | NHL.com skater time on ice |
 | Defence pairs' share of defence ice time | 39/34/28% | 37/34/29% | NHL.com skater time on ice |
-| Standings points: spread, fewest, most | 15.4, 54, 120 | 17.4, 52, 128 | Hockey-Reference standings |
+| Standings points: spread, fewest, most | 15.4, 54, 120 | 13.5, 71, 122 | Hockey-Reference standings |
 
 Sources: [Hockey-Reference league averages](https://www.hockey-reference.com/leagues/stats.html),
 season pages and game results; the NHL.com statistics API (`api.nhle.com/stats/rest/en/team/`
@@ -369,8 +409,8 @@ targets:
   lines.
 
 Known gaps: too few matches reach overtime and too few overtime matches are
-decided before a shootout, so regulation share runs a point or two high and
-overtime share about three points low. The engine has no score effects (a
+decided before a shootout, so regulation share runs a few points high and
+overtime share about four points low. The engine has no score effects (a
 trailing team pressing, a leading one sitting back), which narrow margins in real
 matches. The top defence pair plays a little less than the NHL's, because
 fatigue limits how much more a pair can play than its target.
