@@ -52,15 +52,16 @@ after a goal opens with a faceoff (after any penalties assessed with it), that
 every event shows distinct dressed skaters matching its strength state and the
 starting goalie or an empty net, that each event's players are on the ice for
 the right team (a penalized skater is a dressed skater of the penalized team),
-that every event type and shot outcome occurs, that only unblocked attempts carry xG, and that xG
+that every event type and shot outcome occurs, that only unblocked attempts at a goalie carry xG, and that xG
 depends only on the shot's context and rises with danger, rebounds, and rushes.
 Statistic tests recount every skater statistic from the events (including
-penalty minutes and power-play and shorthanded goals and assists), recompute
+penalty minutes, power-play and shorthanded goals and assists, and empty-net
+goals), recompute
 plus/minus from the players on the ice at each even-strength and shorthanded
 goal, check that time on ice adds up exactly to the skaters the penalties allowed
 for the time played plus any extra attacker's time (the goalie's to the time
 played less any time pulled), that team and goalie totals reconcile with the
-opponent's skaters, that centres take even-strength faceoffs when none is in the
+opponent's skaters less their empty-net goals, that centres take even-strength faceoffs when none is in the
 box, that goals track xG for reference-rated
 players, and wide bands for goals, shots, attempts, blocks, hits, takeaways,
 giveaways, faceoffs, xG, and save percentage until calibration (#53). Overtime
@@ -87,9 +88,22 @@ only, majors carrying game misconducts with ejected skaters never returning,
 every penalty kind and infraction with its minutes, delayed penalties (only the
 team with the puck plays, with its goalie pulled, until the offenders are
 called or a goal wipes out a minor), unassisted penalty shots, and four-on-three
-after a penalty in three-on-three overtime. Relative checks show tougher skaters
+after a penalty in three-on-three overtime; a delayed penalty is told apart from
+a late pull by `GoaliePullRule`. Relative checks show tougher skaters
 fighting more and undisciplined teams taking more penalties, and wide bands
 cover penalty minutes, power-play opportunities and success rate, and fights.
+Goalie-pull tests check play against `GoaliePullRule`, an independent statement
+of when a team may pull its goalie to tie the match: a pulled goalie at a
+faceoff, or an empty-net goal against, only for a team trailing by one or two
+late in the third period; nearly every team trailing by one in the last two
+minutes pulling, and teams trailing by two already pulled before then; both
+goalies back for the restart after a goal; goalies returning at a stoppage or
+after a goal and being pulled again; empty-net goals exactly when the conceding
+goalie is pulled, without xG, with every empty-net attempt that reaches the net
+scoring; goalies not charged with empty-net goals or the time pulled; and the
+extra attacker on top of the strength the penalties allow, including during a
+power play and while shorthanded, with one of the lineup's extra attackers on
+whenever either can play.
 Individual match
 statistics are checked for reconciliation with the score and shots, appearance
 and eligibility rules, assist validity, shootout exclusion, and zero-shot and
@@ -114,7 +128,9 @@ are counted among a skater's goals and assists, with at most two assists per
 such goal, non-negative penalty minutes and power-play opportunities, the team's
 power-play goals and penalty minutes, and that a match is rejected with a
 power-play goal but no opportunity or a shorthanded goal when the opponent had
-no power play. Domain special-situation
+no power play, and that empty-net goals are counted among a skater's goals and
+a match is rejected unless each goalie's shots and goals against leave out the
+opponent's empty-net goals. Domain special-situation
 tests check every format (unit count, slot roles, one centre), any skater in any
 slot, unit invariants (slot count, goalies, duplicates), the exact units each
 situation needs and their order, scratched skaters in units, extra-attacker
@@ -151,7 +167,7 @@ a scratched skater in a unit, a missing unit, an undefined situation, missing
 extra attackers, team shots that differ from the skaters' shots, xG against that
 does not match the opponent, unmatched faceoffs, negative time on ice, negative
 penalty minutes, a power-play goal without an opportunity, a shorthanded goal
-without an opponent power play),
+without an opponent power play, an empty-net goal still charged to the goalie),
 and the active game then continues exactly as if the load was never attempted.
 Infrastructure tests save and load real files in a temporary directory: new,
 midseason, and completed games with continued play compared against

@@ -75,9 +75,23 @@ slot, and a player may be in several units but only once in each.
 _Avoid_: Line, when meaning a special-situation unit.
 
 **Extra attacker**:
-The skater sent on when the goalie is pulled. A lineup names two, a first and a
-second choice, so one is available when the first is already on the ice. Any
-dressed skater can be either.
+The skater sent on when the goalie is pulled, during a delayed penalty or late
+in a match the team is losing. A lineup names two, a first and a second choice,
+so one is available when the first is already on the ice. Any dressed skater can
+be either. The extra attacker adds to whatever strength the penalties allow, so
+a power play can be six-on-four.
+
+**Pulling the goalie**:
+Replacing the goalie with an extra attacker. Besides delayed penalties, a team
+trailing by one goal with two minutes left in the third period, or by two with
+three and a half, pulls its goalie to try to tie the match. The goalie returns
+for a faceoff in the team's own zone and after any goal, and is pulled again
+while the team still trails late.
+
+**Empty-net goal**:
+A goal scored while the conceding team's goalie was pulled. It counts as a shot
+and a goal for the scorer and the team, but not against the goalie, and has no
+expected-goal value.
 
 **Match result**:
 The outcome of a simulated match: a decisive score, how it was decided
@@ -153,8 +167,8 @@ _Avoid_: Shot, when meaning any attempt; a shot is on goal.
 **Expected goals (xG)**:
 The chance that an unblocked shot attempt scores for a league-average shooter
 against a league-average goalie, from its danger level and whether it was a
-rebound or on the rush. Blocked attempts have none. A player's or team's xG is
-the sum over their unblocked attempts.
+rebound or on the rush. Blocked attempts and attempts at an empty net have none.
+A player's or team's xG is the sum over their unblocked attempts.
 
 **Shot danger**:
 How dangerous a shot attempt's location is: low from the point and perimeter,
@@ -169,9 +183,10 @@ and the starting goalie appear; the dressed backup goalie and scratches do not.
 An appearing player's individual production in one match. Skaters record goals,
 assists, points, plus/minus, time on ice, shots on goal, shot attempts, hits,
 blocked shots, faceoffs won and lost, takeaways, giveaways, xG, penalty minutes,
-and power-play and shorthanded goals and assists; the starting goalie records
-shots against, saves, goals against, xG against, and time on ice. A team also
-records its power-play opportunities.
+power-play and shorthanded goals and assists, and empty-net goals; the starting
+goalie records shots against, saves, goals against (neither counting empty-net
+goals), xG against, and time on ice. A team also records its power-play
+opportunities.
 They are derived from the play-by-play and reconcile with the score and shots,
 excluding the shootout: shootout attempts and the deciding goal count toward no
 player.
@@ -182,8 +197,8 @@ goals it conceded, not counting power-play or penalty-shot goals.
 
 **Time on ice**:
 How long a player was on the ice in regulation and overtime, in whole seconds.
-The starting goalie's is the whole match, less any time pulled during a delayed
-penalty.
+The starting goalie's is the whole match, less any time pulled for an extra
+attacker.
 
 **Schedule**:
 The ordered regular-season calendar of matches. Every team plays 84: four

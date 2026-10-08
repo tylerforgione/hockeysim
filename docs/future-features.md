@@ -405,9 +405,10 @@ The match engine (#51) penalizes only skaters, for infractions in the run of
 play and after hits. Later: goalie penalties (served by a teammate on the ice),
 bench minors such as too many men and unsportsmanlike conduct by the bench,
 match penalties, the instigator and aggressor rules for fights (with their
-extra minors and misconducts), a teammate serving an ejected player's major, and
+extra minors and misconducts), a teammate serving an ejected player's major,
 penalized players returning to the ice only at the next change rather than at
-once. Each changes seeded results, so it is an engine version change.
+once, and awarded goals for a foul on a breakaway at an empty net (#52 calls an
+ordinary penalty there instead of a penalty shot). Each changes seeded results, so it is an engine version change.
 
 ## Full injury and health system
 

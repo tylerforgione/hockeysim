@@ -17,7 +17,8 @@ also generates a reproducible, balanced 84-match regular-season schedule. A head
 Simulation project plays matches as play-by-play hockey events (shifts, faceoffs,
 shot attempts with expected goals, hits, turnovers, penalties, and fights) from
 two teams' lineups, playing power plays, penalty kills, and every other strength
-state with the lineup's units, with three-on-three overtime and a shootout, and
+state with the lineup's units, pulling the goalie for an extra attacker late in
+close matches, with three-on-three overtime and a shootout, and
 derives every skater and goalie statistic from the events. Management advances the
 season one league day at a time, playing every scheduled match and accumulating
 results, team records, and player season statistics through to a completed
