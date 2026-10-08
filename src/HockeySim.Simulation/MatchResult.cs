@@ -19,6 +19,8 @@ public sealed class MatchResult
 
     private readonly ReadOnlyCollection<MatchEvent> _events;
     private readonly ReadOnlyCollection<GoalEvent> _goals;
+    private readonly ReadOnlyCollection<InjuryEvent> _injuries;
+    private readonly ReadOnlyCollection<WearGain> _wear;
 
     internal MatchResult(
         MatchTeamResult home,
@@ -27,6 +29,7 @@ public sealed class MatchResult
         IEnumerable<MatchEvent> events,
         TimeSpan playingTime,
         ShootoutResult? shootout,
+        IEnumerable<WearGain> wear,
         RandomState randomState)
     {
         Home = home;
@@ -34,6 +37,8 @@ public sealed class MatchResult
         Decision = decision;
         _events = events.ToList().AsReadOnly();
         _goals = _events.OfType<GoalEvent>().ToList().AsReadOnly();
+        _injuries = _events.OfType<InjuryEvent>().ToList().AsReadOnly();
+        _wear = wear.ToList().AsReadOnly();
         PlayingTime = playingTime;
         Shootout = shootout;
         RandomState = randomState;
@@ -55,6 +60,15 @@ public sealed class MatchResult
     /// Player-attributable goals in chronological order. Excludes the shootout deciding goal.
     /// </summary>
     public IReadOnlyList<GoalEvent> Goals => _goals;
+
+    /// <summary>Every injury suffered, in chronological order.</summary>
+    public IReadOnlyList<InjuryEvent> Injuries => _injuries;
+
+    /// <summary>
+    /// The hidden wear each player's body parts took, at most one entry per part, in the order first
+    /// struck. Empty when the match could not injure players.
+    /// </summary>
+    public IReadOnlyList<WearGain> Wear => _wear;
 
     /// <summary>
     /// The game time played in regulation and overtime, up to an overtime winner. Each starting

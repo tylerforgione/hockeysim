@@ -93,6 +93,18 @@ internal static class GameSaveCapture
                     penalty.PlayerId,
                     penalty.Infraction,
                     penalty.Kind))
+                .ToList(),
+            match.Health.Injuries
+                .Select(injury => new SavedInjury(
+                    injury.Period,
+                    WholeSeconds(injury.TimeInPeriod),
+                    injury.TeamId,
+                    injury.PlayerId,
+                    injury.Type,
+                    injury.RecoveryDays))
+                .ToList(),
+            match.Health.Wear
+                .Select(gain => new SavedWearGain(gain.PlayerId, gain.BodyPart, gain.Points))
                 .ToList());
 
     private static SavedMatchSide CaptureSide(CompletedMatchTeam side) =>

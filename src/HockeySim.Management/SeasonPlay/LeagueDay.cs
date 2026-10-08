@@ -14,8 +14,10 @@ internal static class LeagueDay
     /// Simulates the day's matches in schedule order on one continuous random stream, with
     /// regular-season overtime, then hands the whole day to the season. The play-by-play stays
     /// with the Simulation result; the completed match keeps the box score and the scoring and
-    /// penalty summaries. Simulation never changes the teams, so if any match fails the season is
-    /// untouched and the caller keeps its original random state.
+    /// penalty summaries, and the injuries and hidden wear that the season applies to the players'
+    /// health. Each match plays from the players' health on the current date. Simulation never
+    /// changes the teams, so if any match fails the season is untouched and the caller keeps its
+    /// original random state.
     /// </summary>
     /// <returns>The random state after the day's final match.</returns>
     public static RandomState Play(Season season, IMatchSimulator simulator, RandomState randomState)
@@ -26,7 +28,10 @@ internal static class LeagueDay
         foreach (var scheduledMatch in season.CurrentDateMatches)
         {
             var match = new Match(teams[scheduledMatch.HomeTeamId], teams[scheduledMatch.AwayTeamId]);
-            var result = simulator.Simulate(match, OvertimeFormat.RegularSeason, randomState);
+            var health = new MatchHealth(
+                season.CurrentDate,
+                match.Home.Roster.Concat(match.Away.Roster).Select(player => season.HealthOf(player.Id)));
+            var result = simulator.Simulate(match, OvertimeFormat.RegularSeason, health, randomState);
             results.Add(ToCompletedMatch(scheduledMatch, result));
             randomState = result.RandomState;
         }
@@ -56,7 +61,16 @@ internal static class LeagueDay
                 penalty.TeamId,
                 penalty.PlayerId,
                 penalty.Infraction,
-                penalty.Kind)));
+                penalty.Kind)),
+            new MatchHealthChanges(
+                result.Injuries.Select(injury => new MatchInjury(
+                    injury.Period,
+                    injury.TimeInPeriod,
+                    injury.TeamId,
+                    injury.PlayerId,
+                    injury.Type,
+                    injury.RecoveryDays)),
+                result.Wear));
 
     private static CompletedMatchTeam ToCompletedMatchTeam(MatchTeamResult side) =>
         new(
