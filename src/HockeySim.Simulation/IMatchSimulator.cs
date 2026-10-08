@@ -10,5 +10,5 @@ namespace HockeySim.Simulation;
 /// </summary>
 public interface IMatchSimulator
 {
-    MatchResult Simulate(Match match, RandomState randomState);
+    MatchResult Simulate(Match match, OvertimeFormat overtime, RandomState randomState);
 }

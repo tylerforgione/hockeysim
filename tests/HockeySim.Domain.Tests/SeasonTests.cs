@@ -114,9 +114,11 @@ public sealed class SeasonTests
     {
         var valid = Result(_openingFirst, 1, 0);
         var outsider = _third.Lineup.ForwardLines[0].Centre.Id;
-        var skaters = valid.Home.Skaters.Skip(1).Prepend(new SkaterBoxScore(outsider, 1, 0));
-        var home = new CompletedMatchTeam(_first.Id, 1, valid.Home.Shots, skaters, valid.Home.Goalie);
-        var invalid = new CompletedMatch(_openingFirst, home, valid.Away, MatchDecision.Regulation);
+        var scorer = valid.Home.Skaters[0];
+        var skaters = valid.Home.Skaters.Skip(1).Prepend(
+            TestResults.Skater(outsider, scorer.Goals, shots: scorer.Shots, expectedGoals: scorer.ExpectedGoals));
+        var home = new CompletedMatchTeam(_first.Id, 1, valid.Home.Shots, 0, skaters, valid.Home.Goalie, SituationalShotTotals.None);
+        var invalid = TestResults.Match(_openingFirst, home, valid.Away, MatchDecision.Regulation);
 
         var error = Record.Exception(() => _season.CompleteDay([invalid, Result(_openingSecond, 1, 0)]));
 
@@ -128,10 +130,11 @@ public sealed class SeasonTests
     public void AResultCreditingAGoalieAsASkaterIsRejected()
     {
         var valid = Result(_openingFirst, 1, 0);
-        var backup = new SkaterBoxScore(_first.Lineup.BackupGoalie.Id, 0, 0);
+        var backup = TestResults.Skater(_first.Lineup.BackupGoalie.Id);
         var home = new CompletedMatchTeam(
-            _first.Id, 1, valid.Home.Shots, valid.Home.Skaters.Append(backup), valid.Home.Goalie);
-        var invalid = new CompletedMatch(_openingFirst, home, valid.Away, MatchDecision.Regulation);
+            _first.Id, 1, valid.Home.Shots, 0, valid.Home.Skaters.Append(backup), valid.Home.Goalie,
+            SituationalShotTotals.None);
+        var invalid = TestResults.Match(_openingFirst, home, valid.Away, MatchDecision.Regulation);
 
         Assert.Throws<ArgumentException>(() => _season.CompleteDay([invalid, Result(_openingSecond, 1, 0)]));
         AssertNothingPlayed();
@@ -232,6 +235,28 @@ public sealed class SeasonTests
             _league, new SeasonSchedule([new ScheduledMatch(OpeningDay, _first.Id, stranger)])));
     }
 
+    [Theory]
+    [InlineData("2017-03-15")]
+    [InlineData("2062-03-14")]
+    public void EveryPlayerMayBeFrom16To60OnOpeningDay(string openingDay)
+    {
+        // Every test player was born on 15 March 2001.
+        var season = new Season(
+            _league, new SeasonSchedule([new ScheduledMatch(DateOnly.Parse(openingDay), _first.Id, _second.Id)]));
+
+        Assert.Equal(DateOnly.Parse(openingDay), season.CurrentDate);
+    }
+
+    [Theory]
+    [InlineData("2000-10-01")]
+    [InlineData("2017-03-14")]
+    [InlineData("2062-03-15")]
+    public void ASeasonRejectsPlayersUnbornYoungerThan16OrOlderThan60OnOpeningDay(string openingDay)
+    {
+        Assert.Throws<ArgumentException>(() => new Season(
+            _league, new SeasonSchedule([new ScheduledMatch(DateOnly.Parse(openingDay), _first.Id, _second.Id)])));
+    }
+
     [Fact]
     public void ACompletedMatchMustBeDecisive()
     {
@@ -243,7 +268,7 @@ public sealed class SeasonTests
     {
         var regulation = Result(_openingFirst, 3, 1);
 
-        Assert.Throws<ArgumentException>(() => new CompletedMatch(
+        Assert.Throws<ArgumentException>(() => TestResults.Match(
             _openingFirst, regulation.Home, regulation.Away, MatchDecision.Overtime));
     }
 
@@ -252,7 +277,7 @@ public sealed class SeasonTests
     {
         var shootout = Result(_openingFirst, 1, 1, MatchDecision.Shootout, shootoutWinnerIsHome: true);
 
-        Assert.Throws<ArgumentException>(() => new CompletedMatch(
+        Assert.Throws<ArgumentException>(() => TestResults.Match(
             _openingFirst, shootout.Home, shootout.Away, MatchDecision.Overtime));
     }
 
@@ -261,7 +286,7 @@ public sealed class SeasonTests
     {
         var reversed = Result(_openingFirst, 2, 1);
 
-        Assert.Throws<ArgumentException>(() => new CompletedMatch(
+        Assert.Throws<ArgumentException>(() => TestResults.Match(
             _openingFirst, reversed.Away, reversed.Home, MatchDecision.Regulation));
     }
 
@@ -269,10 +294,10 @@ public sealed class SeasonTests
     public void EachGoalieMustFaceTheOpponentsShotsAndGoals()
     {
         var valid = Result(_openingFirst, 2, 1);
-        var goalie = new GoalieBoxScore(valid.Home.Goalie.PlayerId, valid.Away.Shots + 1, valid.Home.Goalie.GoalsAgainst);
-        var home = new CompletedMatchTeam(_first.Id, 2, valid.Home.Shots, valid.Home.Skaters, goalie);
+        var goalie = TestResults.Goalie(valid.Home.Goalie.PlayerId, valid.Away.Shots + 1, valid.Home.Goalie.GoalsAgainst, valid.Home.Goalie.ExpectedGoalsAgainst);
+        var home = new CompletedMatchTeam(_first.Id, 2, valid.Home.Shots, 0, valid.Home.Skaters, goalie, SituationalShotTotals.None);
 
-        Assert.Throws<ArgumentException>(() => new CompletedMatch(
+        Assert.Throws<ArgumentException>(() => TestResults.Match(
             _openingFirst, home, valid.Away, MatchDecision.Regulation));
     }
 
@@ -281,13 +306,14 @@ public sealed class SeasonTests
     {
         var skaters = new[]
         {
-            new SkaterBoxScore(FirstSkater(_first), 1, 0),
-            new SkaterBoxScore(_first.Lineup.ForwardLines[0].Centre.Id, 0, 2),
-            new SkaterBoxScore(_first.Lineup.ForwardLines[0].RightWing.Id, 0, 1),
+            TestResults.Skater(FirstSkater(_first), 1, shots: 10),
+            TestResults.Skater(_first.Lineup.ForwardLines[0].Centre.Id, 0, 2),
+            TestResults.Skater(_first.Lineup.ForwardLines[0].RightWing.Id, 0, 1),
         };
 
         Assert.Throws<ArgumentException>(() => new CompletedMatchTeam(
-            _first.Id, 1, 10, skaters, new GoalieBoxScore(_first.Lineup.StartingGoalie.Id, 10, 0)));
+            _first.Id, 1, 10, 0, skaters, TestResults.Goalie(_first.Lineup.StartingGoalie.Id, 10, 0),
+            SituationalShotTotals.None));
     }
 
     private void PlayOpeningDay() =>

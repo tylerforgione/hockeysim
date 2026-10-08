@@ -4,7 +4,7 @@ namespace HockeySim.Domain;
 
 /// <summary>
 /// The regular season in progress: the current date, the completed-match history, and the
-/// current-season totals derived from it. The season advances one league day at a time; a day's
+/// current-season team and player totals derived from it. The season advances one league day at a time; a day's
 /// results are applied together or not at all, so the history never holds part of a day and a
 /// scheduled match can be completed only once.
 /// </summary>
@@ -13,6 +13,7 @@ public sealed class Season
     private readonly List<CompletedMatch> _completedMatches = [];
     private readonly ReadOnlyCollection<CompletedMatch> _completedMatchesView;
     private readonly Dictionary<TeamId, TeamRecord> _teamRecords;
+    private readonly Dictionary<TeamId, TeamSeasonStatistics> _teamStatistics;
     private readonly Dictionary<PlayerId, SkaterSeasonStatistics> _skaterStatistics = [];
     private readonly Dictionary<PlayerId, GoalieSeasonStatistics> _goalieStatistics = [];
 
@@ -33,11 +34,22 @@ public sealed class Season
             throw new ArgumentException("Every scheduled team must belong to the league.", nameof(schedule));
         }
 
+        var openingDay = schedule.Matches[0].Date;
+        if (league.Teams.SelectMany(team => team.Roster).Any(player =>
+                player.Biography.BirthDate > openingDay
+                || player.AgeOn(openingDay) is < Player.MinimumAge or > Player.MaximumAge))
+        {
+            throw new ArgumentException(
+                $"Every player must be between {Player.MinimumAge} and {Player.MaximumAge} years old on opening day.",
+                nameof(league));
+        }
+
         League = league;
         Schedule = schedule;
-        CurrentDate = schedule.Matches[0].Date;
+        CurrentDate = openingDay;
         _completedMatchesView = _completedMatches.AsReadOnly();
         _teamRecords = league.Teams.ToDictionary(team => team.Id, team => new TeamRecord(team.Id));
+        _teamStatistics = league.Teams.ToDictionary(team => team.Id, team => new TeamSeasonStatistics(team.Id));
     }
 
     public League League { get; }
@@ -62,6 +74,10 @@ public sealed class Season
     /// <summary>Every team's record, in league team order.</summary>
     public IReadOnlyList<TeamRecord> TeamRecords =>
         League.Teams.Select(team => _teamRecords[team.Id]).ToList().AsReadOnly();
+
+    /// <summary>Every team's special teams, faceoff, and shot totals, in league team order.</summary>
+    public IReadOnlyList<TeamSeasonStatistics> TeamStatistics =>
+        League.Teams.Select(team => _teamStatistics[team.Id]).ToList().AsReadOnly();
 
     /// <summary>
     /// Ranks a group of league teams, such as a division, a conference, or the whole league, by
@@ -170,6 +186,7 @@ public sealed class Season
         foreach (var side in new[] { match.Home, match.Away })
         {
             _teamRecords[side.TeamId] = _teamRecords[side.TeamId].Add(match);
+            _teamStatistics[side.TeamId] = _teamStatistics[side.TeamId].Add(match);
 
             foreach (var skater in side.Skaters)
             {

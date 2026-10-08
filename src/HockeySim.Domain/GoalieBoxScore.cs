@@ -6,15 +6,33 @@ namespace HockeySim.Domain;
 /// </summary>
 public sealed record GoalieBoxScore
 {
-    public GoalieBoxScore(PlayerId playerId, int shotsAgainst, int goalsAgainst)
+    /// <param name="shotsAgainst">The opponent's shots on goal, less its empty-net goals.</param>
+    /// <param name="goalsAgainst">The opponent's player goals, less its empty-net goals.</param>
+    /// <param name="expectedGoalsAgainst">
+    /// The summed expected-goal value of the opponent's unblocked attempts; empty-net attempts carry none.
+    /// </param>
+    /// <param name="timeOnIce">
+    /// Time in net in regulation and overtime, in whole seconds, less any time pulled for an extra
+    /// attacker.
+    /// </param>
+    public GoalieBoxScore(
+        PlayerId playerId,
+        int shotsAgainst,
+        int goalsAgainst,
+        double expectedGoalsAgainst,
+        TimeSpan timeOnIce)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(shotsAgainst);
         ArgumentOutOfRangeException.ThrowIfNegative(goalsAgainst);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(goalsAgainst, shotsAgainst);
+        ExpectedGoalTotals.ThrowIfInvalid(expectedGoalsAgainst, nameof(expectedGoalsAgainst));
+        MatchTime.ThrowIfInvalid(timeOnIce, nameof(timeOnIce));
 
         PlayerId = playerId;
         ShotsAgainst = shotsAgainst;
         GoalsAgainst = goalsAgainst;
+        ExpectedGoalsAgainst = expectedGoalsAgainst;
+        TimeOnIce = timeOnIce;
     }
 
     public PlayerId PlayerId { get; }
@@ -24,4 +42,8 @@ public sealed record GoalieBoxScore
     public int GoalsAgainst { get; }
 
     public int Saves => ShotsAgainst - GoalsAgainst;
+
+    public double ExpectedGoalsAgainst { get; }
+
+    public TimeSpan TimeOnIce { get; }
 }

@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
@@ -45,6 +47,10 @@ public static class PlayerDisplay
         Rating.GoalieReflex => "Reflexes",
         Rating.GoaliePositioning => "Positioning",
         Rating.GoalieReboundControl => "Rebound Control",
+        Rating.Faceoffs => "Faceoffs",
+        Rating.Discipline => "Discipline",
+        Rating.Stamina => "Stamina",
+        Rating.Toughness => "Toughness",
         _ => throw new ArgumentOutOfRangeException(nameof(rating), rating, "Unknown rating."),
     };
 
@@ -96,6 +102,76 @@ public static class PlayerDisplay
             _ => string.Concat(words.Select(word => char.ToUpperInvariant(word[0]))),
         };
     }
+
+    /// <summary>The three-letter code hockey uses for a nation, such as CAN or SUI.</summary>
+    public static string CountryCode(Country country) => country switch
+    {
+        Country.Canada => "CAN",
+        Country.UnitedStates => "USA",
+        Country.Sweden => "SWE",
+        Country.Finland => "FIN",
+        Country.Russia => "RUS",
+        Country.Czechia => "CZE",
+        Country.Switzerland => "SUI",
+        Country.Germany => "GER",
+        Country.Slovakia => "SVK",
+        Country.Denmark => "DEN",
+        Country.Latvia => "LAT",
+        Country.Austria => "AUT",
+        Country.Norway => "NOR",
+        _ => throw new ArgumentOutOfRangeException(nameof(country), country, "Unknown country."),
+    };
+
+    public static string CountryName(Country country) => country switch
+    {
+        Country.Canada => "Canada",
+        Country.UnitedStates => "United States",
+        Country.Sweden => "Sweden",
+        Country.Finland => "Finland",
+        Country.Russia => "Russia",
+        Country.Czechia => "Czechia",
+        Country.Switzerland => "Switzerland",
+        Country.Germany => "Germany",
+        Country.Slovakia => "Slovakia",
+        Country.Denmark => "Denmark",
+        Country.Latvia => "Latvia",
+        Country.Austria => "Austria",
+        Country.Norway => "Norway",
+        _ => throw new ArgumentOutOfRangeException(nameof(country), country, "Unknown country."),
+    };
+
+    public static string HandednessAbbreviation(Handedness handedness) => handedness switch
+    {
+        Handedness.Left => "L",
+        Handedness.Right => "R",
+        _ => throw new ArgumentOutOfRangeException(nameof(handedness), handedness, "Unknown handedness."),
+    };
+
+    public static string HandednessName(Handedness handedness) => handedness switch
+    {
+        Handedness.Left => "Left",
+        Handedness.Right => "Right",
+        _ => throw new ArgumentOutOfRangeException(nameof(handedness), handedness, "Unknown handedness."),
+    };
+
+    /// <summary>
+    /// "Shoots" for a skater or "Catches" for a goalie: what <see cref="PlayerBiography.Handedness"/>
+    /// describes for the position.
+    /// </summary>
+    public static string HandednessLabel(Position position) => position == Position.Goalie ? "Catches" : "Shoots";
+
+    /// <summary>Height in feet and inches, such as 6' 1". A unit setting may add metric later.</summary>
+    public static string FormatHeight(Height height) => $"{height.Inches / 12}' {height.Inches % 12}\"";
+
+    /// <summary>Weight in pounds, such as 195 lb.</summary>
+    public static string FormatWeight(Weight weight) => $"{weight.Pounds} lb";
+
+    public static string FormatBirthDate(DateOnly birthDate) =>
+        birthDate.ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
+
+    /// <summary>City, then state or province where the country has them, then country.</summary>
+    public static string FormatBirthplace(Birthplace birthplace) =>
+        string.Join(", ", new[] { birthplace.City, birthplace.Region, CountryName(birthplace.Country) }.OfType<string>());
 
     public static string FormatSeason(int seasonYear) => $"{seasonYear}–{(seasonYear + 1) % 100:00}";
 }

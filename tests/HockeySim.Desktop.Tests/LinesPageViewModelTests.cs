@@ -1,4 +1,5 @@
 using HockeySim.Desktop.Lines;
+using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.NewGame;
 using HockeySim.Simulation.Randomness;
@@ -16,17 +17,17 @@ public sealed class LinesPageViewModelTests
         var lines = new LinesPageViewModel(session);
         var lineup = session.ManagedTeam.Lineup;
 
-        Assert.Equal(4, lines.ForwardLines.Count);
-        Assert.Equal(3, lines.DefencePairs.Count);
-        Assert.Equal(lineup.ForwardLines[0].CentreId, lines.ForwardLines[0].Centre.SelectedPlayer?.Id);
-        Assert.Equal(lineup.StartingGoalieId, lines.StartingGoalie?.SelectedPlayer?.Id);
-        Assert.Equal(5, lines.ForwardLines[0].Centre.Options.Count);
-        Assert.Equal(8, lines.ForwardLines[0].LeftWing.Options.Count);
-        Assert.Equal(7, lines.DefencePairs[0].LeftDefence.Options.Count);
-        Assert.Equal(3, lines.StartingGoalie!.Options.Count);
+        Assert.Equal(4, lines.Lineup.ForwardLines.Count);
+        Assert.Equal(3, lines.Lineup.DefencePairs.Count);
+        Assert.Equal(lineup.ForwardLines[0].CentreId, lines.Lineup.ForwardLines[0].Centre.SelectedPlayer?.Id);
+        Assert.Equal(lineup.StartingGoalieId, lines.Lineup.StartingGoalie.SelectedPlayer?.Id);
+        Assert.Equal(5, lines.Lineup.ForwardLines[0].Centre.Options.Count);
+        Assert.Equal(8, lines.Lineup.ForwardLines[0].LeftWing.Options.Count);
+        Assert.Equal(7, lines.Lineup.DefencePairs[0].LeftDefence.Options.Count);
+        Assert.Equal(3, lines.Lineup.StartingGoalie.Options.Count);
         Assert.Equal(
             session.ManagedTeam.ScratchedPlayerIds.Select(id => id.Value).Order(),
-            lines.Scratches.Select(player => player.Id.Value).Order());
+            lines.Lineup.Scratches.Select(player => player.Id.Value).Order());
         Assert.False(lines.HasChanges);
         Assert.False(lines.SaveCommand.CanExecute(null));
     }
@@ -35,13 +36,13 @@ public sealed class LinesPageViewModelTests
     public void ChoosingADressedPlayerSwapsTheTwoSlots()
     {
         var lines = new LinesPageViewModel(GameTestData.StartSession());
-        var firstLeftWing = lines.ForwardLines[0].LeftWing.SelectedPlayer;
-        var fourthRightWing = lines.ForwardLines[3].RightWing.SelectedPlayer;
+        var firstLeftWing = lines.Lineup.ForwardLines[0].LeftWing.SelectedPlayer;
+        var fourthRightWing = lines.Lineup.ForwardLines[3].RightWing.SelectedPlayer;
 
-        lines.ForwardLines[0].LeftWing.SelectedPlayer = fourthRightWing;
+        lines.Lineup.ForwardLines[0].LeftWing.SelectedPlayer = fourthRightWing;
 
-        Assert.Equal(fourthRightWing, lines.ForwardLines[0].LeftWing.SelectedPlayer);
-        Assert.Equal(firstLeftWing, lines.ForwardLines[3].RightWing.SelectedPlayer);
+        Assert.Equal(fourthRightWing, lines.Lineup.ForwardLines[0].LeftWing.SelectedPlayer);
+        Assert.Equal(firstLeftWing, lines.Lineup.ForwardLines[3].RightWing.SelectedPlayer);
         Assert.True(lines.HasChanges);
         Assert.True(lines.SaveCommand.CanExecute(null));
     }
@@ -50,14 +51,14 @@ public sealed class LinesPageViewModelTests
     public void ChoosingAScratchedPlayerMovesTheReplacedPlayerToScratches()
     {
         var lines = new LinesPageViewModel(GameTestData.StartSession());
-        var scratchedCentre = lines.Scratches.Single(player => player.PositionAbbreviation == "C");
-        var replacedCentre = lines.ForwardLines[1].Centre.SelectedPlayer!;
+        var scratchedCentre = lines.Lineup.Scratches.Single(player => player.PositionAbbreviation == "C");
+        var replacedCentre = lines.Lineup.ForwardLines[1].Centre.SelectedPlayer!;
 
-        lines.ForwardLines[1].Centre.SelectedPlayer = scratchedCentre;
+        lines.Lineup.ForwardLines[1].Centre.SelectedPlayer = scratchedCentre;
 
-        Assert.Contains(replacedCentre, lines.Scratches);
-        Assert.DoesNotContain(scratchedCentre, lines.Scratches);
-        Assert.Equal(3, lines.Scratches.Count);
+        Assert.Contains(replacedCentre, lines.Lineup.Scratches);
+        Assert.DoesNotContain(scratchedCentre, lines.Lineup.Scratches);
+        Assert.Equal(3, lines.Lineup.Scratches.Count);
     }
 
     [Fact]
@@ -65,8 +66,8 @@ public sealed class LinesPageViewModelTests
     {
         var session = GameTestData.StartSession();
         var lines = new LinesPageViewModel(session);
-        var scratchedGoalie = lines.Scratches.Single(player => player.PositionAbbreviation == "G");
-        lines.StartingGoalie!.SelectedPlayer = scratchedGoalie;
+        var scratchedGoalie = lines.Lineup.Scratches.Single(player => player.PositionAbbreviation == "G");
+        lines.Lineup.StartingGoalie.SelectedPlayer = scratchedGoalie;
 
         lines.SaveCommand.Execute(null);
 
@@ -81,12 +82,12 @@ public sealed class LinesPageViewModelTests
     {
         var session = GameTestData.StartSession();
         var lines = new LinesPageViewModel(session);
-        var original = lines.DefencePairs[0].LeftDefence.SelectedPlayer!.Id;
-        lines.DefencePairs[0].LeftDefence.SelectedPlayer = lines.DefencePairs[2].RightDefence.SelectedPlayer;
+        var original = lines.Lineup.DefencePairs[0].LeftDefence.SelectedPlayer!.Id;
+        lines.Lineup.DefencePairs[0].LeftDefence.SelectedPlayer = lines.Lineup.DefencePairs[2].RightDefence.SelectedPlayer;
 
         lines.RevertCommand.Execute(null);
 
-        Assert.Equal(original, lines.DefencePairs[0].LeftDefence.SelectedPlayer?.Id);
+        Assert.Equal(original, lines.Lineup.DefencePairs[0].LeftDefence.SelectedPlayer?.Id);
         Assert.False(lines.HasChanges);
     }
 
@@ -96,7 +97,7 @@ public sealed class LinesPageViewModelTests
         var gameManager = new GameManager();
         var session = GameTestData.StartSession(gameManager);
         var lines = new LinesPageViewModel(session);
-        lines.ForwardLines[0].LeftWing.SelectedPlayer = lines.ForwardLines[1].LeftWing.SelectedPlayer;
+        lines.Lineup.ForwardLines[0].LeftWing.SelectedPlayer = lines.Lineup.ForwardLines[1].LeftWing.SelectedPlayer;
 
         // Replacing the world behind the editor makes every selected player foreign to the roster.
         gameManager.StartNewGame(new NewGameCommand(2026, new RandomState(1), GameTestData.ManagedTeamName));
@@ -112,13 +113,189 @@ public sealed class LinesPageViewModelTests
     {
         var session = GameTestData.StartSession();
         var lines = new LinesPageViewModel(session);
-        var moved = lines.ForwardLines[2].RightWing.SelectedPlayer;
-        lines.ForwardLines[0].RightWing.SelectedPlayer = moved;
+        var moved = lines.Lineup.ForwardLines[2].RightWing.SelectedPlayer;
+        lines.Lineup.ForwardLines[0].RightWing.SelectedPlayer = moved;
 
         session.MarkInboxMessageRead(session.Snapshot.Inbox[0].Id);
         lines.Refresh();
 
-        Assert.Equal(moved, lines.ForwardLines[0].RightWing.SelectedPlayer);
+        Assert.Equal(moved, lines.Lineup.ForwardLines[0].RightWing.SelectedPlayer);
         Assert.True(lines.HasChanges);
     }
+
+    [Fact]
+    public void LoadsEveryUnitAndExtraAttackerFromTheManagedLineup()
+    {
+        var session = GameTestData.StartSession();
+        var lines = new LinesPageViewModel(session);
+        var lineup = session.ManagedTeam.Lineup;
+
+        var units = lines.Lineup.PowerPlay.Concat(lines.Lineup.PenaltyKill).Concat(lines.Lineup.OtherSituationUnits)
+            .SelectMany(group => group.Units)
+            .ToList();
+
+        Assert.Equal(
+            lineup.SpecialSituationUnits.Select(unit => string.Join(",", unit.PlayerIds)),
+            units.Select(unit => string.Join(",", unit.Slots.Select(slot => slot.SelectedPlayer!.Id))));
+        Assert.Equal(["5 ON 4", "5 ON 3", "4 ON 3"], lines.Lineup.PowerPlay.Select(group => group.Title));
+        Assert.Equal(["4 ON 5", "3 ON 5", "3 ON 4"], lines.Lineup.PenaltyKill.Select(group => group.Title));
+        Assert.Equal(["4 ON 4", "3 ON 3"], lines.Lineup.OtherSituationUnits.Select(group => group.Title));
+        Assert.Equal(lineup.ExtraAttackerIds, lines.Lineup.ExtraAttackers.Select(slot => slot.SelectedPlayer!.Id));
+    }
+
+    [Fact]
+    public void UnitsShowForwardsInFrontOfDefenceAndOfferEverySkater()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+        var powerPlay = lines.Lineup.PowerPlay[0].Units[0];
+        var penaltyKill = lines.Lineup.PenaltyKill[1].Units[0];
+
+        Assert.Equal(["LW", "C", "RW"], powerPlay.Forwards.Select(slot => slot.Label));
+        Assert.Equal(["LD", "RD"], powerPlay.Defence.Select(slot => slot.Label));
+        Assert.Equal(["C"], penaltyKill.Forwards.Select(slot => slot.Label));
+        Assert.Equal(["LD", "RD"], penaltyKill.Defence.Select(slot => slot.Label));
+        Assert.Equal(["C", "W", "D"], lines.Lineup.OtherSituationUnits[1].Units[0].Slots.Select(slot => slot.Label));
+        Assert.Equal(20, powerPlay.Slots[0].Options.Count);
+        Assert.DoesNotContain(powerPlay.Slots[0].Options, option => option.Position == Position.Goalie);
+    }
+
+    [Fact]
+    public void AnySkaterCanBeSavedInAnyUnitSlot()
+    {
+        var session = GameTestData.StartSession();
+        var lines = new LinesPageViewModel(session);
+        var unit = lines.Lineup.PowerPlay[0].Units[0];
+        var defenceAtCentre = lines.Lineup.DefencePairs[2].RightDefence.SelectedPlayer!;
+        var extraAttacker = lines.Lineup.DefencePairs[1].LeftDefence.SelectedPlayer!;
+
+        unit.Forwards[1].SelectedPlayer = defenceAtCentre;
+        lines.Lineup.ExtraAttackers[1].SelectedPlayer = extraAttacker;
+        Assert.True(lines.HasChanges);
+        lines.SaveCommand.Execute(null);
+
+        var saved = session.ManagedTeam.Lineup;
+        Assert.False(lines.HasError);
+        Assert.Equal(defenceAtCentre.Id, saved.UnitsFor(SpecialSituation.PowerPlay5On4)[0].PlayerIds[1]);
+        Assert.Equal(extraAttacker.Id, saved.ExtraAttackerIds[1]);
+        Assert.False(lines.HasChanges);
+    }
+
+    [Fact]
+    public void ChoosingAPlayerAlreadyInTheUnitSwapsTheTwoSlots()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+        var unit = lines.Lineup.PenaltyKill[0].Units[0];
+        var centre = unit.Slots[0].SelectedPlayer;
+        var defence = unit.Slots[3].SelectedPlayer;
+
+        unit.Slots[0].SelectedPlayer = defence;
+
+        Assert.Equal(defence, unit.Slots[0].SelectedPlayer);
+        Assert.Equal(centre, unit.Slots[3].SelectedPlayer);
+        Assert.True(lines.HasChanges);
+    }
+
+    [Fact]
+    public void ChoosingAPlayerFromAnotherUnitDoesNotChangeThatUnit()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+        var first = lines.Lineup.PowerPlay[0].Units[0];
+        var second = lines.Lineup.PowerPlay[0].Units[1];
+        var secondUnitPlayers = second.Slots.Select(slot => slot.SelectedPlayer).ToList();
+
+        first.Slots[0].SelectedPlayer = second.Slots[0].SelectedPlayer;
+
+        Assert.Equal(secondUnitPlayers, second.Slots.Select(slot => slot.SelectedPlayer));
+        Assert.Equal(second.Slots[0].SelectedPlayer, first.Slots[0].SelectedPlayer);
+    }
+
+    [Fact]
+    public void DressingAScratchedPlayerGivesThemTheReplacedPlayersUnitSlots()
+    {
+        var session = GameTestData.StartSession();
+        var lines = new LinesPageViewModel(session);
+        var scratchedCentre = lines.Lineup.Scratches.Single(player => player.PositionAbbreviation == "C");
+        var replacedCentre = lines.Lineup.ForwardLines[0].Centre.SelectedPlayer!;
+        var unitSlots = AllUnitSlots(lines.Lineup).ToList();
+        var replacedSlots = unitSlots.Where(slot => slot.SelectedPlayer == replacedCentre).ToList();
+        Assert.NotEmpty(replacedSlots);
+
+        lines.Lineup.ForwardLines[0].Centre.SelectedPlayer = scratchedCentre;
+
+        Assert.All(replacedSlots, slot => Assert.Equal(scratchedCentre, slot.SelectedPlayer));
+        Assert.DoesNotContain(unitSlots, slot => slot.SelectedPlayer == replacedCentre);
+        Assert.True(replacedCentre.IsScratched);
+        Assert.False(scratchedCentre.IsScratched);
+
+        lines.SaveCommand.Execute(null);
+
+        Assert.False(lines.HasError);
+        Assert.Contains(replacedCentre.Id, session.ManagedTeam.ScratchedPlayerIds);
+        Assert.DoesNotContain(session.ManagedTeam.Lineup.SpecialSituationUnits, unit => unit.PlayerIds.Contains(replacedCentre.Id));
+    }
+
+    [Fact]
+    public void AScratchedSkaterInAUnitIsNotSaved()
+    {
+        var session = GameTestData.StartSession();
+        var lines = new LinesPageViewModel(session);
+        var before = session.ManagedTeam.Lineup;
+        var scratchedDefence = lines.Lineup.Scratches.Single(player => player.PositionAbbreviation == "D");
+
+        lines.Lineup.PenaltyKill[0].Units[2].Defence[0].SelectedPlayer = scratchedDefence;
+        lines.SaveCommand.Execute(null);
+
+        Assert.True(lines.HasError);
+        Assert.Contains("is scratched", lines.ErrorMessage);
+        Assert.True(lines.HasChanges);
+        Assert.Same(before, session.ManagedTeam.Lineup);
+    }
+
+    [Fact]
+    public void OtherTeamsLineupsAreReadOnlyAndKeepTheManagedEdits()
+    {
+        var session = GameTestData.StartSession();
+        var lines = new LinesPageViewModel(session);
+        var other = lines.Teams.First(team => !team.IsManaged);
+        var moved = lines.Lineup.ForwardLines[2].RightWing.SelectedPlayer;
+        lines.Lineup.ForwardLines[0].RightWing.SelectedPlayer = moved;
+
+        lines.SelectTeam(other.Id);
+
+        var otherLineup = session.GetTeam(other.Id).Lineup;
+        Assert.False(lines.IsEditable);
+        Assert.False(lines.Lineup.IsEditable);
+        Assert.All(AllUnitSlots(lines.Lineup).Append(lines.Lineup.ForwardLines[0].Centre), slot => Assert.False(slot.IsEditable));
+        Assert.Equal(otherLineup.ForwardLines[0].CentreId, lines.Lineup.ForwardLines[0].Centre.SelectedPlayer!.Id);
+        Assert.Equal(otherLineup.SpecialSituationUnits[0].PlayerIds, lines.Lineup.PowerPlay[0].Units[0].Slots.Select(slot => slot.SelectedPlayer!.Id));
+        Assert.Equal(otherLineup.ExtraAttackerIds, lines.Lineup.ExtraAttackers.Select(slot => slot.SelectedPlayer!.Id));
+        Assert.Contains("Read-only", lines.OwnershipNote);
+        Assert.Contains(other.Name, lines.Subtitle);
+
+        lines.SelectTeam(session.Snapshot.ManagedTeamId);
+
+        Assert.True(lines.IsEditable);
+        Assert.Equal(moved, lines.Lineup.ForwardLines[0].RightWing.SelectedPlayer);
+        Assert.True(lines.HasChanges);
+    }
+
+    [Fact]
+    public void TabsChooseWhichUnitsAreShown()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+        Assert.True(lines.IsEvenStrengthTab);
+
+        lines.SelectTabCommand.Execute(LinesTab.PenaltyKill);
+
+        Assert.True(lines.IsPenaltyKillTab);
+        Assert.False(lines.IsEvenStrengthTab);
+        Assert.False(lines.IsPowerPlayTab);
+        Assert.False(lines.IsOtherTab);
+    }
+
+    private static IEnumerable<LineupSlotViewModel> AllUnitSlots(LineupEditorViewModel lineup) =>
+        lineup.PowerPlay.Concat(lineup.PenaltyKill).Concat(lineup.OtherSituationUnits)
+            .SelectMany(group => group.Units)
+            .SelectMany(unit => unit.Slots)
+            .Concat(lineup.ExtraAttackers);
 }

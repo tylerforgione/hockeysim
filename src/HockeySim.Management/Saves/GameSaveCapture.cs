@@ -38,9 +38,18 @@ internal static class GameSaveCapture
             player.FirstName,
             player.LastName,
             player.Position,
-            player.Age,
+            CaptureBiography(player.Biography),
             player.Number,
             player.Ratings.ToDictionary(rating => rating.Key, rating => rating.Value.Value));
+
+    private static SavedBiography CaptureBiography(PlayerBiography biography) =>
+        new(
+            biography.BirthDate,
+            new SavedBirthplace(biography.Birthplace.City, biography.Birthplace.Region, biography.Birthplace.Country),
+            biography.Nationality,
+            biography.Handedness,
+            biography.Height.Inches,
+            biography.Weight.Pounds);
 
     private static SavedLineup CaptureLineup(Lineup lineup) =>
         new(
@@ -51,18 +60,102 @@ internal static class GameSaveCapture
                 .Select(pair => new SavedDefencePair(pair.LeftDefence.Id, pair.RightDefence.Id))
                 .ToList(),
             lineup.StartingGoalie.Id,
-            lineup.BackupGoalie.Id);
+            lineup.BackupGoalie.Id,
+            lineup.SpecialSituationUnits
+                .Select(unit => new SavedSpecialSituationUnit(
+                    unit.Situation,
+                    unit.Players.Select(player => player.Id).ToList()))
+                .ToList(),
+            lineup.ExtraAttackers.Select(player => player.Id).ToList());
 
     private static SavedCompletedMatch CaptureCompletedMatch(CompletedMatch match) =>
-        new(match.Date, match.Decision, CaptureSide(match.Home), CaptureSide(match.Away));
+        new(
+            match.Date,
+            match.Decision,
+            CaptureSide(match.Home),
+            CaptureSide(match.Away),
+            match.Goals
+                .Select(goal => new SavedGoal(
+                    goal.Period,
+                    WholeSeconds(goal.TimeInPeriod),
+                    goal.TeamId,
+                    goal.ScorerId,
+                    goal.PrimaryAssistId,
+                    goal.SecondaryAssistId,
+                    goal.Situation,
+                    goal.IsEmptyNet))
+                .ToList(),
+            match.Penalties
+                .Select(penalty => new SavedPenalty(
+                    penalty.Period,
+                    WholeSeconds(penalty.TimeInPeriod),
+                    penalty.TeamId,
+                    penalty.PlayerId,
+                    penalty.Infraction,
+                    penalty.Kind))
+                .ToList());
 
     private static SavedMatchSide CaptureSide(CompletedMatchTeam side) =>
         new(
             side.TeamId,
             side.Score,
             side.Shots,
-            side.Skaters.Select(skater => new SavedSkaterBoxScore(skater.PlayerId, skater.Goals, skater.Assists)).ToList(),
-            new SavedGoalieBoxScore(side.Goalie.PlayerId, side.Goalie.ShotsAgainst, side.Goalie.GoalsAgainst));
+            side.PowerPlayOpportunities,
+            side.Skaters.Select(CaptureSkater).ToList(),
+            new SavedGoalieBoxScore(
+                side.Goalie.PlayerId,
+                side.Goalie.ShotsAgainst,
+                side.Goalie.GoalsAgainst,
+                side.Goalie.ExpectedGoalsAgainst,
+                WholeSeconds(side.Goalie.TimeOnIce)),
+            CaptureShotTotals(side.ShotTotals));
+
+    private static SavedSkaterBoxScore CaptureSkater(SkaterBoxScore skater) =>
+        new(
+            skater.PlayerId,
+            skater.Goals,
+            skater.Assists,
+            skater.PlusMinus,
+            WholeSeconds(skater.TimeOnIce),
+            skater.Shots,
+            skater.ShotAttempts,
+            skater.Hits,
+            skater.BlockedShots,
+            skater.FaceoffsWon,
+            skater.FaceoffsLost,
+            skater.Takeaways,
+            skater.Giveaways,
+            skater.ExpectedGoals,
+            skater.PenaltyMinutes,
+            skater.PowerPlayGoals,
+            skater.PowerPlayAssists,
+            skater.ShorthandedGoals,
+            skater.ShorthandedAssists,
+            skater.EmptyNetGoals,
+            CaptureShotTotals(skater.OnIce));
+
+    private static SavedSituationalShotTotals CaptureShotTotals(SituationalShotTotals totals) =>
+        new(
+            CaptureShotTotals(totals.FiveOnFive),
+            CaptureShotTotals(totals.PowerPlay),
+            CaptureShotTotals(totals.PenaltyKill),
+            CaptureShotTotals(totals.Other));
+
+    private static SavedShotTotals CaptureShotTotals(ShotTotals totals) =>
+        new(
+            totals.AttemptsFor,
+            totals.AttemptsAgainst,
+            totals.UnblockedAttemptsFor,
+            totals.UnblockedAttemptsAgainst,
+            totals.ShotsFor,
+            totals.ShotsAgainst,
+            totals.GoalsFor,
+            totals.GoalsAgainst,
+            totals.ExpectedGoalsFor,
+            totals.ExpectedGoalsAgainst);
+
+    // Box-score and summary times are whole seconds, so this is exact.
+    private static int WholeSeconds(TimeSpan time) => (int)(time.Ticks / TimeSpan.TicksPerSecond);
 
     private static SavedInboxMessage CaptureInboxMessage(InboxMessage message) =>
         new(message.Id, message.SenderRole, message.SenderName, message.Subject, message.Body, message.IsRead);

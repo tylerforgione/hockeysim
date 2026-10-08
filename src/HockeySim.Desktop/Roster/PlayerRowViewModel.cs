@@ -21,9 +21,13 @@ public sealed class PlayerRowViewModel
         Name = PlayerDisplay.FullName(player);
         Position = PlayerDisplay.PositionAbbreviation(player.Position);
         Age = player.Age;
+        Nationality = PlayerDisplay.CountryCode(player.Biography.Nationality);
+        NationalityName = PlayerDisplay.CountryName(player.Biography.Nationality);
+        Handedness = PlayerDisplay.HandednessAbbreviation(player.Biography.Handedness);
         LineupRole = PlayerDisplay.LineupRole(player.Id, lineup);
         IsScratched = LineupRole == "Scratch";
 
+        Overall = player.Overall;
         Skating = player.Ratings[Rating.Skating];
         ShotPower = player.Ratings[Rating.ShotPower];
         ShotAccuracy = player.Ratings[Rating.ShotAccuracy];
@@ -50,9 +54,19 @@ public sealed class PlayerRowViewModel
 
     public int Age { get; }
 
+    /// <summary>The nationality's three-letter code, such as CAN.</summary>
+    public string Nationality { get; }
+
+    public string NationalityName { get; }
+
+    /// <summary>L or R: the hand a skater shoots or a goalie catches with.</summary>
+    public string Handedness { get; }
+
     public string LineupRole { get; }
 
     public bool IsScratched { get; }
+
+    public int Overall { get; }
 
     public int Skating { get; }
 

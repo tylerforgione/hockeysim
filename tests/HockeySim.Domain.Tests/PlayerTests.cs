@@ -14,11 +14,12 @@ public sealed class PlayerTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new RatingScore(value));
     }
 
-    [Fact]
-    public void PlayerRequiresEveryDefinedRating()
+    [Theory]
+    [MemberData(nameof(Ratings))]
+    public void PlayerRequiresEveryDefinedRating(Rating missingRating)
     {
         var ratings = CreateRatings();
-        ratings.Remove(Rating.Skating);
+        ratings.Remove(missingRating);
 
         Assert.Throws<ArgumentException>(() => CreatePlayer(ratings));
     }
@@ -47,6 +48,8 @@ public sealed class PlayerTests
         Assert.Throws<ArgumentException>(() => new ForwardLine(wing, centre, goalie));
     }
 
+    public static TheoryData<Rating> Ratings() => new(Enum.GetValues<Rating>());
+
     private static Player CreatePlayer(
         IReadOnlyDictionary<Rating, RatingScore> ratings,
         Position position = Position.Centre,
@@ -56,7 +59,7 @@ public sealed class PlayerTests
             "Test",
             "Player",
             position,
-            24,
+            TestBiography.Create(),
             number,
             ratings);
 

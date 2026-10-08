@@ -14,8 +14,12 @@ Management snapshots. The Avalonia desktop application provides new-game setup
 and an in-game shell with a home dashboard, an inbox, the managed team's roster
 and lineup editor, and read-only browsing of every team's roster. A new game
 also generates a reproducible, balanced 84-match regular-season schedule. A headless
-Simulation project calculates statistical match results, including individual
-skater and goalie statistics, from two teams' lineups. Management advances the
+Simulation project plays matches as play-by-play hockey events (shifts, faceoffs,
+shot attempts with expected goals, hits, turnovers, penalties, and fights) from
+two teams' lineups, playing power plays, penalty kills, and every other strength
+state with the lineup's units, pulling the goalie for an extra attacker late in
+close matches, with three-on-three overtime and a shootout, and
+derives every skater and goalie statistic from the events. Management advances the
 season one league day at a time, playing every scheduled match and accumulating
 results, team records, and player season statistics through to a completed
 season, with league, conference, and division standings ranked by the NHL
@@ -112,7 +116,7 @@ for the build and versioning decisions.
 
 ## Engineering guide
 
-- [Architecture and repository structure](docs/architecture.md)
+- [Architecture and repository structure](docs/architecture.md), with an [area document](docs/areas/) for each part of the game
 - [Technology stack and deferred choices](docs/tech-stack.md)
 - [Coding conventions](docs/conventions.md)
 - [Testing and validation](docs/testing.md)

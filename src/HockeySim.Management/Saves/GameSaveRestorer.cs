@@ -82,7 +82,12 @@ internal static class GameSaveRestorer
                 Items(lineup.DefencePairs, "defence pairs")
                     .Select(pair => new DefencePair(Dressed(pair.LeftDefenceId), Dressed(pair.RightDefenceId))),
                 Dressed(lineup.StartingGoalieId),
-                Dressed(lineup.BackupGoalieId)));
+                Dressed(lineup.BackupGoalieId),
+                Items(lineup.SpecialSituationUnits, "special-situation units")
+                    .Select(unit => new SpecialSituationUnit(
+                        unit.Situation,
+                        Values(unit.PlayerIds, "unit skaters").Select(Dressed))),
+                Values(lineup.ExtraAttackerIds, "extra attackers").Select(Dressed)));
     }
 
     private static Player RestorePlayer(SavedPlayer saved) =>
@@ -91,9 +96,21 @@ internal static class GameSaveRestorer
             saved.FirstName,
             saved.LastName,
             saved.Position,
-            saved.Age,
+            RestoreBiography(Required(saved.Biography, "player biography")),
             saved.Number,
             Required(saved.Ratings, "player ratings").ToDictionary(rating => rating.Key, rating => new RatingScore(rating.Value)));
+
+    private static PlayerBiography RestoreBiography(SavedBiography saved)
+    {
+        var birthplace = Required(saved.Birthplace, "player birthplace");
+        return new PlayerBiography(
+            saved.BirthDate,
+            new Birthplace(birthplace.City, birthplace.Region, birthplace.Country),
+            saved.Nationality,
+            saved.Handedness,
+            new Height(saved.HeightInches),
+            new Weight(saved.WeightPounds));
+    }
 
     /// <summary>
     /// Plays back every saved league day from opening day up to the saved current date. Each day
@@ -141,7 +158,23 @@ internal static class GameSaveRestorer
             scheduledMatch,
             RestoreSide(Required(saved.Home, "home side")),
             RestoreSide(Required(saved.Away, "away side")),
-            saved.Decision);
+            saved.Decision,
+            Items(saved.Goals, "goals").Select(goal => new MatchGoal(
+                goal.Period,
+                TimeSpan.FromSeconds(goal.TimeInPeriodSeconds),
+                goal.TeamId,
+                goal.ScorerId,
+                goal.PrimaryAssistId,
+                goal.SecondaryAssistId,
+                goal.Situation,
+                goal.IsEmptyNet)),
+            Items(saved.Penalties, "penalties").Select(penalty => new MatchPenalty(
+                penalty.Period,
+                TimeSpan.FromSeconds(penalty.TimeInPeriodSeconds),
+                penalty.TeamId,
+                penalty.PlayerId,
+                penalty.Infraction,
+                penalty.Kind)));
 
     private static CompletedMatchTeam RestoreSide(SavedMatchSide saved)
     {
@@ -150,9 +183,65 @@ internal static class GameSaveRestorer
             saved.TeamId,
             saved.Score,
             saved.Shots,
-            Items(saved.Skaters, "skater box scores")
-                .Select(skater => new SkaterBoxScore(skater.PlayerId, skater.Goals, skater.Assists)),
-            new GoalieBoxScore(goalie.PlayerId, goalie.ShotsAgainst, goalie.GoalsAgainst));
+            saved.PowerPlayOpportunities,
+            Items(saved.Skaters, "skater box scores").Select(RestoreSkater),
+            new GoalieBoxScore(
+                goalie.PlayerId,
+                goalie.ShotsAgainst,
+                goalie.GoalsAgainst,
+                goalie.ExpectedGoalsAgainst,
+                TimeSpan.FromSeconds(goalie.TimeOnIceSeconds)),
+            RestoreShotTotals(saved.ShotTotals));
+    }
+
+    private static SkaterBoxScore RestoreSkater(SavedSkaterBoxScore skater) =>
+        new(
+            skater.PlayerId,
+            skater.Goals,
+            skater.Assists,
+            skater.PlusMinus,
+            TimeSpan.FromSeconds(skater.TimeOnIceSeconds),
+            skater.Shots,
+            skater.ShotAttempts,
+            skater.Hits,
+            skater.BlockedShots,
+            skater.FaceoffsWon,
+            skater.FaceoffsLost,
+            skater.Takeaways,
+            skater.Giveaways,
+            skater.ExpectedGoals,
+            skater.PenaltyMinutes,
+            skater.PowerPlayGoals,
+            skater.PowerPlayAssists,
+            skater.ShorthandedGoals,
+            skater.ShorthandedAssists,
+            skater.EmptyNetGoals,
+            RestoreShotTotals(skater.OnIce));
+
+    private static SituationalShotTotals RestoreShotTotals(SavedSituationalShotTotals? saved)
+    {
+        var totals = Required(saved, "shot totals");
+        return new(
+            RestoreShotTotals(totals.FiveOnFive),
+            RestoreShotTotals(totals.PowerPlay),
+            RestoreShotTotals(totals.PenaltyKill),
+            RestoreShotTotals(totals.Other));
+    }
+
+    private static ShotTotals RestoreShotTotals(SavedShotTotals? saved)
+    {
+        var totals = Required(saved, "shot totals");
+        return new(
+            totals.AttemptsFor,
+            totals.AttemptsAgainst,
+            totals.UnblockedAttemptsFor,
+            totals.UnblockedAttemptsAgainst,
+            totals.ShotsFor,
+            totals.ShotsAgainst,
+            totals.GoalsFor,
+            totals.GoalsAgainst,
+            totals.ExpectedGoalsFor,
+            totals.ExpectedGoalsAgainst);
     }
 
     private static InboxMessages RestoreInbox(GameSave save) =>
@@ -172,6 +261,10 @@ internal static class GameSaveRestorer
         items is null || items.Any(item => item is null)
             ? throw Invalid($"The save's {description} are missing or incomplete.")
             : items;
+
+    private static IReadOnlyList<T> Values<T>(IReadOnlyList<T>? values, string description)
+        where T : struct =>
+        values ?? throw Invalid($"The save's {description} are missing.");
 
     private static T Required<T>(T? value, string description)
         where T : class =>

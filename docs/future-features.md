@@ -15,15 +15,16 @@ be played.
 ## Configurable match tuning
 
 Match simulation is driven by tuning values that are currently fixed constants
-in `HockeySim.Simulation`: base shot and goal chances, how strongly rating
-differences shift them, the overtime shot rate, shootout scoring, probability
-bounds, and the forward-line and defence-pair usage shares.
+in `HockeySim.Simulation`, kept together in `Play/MatchTuning.cs`: possession
+outcome weights, how strongly rating differences shift them, shot danger, the
+expected-goal model, blocking, and finishing chances, fatigue and shift lengths,
+open-ice overtime effects, shootout scoring, probability bounds, and the
+forward-line, defence-pair, and three-on-three usage shares. The defaults are
+calibrated to recent NHL seasons (see
+[match engine calibration](areas/match-engine.md#calibration)).
 
-Two goals build on making these values configurable:
+Making these values configurable would allow:
 
-- **Calibration to real NHL data.** Planned for v0.2.0 alongside the event-based
-  engine: tune the defaults so aggregate outcomes approximate recent NHL seasons,
-  and assert against the calibrated targets with wide tolerances.
 - **User-facing league settings.** Let the user adjust a small set of
   understandable options, such as "Offensive output", when creating a game or in
   league settings. Each option maps to one or more underlying tuning values (for
@@ -242,13 +243,52 @@ the team page. Add sortable league-wide leader tables for the current season,
 single seasons, and all time. History storage depends on the
 [league database](#league-database-for-multi-season-history).
 
+## Situational statistics views
+
+Every skater and team records on-ice shot attempts, unblocked attempts, shots,
+goals, and xG for and against by strength situation (five-on-five, power play,
+penalty kill, and other), but Desktop shows only the five-on-five figures, the
+usual measure of possession. Later, let the user choose the situation for the
+advanced roster columns, the team strip, and the profile, including all
+situations together, so a power-play unit's xG and xG share can be compared with
+its five-on-five play.
+
+Direction:
+
+- Rates per sixty minutes need time on ice by situation, which the engine does
+  not record yet. Add it to the box score (and the save) alongside the shot
+  totals.
+- Consider score- and venue-adjusted shares once score effects exist in the
+  engine.
+
+## Play-by-play retention
+
+A completed match keeps its box score and its scoring and penalty summaries; the
+rest of the play-by-play (faceoffs, shot attempts, hits, takeaways, giveaways,
+and who was on the ice) is discarded after the match. Later, keep the full
+play-by-play with each completed match so a match can be reviewed event by
+event (and replayed by a match viewer), and let the user choose how long it is
+kept: by default two seasons, after which only the box score and summaries
+remain. Keeping more is the user's choice and costs save size and load time.
+
+Direction:
+
+- A season's play-by-play is far larger than its box scores, so this belongs
+  with the [league database](#league-database-for-multi-season-history), where
+  events are written once per day and read on demand rather than parsed on every
+  load.
+- The retention setting is per game, and pruning happens at season rollover;
+  pruning must never change any statistic, since every statistic is already in
+  the box score.
+
 ## League database for multi-season history
 
 Each game is saved as one Brotli-compressed JSON document
 ([ADR 0004](adr/0004-local-save-format.md)). Every save rewrites the whole world,
 every load parses it and replays the season's completed matches, and the entire
 history is held in memory. That suits one season: a complete 32-team season is
-4.6 MB of JSON, mostly box scores, and saves in about 60 ms.
+about 70 MB of JSON (3 MB compressed), mostly box scores and their on-ice shot
+totals, and loads in about half a second.
 
 It does not suit many seasons with more leagues. An AHL roughly doubles the
 match history per year, and draft prospects add statistics from leagues outside
@@ -397,6 +437,17 @@ stream and derived from game state
 ([reproducible saves](adr/0002-reproducible-saves.md)). Decide whether such
 events interrupt [bulk simulation](#skip-to-date-and-bulk-simulation).
 
+## Goalie, bench, and instigator penalties
+
+The match engine (#51) penalizes only skaters, for infractions in the run of
+play and after hits. Later: goalie penalties (served by a teammate on the ice),
+bench minors such as too many men and unsportsmanlike conduct by the bench,
+match penalties, the instigator and aggressor rules for fights (with their
+extra minors and misconducts), a teammate serving an ejected player's major,
+penalized players returning to the ice only at the next change rather than at
+once, and awarded goals for a foul on a breakaway at an empty net (#52 calls an
+ordinary penalty there instead of a penalty shot). Each changes seeded results, so it is an engine version change.
+
 ## Full injury and health system
 
 v0.2.0 injures players only in matches (never in the preseason), keeps
@@ -436,7 +487,7 @@ investments. Staff need contracts and a hiring market.
 ## Scouting and hidden information
 
 Desktop shows every player's exact ratings and (from v0.2.0) an overall
-rating. Body-part wear is already hidden in v0.2.0.
+rating. Durability and body-part wear are already hidden in v0.2.0.
 
 Add scouting in the style of OOTP, Football Manager, and Franchise Hockey
 Manager: the user sees estimates of other players' ratings and potential,

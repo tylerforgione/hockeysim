@@ -25,14 +25,38 @@ public sealed class SaveAndLoadTests
         ScoreNotMatchingGoals,
         UndefinedDecision,
         BoxScoreForUnrosteredPlayer,
+        ShotsNotMatchingSkaterShots,
+        ExpectedGoalsAgainstNotMatchingOpponent,
+        UnmatchedFaceoffs,
+        NegativeTimeOnIce,
+        NegativePenaltyMinutes,
+        PowerPlayGoalWithoutOpportunity,
+        ShorthandedGoalWithoutOpponentPowerPlay,
+        EmptyNetGoalChargedToTheGoalie,
+        GoalMissingFromSummary,
+        PenaltyMissingFromSummary,
+        MissingSummary,
+        ShotTotalsNotMatchingOpponent,
+        MissingOnIceShotTotals,
         DressedPlayerNotOnRoster,
         SkaterDressedInGoal,
         DuplicateRosterPlayer,
         RatingOutOfRange,
         MissingRating,
+        MissingDurability,
+        MissingBiography,
+        MissingBirthplace,
+        RegionInCountryWithoutRegions,
+        UndefinedNationality,
+        HeightOutOfRange,
+        PlayerTooYoungOnOpeningDay,
         ManagedTeamNotInLeague,
         ScheduledTeamNotInLeague,
         MisnumberedInbox,
+        ScratchedSkaterInUnit,
+        MissingUnit,
+        UndefinedSituation,
+        MissingExtraAttackers,
     }
 
     [Fact]
@@ -52,6 +76,7 @@ public sealed class SaveAndLoadTests
         var manager = new GameManager();
         StartGame(manager);
         manager.SetLineup(SwapGoalies(ManagedTeam(manager.GetSnapshot())));
+        manager.SetLineup(ReshuffleUnits(ManagedTeam(manager.GetSnapshot())));
         manager.MarkInboxMessageRead(manager.GetSnapshot().Inbox[1].Id);
         var saved = Advance(manager, 9);
 
@@ -138,6 +163,26 @@ public sealed class SaveAndLoadTests
 
         Assert.Equal(Describe(saved), Describe(loaded));
         Assert.Equal(Describe(ContinueWithLineupChange(source)), Describe(ContinueWithLineupChange(target)));
+    }
+
+    [Fact]
+    public void EveryRatingIncludingHiddenDurabilityIsSavedAndRestored()
+    {
+        var manager = new GameManager();
+        StartGame(manager);
+        var store = new MemorySaveStore();
+        manager.SaveGame(store);
+        var loadedManager = new GameManager();
+        loadedManager.LoadGame(store);
+        var resaved = new MemorySaveStore();
+
+        loadedManager.SaveGame(resaved);
+
+        // Snapshots omit durability, so compare the saves themselves.
+        Assert.All(
+            SavedPlayers(store.Saved!),
+            player => Assert.Equal(Enum.GetValues<Rating>().Order(), player.Ratings.Keys.Order()));
+        Assert.Equal(DescribeRatings(store.Saved!), DescribeRatings(resaved.Saved!));
     }
 
     [Fact]
@@ -244,10 +289,20 @@ public sealed class SaveAndLoadTests
     private static GameSave Corrupt(GameSave save, InvalidSave invalidSave)
     {
         var firstResult = save.CompletedMatches[0];
+        var homeScored = save.CompletedMatches.First(result => result.Home.Skaters.Any(skater => skater.Goals > 0));
+        var homeScorer = homeScored.Home.Skaters.First(skater => skater.Goals > 0);
         var regulationResult = save.CompletedMatches.First(result => result.Decision == MatchDecision.Regulation);
+        var penalized = save.CompletedMatches.First(result => result.Penalties.Any(penalty => penalty.Kind != PenaltyKind.PenaltyShot));
         var firstTeam = save.Conferences[0].Divisions[0].Teams[0];
         var firstPlayer = firstTeam.Roster[0];
         var unknownPlayerId = new PlayerId(Guid.NewGuid());
+        var firstUnit = firstTeam.Lineup.SpecialSituationUnits[0];
+        var dressedIds = firstTeam.Lineup.ForwardLines.SelectMany(line => new[] { line.LeftWingId, line.CentreId, line.RightWingId })
+            .Concat(firstTeam.Lineup.DefencePairs.SelectMany(pair => new[] { pair.LeftDefenceId, pair.RightDefenceId }))
+            .ToHashSet();
+        var scratchedSkaterId = firstTeam.Roster
+            .First(player => player.Position != Position.Goalie && !dressedIds.Contains(player.Id))
+            .Id;
         return invalidSave switch
         {
             NoGame => null!,
@@ -267,6 +322,99 @@ public sealed class SaveAndLoadTests
                 Home = firstResult.Home with
                 {
                     Skaters = [firstResult.Home.Skaters[0] with { PlayerId = unknownPlayerId }, .. firstResult.Home.Skaters.Skip(1)],
+                },
+            }),
+            ShotsNotMatchingSkaterShots => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with { Shots = firstResult.Home.Shots + 1 },
+                Away = firstResult.Away with { Goalie = firstResult.Away.Goalie with { ShotsAgainst = firstResult.Home.Shots + 1 } },
+            }),
+            ExpectedGoalsAgainstNotMatchingOpponent => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    Goalie = firstResult.Home.Goalie with { ExpectedGoalsAgainst = firstResult.Home.Goalie.ExpectedGoalsAgainst + 0.5 },
+                },
+            }),
+            UnmatchedFaceoffs => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    Skaters =
+                    [
+                        firstResult.Home.Skaters[0] with { FaceoffsWon = firstResult.Home.Skaters[0].FaceoffsWon + 1 },
+                        .. firstResult.Home.Skaters.Skip(1),
+                    ],
+                },
+            }),
+            NegativeTimeOnIce => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with { Goalie = firstResult.Home.Goalie with { TimeOnIceSeconds = -1 } },
+            }),
+            NegativePenaltyMinutes => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    Skaters = [firstResult.Home.Skaters[0] with { PenaltyMinutes = -2 }, .. firstResult.Home.Skaters.Skip(1)],
+                },
+            }),
+            PowerPlayGoalWithoutOpportunity => WithResult(save, homeScored, homeScored with
+            {
+                Home = homeScored.Home with
+                {
+                    PowerPlayOpportunities = 0,
+                    Skaters = homeScored.Home.Skaters
+                        .Select(skater => skater == homeScorer ? skater with { PowerPlayGoals = 1, ShorthandedGoals = 0 } : skater)
+                        .ToList(),
+                },
+            }),
+            ShorthandedGoalWithoutOpponentPowerPlay => WithResult(save, homeScored, homeScored with
+            {
+                Home = homeScored.Home with
+                {
+                    Skaters = homeScored.Home.Skaters
+                        .Select(skater => skater == homeScorer ? skater with { PowerPlayGoals = 0, ShorthandedGoals = 1 } : skater)
+                        .ToList(),
+                },
+                Away = homeScored.Away with { PowerPlayOpportunities = 0 },
+            }),
+            EmptyNetGoalChargedToTheGoalie => WithResult(save, homeScored, homeScored with
+            {
+                // The goal becomes an empty-net goal, but the away goalie still has it against.
+                Home = homeScored.Home with
+                {
+                    Skaters = homeScored.Home.Skaters
+                        .Select(skater => skater == homeScorer ? skater with { EmptyNetGoals = skater.EmptyNetGoals + 1 } : skater)
+                        .ToList(),
+                },
+            }),
+            GoalMissingFromSummary => WithResult(save, homeScored, homeScored with { Goals = homeScored.Goals.Skip(1).ToList() }),
+            PenaltyMissingFromSummary => WithResult(save, penalized, penalized with
+            {
+                // A penalty shot carries no minutes, so remove one that does.
+                Penalties = penalized.Penalties
+                    .Where(penalty => penalty != penalized.Penalties.First(timed => timed.Kind != PenaltyKind.PenaltyShot))
+                    .ToList(),
+            }),
+            MissingSummary => WithFirstResult(save, firstResult with { Penalties = null! }),
+            ShotTotalsNotMatchingOpponent => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    ShotTotals = firstResult.Home.ShotTotals with
+                    {
+                        FiveOnFive = firstResult.Home.ShotTotals.FiveOnFive with
+                        {
+                            AttemptsAgainst = firstResult.Home.ShotTotals.FiveOnFive.AttemptsAgainst + 1,
+                        },
+                    },
+                },
+            }),
+            MissingOnIceShotTotals => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    Skaters = [firstResult.Home.Skaters[0] with { OnIce = null! }, .. firstResult.Home.Skaters.Skip(1)],
                 },
             }),
             DressedPlayerNotOnRoster => WithFirstTeam(save, firstTeam with
@@ -289,12 +437,69 @@ public sealed class SaveAndLoadTests
             {
                 Ratings = firstPlayer.Ratings.Skip(1).ToDictionary(rating => rating.Key, rating => rating.Value),
             }),
+            MissingDurability => WithFirstPlayer(save, firstPlayer with
+            {
+                Ratings = firstPlayer.Ratings
+                    .Where(rating => rating.Key != Rating.Durability)
+                    .ToDictionary(rating => rating.Key, rating => rating.Value),
+            }),
+            MissingBiography => WithFirstPlayer(save, firstPlayer with { Biography = null! }),
+            MissingBirthplace => WithFirstPlayer(save, firstPlayer with
+            {
+                Biography = firstPlayer.Biography with { Birthplace = null! },
+            }),
+            RegionInCountryWithoutRegions => WithFirstPlayer(save, firstPlayer with
+            {
+                Biography = firstPlayer.Biography with { Birthplace = new SavedBirthplace("Stockholm", "Uppland", Country.Sweden) },
+            }),
+            UndefinedNationality => WithFirstPlayer(save, firstPlayer with
+            {
+                Biography = firstPlayer.Biography with { Nationality = (Country)99 },
+            }),
+            HeightOutOfRange => WithFirstPlayer(save, firstPlayer with
+            {
+                Biography = firstPlayer.Biography with { HeightInches = 0 },
+            }),
+            PlayerTooYoungOnOpeningDay => WithFirstPlayer(save, firstPlayer with
+            {
+                Biography = firstPlayer.Biography with { BirthDate = save.Schedule[0].Date.AddYears(-15) },
+            }),
             ManagedTeamNotInLeague => save with { ManagedTeamId = new TeamId(Guid.NewGuid()) },
             ScheduledTeamNotInLeague => save with
             {
                 Schedule = [.. save.Schedule.SkipLast(1), save.Schedule[^1] with { HomeTeamId = new TeamId(Guid.NewGuid()) }],
             },
             MisnumberedInbox => save with { Inbox = save.Inbox.Reverse().ToList() },
+            ScratchedSkaterInUnit => WithFirstTeam(save, firstTeam with
+            {
+                Lineup = firstTeam.Lineup with
+                {
+                    SpecialSituationUnits =
+                    [
+                        firstUnit with { PlayerIds = [scratchedSkaterId, .. firstUnit.PlayerIds.Skip(1)] },
+                        .. firstTeam.Lineup.SpecialSituationUnits.Skip(1),
+                    ],
+                },
+            }),
+            MissingUnit => WithFirstTeam(save, firstTeam with
+            {
+                Lineup = firstTeam.Lineup with { SpecialSituationUnits = firstTeam.Lineup.SpecialSituationUnits.Skip(1).ToList() },
+            }),
+            UndefinedSituation => WithFirstTeam(save, firstTeam with
+            {
+                Lineup = firstTeam.Lineup with
+                {
+                    SpecialSituationUnits =
+                    [
+                        firstUnit with { Situation = (SpecialSituation)42 },
+                        .. firstTeam.Lineup.SpecialSituationUnits.Skip(1),
+                    ],
+                },
+            }),
+            MissingExtraAttackers => WithFirstTeam(save, firstTeam with
+            {
+                Lineup = firstTeam.Lineup with { ExtraAttackerIds = null! },
+            }),
             _ => throw new ArgumentOutOfRangeException(nameof(invalidSave)),
         };
     }
@@ -328,6 +533,16 @@ public sealed class SaveAndLoadTests
         };
     }
 
+    private static IEnumerable<SavedPlayer> SavedPlayers(GameSave save) =>
+        save.Conferences
+            .SelectMany(conference => conference.Divisions)
+            .SelectMany(division => division.Teams)
+            .SelectMany(team => team.Roster);
+
+    private static IEnumerable<string> DescribeRatings(GameSave save) =>
+        SavedPlayers(save).Select(player =>
+            $"{player.Id} " + string.Join(",", player.Ratings.OrderBy(rating => rating.Key).Select(rating => $"{rating.Key}={rating.Value}")));
+
     private static (GameManager Manager, GameSnapshot Snapshot) SaveAndLoadIntoNewManager(GameManager manager)
     {
         var store = new MemorySaveStore();
@@ -356,6 +571,20 @@ public sealed class SaveAndLoadTests
         return Advance(manager, 6);
     }
 
+    /// <summary>
+    /// Reverses the first 5-on-4 unit's slots and makes a defence player the first extra attacker.
+    /// </summary>
+    private static Lineups.SetLineupCommand ReshuffleUnits(TeamSnapshot team)
+    {
+        var command = CurrentLineup(team.Lineup);
+        var first = command.SpecialSituationUnits[0];
+        return command with
+        {
+            SpecialSituationUnits = [first with { PlayerIds = first.PlayerIds.Reverse().ToList() }, .. command.SpecialSituationUnits.Skip(1)],
+            ExtraAttackerIds = [team.Lineup.DefencePairs[2].RightDefenceId, command.ExtraAttackerIds[0]],
+        };
+    }
+
     private static Lineups.SetLineupCommand SwapGoalies(TeamSnapshot team) =>
         CurrentLineup(team.Lineup) with
         {
@@ -374,10 +603,10 @@ public sealed class SaveAndLoadTests
     {
         private readonly Simulation.MatchSimulator _engine = new();
 
-        public Simulation.MatchResult Simulate(Match match, Simulation.Randomness.RandomState randomState)
+        public Simulation.MatchResult Simulate(Match match, Simulation.OvertimeFormat overtime, Simulation.Randomness.RandomState randomState)
         {
             beforeMatch();
-            return _engine.Simulate(match, randomState);
+            return _engine.Simulate(match, overtime, randomState);
         }
     }
 }

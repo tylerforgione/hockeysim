@@ -2,88 +2,10 @@
 
 ## Current status
 
-Domain, Simulation, Management, and Desktop test projects use xUnit v3 with
-Microsoft.Testing.Platform. They cover generated-world invariants, managed-team
-selection, reproducibility, snapshot isolation, focused Domain validation,
-inbox messages, new-game and in-game view-model behavior (navigation, lineup
-editing, team browsing, player detail), and a headless Avalonia walkthrough
-from the startup menu through every available in-game page, playing a day, and
-opening a match's box score. Desktop season tests advance real games: the
-current-date and continue states, page refresh after a day, an empty league day,
-opening a result's box score from the home page, schedule browsing, a failing
-match engine leaving the day unplayed with an error shown, overlapping
-advancement rejected while a gated engine holds a day, and a full season ending
-in the completed, still-browsable state with final standings. Desktop standings
-and statistics tests check each standings scope against Management's ranked
-tables, the level no-games state, refresh after a day with the chosen scope kept,
-skater and goalie totals for another team's roster and player detail, zero
-totals and undefined percentages before an appearance, the roster column choice
-kept across teams and days, and pages redrawn when the session's snapshot is
-replaced. The headless walkthrough also renders the standings scopes and the
-roster's season columns, saves from the title bar, loads the save from the
-startup menu through the discard confirmation, and checks that closing the
-window with unsaved progress asks instead of closing. Desktop save and load
-tests use real save files in a temporary folder: saving under a typed or chosen
-name, what counts as unsaved progress (playing a day, changing the lineup,
-reading mail, but not a failed day), overwrite confirmation with cancellation
-leaving the file untouched, invalid names, write and listing failures, saving a
-completed season, saving and leaving for the menu blocked while a day plays,
-and loading into every page. Discard confirmations for loading, starting a new
-game, and exiting are checked with cancellation keeping the game and with no
-question asked when nothing is unsaved. Damaged, other-version, and unreadable
-saves are reported with the game in progress kept, and play continued after a
-load matches uninterrupted play. Simulation tests
-check result invariants across many seeds, each decision path (regulation,
-overtime, shootout), determinism, unchanged input teams, and statistical bands
-for lineup strength, line and pair usage, and goalie quality. Individual match
-statistics are checked for reconciliation with the score and shots, appearance
-and eligibility rules, assist validity, shootout exclusion, and zero-shot and
-zero-production cases. Schedule tests check, across several seeds, the full
-opponent-count matrix, league match count, home/away totals, venue balance
-within each pair of opponents, valid identities, no self-matches or same-day
-conflicts, the calendar dates, and reproducibility. Domain season tests check
-day-level atomicity (partial days, results for other dates, duplicates, invalid
-players), standings points for each decision, shootout handling in team and
-individual totals, completed-match invariants, and the terminal state. Domain
-standings scenarios isolate each ranking criterion, two-club and multi-club
-head-to-head (unbalanced meetings, cycles, a partly broken tie, clubs that have
-not met), odd-game exclusion, shootout goals, games-played differences, the
-no-games state, and teams level on every criterion. Management standings tests
-check that league, conference, and division tables hold the right teams in a
-consistent order before any match, midseason, and after the full season, and
-that they are read-only and isolated between snapshots.
-Management season tests advance real games: whole days, empty days, lineup
-changes used by the next match, a failing match engine leaving the day
-unplayed and the random state unchanged, rejected nested and serialized
-cross-thread advancement, snapshot isolation, and reproducibility. A shared
-fixture plays one full 1,344-match season and checks schedule completion, 84
-games per team, records and individual totals reconciled with the results, every
-decision type, and the completed-season state.
-Management save tests round-trip a new game, a midseason game with a changed
-lineup and a read message, and a completed season. They check that the loaded
-game matches what was saved, from rosters and lineups through every result,
-team records, season totals, standings, the inbox, and the random state, and
-that a lineup change and further league days after loading give the same
-results as uninterrupted play. They also check that loading replaces a
-different active game, that a save is a copy later play does not change, and
-that a loaded game accepts commands. Each kind of invalid save is rejected
-(missing values, missing, extra, or duplicate results, current dates outside the
-season, scores that do not reconcile, unrostered or ineligible players, invalid
-ratings, an unknown managed team or scheduled team, misnumbered inbox messages),
-and the active game then continues exactly as if the load was never attempted.
-Infrastructure tests save and load real files in a temporary directory: new,
-midseason, and completed games with continued play compared against
-uninterrupted play, the file header, replacing an earlier save, a failed save
-leaving the earlier save intact with no temporary file, the random state
-preserved exactly at its extremes, other format versions rejected as
-unsupported, non-save, damaged, truncated, and malformed files rejected, a
-well-formed save that breaks game rules rejected with the active game
-unchanged, and missing or unwritable saves reported as storage failures. Save
-directory tests keep separate named saves, list them newest first with their
-save time, find a save whose name differs only in case, skip files that are
-not named saves, and report a folder that cannot be created. Management tests
-check which save names are accepted, their case-insensitive equality, and
-composed accents.
+Every production project has a matching xUnit v3 test project on
+Microsoft.Testing.Platform. Each [area document](architecture.md#current-implementation)
+has a test map listing its test files and what each covers; read that rather
+than scanning the test projects. The test names record the individual checks.
 
 ## Test organization
 
@@ -130,7 +52,10 @@ failures indicate changed behavior rather than unlucky randomness:
   expectations hold, such as a much stronger team winning most matches and
   evenly matched teams splitting results. Prefer relative assertions over exact
   targets so deliberate rebalancing does not break them; bands catch broken
-  tuning, not small balance changes.
+  tuning, not small balance changes. League averages are checked once, against
+  the NHL calibration targets, by Management's calibration tests over a generated
+  season (see [match engine calibration](areas/match-engine.md#calibration)),
+  rather than by hand-picked ranges in each engine test.
 
 Avoid exact golden-master comparisons of seeded output while balance is still
 changing; every deliberate tuning change would invalidate them. Revisit them
@@ -173,7 +98,9 @@ branch push and every PR to `main`, including configuration and documentation
 changes. It checks formatting once and builds/tests on all three operating
 systems. Test commands run each discovered `tests/**/*.Tests.csproj` against the
 Release build; a project omitted from the solution cannot silently count as a
-successful solution test run. CodeQL analyzes the normal PR checkout using an
+successful solution test run. The projects run in parallel, so the test step
+takes about as long as the slowest project; each project's output is printed as
+a collapsible log group, and any failing project fails the step. CodeQL analyzes the normal PR checkout using an
 explicit build with the pinned SDK.
 
 Formatting failures, build warnings/errors, and test failures must block merge.

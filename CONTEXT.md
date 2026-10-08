@@ -11,6 +11,23 @@ The overall game in which the user manages a hockey team and matches are simulat
 A hockey athlete belonging to the simulated world.
 _Avoid_: Using player to mean the human user in domain documentation.
 
+**Biography**:
+A player's identifying details: birth date, birthplace (city, the state or
+province in Canada and the United States, and country), nationality,
+handedness, height, and weight.
+
+**Age**:
+A player's completed years on a given date, derived from the birth date rather
+than stored, so players age as the season passes. A player born on 29 February
+turns a year older on 28 February in other years. Every player is 16 to 60 on a
+season's opening day.
+
+**Nationality**:
+The country a player represents. Usually, but not always, the birth country.
+
+**Handedness**:
+The hand a skater shoots or a goalie catches with: left or right.
+
 **Team**:
 A group of hockey players competing together, with a roster and lineup.
 
@@ -22,15 +39,160 @@ management game.
 The one team the user controls. Only its lineup can be changed by the user;
 other teams are read-only.
 
+**Rating**:
+A 0-100 measure of one player ability, such as skating, faceoffs, discipline
+(how rarely the player takes penalties), stamina (how slowly they tire),
+durability (resistance to injury), or toughness (physical play and fighting).
+Every player has a value for every rating, including those their position does
+not use; those are low and not shown.
+
+**Overall rating**:
+A player's ratings summarised as one 0-100 value, weighted for their position.
+It never includes durability.
+
+**Hidden information**:
+Game state the user cannot see, such as a player's durability. It is kept out
+of everything Desktop displays and out of anything shown that could reveal it.
+
 **Lineup**:
 A team's dressed players for a match: four forward lines (left wing, centre,
-right wing), three defence pairs, a starting goalie, and a backup goalie.
+right wing), three defence pairs, a starting goalie, and a backup goalie. It
+also names who plays in each special situation: its special-situation units and
+two extra attackers.
+
+**Special situation**:
+Any manpower situation other than five-on-five, named from the team's own side:
+a power play (5-on-4, 5-on-3, 4-on-3), a penalty kill (4-on-5, 3-on-5, 3-on-4),
+four-on-four, or three-on-three (regular-season overtime).
+
+**Special-situation unit**:
+The skaters a lineup sends out together in one special situation. A lineup holds
+two units for each power play, three 4-on-5 and two of each other penalty-kill
+units, two 4-on-4 units, and three 3-on-3 units. Each slot has a skater role
+(centre, wing, or defence) saying where that skater plays; the one centre takes
+faceoffs and defence players man the points. Any dressed skater can fill any
+slot, and a player may be in several units but only once in each.
+_Avoid_: Line, when meaning a special-situation unit.
+
+**Extra attacker**:
+The skater sent on when the goalie is pulled, during a delayed penalty or late
+in a match the team is losing. A lineup names two, a first and a second choice,
+so one is available when the first is already on the ice. Any dressed skater can
+be either. The extra attacker adds to whatever strength the penalties allow, so
+a power play can be six-on-four.
+
+**Pulling the goalie**:
+Replacing the goalie with an extra attacker. Besides delayed penalties, a team
+trailing by one goal with two minutes left in the third period, or by two with
+three and a half, pulls its goalie to try to tie the match. The goalie returns
+for a faceoff in the team's own zone and after any goal, and is pulled again
+while the team still trails late.
+
+**Empty-net goal**:
+A goal scored while the conceding team's goalie was pulled. It counts as a shot
+and a goal for the scorer and the team, but not against the goalie, and has no
+expected-goal value.
 
 **Match result**:
 The outcome of a simulated match: a decisive score, how it was decided
-(regulation, overtime, or shootout), shots, the goals players scored with their
-assists, and each appearing player's match statistics.
+(regulation, overtime, or shootout), shots, the play-by-play, any shootout, and
+each appearing player's match statistics.
 A shootout winner is credited one deciding goal that no player scored.
+
+**Play-by-play**:
+The timed events of a match in order: faceoffs, shot attempts, goals, hits,
+takeaways, giveaways, and penalties, each with its period, time, strength state,
+and the players on the ice for both teams. Only the match result holds it; a completed
+match keeps the box score and the scoring and penalty summaries.
+
+**Strength state**:
+How many skaters each team has on the ice, such as five-on-five or
+three-on-three. Goalies are not counted, but an extra attacker for a pulled
+goalie is.
+
+**Strength situation**:
+How shot totals are split, from one team's side: five-on-five (both goalies in
+net), power play, penalty kill, or other (four-on-four, three-on-three, or equal
+manpower with a goalie pulled). Like a goal's situation, it follows the
+penalties being served, so an extra attacker never makes a power play.
+_Avoid_: Strength state, which counts the skaters on the ice including an extra
+attacker.
+
+**Penalty**:
+A sanction on a skater for an infraction, such as hooking or fighting: a minor
+(two minutes), double minor (four), major (five), misconduct (ten, without
+leaving the team short), game misconduct (ejection, recorded as ten minutes),
+or a penalty shot. A team serves at most two penalties that leave it short at
+once; a further one waits until one ends.
+_Avoid_: Calling a penalty shot or misconduct a power play.
+
+**Penalty minutes**:
+The minutes of every penalty assessed to a skater; a penalty shot carries none.
+
+**Power play**:
+Play in which a team has more skaters than the opponent because the opponent is
+serving penalties. The other side is on the penalty kill, or shorthanded. A
+power-play goal ends the shorthanded team's minor with the least time left, but
+never a major. An extra attacker during a delayed penalty is not a power play.
+
+**Power-play opportunity**:
+An opponent penalty that gives a team the manpower advantage, counted once the
+first time it does; coincidental penalties give none.
+
+**Power-play goal**, **shorthanded goal**:
+A goal scored on the power play, or while shorthanded. Assists on them are
+power-play and shorthanded assists. Every other goal is at even strength or on
+a penalty shot.
+
+**Coincidental penalties**:
+Penalties to both teams at the same stoppage, which leave neither team short,
+except one minor each at full strength, which plays four-on-four.
+
+**Delayed penalty**:
+A foul by the team without the puck. Play continues, with the other team's
+goalie pulled for an extra attacker, until the offenders touch the puck; a goal
+in that time wipes out a minor.
+
+**Penalty shot**:
+A shooter alone against the goalie, awarded instead of a minor for a foul from
+behind on a scoring chance. Its goal is unassisted, is neither a power-play nor
+a shorthanded goal, and does not count toward plus/minus.
+
+**Fight**:
+Two skaters, one from each team, fighting; each takes a five-minute fighting
+major, which leaves neither team short.
+
+**Shift**:
+A stretch a skater spends on the ice before changing. Forward lines and defence
+pairs change separately, on the fly or at a stoppage; tired skaters play below
+their ratings, and stamina sets how fast they tire and recover.
+
+**Shot attempt**:
+Any shot toward the net: on goal (saved or scored), missed, or blocked by a
+defending skater. A shot on goal is one the goalie must stop.
+_Avoid_: Shot, when meaning any attempt; a shot is on goal.
+
+**Expected goals (xG)**:
+The chance that an unblocked shot attempt scores for a league-average shooter
+against a league-average goalie, from its danger level and whether it was a
+rebound or on the rush. Blocked attempts and attempts at an empty net have none.
+A player's or team's xG is the sum over their unblocked attempts.
+
+**On-ice shot totals**:
+Both teams' shot attempts, unblocked attempts, shots on goal, goals, and xG
+while a skater was on the ice, kept by strength situation. A team keeps the same
+totals for the whole match. Penalty shots are not counted.
+
+**Corsi**, **Fenwick**:
+Corsi counts shot attempts and Fenwick unblocked attempts, for (CF, FF) and
+against (CA, FA), on the ice or for a team. Their percentages (CF%, FF%) are the
+share for, as are the shot, goal, and xG percentages (SF%, GF%, xGF%). A share
+is undefined until either side has a count.
+
+**Shot danger**:
+How dangerous a shot attempt's location is: low from the point and perimeter,
+medium from the faceoff circles, and high from the slot and crease. A rebound is
+always high danger.
 
 **Appearance**:
 Taking part in a match, which counts as one game played. Every dressed skater
@@ -38,9 +200,36 @@ and the starting goalie appear; the dressed backup goalie and scratches do not.
 
 **Match statistics**:
 An appearing player's individual production in one match. Skaters record goals,
-assists, and points; the starting goalie records shots against, saves, and goals
-against. They reconcile with the score and shots, excluding the shootout:
-shootout attempts and the deciding goal count toward no player.
+assists, points, plus/minus, time on ice, shots on goal, shot attempts, hits,
+blocked shots, faceoffs won and lost, takeaways, giveaways, xG, penalty minutes,
+power-play and shorthanded goals and assists, and empty-net goals; the starting
+goalie records shots against, saves, goals against (neither counting empty-net
+goals), xG against, and time on ice. A team also records its power-play
+opportunities.
+They are derived from the play-by-play and reconcile with the score and shots,
+excluding the shootout: shootout attempts and the deciding goal count toward no
+player.
+
+**Goals saved above expected (GSAx)**:
+A goalie's xG against less goals against: positive when the goalie stopped more
+than a league-average goalie would have.
+
+**Goals-against average (GAA)**:
+A goalie's goals against per sixty minutes in net. Undefined before any time in
+net.
+
+**Shutout**:
+A start in which the goalie is charged with no goal. Empty-net goals and a
+shootout are not charged to the goalie, so neither prevents one.
+
+**Plus/minus**:
+For a skater, the goals their team scored while they were on the ice less the
+goals it conceded, not counting power-play or penalty-shot goals.
+
+**Time on ice**:
+How long a player was on the ice in regulation and overtime, in whole seconds.
+The starting goalie's is the whole match, less any time pulled for an extra
+attacker.
 
 **Schedule**:
 The ordered regular-season calendar of matches. Every team plays 84: four
@@ -55,8 +244,18 @@ A day's results are applied together or not at all.
 
 **Completed match**:
 The canonical record of a scheduled match after it is played: the scheduled
-date and teams, how it was decided, each side's score and shots, and the box
-score of every appearing player. A scheduled match is completed at most once.
+date and teams, how it was decided, each side's score, shots, and shot totals,
+the box score of every appearing player, and the scoring and penalty summaries.
+A scheduled match is completed at most once.
+
+**Scoring summary**:
+Every goal scored by a player in a completed match, in order: period, time,
+team, scorer, assists, situation, and whether the net was empty. A shootout's
+deciding goal is not listed.
+
+**Penalty summary**:
+Every penalty in a completed match, in order: period, time, team, player,
+infraction, and kind.
 
 **Box score**:
 An appearing player's match statistics as recorded in a completed match.
@@ -84,8 +283,16 @@ the extra meeting (the odd game) is not counted. For more than two clubs, the
 share of available points is compared.
 
 **Season statistics**:
-A player's current-season totals, accumulated from their box scores. Like match
-statistics, they exclude the shootout.
+A player's current-season totals, accumulated from every statistic in their box
+scores, and the rates derived from them, such as faceoff percentage, time on ice
+per game, save percentage, and GAA. A team's season statistics are its power
+play, penalty kill, faceoffs, and shot totals. Like match statistics, they
+exclude the shootout.
+
+**Power-play percentage**, **penalty-kill percentage**:
+Power-play goals per power-play opportunity; and the share of the times a team
+was shorthanded (the opponents' opportunities) in which it did not concede a
+power-play goal.
 
 **Completed season**:
 The state after the final scheduled match is played. It can still be browsed
@@ -109,10 +316,14 @@ game if it has never been saved. Loading, starting a new game, or exiting
 discards it, so the user is asked first.
 
 **Overtime**:
-A five-minute sudden-death period played when regulation ends tied.
+Sudden-death play when regulation ends tied. In the regular season it is one
+five-minute three-on-three period with the three-on-three units, then a
+shootout; in the playoffs it is as many twenty-minute five-on-five periods as it
+takes, with no shootout.
 
 **Shootout**:
-Alternating one-on-one attempts that decide a match still tied after overtime.
+Alternating one-on-one attempts that decide a regular-season match still tied
+after overtime.
 
 **Scratch**:
 A rostered player who is not dressed in the current lineup.

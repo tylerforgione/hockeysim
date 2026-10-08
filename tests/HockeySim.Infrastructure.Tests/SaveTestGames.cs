@@ -38,11 +38,11 @@ internal static class SaveTestGames
     {
         var team = manager.GetSnapshot().League.Teams.Single(team => team.Id == manager.GetSnapshot().ManagedTeamId);
         var lineup = team.Lineup;
-        manager.SetLineup(new SetLineupCommand(
-            lineup.ForwardLines.Select(line => new ForwardLineSelection(line.LeftWingId, line.CentreId, line.RightWingId)).ToList(),
-            lineup.DefencePairs.Select(pair => new DefencePairSelection(pair.LeftDefenceId, pair.RightDefenceId)).ToList(),
-            lineup.BackupGoalieId,
-            lineup.StartingGoalieId));
+        manager.SetLineup(SetLineupCommand.From(lineup) with
+        {
+            StartingGoalieId = lineup.BackupGoalieId,
+            BackupGoalieId = lineup.StartingGoalieId,
+        });
         return Advance(manager, 6);
     }
 
@@ -61,9 +61,11 @@ internal static class SaveTestGames
         foreach (var team in snapshot.League.Teams)
         {
             lines.Add($"team {team.Id} {team.Name} lineup {string.Join(",", team.Lineup.DressedPlayerIds)} "
-                + $"scratches {string.Join(",", team.ScratchedPlayerIds)}");
+                + $"scratches {string.Join(",", team.ScratchedPlayerIds)} "
+                + $"units {string.Join(";", team.Lineup.SpecialSituationUnits.Select(unit => $"{unit.Situation}:{string.Join(",", unit.PlayerIds)}"))} "
+                + $"extra attackers {string.Join(",", team.Lineup.ExtraAttackerIds)}");
             lines.AddRange(team.Roster.Select(player =>
-                $"  {player.Id} {player.FirstName} {player.LastName} {player.Position} {player.Age} #{player.Number} "
+                $"  {player.Id} {player.FirstName} {player.LastName} {player.Position} {player.Age} {player.Biography} #{player.Number} "
                 + string.Join(",", player.Ratings.OrderBy(rating => rating.Key).Select(rating => rating.Value))));
         }
 

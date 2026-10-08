@@ -21,7 +21,9 @@ public sealed class LineupTests
             forwardLines,
             validLineup.DefencePairs,
             validLineup.StartingGoalie,
-            validLineup.BackupGoalie));
+            validLineup.BackupGoalie,
+            validLineup.SpecialSituationUnits,
+            validLineup.ExtraAttackers));
     }
 
     [Theory]
@@ -39,7 +41,9 @@ public sealed class LineupTests
             validLineup.ForwardLines,
             defencePairs,
             validLineup.StartingGoalie,
-            validLineup.BackupGoalie));
+            validLineup.BackupGoalie,
+            validLineup.SpecialSituationUnits,
+            validLineup.ExtraAttackers));
     }
 
     [Fact]
@@ -63,7 +67,9 @@ public sealed class LineupTests
             validLineup.ForwardLines,
             validLineup.DefencePairs,
             centre,
-            validLineup.BackupGoalie));
+            validLineup.BackupGoalie,
+            validLineup.SpecialSituationUnits,
+            validLineup.ExtraAttackers));
     }
 
     [Fact]
@@ -85,7 +91,9 @@ public sealed class LineupTests
             forwardLines,
             validLineup.DefencePairs,
             validLineup.StartingGoalie,
-            validLineup.BackupGoalie));
+            validLineup.BackupGoalie,
+            validLineup.SpecialSituationUnits,
+            validLineup.ExtraAttackers));
     }
 
     [Fact]
@@ -99,7 +107,7 @@ public sealed class LineupTests
             foreignWing,
             forwardLines[0].Centre,
             forwardLines[0].RightWing);
-        var foreignLineup = new Lineup(
+        var foreignLineup = Lineup.CreateWithDefaultUnits(
             forwardLines,
             validLineup.DefencePairs,
             validLineup.StartingGoalie,
@@ -128,7 +136,7 @@ public sealed class LineupTests
             scratchedCentre.FirstName,
             scratchedCentre.LastName,
             Position.Wing,
-            scratchedCentre.Age,
+            scratchedCentre.Biography,
             scratchedCentre.Number,
             scratchedCentre.Ratings);
         var forwardLines = originalLineup.ForwardLines.ToList();
@@ -136,7 +144,7 @@ public sealed class LineupTests
             centreClonePlayingWing,
             forwardLines[0].Centre,
             forwardLines[0].RightWing);
-        var lineupWithClone = new Lineup(
+        var lineupWithClone = Lineup.CreateWithDefaultUnits(
             forwardLines,
             originalLineup.DefencePairs,
             originalLineup.StartingGoalie,
@@ -146,7 +154,7 @@ public sealed class LineupTests
         Assert.Same(originalLineup, team.Lineup);
     }
 
-    private static IReadOnlyList<Player> CreateRoster()
+    internal static IReadOnlyList<Player> CreateRoster()
     {
         var positions = Enumerable.Repeat(Position.Centre, 5)
             .Concat(Enumerable.Repeat(Position.Wing, 8))
@@ -156,7 +164,7 @@ public sealed class LineupTests
         return positions.Select((position, index) => CreatePlayer(position, index + 1)).ToList();
     }
 
-    private static Lineup CreateLineup(IReadOnlyList<Player> roster)
+    internal static Lineup CreateLineup(IReadOnlyList<Player> roster)
     {
         var centres = roster.Where(player => player.Position == Position.Centre).ToList();
         var wings = roster.Where(player => player.Position == Position.Wing).ToList();
@@ -169,16 +177,16 @@ public sealed class LineupTests
             .Select(index => new DefencePair(defence[index * 2], defence[(index * 2) + 1]))
             .ToList();
 
-        return new Lineup(forwardLines, defencePairs, goalies[0], goalies[1]);
+        return Lineup.CreateWithDefaultUnits(forwardLines, defencePairs, goalies[0], goalies[1]);
     }
 
-    private static Player CreatePlayer(Position position, int number) =>
+    internal static Player CreatePlayer(Position position, int number) =>
         new(
             new PlayerId(Guid.Parse($"00000000-0000-0000-0000-{number:D12}")),
             "Test",
             "Player",
             position,
-            24,
+            TestBiography.Create(),
             number,
             Enum.GetValues<Rating>().ToDictionary(rating => rating, _ => new RatingScore(50)));
 }

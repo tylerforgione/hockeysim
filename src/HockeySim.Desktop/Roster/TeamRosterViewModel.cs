@@ -9,8 +9,9 @@ using HockeySim.Management.GameManagement.Snapshots;
 namespace HockeySim.Desktop.Roster;
 
 /// <summary>
-/// A read-only roster split into skaters and goalies, with the selected player's profile. The
-/// tables show either ratings or current-season totals; both do not fit side by side.
+/// A read-only roster split into skaters and goalies, with the team's season statistics and the
+/// selected player's profile. The tables show ratings, basic season totals, or advanced
+/// five-on-five figures; they do not fit side by side.
 /// </summary>
 public sealed partial class TeamRosterViewModel : ObservableObject
 {
@@ -27,7 +28,7 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     private PlayerDetailViewModel? _selectedPlayer;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsRatings), nameof(ShowsSeason))]
+    [NotifyPropertyChangedFor(nameof(ShowsRatings), nameof(ShowsBasic), nameof(ShowsAdvanced))]
     private RosterColumns _columns;
 
     public TeamRosterViewModel(
@@ -48,6 +49,8 @@ public sealed partial class TeamRosterViewModel : ObservableObject
             .ToList();
         Skaters = rows.Where(row => row.Player.Position != Position.Goalie).ToList();
         Goalies = rows.Where(row => row.Player.Position == Position.Goalie).ToList();
+        TeamStatistics = TeamStatisticsDisplay.Strip(
+            session.Snapshot.Season.TeamStatistics.Single(statistics => statistics.TeamId == teamId));
 
         var initialRow = rows.FirstOrDefault(row => row.Player.Id == initiallySelectedPlayerId) ?? rows[0];
         SelectPlayer(initialRow.Player.Id);
@@ -57,9 +60,16 @@ public sealed partial class TeamRosterViewModel : ObservableObject
 
     public IReadOnlyList<PlayerRowViewModel> Goalies { get; }
 
+    /// <summary>
+    /// The team's current-season special teams, faceoff percentage, and five-on-five shares.
+    /// </summary>
+    public IReadOnlyList<SeasonStatViewModel> TeamStatistics { get; }
+
     public bool ShowsRatings => Columns == RosterColumns.Ratings;
 
-    public bool ShowsSeason => Columns == RosterColumns.Season;
+    public bool ShowsBasic => Columns == RosterColumns.Basic;
+
+    public bool ShowsAdvanced => Columns == RosterColumns.Advanced;
 
     public void SelectPlayer(PlayerId playerId)
     {
@@ -112,5 +122,10 @@ public sealed partial class TeamRosterViewModel : ObservableObject
 public enum RosterColumns
 {
     Ratings,
-    Season,
+
+    /// <summary>Current-season counting totals and rates.</summary>
+    Basic,
+
+    /// <summary>Five-on-five on-ice shares and expected goals; goalie expected goals.</summary>
+    Advanced,
 }

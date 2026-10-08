@@ -40,19 +40,38 @@ public sealed record SavedPlayer(
     string FirstName,
     string LastName,
     Position Position,
-    int Age,
+    SavedBiography Biography,
     int Number,
     IReadOnlyDictionary<Rating, int> Ratings);
 
+/// <param name="Handedness">The hand a skater shoots or a goalie catches with.</param>
+public sealed record SavedBiography(
+    DateOnly BirthDate,
+    SavedBirthplace Birthplace,
+    Country Nationality,
+    Handedness Handedness,
+    int HeightInches,
+    int WeightPounds);
+
+/// <param name="Region">The state or province, present only where the country uses them.</param>
+public sealed record SavedBirthplace(string City, string? Region, Country Country);
+
+/// <param name="SpecialSituationUnits">Every unit, grouped by situation and first unit first.</param>
+/// <param name="ExtraAttackerIds">The extra attackers, first choice first.</param>
 public sealed record SavedLineup(
     IReadOnlyList<SavedForwardLine> ForwardLines,
     IReadOnlyList<SavedDefencePair> DefencePairs,
     PlayerId StartingGoalieId,
-    PlayerId BackupGoalieId);
+    PlayerId BackupGoalieId,
+    IReadOnlyList<SavedSpecialSituationUnit> SpecialSituationUnits,
+    IReadOnlyList<PlayerId> ExtraAttackerIds);
 
 public sealed record SavedForwardLine(PlayerId LeftWingId, PlayerId CentreId, PlayerId RightWingId);
 
 public sealed record SavedDefencePair(PlayerId LeftDefenceId, PlayerId RightDefenceId);
+
+/// <param name="PlayerIds">The skaters in the slot order of the situation's format.</param>
+public sealed record SavedSpecialSituationUnit(SpecialSituation Situation, IReadOnlyList<PlayerId> PlayerIds);
 
 public sealed record SavedScheduledMatch(DateOnly Date, TeamId HomeTeamId, TeamId AwayTeamId);
 
@@ -60,22 +79,96 @@ public sealed record SavedScheduledMatch(DateOnly Date, TeamId HomeTeamId, TeamI
 /// A completed match, identified by its date and home team, since a team plays at most once on
 /// any date.
 /// </summary>
+/// <param name="Goals">The scoring summary, in the order scored.</param>
+/// <param name="Penalties">The penalty summary, in the order called.</param>
 public sealed record SavedCompletedMatch(
     DateOnly Date,
     MatchDecision Decision,
     SavedMatchSide Home,
-    SavedMatchSide Away);
+    SavedMatchSide Away,
+    IReadOnlyList<SavedGoal> Goals,
+    IReadOnlyList<SavedPenalty> Penalties);
 
+/// <param name="TimeInPeriodSeconds">Elapsed time in the period in whole seconds.</param>
+public sealed record SavedGoal(
+    int Period,
+    int TimeInPeriodSeconds,
+    TeamId TeamId,
+    PlayerId ScorerId,
+    PlayerId? PrimaryAssistId,
+    PlayerId? SecondaryAssistId,
+    GoalSituation Situation,
+    bool IsEmptyNet);
+
+/// <param name="TimeInPeriodSeconds">Elapsed time in the period in whole seconds.</param>
+public sealed record SavedPenalty(
+    int Period,
+    int TimeInPeriodSeconds,
+    TeamId TeamId,
+    PlayerId PlayerId,
+    Infraction Infraction,
+    PenaltyKind Kind);
+
+/// <param name="ShotTotals">Both teams' shot totals by strength situation, from this side.</param>
 public sealed record SavedMatchSide(
     TeamId TeamId,
     int Score,
     int Shots,
+    int PowerPlayOpportunities,
     IReadOnlyList<SavedSkaterBoxScore> Skaters,
-    SavedGoalieBoxScore Goalie);
+    SavedGoalieBoxScore Goalie,
+    SavedSituationalShotTotals ShotTotals);
 
-public sealed record SavedSkaterBoxScore(PlayerId PlayerId, int Goals, int Assists);
+public sealed record SavedSituationalShotTotals(
+    SavedShotTotals FiveOnFive,
+    SavedShotTotals PowerPlay,
+    SavedShotTotals PenaltyKill,
+    SavedShotTotals Other);
 
-public sealed record SavedGoalieBoxScore(PlayerId PlayerId, int ShotsAgainst, int GoalsAgainst);
+public sealed record SavedShotTotals(
+    int AttemptsFor,
+    int AttemptsAgainst,
+    int UnblockedAttemptsFor,
+    int UnblockedAttemptsAgainst,
+    int ShotsFor,
+    int ShotsAgainst,
+    int GoalsFor,
+    int GoalsAgainst,
+    double ExpectedGoalsFor,
+    double ExpectedGoalsAgainst);
+
+/// <param name="TimeOnIceSeconds">Time on ice in whole seconds.</param>
+/// <param name="OnIce">Both teams' shot totals while the skater was on the ice.</param>
+public sealed record SavedSkaterBoxScore(
+    PlayerId PlayerId,
+    int Goals,
+    int Assists,
+    int PlusMinus,
+    int TimeOnIceSeconds,
+    int Shots,
+    int ShotAttempts,
+    int Hits,
+    int BlockedShots,
+    int FaceoffsWon,
+    int FaceoffsLost,
+    int Takeaways,
+    int Giveaways,
+    double ExpectedGoals,
+    int PenaltyMinutes,
+    int PowerPlayGoals,
+    int PowerPlayAssists,
+    int ShorthandedGoals,
+    int ShorthandedAssists,
+    int EmptyNetGoals,
+    SavedSituationalShotTotals OnIce);
+
+/// <param name="TimeOnIceSeconds">Time in net in whole seconds.</param>
+public sealed record SavedGoalieBoxScore(
+    PlayerId PlayerId,
+    int ShotsAgainst,
+    int GoalsAgainst,
+    double ExpectedGoalsAgainst,
+    int TimeOnIceSeconds);
 
 public sealed record SavedInboxMessage(
     InboxMessageId Id,

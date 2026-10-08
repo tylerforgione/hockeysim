@@ -23,12 +23,27 @@ internal static class TestTeams
     public static Team Create(string name, Func<LineupRole, int>? ratingFor = null)
     {
         ratingFor ??= _ => AverageRating;
+        return Create(name, (role, _) => ratingFor(role));
+    }
+
+    /// <param name="ratingFor">One rating for a player, given their role.</param>
+    /// <param name="biographyFor">A player's biography, given their role; defaults to a fixed one.</param>
+    public static Team Create(
+        string name,
+        Func<LineupRole, Rating, int> ratingFor,
+        Func<LineupRole, PlayerBiography>? biographyFor = null)
+    {
+        biographyFor ??= _ => TestBiography.Create();
         var roster = new List<Player>(Team.RequiredRosterSize);
 
         List<Player> AddPlayers(Position position, int count, Func<int, LineupRole> roleForIndex)
         {
             var players = Enumerable.Range(0, count)
-                .Select(index => CreatePlayer(position, roster.Count + index + 1, ratingFor(roleForIndex(index))))
+                .Select(index =>
+                {
+                    var role = roleForIndex(index);
+                    return CreatePlayer(position, roster.Count + index + 1, rating => ratingFor(role, rating), biographyFor(role));
+                })
                 .ToList();
             roster.AddRange(players);
             return players;
@@ -43,7 +58,7 @@ internal static class TestTeams
             .Select(index => new ForwardLine(wings[index * 2], centres[index], wings[(index * 2) + 1]));
         var defencePairs = Enumerable.Range(0, Lineup.RequiredDefencePairCount)
             .Select(index => new DefencePair(defence[index * 2], defence[(index * 2) + 1]));
-        var lineup = new Lineup(forwardLines, defencePairs, goalies[0], goalies[1]);
+        var lineup = Lineup.CreateWithDefaultUnits(forwardLines, defencePairs, goalies[0], goalies[1]);
 
         return new Team(new TeamId(NextGuid()), name, roster, lineup);
     }
@@ -63,15 +78,15 @@ internal static class TestTeams
         _ => LineupRole.Scratch,
     };
 
-    private static Player CreatePlayer(Position position, int number, int rating) =>
+    private static Player CreatePlayer(Position position, int number, Func<Rating, int> ratingFor, PlayerBiography biography) =>
         new(
             new PlayerId(NextGuid()),
             "Test",
             $"{position}{number}",
             position,
-            25,
+            biography,
             number,
-            Enum.GetValues<Rating>().ToDictionary(value => value, _ => new RatingScore(rating)));
+            Enum.GetValues<Rating>().ToDictionary(rating => rating, rating => new RatingScore(ratingFor(rating))));
 
     private static Guid NextGuid()
     {

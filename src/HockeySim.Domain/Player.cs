@@ -4,6 +4,12 @@ namespace HockeySim.Domain;
 
 public sealed class Player
 {
+    /// <summary>The youngest age, on a season's opening day, at which a player can be rostered.</summary>
+    public const int MinimumAge = 16;
+
+    /// <summary>The oldest age, on a season's opening day, at which a player can be rostered.</summary>
+    public const int MaximumAge = 60;
+
     private readonly ReadOnlyDictionary<Rating, RatingScore> _ratings;
 
     public Player(
@@ -11,7 +17,7 @@ public sealed class Player
         string firstName,
         string lastName,
         Position position,
-        int age,
+        PlayerBiography biography,
         int number,
         IReadOnlyDictionary<Rating, RatingScore> ratings)
     {
@@ -28,10 +34,7 @@ public sealed class Player
             throw new ArgumentOutOfRangeException(nameof(position), "Player position must be defined.");
         }
 
-        if (age is < 16 or > 60)
-        {
-            throw new ArgumentOutOfRangeException(nameof(age), "Player age must be between 16 and 60.");
-        }
+        ArgumentNullException.ThrowIfNull(biography);
 
         if (number is < 1 or > 99)
         {
@@ -51,9 +54,10 @@ public sealed class Player
         FirstName = firstName;
         LastName = lastName;
         Position = position;
-        Age = age;
+        Biography = biography;
         Number = number;
         _ratings = new ReadOnlyDictionary<Rating, RatingScore>(ratingValues);
+        Overall = OverallRating.Calculate(position, _ratings);
     }
 
     public PlayerId Id { get; }
@@ -64,11 +68,18 @@ public sealed class Player
 
     public Position Position { get; }
 
-    public int Age { get; }
+    /// <summary>Birth date, birthplace, nationality, handedness, height, and weight.</summary>
+    public PlayerBiography Biography { get; }
 
     public int Number { get; }
 
     public IReadOnlyDictionary<Rating, RatingScore> Ratings => _ratings;
 
+    /// <summary>The ratings summarised for the player's position; see <see cref="OverallRating"/>.</summary>
+    public RatingScore Overall { get; }
+
     public RatingScore GetRating(Rating rating) => _ratings[rating];
+
+    /// <summary>The player's age in completed years on a date; see <see cref="PlayerBiography.AgeOn"/>.</summary>
+    public int AgeOn(DateOnly date) => Biography.AgeOn(date);
 }

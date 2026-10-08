@@ -118,6 +118,10 @@ public sealed class NewGameTests
     private static GameSnapshot StartGame(ulong seed) =>
         new GameManager().StartNewGame(CreateCommand(seed));
 
+    // Durability is hidden from the user, so snapshots carry every other rating.
+    private static readonly IEnumerable<Rating> VisibleRatings =
+        Enum.GetValues<Rating>().Where(rating => rating != Rating.Durability).Order().ToList();
+
     private static NewGameCommand CreateCommand(ulong seed) =>
         new(2026, new RandomState(seed), InitialManagedTeam);
 
@@ -136,9 +140,14 @@ public sealed class NewGameTests
         {
             Assert.False(string.IsNullOrWhiteSpace(player.FirstName));
             Assert.False(string.IsNullOrWhiteSpace(player.LastName));
-            Assert.InRange(player.Age, 18, 35);
-            Assert.Equal(Enum.GetValues<Rating>().Length, player.Ratings.Count);
-            Assert.All(player.Ratings.Values, rating => Assert.InRange(rating, 40, 90));
+            Assert.InRange(player.Age, 18, 40);
+            Assert.Equal(VisibleRatings, player.Ratings.Keys.Order());
+            Assert.All(player.Ratings.Values, rating => Assert.InRange(rating, 0, 100));
+            Assert.Equal(
+                OverallRating.Calculate(
+                    player.Position,
+                    player.Ratings.ToDictionary(rating => rating.Key, rating => new RatingScore(rating.Value))).Value,
+                player.Overall);
         });
 
         Assert.Equal(4, team.Lineup.ForwardLines.Count);

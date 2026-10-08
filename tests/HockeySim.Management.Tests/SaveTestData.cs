@@ -30,17 +30,21 @@ internal static class SaveTestData
         {
             lines.Add($"team {team.Id} {team.Name}");
             lines.AddRange(team.Roster.Select(player =>
-                $"  {player.Id} {player.FirstName} {player.LastName} {player.Position} age {player.Age} #{player.Number} "
+                $"  {player.Id} {player.FirstName} {player.LastName} {player.Position} age {player.Age} {player.Biography} #{player.Number} "
                 + string.Join(",", player.Ratings.OrderBy(rating => rating.Key).Select(rating => $"{rating.Key}={rating.Value}"))));
             lines.AddRange(team.Lineup.ForwardLines.Select(line => $"  line {line}"));
             lines.AddRange(team.Lineup.DefencePairs.Select(pair => $"  pair {pair}"));
             lines.Add($"  goalies {team.Lineup.StartingGoalieId} / {team.Lineup.BackupGoalieId}");
+            lines.AddRange(team.Lineup.SpecialSituationUnits.Select(unit =>
+                $"  {unit.Situation} {string.Join(",", unit.PlayerIds)}"));
+            lines.Add($"  extra attackers {string.Join(",", team.Lineup.ExtraAttackerIds)}");
             lines.Add($"  scratches {string.Join(",", team.ScratchedPlayerIds)}");
         }
 
         lines.AddRange(snapshot.Schedule.Matches.Select(match => $"scheduled {match}"));
         lines.Add(SeasonAdvancementTests.Fingerprint(snapshot));
         lines.AddRange(snapshot.Season.TeamRecords.Select(record => record.ToString()));
+        lines.AddRange(snapshot.Season.TeamStatistics.Select(statistics => statistics.ToString()));
         lines.Add($"league {Ranking(snapshot.Season.Standings.League)}");
         foreach (var conference in snapshot.Season.Standings.Conferences)
         {

@@ -1,4 +1,5 @@
 using HockeySim.Domain;
+using HockeySim.Management.Scheduling;
 using HockeySim.Simulation.Randomness;
 
 namespace HockeySim.Management.NewGame;
@@ -14,8 +15,10 @@ internal static class LeagueGenerator
     {
         ArgumentNullException.ThrowIfNull(random);
 
+        // Ages are generated for opening day, so they read the same in the first snapshot.
+        var openingDay = ScheduleGenerator.OpeningDay(seasonYear);
         var conferences = FictionalLeagueData.Conferences
-            .Select(conference => CreateConference(conference, random))
+            .Select(conference => CreateConference(conference, openingDay, random))
             .ToList();
 
         return new League(seasonYear, conferences);
@@ -23,10 +26,11 @@ internal static class LeagueGenerator
 
     private static Conference CreateConference(
         FictionalLeagueData.ConferenceDefinition definition,
+        DateOnly openingDay,
         ControlledRandom random)
     {
         var divisions = definition.Divisions
-            .Select(division => CreateDivision(division, random))
+            .Select(division => CreateDivision(division, openingDay, random))
             .ToList();
 
         return new Conference(definition.Name, divisions);
@@ -34,24 +38,25 @@ internal static class LeagueGenerator
 
     private static Division CreateDivision(
         FictionalLeagueData.DivisionDefinition definition,
+        DateOnly openingDay,
         ControlledRandom random)
     {
         var teams = definition.TeamNames
-            .Select(teamName => CreateTeam(teamName, random))
+            .Select(teamName => CreateTeam(teamName, openingDay, random))
             .ToList();
 
         return new Division(definition.Name, teams);
     }
 
-    private static Team CreateTeam(string name, ControlledRandom random)
+    private static Team CreateTeam(string name, DateOnly openingDay, ControlledRandom random)
     {
         var numbers = CreatePlayerNumbers(random);
         var players = new List<Player>(Team.RequiredRosterSize);
 
-        AddPlayers(players, Position.Centre, CentreCount, numbers, random);
-        AddPlayers(players, Position.Wing, WingCount, numbers, random);
-        AddPlayers(players, Position.Defence, DefenceCount, numbers, random);
-        AddPlayers(players, Position.Goalie, GoalieCount, numbers, random);
+        AddPlayers(players, Position.Centre, CentreCount, numbers, openingDay, random);
+        AddPlayers(players, Position.Wing, WingCount, numbers, openingDay, random);
+        AddPlayers(players, Position.Defence, DefenceCount, numbers, openingDay, random);
+        AddPlayers(players, Position.Goalie, GoalieCount, numbers, openingDay, random);
 
         var centres = players.Where(player => player.Position == Position.Centre).ToList();
         var wings = players.Where(player => player.Position == Position.Wing).ToList();
@@ -64,7 +69,7 @@ internal static class LeagueGenerator
         var defencePairs = Enumerable.Range(0, Lineup.RequiredDefencePairCount)
             .Select(index => new DefencePair(defencePlayers[index * 2], defencePlayers[(index * 2) + 1]))
             .ToList();
-        var lineup = new Lineup(forwardLines, defencePairs, goalies[0], goalies[1]);
+        var lineup = Lineup.CreateWithDefaultUnits(forwardLines, defencePairs, goalies[0], goalies[1]);
 
         return new Team(new TeamId(random.NextGuid()), name, players, lineup);
     }
@@ -74,29 +79,26 @@ internal static class LeagueGenerator
         Position position,
         int count,
         IReadOnlyList<int> numbers,
+        DateOnly openingDay,
         ControlledRandom random)
     {
         for (var index = 0; index < count; index++)
         {
-            players.Add(CreatePlayer(position, numbers[players.Count], random));
+            players.Add(CreatePlayer(position, numbers[players.Count], openingDay, random));
         }
     }
 
-    private static Player CreatePlayer(Position position, int number, ControlledRandom random)
+    private static Player CreatePlayer(Position position, int number, DateOnly openingDay, ControlledRandom random)
     {
-        var firstName = FictionalLeagueData.FirstNames[
-            random.NextInt(0, FictionalLeagueData.FirstNames.Count)];
-        var lastName = FictionalLeagueData.LastNames[
-            random.NextInt(0, FictionalLeagueData.LastNames.Count)];
-        var ratings = Enum.GetValues<Rating>()
-            .ToDictionary(rating => rating, _ => new RatingScore(random.NextInt(40, 91)));
+        var identity = PlayerBiographyGenerator.Create(position, openingDay, random);
+        var ratings = PlayerRatingGenerator.Create(position, random);
 
         return new Player(
             new PlayerId(random.NextGuid()),
-            firstName,
-            lastName,
+            identity.FirstName,
+            identity.LastName,
             position,
-            random.NextInt(18, 36),
+            identity.Biography,
             number,
             ratings);
     }

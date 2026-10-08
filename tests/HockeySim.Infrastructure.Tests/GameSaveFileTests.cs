@@ -1,7 +1,9 @@
 using System.Text.Json.Nodes;
 
+using HockeySim.Domain;
 using HockeySim.Infrastructure.Saves;
 using HockeySim.Management.GameManagement;
+using HockeySim.Management.Lineups;
 using HockeySim.Management.Saves;
 using HockeySim.Simulation.Randomness;
 
@@ -42,6 +44,30 @@ public sealed class GameSaveFileTests : IDisposable
 
         Assert.Equal(Describe(saved), Describe(loaded));
         Assert.Equal(Describe(ContinueWithLineupChange(uninterrupted)), Describe(ContinueWithLineupChange(resumed)));
+    }
+
+    [Fact]
+    public void ChangedUnitsAndExtraAttackersLoadAsSaved()
+    {
+        var manager = StartGame();
+        var team = manager.GetSnapshot().League.Teams.Single(team => team.Id == manager.GetSnapshot().ManagedTeamId);
+        var command = SetLineupCommand.From(team.Lineup);
+        var penaltyKill = command.SpecialSituationUnits.First(unit => unit.Situation == SpecialSituation.PenaltyKill3On4);
+        var saved = manager.SetLineup(command with
+        {
+            SpecialSituationUnits = command.SpecialSituationUnits
+                .Select(unit => unit == penaltyKill ? unit with { PlayerIds = unit.PlayerIds.Reverse().ToList() } : unit)
+                .ToList(),
+            ExtraAttackerIds = [team.Lineup.DefencePairs[1].LeftDefenceId, team.Lineup.ForwardLines[2].RightWingId],
+        });
+        manager.SaveGame(new GameSaveFile(SavePath));
+
+        var loaded = new GameManager().LoadGame(new GameSaveFile(SavePath));
+
+        var loadedTeam = loaded.League.Teams.Single(other => other.Id == team.Id);
+        Assert.Equal(penaltyKill.PlayerIds.Reverse(), loadedTeam.Lineup.UnitsFor(SpecialSituation.PenaltyKill3On4)[0].PlayerIds);
+        Assert.Equal([team.Lineup.DefencePairs[1].LeftDefenceId, team.Lineup.ForwardLines[2].RightWingId], loadedTeam.Lineup.ExtraAttackerIds);
+        Assert.Equal(Describe(saved), Describe(loaded));
     }
 
     [Fact]
@@ -121,7 +147,10 @@ public sealed class GameSaveFileTests : IDisposable
 
     [Theory]
     [InlineData(0)]
-    [InlineData(2)]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(6)]
+    [InlineData(8)]
     public void ASaveFromAnotherFormatVersionIsRejectedAsUnsupported(int version)
     {
         StartGame().SaveGame(new GameSaveFile(SavePath));
@@ -142,14 +171,14 @@ public sealed class GameSaveFileTests : IDisposable
 
     [Theory]
     [InlineData("""[]""")]
-    [InlineData("""{"formatVersion":1,"game":{}}""")]
-    [InlineData("""{"format":"Another game","formatVersion":1,"game":{}}""")]
+    [InlineData("""{"formatVersion":7,"game":{}}""")]
+    [InlineData("""{"format":"Another game","formatVersion":7,"game":{}}""")]
     [InlineData("""{"format":"HockeySim save","game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":"1","game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":1}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":1,"game":null}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":1,"game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":1,"game":{"seasonYear":2026""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":"3","game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":7}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":7,"game":null}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":7,"game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":7,"game":{"seasonYear":2026""")]
     public void ADocumentThatIsNotAWholeSaveIsRejected(string json)
     {
         Directory.CreateDirectory(_directory);
@@ -197,6 +226,12 @@ public sealed class GameSaveFileTests : IDisposable
         "unknown position",
         "fractional rating",
         "negative random state",
+        "unknown situation",
+        "missing units",
+        "null extra attacker",
+        "unknown nationality",
+        "malformed birth date",
+        "missing biography",
     ];
 
     [Theory]
@@ -210,6 +245,7 @@ public sealed class GameSaveFileTests : IDisposable
         var game = document["game"]!.AsObject();
         var team = game["conferences"]![0]!["divisions"]![0]!["teams"]![0]!.AsObject();
         var player = team["roster"]![0]!.AsObject();
+        var lineup = team["lineup"]!.AsObject();
 
         switch (damage)
         {
@@ -233,6 +269,24 @@ public sealed class GameSaveFileTests : IDisposable
                 break;
             case "negative random state":
                 game["randomState"] = -1;
+                break;
+            case "unknown situation":
+                lineup["specialSituationUnits"]![0]!["situation"] = "SixOnTwo";
+                break;
+            case "missing units":
+                lineup.Remove("specialSituationUnits");
+                break;
+            case "null extra attacker":
+                lineup["extraAttackerIds"]![0] = null;
+                break;
+            case "unknown nationality":
+                player["biography"]!["nationality"] = "Atlantis";
+                break;
+            case "malformed birth date":
+                player["biography"]!["birthDate"] = "the first of May";
+                break;
+            case "missing biography":
+                player.Remove("biography");
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(damage));
@@ -306,6 +360,15 @@ public sealed class GameSaveFileTests : IDisposable
 
         Assert.True(Guid.TryParse((string?)player["id"], out _));
         Assert.Contains((string?)player["position"], Enum.GetNames<Domain.Position>());
+        var biography = player["biography"]!;
+        Assert.Contains((string?)biography["nationality"], Enum.GetNames<Domain.Country>());
+        Assert.Contains((string?)biography["handedness"], Enum.GetNames<Domain.Handedness>());
+        Assert.Contains((string?)biography["birthplace"]!["country"], Enum.GetNames<Domain.Country>());
+        Assert.True(DateOnly.TryParseExact((string?)biography["birthDate"], "yyyy-MM-dd", out _));
+        var units = game["conferences"]![0]!["divisions"]![0]!["teams"]![0]!["lineup"]!["specialSituationUnits"]!.AsArray();
+        Assert.Equal(
+            Enum.GetNames<SpecialSituation>().SelectMany(name => Enumerable.Repeat(name, SpecialSituationFormat.For(Enum.Parse<SpecialSituation>(name)).UnitCount)),
+            units.Select(unit => (string?)unit!["situation"]));
         Assert.Equal(
             Enum.GetNames<Domain.Rating>().Order(),
             player["ratings"]!.AsObject().Select(rating => rating.Key).Order());

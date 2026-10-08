@@ -158,7 +158,9 @@ public sealed class SeasonAdvancementTests
     public async Task AdvancementsFromDifferentThreadsDoNotOverlap()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
-        using var firstDayStarted = new ManualResetEventSlim();
+        // Generous timeouts: CI runs test projects in parallel on slow runners.
+        var timeout = TimeSpan.FromSeconds(30);
+        var firstDayStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var releaseFirstDay = new ManualResetEventSlim();
         var simulator = new InterceptingSimulator();
         var manager = new GameManager(simulator);
@@ -167,19 +169,19 @@ public sealed class SeasonAdvancementTests
         {
             if (call == 1)
             {
-                firstDayStarted.Set();
-                releaseFirstDay.Wait(TimeSpan.FromSeconds(10));
+                firstDayStarted.TrySetResult();
+                releaseFirstDay.Wait(timeout);
             }
         };
 
         var first = Task.Run(manager.AdvanceDay, cancellationToken);
-        Assert.True(firstDayStarted.Wait(TimeSpan.FromSeconds(10), cancellationToken));
+        await firstDayStarted.Task.WaitAsync(timeout, cancellationToken);
         var second = Task.Run(manager.AdvanceDay, cancellationToken);
 
         var finishedFirst = await Task.WhenAny(second, Task.Delay(200, cancellationToken));
         Assert.NotSame(second, finishedFirst);
         releaseFirstDay.Set();
-        await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+        await Task.WhenAll(first, second).WaitAsync(timeout, cancellationToken);
 
         var final = manager.GetSnapshot();
         Assert.Equal(OpeningDay.AddDays(2), final.Season.CurrentDate);
@@ -250,15 +252,11 @@ public sealed class SeasonAdvancementTests
     internal static TeamSnapshot ManagedTeam(GameSnapshot snapshot) =>
         snapshot.League.Teams.Single(team => team.Id == snapshot.ManagedTeamId);
 
-    internal static SetLineupCommand CurrentLineup(LineupSnapshot lineup) =>
-        new(
-            lineup.ForwardLines.Select(line => new ForwardLineSelection(line.LeftWingId, line.CentreId, line.RightWingId)).ToList(),
-            lineup.DefencePairs.Select(pair => new DefencePairSelection(pair.LeftDefenceId, pair.RightDefenceId)).ToList(),
-            lineup.StartingGoalieId,
-            lineup.BackupGoalieId);
+    internal static SetLineupCommand CurrentLineup(LineupSnapshot lineup) => SetLineupCommand.From(lineup);
 
     /// <summary>
-    /// Puts a scratched skater into the matching slot of the fourth line or third pair.
+    /// Puts a scratched skater into the matching slot of the fourth line or third pair, and into the
+    /// replaced player's unit slots.
     /// </summary>
     private static (SetLineupCommand Lineup, PlayerId ReplacedId) DressInBottomUnit(
         SetLineupCommand lineup,
@@ -266,7 +264,7 @@ public sealed class SeasonAdvancementTests
     {
         var line = lineup.ForwardLines[^1];
         var pair = lineup.DefencePairs[^1];
-        return skater.Position switch
+        var (dressed, replacedId) = skater.Position switch
         {
             Position.Wing => (
                 lineup with { ForwardLines = [.. lineup.ForwardLines.SkipLast(1), line with { LeftWingId = skater.Id }] },
@@ -278,6 +276,7 @@ public sealed class SeasonAdvancementTests
                 lineup with { DefencePairs = [.. lineup.DefencePairs.SkipLast(1), pair with { LeftDefenceId = skater.Id }] },
                 pair.LeftDefenceId),
         };
+        return (dressed.ReplaceInUnits(replacedId, skater.Id), replacedId);
     }
 
     /// <summary>
@@ -288,12 +287,15 @@ public sealed class SeasonAdvancementTests
         string.Join(
             Environment.NewLine,
             snapshot.Season.Results.Select(result =>
-                $"{result.Date:yyyy-MM-dd} {result.Decision} {Side(result.Home)} @ {Side(result.Away)}"));
+                $"{result.Date:yyyy-MM-dd} {result.Decision} {Side(result.Home)} @ {Side(result.Away)} "
+                + $"goals [{string.Join(",", result.Goals)}] penalties [{string.Join(",", result.Penalties)}]"));
 
+    // Box-score and summary records print every statistic, and doubles print exactly, so equal
+    // fingerprints mean every box-score and summary value matches.
     private static string Side(CompletedMatchTeamSnapshot side) =>
-        $"{side.TeamId}:{side.Score}/{side.Shots} "
-        + $"[{string.Join(",", side.Skaters.Select(skater => $"{skater.PlayerId}:{skater.Goals}+{skater.Assists}"))}] "
-        + $"G {side.Goalie.PlayerId}:{side.Goalie.GoalsAgainst}/{side.Goalie.ShotsAgainst}";
+        $"{side.TeamId}:{side.Score}/{side.Shots}/{side.PowerPlayOpportunities} {side.ShotTotals} "
+        + $"[{string.Join(",", side.Skaters)}] "
+        + $"G {side.Goalie}";
 
     /// <summary>
     /// Plays matches with the real engine but lets a test act before each one: fail it, or call
@@ -306,10 +308,10 @@ public sealed class SeasonAdvancementTests
 
         public Action<int>? BeforeMatch { get; set; }
 
-        public MatchResult Simulate(Match match, RandomState randomState)
+        public MatchResult Simulate(Match match, OvertimeFormat overtime, RandomState randomState)
         {
             BeforeMatch?.Invoke(Interlocked.Increment(ref _calls));
-            return _engine.Simulate(match, randomState);
+            return _engine.Simulate(match, overtime, randomState);
         }
     }
 }

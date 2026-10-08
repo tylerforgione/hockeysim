@@ -1,4 +1,5 @@
 using HockeySim.Domain;
+using HockeySim.Simulation.Events;
 using HockeySim.Simulation.Randomness;
 
 using Xunit;
@@ -22,7 +23,7 @@ public sealed class MatchResultInvariantTests
 
         for (var seed = 0UL; seed < SeedCount; seed++)
         {
-            var result = simulator.Simulate(match, new RandomState(seed));
+            var result = simulator.Simulate(match, OvertimeFormat.RegularSeason, new RandomState(seed));
             AssertValidResult(match, result);
         }
     }
@@ -34,7 +35,7 @@ public sealed class MatchResultInvariantTests
         var simulator = new MatchSimulator();
 
         var decisions = Enumerable.Range(0, SeedCount)
-            .Select(seed => simulator.Simulate(match, new RandomState((ulong)seed)).Decision)
+            .Select(seed => simulator.Simulate(match, OvertimeFormat.RegularSeason, new RandomState((ulong)seed)).Decision)
             .ToHashSet();
 
         Assert.Equal(Enum.GetValues<MatchDecision>().ToHashSet(), decisions);
@@ -65,7 +66,7 @@ public sealed class MatchResultInvariantTests
 
         for (var seed = 0UL; seed < SeedCount; seed++)
         {
-            var result = simulator.Simulate(match, new RandomState(seed));
+            var result = simulator.Simulate(match, OvertimeFormat.RegularSeason, new RandomState(seed));
             var appearing = result.Goals
                 .SelectMany(goal => new[] { goal.ScorerId, goal.PrimaryAssistId, goal.SecondaryAssistId })
                 .OfType<PlayerId>()
