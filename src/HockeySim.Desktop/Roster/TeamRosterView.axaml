@@ -6,60 +6,8 @@
              x:DataType="roster:TeamRosterViewModel">
   <!-- Header and row templates share each table's ColumnDefinitions so columns align. -->
   <Grid ColumnDefinitions="*,280" ColumnSpacing="6">
-    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="6">
-      <Border x:Name="TeamStatistics" Classes="panel" Padding="12,6">
-        <DockPanel>
-          <TextBlock DockPanel.Dock="Left"
-                     Classes="panel-title"
-                     VerticalAlignment="Center"
-                     Margin="0,0,16,0"
-                     Text="TEAM" />
-          <ItemsControl ItemsSource="{Binding TeamStatistics}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="20" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="players:SeasonStatViewModel">
-                <StackPanel Spacing="1" ToolTip.Tip="{Binding Description}">
-                  <TextBlock Classes="label" Text="{Binding Label}" />
-                  <TextBlock Text="{Binding Value}" FontSize="14" FontWeight="SemiBold" />
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </DockPanel>
-      </Border>
-
-      <Border x:Name="InjuryReport" Grid.Row="1" Classes="panel" Padding="12,6">
-        <DockPanel>
-          <TextBlock DockPanel.Dock="Left"
-                     Classes="panel-title"
-                     Margin="0,0,16,0"
-                     Text="INJURIES" />
-          <TextBlock Classes="caption" Text="No injuries." IsVisible="{Binding !HasInjuries}" />
-          <ItemsControl ItemsSource="{Binding InjuryReport}" IsVisible="{Binding HasInjuries}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="roster:InjuryReportRowViewModel">
-                <Grid ColumnDefinitions="180,36,150,110,*" Margin="0,1">
-                  <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
-                  <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding Position}" />
-                  <TextBlock Grid.Column="2" Classes="cell" Text="{Binding Injury}" />
-                  <TextBlock Grid.Column="3"
-                             Classes="cell"
-                             Classes.error="{Binding IsOut}"
-                             Classes.warning="{Binding !IsOut}"
-                             Text="{Binding Status}" />
-                  <TextBlock Grid.Column="4" Classes="cell muted" Text="{Binding ExpectedReturn, StringFormat='Expected back {0}'}" />
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </DockPanel>
-      </Border>
-
-      <Border Grid.Row="2" Classes="panel">
+    <Grid RowDefinitions="*,Auto" RowSpacing="6">
+      <Border Classes="panel">
         <DockPanel>
           <Border DockPanel.Dock="Top" Classes="panel-header">
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
@@ -281,7 +229,7 @@
         </DockPanel>
       </Border>
 
-      <Border Grid.Row="3" Classes="panel">
+      <Border Grid.Row="1" Classes="panel">
         <DockPanel>
           <Border DockPanel.Dock="Top" Classes="panel-header">
             <TextBlock Classes="panel-title" Text="GOALIES" />

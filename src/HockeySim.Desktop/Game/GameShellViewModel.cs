@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -6,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using HockeySim.Desktop.Confirmation;
 using HockeySim.Desktop.Home;
 using HockeySim.Desktop.Inbox;
+using HockeySim.Desktop.Injuries;
 using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
@@ -13,6 +15,7 @@ using HockeySim.Desktop.Saves;
 using HockeySim.Desktop.Schedule;
 using HockeySim.Desktop.Standings;
 using HockeySim.Desktop.Teams;
+using HockeySim.Desktop.TeamStatistics;
 using HockeySim.Domain;
 using HockeySim.Management.Inbox;
 using HockeySim.Management.Saves;
@@ -20,20 +23,23 @@ using HockeySim.Management.Saves;
 namespace HockeySim.Desktop.Game;
 
 /// <summary>
-/// The in-game frame: team identity and time controls across the top, navigation down the side,
-/// and the active page in the middle.
+/// The in-game frame: a menu bar with the date and Continue, the managed team's banner, the current
+/// section's page tabs, the active page, and a status bar.
 /// </summary>
 public sealed partial class GameShellViewModel : ObservableObject
 {
-    private const string NotAvailableYet = "Not available yet";
-
     private readonly Action _showMainMenu;
+    private readonly Action? _showLoadGame;
     private readonly ISavedGameLibrary? _saves;
     private readonly Dictionary<ShellPage, ShellPageViewModel> _pages;
-    private readonly NavigationItemViewModel _inboxItem;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Banner))]
     private ShellPageViewModel _currentPage;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsHomeSection))]
+    private NavigationSectionViewModel _currentSection;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasAdvanceError))]
@@ -43,66 +49,78 @@ public sealed partial class GameShellViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsSaveDialogOpen))]
     private SaveGameViewModel? _saveDialog;
 
+    private ShellPage _currentPageKind = ShellPage.Home;
+
+    /// <param name="showMainMenu">Leaves the game for the main menu.</param>
     /// <param name="saves">Where the game can be saved; without it, saving is unavailable.</param>
     /// <param name="confirmation">
     /// Asks the user before an existing save is replaced. The main window shares its own, so the
     /// question appears over every screen.
     /// </param>
+    /// <param name="showLoadGame">Opens the saved games; without it, loading is unavailable.</param>
     public GameShellViewModel(
         GameSession session,
         Action? showMainMenu = null,
         ISavedGameLibrary? saves = null,
-        ConfirmationViewModel? confirmation = null)
+        ConfirmationViewModel? confirmation = null,
+        Action? showLoadGame = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         Session = session;
         _showMainMenu = showMainMenu ?? (() => { });
+        _showLoadGame = showLoadGame;
         _saves = saves;
         Confirmation = confirmation ?? new ConfirmationViewModel();
 
+        TeamBanner = new TeamBannerViewModel(session);
         Home = new HomePageViewModel(session, Navigate, OpenInboxMessage, OpenPlayer, OpenMatch);
         Inbox = new InboxPageViewModel(session);
         Roster = new RosterPageViewModel(session);
         Lines = new LinesPageViewModel(session);
+        Schedule = new SchedulePageViewModel(session);
+        TeamStatistics = new TeamStatisticsPageViewModel(session);
+        Injuries = new InjuriesPageViewModel(session);
         Teams = new TeamsPageViewModel(session);
         Standings = new StandingsPageViewModel(session);
-        Schedule = new SchedulePageViewModel(session);
         _pages = new Dictionary<ShellPage, ShellPageViewModel>
         {
             [ShellPage.Home] = Home,
             [ShellPage.Inbox] = Inbox,
             [ShellPage.Roster] = Roster,
             [ShellPage.Lines] = Lines,
-            [ShellPage.Teams] = Teams,
+            [ShellPage.TeamSchedule] = Schedule,
+            [ShellPage.TeamStatistics] = TeamStatistics,
+            [ShellPage.Injuries] = Injuries,
             [ShellPage.Standings] = Standings,
-            [ShellPage.Schedule] = Schedule,
+            [ShellPage.Teams] = Teams,
+            [ShellPage.LeagueSchedule] = Schedule,
         };
 
-        _inboxItem = new NavigationItemViewModel(ShellPage.Inbox, "Inbox", Navigate);
-        NavigationSections =
+        Sections =
         [
-            new("CLUB",
-            [
-                new(ShellPage.Home, "Home", Navigate),
-                _inboxItem,
-                new(ShellPage.Roster, "Roster", Navigate),
-                new(ShellPage.Lines, "Lines", Navigate),
-            ]),
-            new("LEAGUE",
-            [
-                new(ShellPage.Teams, "Teams", Navigate),
-                new(ShellPage.Standings, "Standings", Navigate),
-                new(ShellPage.Schedule, "Schedule", Navigate),
-            ]),
-            new("TRANSACTIONS",
-            [
-                new(ShellPage.FreeAgents, "Free Agents", Navigate, NotAvailableYet),
-                new(ShellPage.Trades, "Trades", Navigate, NotAvailableYet),
-            ]),
+            CreateSection(ShellSection.Home, (ShellPage.Home, "Overview")),
+            CreateSection(
+                ShellSection.Team,
+                (ShellPage.Roster, "Roster"),
+                (ShellPage.Lines, "Lines"),
+                (ShellPage.TeamSchedule, "Schedule"),
+                (ShellPage.TeamStatistics, "Team statistics"),
+                (ShellPage.Injuries, "Injuries")),
+            CreateSection(
+                ShellSection.League,
+                (ShellPage.Standings, "Standings"),
+                (ShellPage.Teams, "Teams"),
+                (ShellPage.LeagueLeaders, "League leaders"),
+                (ShellPage.PlayoffPicture, "Playoff picture"),
+                (ShellPage.LeagueSchedule, "Schedule")),
+            CreateSection(ShellSection.Stats, (ShellPage.PlayerStatistics, "Player statistics")),
+            CreateSection(ShellSection.Club, (ShellPage.Staff, "Staff"), (ShellPage.Transactions, "Transactions")),
+            CreateSection(ShellSection.Inbox, (ShellPage.Inbox, "Inbox")),
         ];
 
         _currentPage = Home;
+        _currentSection = Sections[0];
         UpdateNavigationState();
         session.PropertyChanged += OnSessionChanged;
     }
@@ -110,6 +128,8 @@ public sealed partial class GameShellViewModel : ObservableObject
     public GameSession Session { get; }
 
     public ConfirmationViewModel Confirmation { get; }
+
+    public TeamBannerViewModel TeamBanner { get; }
 
     public HomePageViewModel Home { get; }
 
@@ -119,32 +139,58 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     public LinesPageViewModel Lines { get; }
 
+    /// <summary>Gets the schedule, shared by the team and league sections.</summary>
+    public SchedulePageViewModel Schedule { get; }
+
+    public TeamStatisticsPageViewModel TeamStatistics { get; }
+
+    public InjuriesPageViewModel Injuries { get; }
+
     public TeamsPageViewModel Teams { get; }
 
     public StandingsPageViewModel Standings { get; }
 
-    public SchedulePageViewModel Schedule { get; }
+    /// <summary>Gets every section with its page tabs, including pages not available yet.</summary>
+    public IReadOnlyList<NavigationSectionViewModel> Sections { get; }
 
-    public IReadOnlyList<NavigationSectionViewModel> NavigationSections { get; }
+    public ShellPage CurrentPageKind => _currentPageKind;
+
+    public bool IsHomeSection => CurrentSection.Section == ShellSection.Home;
+
+    /// <summary>Gets the current page's own banner, or the managed team's.</summary>
+    public object Banner => CurrentPage.Banner ?? TeamBanner;
 
     public string TeamName => Session.ManagedTeam.Name;
 
-    public string TeamInitials => PlayerDisplay.TeamInitials(TeamName);
-
-    public string TeamDivision
+    /// <summary>
+    /// Gets the date and what is coming: days to the managed team's next match and to the end of
+    /// the regular season.
+    /// </summary>
+    public string CalendarLabel
     {
         get
         {
-            var (conference, division) = Session.FindDivision(Session.ManagedTeam);
-            return $"{division.Name} · {conference.Name}";
+            var snapshot = Session.Snapshot;
+            var season = snapshot.Season;
+            var date = season.CurrentDate.ToString("ddd d MMM yyyy", CultureInfo.CurrentCulture);
+            if (season.IsComplete)
+            {
+                return $"{date} · Regular season complete";
+            }
+
+            var parts = new List<string> { date };
+            var managedTeamId = snapshot.ManagedTeamId;
+            var nextMatch = snapshot.Schedule.Matches.FirstOrDefault(match =>
+                match.Date >= season.CurrentDate && (match.HomeTeamId == managedTeamId || match.AwayTeamId == managedTeamId));
+            if (nextMatch is not null)
+            {
+                parts.Add($"Next match {DaysUntil(nextMatch.Date)}");
+            }
+
+            parts.Add($"Regular season ends {DaysUntil(snapshot.Schedule.Matches[^1].Date)}");
+            return string.Join(" · ", parts);
         }
     }
-
-    public string SeasonLabel => $"{PlayerDisplay.FormatSeason(Session.Snapshot.League.SeasonYear)} Season";
-
-    public string PhaseLabel => Session.Snapshot.Season.IsComplete
-        ? "Regular season complete"
-        : $"Regular season · {MatchDisplay.ShortDate(Session.Snapshot.Season.CurrentDate)}";
 
     public string ContinueLabel => Session.IsAdvancing ? "Playing…" : "Continue";
 
@@ -203,14 +249,66 @@ public sealed partial class GameShellViewModel : ObservableObject
         }
     }
 
+    public int UnreadCount => Session.Snapshot.Inbox.Count(message => !message.IsRead);
+
+    public string InboxMenuLabel => UnreadCount == 0 ? "Inbox" : $"Inbox ({UnreadCount})";
+
     public string GameName => Session.GameName;
 
     public bool IsSaveDialogOpen => SaveDialog is not null;
 
     public string SaveStatus => Session.HasUnsavedChanges ? "Unsaved changes" : "Saved";
 
-    public ShellPage CurrentPageKind => _pages.Single(pair => pair.Value == CurrentPage).Key;
+    /// <summary>
+    /// Gets how many of the managed team's dressed players cannot play. AI teams replace theirs;
+    /// the user must.
+    /// </summary>
+    public int DressedPlayersOut
+    {
+        get
+        {
+            var team = Session.ManagedTeam;
+            var dressed = team.Lineup.DressedPlayerIds.ToHashSet();
+            return team.Roster.Count(player => dressed.Contains(player.Id) && !player.CanPlay);
+        }
+    }
 
+    public bool IsLineupValid => DressedPlayersOut == 0;
+
+    public string LineupStatus => DressedPlayersOut switch
+    {
+        0 => "Lineup valid",
+        1 => "Lineup: 1 player out injured",
+        var count => string.Create(CultureInfo.CurrentCulture, $"Lineup: {count} players out injured"),
+    };
+
+    /// <summary>
+    /// Gets the newest unread message's subject, with how many more are unread, or empty when
+    /// everything is read.
+    /// </summary>
+    public string LatestInboxItem
+    {
+        get
+        {
+            var unread = Session.Snapshot.Inbox.Where(message => !message.IsRead).ToList();
+            return unread.Count switch
+            {
+                0 => string.Empty,
+                1 => $"Inbox: {unread[0].Subject}",
+                _ => string.Create(CultureInfo.CurrentCulture, $"Inbox: {unread[0].Subject} (+{unread.Count - 1})"),
+            };
+        }
+    }
+
+    public bool HasLatestInboxItem => UnreadCount > 0;
+
+    public static string Version => $"HockeySim {AppVersion.Current}";
+
+    /// <summary>
+    /// Shows a page in its section. Opening the team schedule shows the managed team's; the league
+    /// schedule keeps whichever team was chosen there.
+    /// </summary>
+    /// <exception cref="ArgumentException">The page is not available yet.</exception>
     public void Navigate(ShellPage page)
     {
         if (!_pages.TryGetValue(page, out var target))
@@ -218,7 +316,16 @@ public sealed partial class GameShellViewModel : ObservableObject
             throw new ArgumentException($"The {page} page is not available yet.", nameof(page));
         }
 
+        if (page == ShellPage.TeamSchedule)
+        {
+            Schedule.ShowTeam(Session.Snapshot.ManagedTeamId);
+        }
+
+        _currentPageKind = page;
+        CurrentSection = Sections.Single(section => section.Items.Any(item => item.Page == page));
         CurrentPage = target;
+        UpdateNavigationState();
+        OnPropertyChanged(nameof(CurrentPageKind));
     }
 
     public void OpenInboxMessage(InboxMessageId messageId)
@@ -234,13 +341,22 @@ public sealed partial class GameShellViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Shows a match on the schedule page, in the schedule of the given team, which plays in it.
+    /// Shows a match in the schedule of the given team, which plays in it: the team schedule for
+    /// the managed team, otherwise the league schedule.
     /// </summary>
     public void OpenMatch(DateOnly date, TeamId teamId)
     {
-        Navigate(ShellPage.Schedule);
+        Navigate(teamId == Session.Snapshot.ManagedTeamId ? ShellPage.TeamSchedule : ShellPage.LeagueSchedule);
         Schedule.OpenMatch(date, teamId);
     }
+
+    [RelayCommand(CanExecute = nameof(IsPageAvailable))]
+    private void OpenPage(ShellPage page)
+    {
+        Navigate(page);
+    }
+
+    private bool IsPageAvailable(ShellPage page) => _pages.ContainsKey(page);
 
     /// <summary>
     /// Plays the current league day. Management applies a day completely or not at all, so a
@@ -272,6 +388,19 @@ public sealed partial class GameShellViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void OpenLatestInboxItem()
+    {
+        var latest = Session.Snapshot.Inbox.FirstOrDefault(message => !message.IsRead);
+        if (latest is null)
+        {
+            Navigate(ShellPage.Inbox);
+            return;
+        }
+
+        OpenInboxMessage(latest.Id);
+    }
+
+    [RelayCommand]
     private void DismissAdvanceError()
     {
         AdvanceError = null;
@@ -289,6 +418,18 @@ public sealed partial class GameShellViewModel : ObservableObject
     private bool CanSaveGame() => _saves is not null && !Session.IsAdvancing;
 
     /// <summary>
+    /// Opens the saved games, which may replace this game. That waits until a day being played has
+    /// finished, as leaving for the main menu does.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanLoadGame))]
+    private void LoadGame()
+    {
+        _showLoadGame!();
+    }
+
+    private bool CanLoadGame() => _showLoadGame is not null && !Session.IsAdvancing;
+
+    /// <summary>
     /// Leaves for the main menu, where the game can be replaced. That waits until a day being
     /// played has finished, so the day cannot complete into a game that has since been replaced.
     /// </summary>
@@ -300,10 +441,18 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     private bool CanShowMainMenu() => !Session.IsAdvancing;
 
-    partial void OnCurrentPageChanged(ShellPageViewModel value)
+    private NavigationSectionViewModel CreateSection(ShellSection section, params (ShellPage Page, string Label)[] tabs) =>
+        new(section, tabs.Select(tab => new NavigationItemViewModel(tab.Page, tab.Label, _pages.ContainsKey(tab.Page), Navigate)).ToList());
+
+    private string DaysUntil(DateOnly date)
     {
-        UpdateNavigationState();
-        OnPropertyChanged(nameof(CurrentPageKind));
+        var days = date.DayNumber - Session.Snapshot.Season.CurrentDate.DayNumber;
+        return days switch
+        {
+            0 => "today",
+            1 => "tomorrow",
+            _ => string.Create(CultureInfo.CurrentCulture, $"in {days} days"),
+        };
     }
 
     private void OnSessionChanged(object? sender, PropertyChangedEventArgs e)
@@ -313,6 +462,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             OnPropertyChanged(nameof(ContinueLabel));
             AdvanceDayCommand.NotifyCanExecuteChanged();
             SaveGameCommand.NotifyCanExecuteChanged();
+            LoadGameCommand.NotifyCanExecuteChanged();
             ShowMainMenuCommand.NotifyCanExecuteChanged();
             return;
         }
@@ -334,27 +484,33 @@ public sealed partial class GameShellViewModel : ObservableObject
             return;
         }
 
-        foreach (var page in _pages.Values)
+        // The schedule serves two tabs; refresh each page once.
+        foreach (var page in _pages.Values.Distinct())
         {
             page.Refresh();
         }
 
+        TeamBanner.Refresh();
         UpdateNavigationState();
-        OnPropertyChanged(nameof(PhaseLabel));
+        OnPropertyChanged(nameof(CalendarLabel));
         OnPropertyChanged(nameof(ContinueDescription));
         OnPropertyChanged(nameof(HasPlayersToReplace));
         OnPropertyChanged(nameof(PlayersToReplaceMessage));
+        OnPropertyChanged(nameof(UnreadCount));
+        OnPropertyChanged(nameof(InboxMenuLabel));
+        OnPropertyChanged(nameof(LatestInboxItem));
+        OnPropertyChanged(nameof(HasLatestInboxItem));
+        OnPropertyChanged(nameof(DressedPlayersOut));
+        OnPropertyChanged(nameof(IsLineupValid));
+        OnPropertyChanged(nameof(LineupStatus));
         AdvanceDayCommand.NotifyCanExecuteChanged();
     }
 
     private void UpdateNavigationState()
     {
-        var current = CurrentPageKind;
-        foreach (var item in NavigationSections.SelectMany(section => section.Items))
+        foreach (var item in Sections.SelectMany(section => section.Items))
         {
-            item.IsActive = item.Page == current;
+            item.IsActive = item.Page == _currentPageKind;
         }
-
-        _inboxItem.BadgeCount = Session.Snapshot.Inbox.Count(message => !message.IsRead);
     }
 }

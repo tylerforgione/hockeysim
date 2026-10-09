@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace HockeySim.Desktop.Game;
 
+/// <summary>A page tab in the strip under the team banner.</summary>
 public sealed partial class NavigationItemViewModel : ObservableObject
 {
     private readonly Action<ShellPage> _navigate;
@@ -10,36 +11,20 @@ public sealed partial class NavigationItemViewModel : ObservableObject
     [ObservableProperty]
     private bool _isActive;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasBadge))]
-    private int _badgeCount;
-
-    public NavigationItemViewModel(
-        ShellPage page,
-        string label,
-        Action<ShellPage> navigate,
-        string? unavailableReason = null)
+    public NavigationItemViewModel(ShellPage page, string label, bool isAvailable, Action<ShellPage> navigate)
     {
         Page = page;
         Label = label;
+        IsAvailable = isAvailable;
         _navigate = navigate;
-        UnavailableReason = unavailableReason;
     }
 
     public ShellPage Page { get; }
 
     public string Label { get; }
 
-    public bool IsAvailable => UnavailableReason is null;
-
-    public bool IsUnavailable => !IsAvailable;
-
-    /// <summary>
-    /// Explains why a planned page cannot be opened yet; null when the page is available.
-    /// </summary>
-    public string? UnavailableReason { get; }
-
-    public bool HasBadge => BadgeCount > 0;
+    /// <summary>Gets whether the page exists yet; planned pages are listed but disabled.</summary>
+    public bool IsAvailable { get; }
 
     [RelayCommand(CanExecute = nameof(IsAvailable))]
     private void Navigate()
@@ -48,4 +33,5 @@ public sealed partial class NavigationItemViewModel : ObservableObject
     }
 }
 
-public sealed record NavigationSectionViewModel(string Title, IReadOnlyList<NavigationItemViewModel> Items);
+/// <summary>A section's pages, in tab order.</summary>
+public sealed record NavigationSectionViewModel(ShellSection Section, IReadOnlyList<NavigationItemViewModel> Items);

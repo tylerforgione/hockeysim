@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:players="using:HockeySim.Desktop.Players"
+             xmlns:teamStatistics="using:HockeySim.Desktop.TeamStatistics"
+             x:Class="HockeySim.Desktop.TeamStatistics.TeamStatisticsPageView"
+             x:DataType="teamStatistics:TeamStatisticsPageViewModel">
+  <Border Classes="panel" Width="520" HorizontalAlignment="Left" VerticalAlignment="Top">
+    <StackPanel>
+      <Border Classes="panel-header">
+        <TextBlock Classes="panel-title" Text="TEAM STATISTICS" />
+      </Border>
+      <Border Classes="table-header">
+        <Grid ColumnDefinitions="60,*,80">
+          <TextBlock Text="STAT" />
+          <TextBlock Grid.Column="2" Text="VALUE" HorizontalAlignment="Right" />
+        </Grid>
+      </Border>
+      <ItemsControl x:Name="TeamStatisticsList" Classes="table" ItemsSource="{Binding Statistics}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="players:SeasonStatViewModel">
+            <Border Classes="standing-row" Height="24" Padding="8,0">
+              <Grid ColumnDefinitions="60,*,80">
+                <TextBlock Classes="cell strong" Text="{Binding Label}" />
+                <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding Description}" />
+                <TextBlock Grid.Column="2" Classes="cell" HorizontalAlignment="Right" Text="{Binding Value}" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </Border>
+</UserControl>

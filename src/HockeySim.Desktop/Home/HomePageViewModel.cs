@@ -98,8 +98,6 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
         Refresh();
     }
 
-    public override string Title => "Home";
-
     public override string Subtitle => $"{_session.ManagedTeam.Name} · {DivisionName}";
 
     public string DivisionTitle => DivisionName.ToUpperInvariant();

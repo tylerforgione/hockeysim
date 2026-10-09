@@ -30,8 +30,6 @@ public sealed partial class StandingsPageViewModel : ShellPageViewModel
         Refresh();
     }
 
-    public override string Title => "Standings";
-
     public override string Subtitle
     {
         get

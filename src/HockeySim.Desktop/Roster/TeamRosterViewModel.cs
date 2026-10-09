@@ -9,9 +9,9 @@ using HockeySim.Management.GameManagement.Snapshots;
 namespace HockeySim.Desktop.Roster;
 
 /// <summary>
-/// A read-only roster split into skaters and goalies, with the team's season statistics and the
-/// selected player's profile. The tables show ratings, basic season totals, or advanced
-/// five-on-five figures; they do not fit side by side.
+/// A read-only roster split into skaters and goalies, with the selected player's profile. The
+/// tables show ratings, basic season totals, or advanced five-on-five figures; they do not fit side
+/// by side.
 /// </summary>
 public sealed partial class TeamRosterViewModel : ObservableObject
 {
@@ -49,14 +49,6 @@ public sealed partial class TeamRosterViewModel : ObservableObject
             .ToList();
         Skaters = rows.Where(row => row.Player.Position != Position.Goalie).ToList();
         Goalies = rows.Where(row => row.Player.Position == Position.Goalie).ToList();
-        // Players who cannot play come first, then those playing hurt; each in roster order.
-        InjuryReport = _team.Roster
-            .SelectMany(player => player.Injuries.Select(injury => (Player: player, Injury: injury)))
-            .OrderBy(entry => entry.Injury.CanPlayThrough)
-            .Select(entry => new InjuryReportRowViewModel(entry.Player, entry.Injury))
-            .ToList();
-        TeamStatistics = TeamStatisticsDisplay.Strip(
-            session.Snapshot.Season.TeamStatistics.Single(statistics => statistics.TeamId == teamId));
 
         var initialRow = rows.FirstOrDefault(row => row.Player.Id == initiallySelectedPlayerId) ?? rows[0];
         SelectPlayer(initialRow.Player.Id);
@@ -65,16 +57,6 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     public IReadOnlyList<PlayerRowViewModel> Skaters { get; }
 
     public IReadOnlyList<PlayerRowViewModel> Goalies { get; }
-
-    /// <summary>Every injury on the team that has not healed: who is out, who is playing hurt.</summary>
-    public IReadOnlyList<InjuryReportRowViewModel> InjuryReport { get; }
-
-    public bool HasInjuries => InjuryReport.Count > 0;
-
-    /// <summary>
-    /// The team's current-season special teams, faceoff percentage, and five-on-five shares.
-    /// </summary>
-    public IReadOnlyList<SeasonStatViewModel> TeamStatistics { get; }
 
     public bool ShowsRatings => Columns == RosterColumns.Ratings;
 

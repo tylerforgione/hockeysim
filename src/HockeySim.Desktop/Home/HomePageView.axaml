@@ -117,7 +117,7 @@
                           Classes="link"
                           Content="Schedule ›"
                           Command="{Binding NavigateCommand}"
-                          CommandParameter="{x:Static game:ShellPage.Schedule}" />
+                          CommandParameter="{x:Static game:ShellPage.TeamSchedule}" />
                 </Grid>
               </Border>
               <StackPanel>
