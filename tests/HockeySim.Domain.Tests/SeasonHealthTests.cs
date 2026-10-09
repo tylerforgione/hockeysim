@@ -160,7 +160,7 @@ public sealed class SeasonHealthTests
         team.Lineup.ForwardLines.SelectMany(line => line.Players).ElementAt(index).Id;
 
     private static MatchInjury Injury(Team team, PlayerId player, InjuryType type, int days) =>
-        new(1, TimeSpan.FromMinutes(5), team.Id, player, type, days);
+        new(1, TimeSpan.FromMinutes(5), team.Id, player, type, InjuryCause.Hit, days);
 
     private static CompletedMatch WithHealth(CompletedMatch match, IEnumerable<MatchInjury> injuries, IEnumerable<WearGain> wear) =>
         new(match.ScheduledMatch, match.Home, match.Away, match.Decision, match.Goals, match.Penalties, new MatchHealthChanges(injuries, wear));

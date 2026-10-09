@@ -1,3 +1,4 @@
+using HockeySim.Domain;
 using HockeySim.Simulation.Events;
 
 namespace HockeySim.Simulation.Play;

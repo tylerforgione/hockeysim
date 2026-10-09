@@ -182,6 +182,7 @@ internal static class GameSaveRestorer
                     injury.TeamId,
                     injury.PlayerId,
                     injury.Type,
+                    injury.Cause,
                     injury.RecoveryDays)),
                 Items(saved.Wear, "wear").Select(gain => new WearGain(gain.PlayerId, gain.BodyPart, gain.Points))));
 

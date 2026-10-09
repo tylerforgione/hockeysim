@@ -120,6 +120,7 @@ public sealed record SavedInjury(
     TeamId TeamId,
     PlayerId PlayerId,
     InjuryType Type,
+    InjuryCause Cause,
     int RecoveryDays);
 
 public sealed record SavedWearGain(PlayerId PlayerId, BodyPart BodyPart, int Points);

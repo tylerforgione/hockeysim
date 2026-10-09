@@ -83,6 +83,13 @@ internal static class NhlTargets
         new("Recovery days of injuries missing matches", 11.0, 4.0, measured => measured.MeanRecoveryDays),
         new("Players out injured (man-games lost)", 1.67, 0.6, measured => measured.ManGamesLost),
 
+        // Public NHL data does not count knocks played through. The target is about one every five
+        // matches (17 a season), about as many as injuries that miss matches. Lasting about a week,
+        // each is carried for two or three more matches, so a team dresses someone playing hurt in
+        // about three matches in ten.
+        new("Injuries played through", 0.20, 0.08, measured => measured.PlayThroughInjuries),
+        new("Share of matches playing hurt", 0.30, 0.12, measured => measured.PlayingHurtShare),
+
         // Hockey-Reference final standings: the spread between strong and weak teams.
         new("Standard deviation of standings points", 15.0 * SeasonLengthScale, 6.0, measured => measured.PointsStandardDeviation),
         new("Fewest standings points", 52.3 * SeasonLengthScale, 18.0, measured => measured.FewestPoints),

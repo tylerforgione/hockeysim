@@ -62,7 +62,14 @@ public sealed class InjuryTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new Injury(type, MatchDate, days));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new MatchInjury(1, TimeSpan.FromMinutes(5), new TeamId(Guid.NewGuid()), Player, type, days));
+            new MatchInjury(1, TimeSpan.FromMinutes(5), new TeamId(Guid.NewGuid()), Player, type, InjuryCause.Hit, days));
+    }
+
+    [Fact]
+    public void AnUnrecognisedInjuryCauseIsRejected()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new MatchInjury(1, TimeSpan.FromMinutes(5), new TeamId(Guid.NewGuid()), Player, InjuryType.BruisedFoot, (InjuryCause)99, 3));
     }
 
     [Fact]
@@ -145,8 +152,8 @@ public sealed class InjuryTests
     public void AMatchsHealthChangesMustBeInTimeOrderWithOneWearEntryPerBodyPart()
     {
         var team = new TeamId(Guid.NewGuid());
-        var late = new MatchInjury(2, TimeSpan.FromMinutes(1), team, Player, InjuryType.BruisedFoot, 3);
-        var early = new MatchInjury(1, TimeSpan.FromMinutes(19), team, Player, InjuryType.BruisedKnee, 3);
+        var late = new MatchInjury(2, TimeSpan.FromMinutes(1), team, Player, InjuryType.BruisedFoot, InjuryCause.BlockedShot, 3);
+        var early = new MatchInjury(1, TimeSpan.FromMinutes(19), team, Player, InjuryType.BruisedKnee, InjuryCause.Hit, 3);
 
         Assert.Throws<ArgumentException>(() => new MatchHealthChanges([late, early], []));
         Assert.Throws<ArgumentException>(() => new MatchHealthChanges(

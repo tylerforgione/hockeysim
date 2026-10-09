@@ -129,7 +129,7 @@ public sealed class InjuredPlayerTests
     }
 
     [Fact]
-    public void TheHeadTrainerReportsEachManagedInjuryAndEachRecovery()
+    public void TheHeadTrainerReportsEachInjuryThatKeepsAPlayerOutAndItsRecovery()
     {
         var manager = new GameManager();
         var snapshot = StartGame(manager);
@@ -140,8 +140,8 @@ public sealed class InjuredPlayerTests
             var played = snapshot.Season.CurrentDate;
             snapshot = manager.AdvanceDayReplacingInjured();
             injured = ManagedTeam(snapshot).Roster.FirstOrDefault(player =>
-                player.Injuries.Any(candidate => candidate.Date == played));
-            injury = injured?.Injuries.First(candidate => candidate.Date == played);
+                player.Injuries.Any(candidate => candidate.Date == played && !candidate.CanPlayThrough));
+            injury = injured?.Injuries.First(candidate => candidate.Date == played && !candidate.CanPlayThrough);
         }
 
         Assert.NotNull(injured);
@@ -151,7 +151,7 @@ public sealed class InjuredPlayerTests
         Assert.False(report.IsRead);
         Assert.Contains(injury.ExpectedReturn.Earliest.ToString("MMMM d", System.Globalization.CultureInfo.InvariantCulture), report.Body);
         Assert.Contains(injury.ExpectedReturn.Latest.ToString("MMMM d", System.Globalization.CultureInfo.InvariantCulture), report.Body);
-        Assert.Contains(injury.CanPlayThrough ? "can play through it" : "cannot play until it heals", report.Body);
+        Assert.Contains("cannot play until it heals", report.Body);
 
         var recoverySubject = $"Recovered: {injured.FirstName} {injured.LastName}";
         Assert.DoesNotContain(snapshot.Inbox, message => message.Subject == recoverySubject);
@@ -167,19 +167,37 @@ public sealed class InjuredPlayerTests
     }
 
     [Fact]
-    public void InjuryReportsCoverOnlyTheManagedTeam()
+    public void KnocksPlayedThroughAreReportedInTheWeeklyHealthReportRatherThanOnTheirOwn()
     {
         var manager = new GameManager();
         var snapshot = StartGame(manager);
-        for (var day = 0; day < 30; day++)
+        PlayerSnapshot? injured = null;
+        InjurySnapshot? knock = null;
+        var individualReports = 0;
+        for (var day = 0; day < MaximumDays && knock is null; day++)
+        {
+            var played = snapshot.Season.CurrentDate;
+            snapshot = manager.AdvanceDayReplacingInjured();
+            injured = ManagedTeam(snapshot).Roster.FirstOrDefault(player =>
+                player.Injuries.Any(candidate => candidate.Date == played && candidate.CanPlayThrough)
+                && !player.Injuries.Any(candidate => candidate.Date == played && !candidate.CanPlayThrough));
+            knock = injured?.Injuries.First(candidate => candidate.Date == played && candidate.CanPlayThrough);
+            individualReports = injured is null ? 0 : IndividualReports(snapshot, injured);
+        }
+
+        Assert.NotNull(injured);
+        Assert.NotNull(knock);
+        var weekStart = knock.Date.AddDays(-(((int)knock.Date.DayOfWeek + 6) % 7));
+        while (snapshot.Season.CurrentDate.DayOfWeek != DayOfWeek.Monday && !snapshot.Season.IsComplete)
         {
             snapshot = manager.AdvanceDayReplacingInjured();
         }
 
-        var managedNames = ManagedTeam(snapshot).Roster.Select(player => $"{player.FirstName} {player.LastName}").ToHashSet();
-        var reports = snapshot.Inbox.Where(message => message.SenderRole == InboxSenderRole.HeadTrainer).ToList();
-        Assert.NotEmpty(reports);
-        Assert.All(reports, message => Assert.Contains(message.Subject[(message.Subject.IndexOf(':') + 2)..], managedNames));
+        var subject = $"Health report: week of {weekStart.ToString("MMMM d", System.Globalization.CultureInfo.InvariantCulture)}";
+        var report = Assert.Single(snapshot.Inbox, message => message.Subject == subject);
+        Assert.Equal(InboxSenderRole.HeadTrainer, report.SenderRole);
+        Assert.Contains($"{injured.FirstName} {injured.LastName}", report.Body);
+        Assert.Equal(individualReports, IndividualReports(snapshot, injured));
     }
 
     [Fact]
@@ -229,6 +247,11 @@ public sealed class InjuredPlayerTests
     private static bool ManagedTeamPlays(GameSnapshot snapshot) =>
         snapshot.Schedule.Matches.Any(match => match.Date == snapshot.Season.CurrentDate
             && (match.HomeTeamId == snapshot.ManagedTeamId || match.AwayTeamId == snapshot.ManagedTeamId));
+
+    private static int IndividualReports(GameSnapshot snapshot, PlayerSnapshot player) =>
+        snapshot.Inbox.Count(message =>
+            message.Subject == $"Injury: {player.FirstName} {player.LastName}"
+            || message.Subject == $"Recovered: {player.FirstName} {player.LastName}");
 
     private static PlayerSnapshot Player(GameSnapshot snapshot, PlayerId id) =>
         snapshot.League.Teams.SelectMany(team => team.Roster).Single(player => player.Id == id);

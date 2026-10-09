@@ -56,7 +56,8 @@ public sealed class CalibrationTests(CalibrationTests.CalibratedSeason season)
             }
 
             Results = simulator.Results;
-            Measurements = new LeagueMeasurements(Results, snapshot.Season.TeamRecords, simulator.PlayersOut);
+            Measurements = new LeagueMeasurements(
+                Results, snapshot.Season.TeamRecords, simulator.PlayersOut, simulator.SidesPlayingHurt);
         }
 
         public IReadOnlyList<MatchResult> Results { get; }
@@ -78,9 +79,14 @@ public sealed class CalibrationTests(CalibrationTests.CalibratedSeason season)
         /// <summary>Rostered players who could not play, summed over both teams of every match.</summary>
         public int PlayersOut { get; private set; }
 
+        /// <summary>Teams that dressed a player playing through an injury, summed over every match.</summary>
+        public int SidesPlayingHurt { get; private set; }
+
         public MatchResult Simulate(Match match, OvertimeFormat overtime, MatchHealth health, RandomState randomState)
         {
             PlayersOut += match.Home.Roster.Concat(match.Away.Roster).Count(player => !health.CanPlay(player.Id));
+            SidesPlayingHurt += new[] { match.Home, match.Away }.Count(team => team.Lineup.DressedPlayers.Any(player =>
+                health.CanPlay(player.Id) && health.For(player.Id).InjuriesOn(health.Date).Count > 0));
             var result = _simulator.Simulate(match, overtime, health, randomState);
             _results.Add(result);
             return result;
