@@ -32,7 +32,8 @@ public sealed class GameSaveFileTests : IDisposable
 
     [Theory]
     [InlineData(0)]
-    [InlineData(9)]
+    [InlineData(8)]
+    [InlineData(10)]
     public void ASavedGameLoadsAsSavedAndContinuesAsIfUninterrupted(int daysPlayed)
     {
         var uninterrupted = StartGame();
@@ -151,7 +152,8 @@ public sealed class GameSaveFileTests : IDisposable
     [InlineData(3)]
     [InlineData(6)]
     [InlineData(7)]
-    [InlineData(9)]
+    [InlineData(8)]
+    [InlineData(10)]
     public void ASaveFromAnotherFormatVersionIsRejectedAsUnsupported(int version)
     {
         StartGame().SaveGame(new GameSaveFile(SavePath));
@@ -172,14 +174,14 @@ public sealed class GameSaveFileTests : IDisposable
 
     [Theory]
     [InlineData("""[]""")]
-    [InlineData("""{"formatVersion":8,"game":{}}""")]
-    [InlineData("""{"format":"Another game","formatVersion":8,"game":{}}""")]
+    [InlineData("""{"formatVersion":9,"game":{}}""")]
+    [InlineData("""{"format":"Another game","formatVersion":9,"game":{}}""")]
     [InlineData("""{"format":"HockeySim save","game":{}}""")]
     [InlineData("""{"format":"HockeySim save","formatVersion":"3","game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":8}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":8,"game":null}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":8,"game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":8,"game":{"seasonYear":2026""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":9}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":9,"game":null}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":9,"game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":9,"game":{"seasonYear":2026""")]
     public void ADocumentThatIsNotAWholeSaveIsRejected(string json)
     {
         Directory.CreateDirectory(_directory);

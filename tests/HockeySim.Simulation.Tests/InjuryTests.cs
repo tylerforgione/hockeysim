@@ -1,5 +1,6 @@
 using HockeySim.Domain;
 using HockeySim.Simulation.Events;
+using HockeySim.Simulation.Play;
 using HockeySim.Simulation.Randomness;
 
 using Xunit;
@@ -28,6 +29,34 @@ public sealed class InjuryTests
         Assert.All(injuries, injury => Assert.True(InjuryCatalogue.For(injury.Type).AllowsRecoveryDays(injury.RecoveryDays)));
         Assert.All(results, result => Assert.NotEmpty(result.Wear));
         Assert.All(results.SelectMany(result => result.Wear), gain => Assert.True(gain.Points > 0));
+    }
+
+    [Fact]
+    public void EachInjuryRecordsACauseThatStrikesItsBodyPart()
+    {
+        var injuries = TestMatches.SimulateMany(TestMatches.EvenMatch(), SeedCount)
+            .SelectMany(result => result.Injuries)
+            .ToList();
+
+        Assert.All(injuries, injury => Assert.Contains(
+            InjuryTuning.PartsStruck(injury.Cause),
+            part => part.BodyPart == InjuryCatalogue.For(injury.Type).BodyPart
+                && part.Injuries.Any(candidate => candidate.Type == injury.Type)));
+        Assert.Contains(injuries, injury => injury.Cause == InjuryCause.Hit);
+        Assert.Contains(injuries, injury => injury.Cause == InjuryCause.BlockedShot);
+        Assert.Contains(injuries, injury => injury.Cause == InjuryCause.Strain);
+    }
+
+    [Fact]
+    public void KnocksPlayedThroughAreNoMoreCommonThanInjuriesThatMissMatches()
+    {
+        var injuries = TestMatches.SimulateMany(TestMatches.EvenMatch(), SeedCount * 2)
+            .SelectMany(result => result.Injuries)
+            .ToList();
+        var playedThrough = injuries.Count(injury => InjuryCatalogue.For(injury.Type).CanPlayThrough);
+        var missingMatches = injuries.Count - playedThrough;
+
+        Assert.True(playedThrough <= missingMatches, $"Played through: {playedThrough}; missing matches: {missingMatches}");
     }
 
     [Fact]
@@ -203,9 +232,9 @@ public sealed class InjuryTests
         }
     }
 
-    private static List<(int, TimeSpan, TeamId, PlayerId, InjuryType, int)> Describe(MatchResult result) =>
+    private static List<(int, TimeSpan, TeamId, PlayerId, InjuryType, InjuryCause, int)> Describe(MatchResult result) =>
         result.Injuries
-            .Select(injury => (injury.Period, injury.TimeInPeriod, injury.TeamId, injury.PlayerId, injury.Type, injury.RecoveryDays))
+            .Select(injury => (injury.Period, injury.TimeInPeriod, injury.TeamId, injury.PlayerId, injury.Type, injury.Cause, injury.RecoveryDays))
             .ToList();
 
     /// <summary>Health on the match date for players hurt the day before, each with the injury's longest recovery.</summary>
