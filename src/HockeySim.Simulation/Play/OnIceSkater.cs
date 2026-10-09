@@ -11,12 +11,17 @@ namespace HockeySim.Simulation.Play;
 internal readonly struct OnIceSkater
 {
     public OnIceSkater(SkaterState skater, SkaterRole role, SkaterSide? side)
+        : this(skater, role, side, SkaterFit.For(skater.Player.Position, role))
+    {
+    }
+
+    private OnIceSkater(SkaterState skater, SkaterRole role, SkaterSide? side, PositionFit fit)
     {
         Skater = skater;
         Role = role;
         Side = side;
 
-        var positionPenalty = SkaterFit.For(skater.Player.Position, role) switch
+        var positionPenalty = fit switch
         {
             PositionFit.OtherForwardPosition => MatchTuning.OtherForwardPositionPenalty,
             PositionFit.AcrossForwardsAndDefence => MatchTuning.AcrossForwardsAndDefencePenalty,
@@ -35,6 +40,13 @@ internal readonly struct OnIceSkater
         Finishing = skater.Finishing + (offHandWing ? MatchTuning.OffHandWingFinishingBonus : 0);
         PuckProtection = skater.PuckProtection - (offHandWing ? MatchTuning.OffHandWingPuckProtectionPenalty : 0);
     }
+
+    /// <summary>
+    /// An extra attacker, who joins the forwards with no side. No skater is out of position there,
+    /// whatever their natural position.
+    /// </summary>
+    public static OnIceSkater ExtraAttacker(SkaterState skater) =>
+        new(skater, SkaterRole.Wing, side: null, PositionFit.Natural);
 
     public SkaterState Skater { get; }
 

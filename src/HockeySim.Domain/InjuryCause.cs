@@ -1,7 +1,7 @@
-namespace HockeySim.Simulation.Play;
+namespace HockeySim.Domain;
 
-/// <summary>What in the play can injure a player.</summary>
-internal enum InjuryCause
+/// <summary>What in a match injured a player.</summary>
+public enum InjuryCause
 {
     /// <summary>Being hit while carrying the puck.</summary>
     Hit,

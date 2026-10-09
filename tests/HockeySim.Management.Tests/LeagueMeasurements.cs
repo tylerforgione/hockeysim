@@ -14,7 +14,12 @@ internal sealed class LeagueMeasurements
     private const int DressedSkaters = (3 * Lineup.RequiredForwardLineCount) + (2 * Lineup.RequiredDefencePairCount);
 
     /// <param name="playersOut">Rostered players who could not play, summed over both teams of every match.</param>
-    public LeagueMeasurements(IReadOnlyList<MatchResult> results, IReadOnlyList<TeamRecordSnapshot> records, int playersOut)
+    /// <param name="sidesPlayingHurt">Teams that dressed a player playing through an injury, summed over every match.</param>
+    public LeagueMeasurements(
+        IReadOnlyList<MatchResult> results,
+        IReadOnlyList<TeamRecordSnapshot> records,
+        int playersOut,
+        int sidesPlayingHurt)
     {
         if (results.Count == 0)
         {
@@ -76,6 +81,9 @@ internal sealed class LeagueMeasurements
         PlayThroughInjuries = PerTeam(injuries.Count - outInjuries.Count);
         MeanRecoveryDays = outInjuries.Count == 0 ? 0 : outInjuries.Average(injury => injury.RecoveryDays);
         ManGamesLost = PerTeam(playersOut);
+        PlayingHurtShare = PerTeam(sidesPlayingHurt);
+        var playThroughInjuries = injuries.Where(injury => InjuryCatalogue.For(injury.Type).CanPlayThrough).ToList();
+        MeanPlayThroughRecoveryDays = playThroughInjuries.Count == 0 ? 0 : playThroughInjuries.Average(injury => injury.RecoveryDays);
 
         var points = records.Select(record => (double)record.Points).ToList();
         var meanPoints = points.Average();
@@ -129,7 +137,6 @@ internal sealed class LeagueMeasurements
     /// <summary>Each defence pair's share of the defence's time on ice, top pair first.</summary>
     public IReadOnlyList<double> DefencePairTimeShares { get; }
 
-    /// <summary>The spread of the teams' points in the final standings.</summary>
     /// <summary>Injuries that cannot be played through, per team per game.</summary>
     public double InjuriesMissingMatches { get; }
 
@@ -142,6 +149,13 @@ internal sealed class LeagueMeasurements
     /// <summary>Rostered players out injured, per team per game: man-games lost.</summary>
     public double ManGamesLost { get; }
 
+    /// <summary>The share of a team's matches in which it dresses someone playing through an injury.</summary>
+    public double PlayingHurtShare { get; }
+
+    /// <summary>The mean recovery time of injuries played through, in league days.</summary>
+    public double MeanPlayThroughRecoveryDays { get; }
+
+    /// <summary>The spread of the teams' points in the final standings.</summary>
     public double PointsStandardDeviation { get; }
 
     public double FewestPoints { get; }

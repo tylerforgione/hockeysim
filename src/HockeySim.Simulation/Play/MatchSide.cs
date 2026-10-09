@@ -346,7 +346,7 @@ internal sealed class MatchSide
         {
             var extraAttacker = _extraAttackers.FirstOrDefault(skater => IsAvailable(skater) && !Contains(onIce, skater))
                 ?? Substitute(onIce, planned, SkaterRole.Wing);
-            onIce.Add(new OnIceSkater(extraAttacker, SkaterRole.Wing, side: null));
+            onIce.Add(OnIceSkater.ExtraAttacker(extraAttacker));
             drains.Add(1);
         }
 

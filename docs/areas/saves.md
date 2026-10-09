@@ -47,7 +47,7 @@ detached save, then hands it to the store. The rest of the play-by-play is not
 saved. Save format version 4 added the event engine's box-score statistics,
 version 5 penalty minutes, power-play and shorthanded goals and assists, and
 power-play opportunities, version 6 empty-net goals, version 7 the shot
-totals and summaries, and version 8 injuries and wear. The head trainer's sender role (#57) needed no new
+totals and summaries, version 8 injuries and wear, and version 9 each injury's cause. The head trainer's sender role (#57) needed no new
 version: sender roles are saved by name, so older version 8 saves still load. The shot totals roughly triple a save's size: a complete
 season is about 3 MB compressed (70 MB of JSON) rather than 1 MB, and loads in
 about half a second. `LoadGame` rebuilds the

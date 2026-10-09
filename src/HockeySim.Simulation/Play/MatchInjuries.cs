@@ -45,6 +45,7 @@ internal sealed class MatchInjuries(MatchHealth health, ControlledRandom random)
         var wear = health.For(player.Id).Wear(struck.BodyPart) + _wear.GetValueOrDefault((player.Id, struck.BodyPart));
         var durability = player.GetRating(Rating.Durability).Value;
         var chance = InjuryTuning.BaseChance(cause)
+            * struck.Chance
             * riskFactor
             * Math.Exp(-InjuryTuning.DurabilitySensitivity * (durability - MatchTuning.ReferenceRating))
             * (1 + (InjuryTuning.WearRiskPerPoint * wear));
@@ -53,7 +54,7 @@ internal sealed class MatchInjuries(MatchHealth health, ControlledRandom random)
             return null;
         }
 
-        var type = struck.Injuries[random.NextWeightedIndex(struck.Injuries.Select(injury => injury.Weight).ToArray())].Type;
+        var type = struck.Injuries[random.NextWeightedIndex(struck.Injuries.Select(injury => injury.Chance).ToArray())].Type;
         var definition = InjuryCatalogue.For(type);
         if (!definition.CanPlayThrough && (!canLeave || !InjuryCap.AllowsLosing(player.Position, ablePlayers)))
         {
@@ -78,7 +79,7 @@ internal sealed class MatchInjuries(MatchHealth health, ControlledRandom random)
             }
         }
 
-        return new DrawnInjury(definition, recoveryDays, reductions.AsReadOnly());
+        return new DrawnInjury(definition, cause, recoveryDays, reductions.AsReadOnly());
     }
 
     private Dictionary<Rating, int> ReductionsFor(PlayerId playerId)
@@ -105,4 +106,4 @@ internal sealed class MatchInjuries(MatchHealth health, ControlledRandom random)
 }
 
 /// <summary>An injury the play caused, and the player's rating reductions from every injury they are now playing through.</summary>
-internal sealed record DrawnInjury(InjuryDefinition Definition, int RecoveryDays, IReadOnlyDictionary<Rating, int> Reductions);
+internal sealed record DrawnInjury(InjuryDefinition Definition, InjuryCause Cause, int RecoveryDays, IReadOnlyDictionary<Rating, int> Reductions);

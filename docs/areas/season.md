@@ -11,7 +11,7 @@ is in [match engine](match-engine.md).
 | --- | --- |
 | `Domain/Season.cs` | The season aggregate: `CompleteDay`, records, season statistics, player health |
 | `Domain/PlayerHealth.cs`, `Injury.cs`, `InjuryCatalogue.cs`, `InjuryDefinition.cs`, `InjuryType.cs`, `BodyPart.cs`, `InjuryCap.cs`, `ExpectedReturn.cs` | Injuries, healing by date, the staff's expected return, hidden wear, and the injury cap |
-| `Domain/MatchHealthChanges.cs`, `MatchInjury.cs`, `WearGain.cs` | A completed match's injuries and wear |
+| `Domain/MatchHealthChanges.cs`, `MatchInjury.cs`, `InjuryCause.cs`, `WearGain.cs` | A completed match's injuries (with their causes) and wear |
 | `Domain/SeasonSchedule.cs`, `ScheduledMatch.cs`, `Match.cs` | The schedule and its invariants |
 | `Domain/CompletedMatch.cs`, `CompletedMatchTeam.cs`, `SkaterBoxScore.cs`, `GoalieBoxScore.cs`, `ExpectedGoalTotals.cs`, `MatchTime.cs` | A completed match's box score and its reconciliation rules |
 | `Domain/MatchGoal.cs`, `MatchPenalty.cs`, `MatchClock.cs`, `GoalSituation.cs`, `Infraction.cs`, `PenaltyKind.cs` | The scoring and penalty summaries |
@@ -93,7 +93,7 @@ history use them.
 the hidden wear on each body part, rebuilt from the completed matches (see
 [ADR 0008](../adr/0008-health-derived-from-completed-matches.md)). Each completed
 match carries its `MatchHealthChanges`: the injuries (period, time, team,
-player, type, and recovery days) and the wear each appearing player's body parts
+player, type, cause, and recovery days) and the wear each appearing player's body parts
 took. An injury is active from its match date until the date its recovery days
 later, so injuries heal on days without matches too; a player can play on a date
 unless an active injury cannot be played through, and plays through the rest at

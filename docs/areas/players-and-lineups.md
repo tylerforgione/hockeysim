@@ -19,7 +19,7 @@ commands).
 | `Management/NewGame/LeagueGenerator.cs` | Builds the league |
 | `Management/NewGame/PlayerRatingGenerator.cs`, `PlayerBiographyGenerator.cs`, `PlayerOriginData.cs`, `FictionalLeagueData.cs` | Generated players, names, and teams |
 | `Management/Lineups/` | `SetLineupCommand` and its selections; `MatchDayLineup` (players who cannot play, AI teams' replacements) and `UnavailablePlayersException` |
-| `Management/Inbox/`, `Snapshots/InboxMessageSnapshot.cs` | Inbox messages: the new-game messages and the head trainer's `InjuryMessages` |
+| `Management/Inbox/`, `Snapshots/InboxMessageSnapshot.cs` | Inbox messages: the new-game messages, and the head trainer's `InjuryMessages` and their phrasings (`InjuryWording`) |
 | `Management/GameManagement/GameManager.cs` | Commands: new game, select team, set lineup, read message |
 | `Management/GameManagement/Snapshots/GameSnapshot.cs` | `PlayerSnapshot` with its injuries, team and lineup snapshots, and `PlayersToReplace` |
 
@@ -38,6 +38,7 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | `Management.Tests/LineupTests.cs`, `SpecialSituationUnitTests.cs` | Lineup commands, rejected changes, snapshot isolation |
 | `Management.Tests/InboxTests.cs` | Inbox messages |
 | `Management.Tests/InjuredPlayerTests.cs` | Rejected days, replacing injured players, AI teams' replacements and restored lineups, injury and recovery messages, injuries in snapshots |
+| `Management.Tests/HeadTrainerReportTests.cs` | A season's head trainer reports: volume, varied wording, managed team only, the same words after saving and loading |
 | `Management.Tests/InjuredPlayerReplacement.cs` (copied in the Infrastructure and Desktop tests) | Plays days as a user would, replacing players who cannot play |
 
 ## The new game and lineups
@@ -51,11 +52,18 @@ league and roster rules that use them.
 Management also delivers inbox messages to the user. New-game messages are
 derived from the generated managed team, so they never describe state the game
 does not hold; selecting a different managed team replaces them with messages
-for that team. After each league day the head trainer reports every injury the
-managed team suffered in its match, with whether the player can play through it
-and the expected return, and every managed-team injury that has healed by the
-next day, on days without matches too. Marking a message read is a Management
-command.
+for that team. After each league day the head trainer reports every managed-team
+injury from its match that keeps the player out, with how it happened, a note on
+the injury, how serious it is, and the expected return, and every such injury
+that has healed by the next day, on days without matches too. Knocks a player
+can play through are too common for a message each: after each Sunday, and when
+the season ends, a weekly health report lists who is playing hurt (with how and
+when for knocks suffered that week), who is out, and which knocks have healed,
+and is not sent in a week with none of these. Each phrase is chosen from several
+by the injury, its cause, and its severity (where the recovery time falls in the
+injury's range), using a stable hash of the player, date, and injury rather than
+the game's random state, so a game always writes the same words, including after
+it is saved and loaded. Marking a message read is a Management command.
 Domain's `Lineup` also holds the special-situation units and two extra
 attackers. `SpecialSituationFormat` fixes each situation's unit count and the
 skater role of every slot (5-on-4 and 5-on-3: LW C RW / LD RD; 4-on-3, 4-on-5,

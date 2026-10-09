@@ -101,6 +101,7 @@ internal static class GameSaveCapture
                     injury.TeamId,
                     injury.PlayerId,
                     injury.Type,
+                    injury.Cause,
                     injury.RecoveryDays))
                 .ToList(),
             match.Health.Wear

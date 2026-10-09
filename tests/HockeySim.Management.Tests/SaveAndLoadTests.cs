@@ -423,11 +423,11 @@ public sealed class SaveAndLoadTests
             MissingInjuries => WithFirstResult(save, firstResult with { Injuries = null! }),
             InjuryRecoveryOutsideItsRange => WithFirstResult(save, firstResult with
             {
-                Injuries = [new SavedInjury(1, 60, firstResult.Home.TeamId, firstResult.Home.Skaters[0].PlayerId, InjuryType.Concussion, 999)],
+                Injuries = [new SavedInjury(1, 60, firstResult.Home.TeamId, firstResult.Home.Skaters[0].PlayerId, InjuryType.Concussion, InjuryCause.Hit, 999)],
             }),
             InjuryToAPlayerWhoDidNotAppear => WithFirstResult(save, firstResult with
             {
-                Injuries = [new SavedInjury(1, 60, firstResult.Home.TeamId, firstResult.Away.Skaters[0].PlayerId, InjuryType.BruisedFoot, 3)],
+                Injuries = [new SavedInjury(1, 60, firstResult.Home.TeamId, firstResult.Away.Skaters[0].PlayerId, InjuryType.BruisedFoot, InjuryCause.BlockedShot, 3)],
             }),
             UndefinedBodyPart => WithFirstResult(save, firstResult with
             {

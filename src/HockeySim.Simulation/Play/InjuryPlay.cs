@@ -71,7 +71,7 @@ internal sealed class InjuryPlay(MatchState state, MatchInjuries injuries)
 
     private void RecordInjury(MatchSide side, Player player, DrawnInjury injury)
     {
-        state.Record(new InjuryEvent(state.Period, state.Now, state.OnIce(), side.TeamId, player.Id, injury.Definition.Type, injury.RecoveryDays));
+        state.Record(new InjuryEvent(state.Period, state.Now, state.OnIce(), side.TeamId, player.Id, injury.Definition.Type, injury.Cause, injury.RecoveryDays));
         state.ForgetOnIce();
     }
 }

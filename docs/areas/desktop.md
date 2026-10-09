@@ -57,7 +57,8 @@ in front of its defence. Every skater slot offers every skater, and goalie slots
 only goalies; each choice shows the player's natural position.
 A slot warns beneath its choice when the player is injured (in red when they
 cannot play, in amber when they are playing through it) and when they are out of
-position (a defenceman at forward or a forward on defence is named as such), and
+position (a defenceman at forward or a forward on defence is named as such;
+extra-attacker slots never are), and
 each choice marks an injured player OUT or INJ. Handedness is not shown or
 warned about there; the roster and player profile show it. AI teams' lineups are
 shown as they dress today, with injured players already replaced.

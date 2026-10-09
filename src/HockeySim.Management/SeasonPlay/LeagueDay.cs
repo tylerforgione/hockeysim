@@ -87,6 +87,7 @@ internal static class LeagueDay
                     injury.TeamId,
                     injury.PlayerId,
                     injury.Type,
+                    injury.Cause,
                     injury.RecoveryDays)),
                 result.Wear));
 
