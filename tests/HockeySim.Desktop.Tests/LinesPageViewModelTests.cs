@@ -102,6 +102,23 @@ public sealed class LinesPageViewModelTests
     }
 
     [Fact]
+    public void ExtraAttackerSlotsNeverWarnOfPosition()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+
+        foreach (var slot in lines.Lineup.ExtraAttackers)
+        {
+            foreach (var position in new[] { Position.Centre, Position.Wing, Position.Defence })
+            {
+                slot.SelectedPlayer = slot.Options.First(option => option.Position == position);
+
+                Assert.Null(slot.FitNote);
+                Assert.False(slot.HasFitNote);
+            }
+        }
+    }
+
+    [Fact]
     public void PlayerChoicesShowNaturalPosition()
     {
         var session = GameTestData.StartSession();

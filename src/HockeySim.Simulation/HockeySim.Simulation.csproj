@@ -4,4 +4,9 @@
     <ProjectReference Include="..\HockeySim.Domain\HockeySim.Domain.csproj" />
   </ItemGroup>
 
+  <!-- Lets the tests check rules too small to isolate statistically, such as an extra attacker's strengths. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="HockeySim.Simulation.Tests" />
+  </ItemGroup>
+
 </Project>

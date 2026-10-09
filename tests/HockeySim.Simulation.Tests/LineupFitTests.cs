@@ -1,5 +1,6 @@
 using HockeySim.Domain;
 using HockeySim.Simulation.Events;
+using HockeySim.Simulation.Play;
 using HockeySim.Simulation.Randomness;
 
 using Xunit;
@@ -7,9 +8,10 @@ using Xunit;
 namespace HockeySim.Simulation.Tests;
 
 /// <summary>
-/// Statistical checks that skaters out of position or on their off-hand side play below their
-/// ratings. Each compares teams of identical ratings that differ only in where their skaters play,
-/// with injuries off so nobody leaves the lineup being compared.
+/// Checks that skaters out of position or on their off-hand side play below their ratings. The
+/// statistical checks compare teams of identical ratings that differ only in where their skaters
+/// play, with injuries off so nobody leaves the lineup being compared. The extra attacker is on the
+/// ice too briefly for that, so its strengths are checked directly.
 /// </summary>
 public sealed class LineupFitTests
 {
@@ -69,6 +71,27 @@ public sealed class LineupFitTests
 
         // The off-hand effects are deliberately small, and one-timers partly offset them.
         Assert.True(onSideShare > 0.502, $"On-side share of attempts: {onSideShare}");
+    }
+
+    [Theory]
+    [InlineData(Position.Centre)]
+    [InlineData(Position.Wing)]
+    [InlineData(Position.Defence)]
+    public void NoSkaterIsOutOfPositionAsAnExtraAttacker(Position position)
+    {
+        var player = TestTeams.Create("Team").Roster.First(player => player.Position == position);
+        var skater = new SkaterState(player, new Dictionary<Rating, int>());
+
+        var extraAttacker = OnIceSkater.ExtraAttacker(skater);
+        var wing = new OnIceSkater(skater, SkaterRole.Wing, side: null);
+
+        Assert.Equal(skater.Offence, extraAttacker.Offence);
+        Assert.Equal(skater.Defence, extraAttacker.Defence);
+        Assert.Equal(skater.Faceoffs, extraAttacker.Faceoffs);
+        Assert.Equal(skater.Finishing, extraAttacker.Finishing);
+        Assert.Equal(skater.PuckProtection, extraAttacker.PuckProtection);
+        // The same skater in an ordinary wing slot is penalised unless they are a wing.
+        Assert.Equal(position != Position.Wing, wing.Offence < skater.Offence);
     }
 
     /// <summary>
