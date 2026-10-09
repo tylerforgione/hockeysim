@@ -307,6 +307,22 @@ against each divisional opponent, three against each other same-conference
 opponent, and two against each opposite-conference opponent, with 42 at home and
 42 away. A team plays at most once on any date.
 
+**Season phase**:
+The part of the season a league day belongs to: the preseason until opening day,
+then the regular season.
+
+**Opening day**:
+The date of the first regular-season match.
+
+**Preseason**:
+Exhibition matches before opening day, in which each team plays each divisional
+opponent once, at home three or four times. A new game starts on its first day.
+Preseason matches are played like regular-season matches and keep their box
+scores, but nothing counts: they add to no team record, season statistics, or
+standings, and injure or wear nobody. The managed team may change its lineup
+between them.
+_Avoid_: Exhibition season, training camp.
+
 **League day**:
 One calendar date of the season. Advancing a league day plays every match
 scheduled on the current date, which may be none, and moves to the next date.

@@ -1,7 +1,7 @@
 # Season, schedule, and standings
 
-The regular-season schedule, playing league days, applying results, and
-ranking standings. Spans `HockeySim.Domain` (the season rules) and
+The preseason and regular-season schedules, playing league days, applying
+results, and ranking standings. Spans `HockeySim.Domain` (the season rules) and
 `HockeySim.Management` (generation and orchestration). The match engine itself
 is in [match engine](match-engine.md).
 
@@ -9,7 +9,7 @@ is in [match engine](match-engine.md).
 
 | File | Holds |
 | --- | --- |
-| `Domain/Season.cs` | The season aggregate: `CompleteDay`, records, season statistics, player health |
+| `Domain/Season.cs`, `SeasonPhase.cs` | The season aggregate: phases, `CompleteDay`, records, season statistics, player health |
 | `Domain/PlayerHealth.cs`, `Injury.cs`, `InjuryCatalogue.cs`, `InjuryDefinition.cs`, `InjuryType.cs`, `BodyPart.cs`, `InjuryCap.cs`, `ExpectedReturn.cs` | Injuries, healing by date, the staff's expected return, hidden wear, and the injury cap |
 | `Domain/MatchHealthChanges.cs`, `MatchInjury.cs`, `InjuryCause.cs`, `WearGain.cs` | A completed match's injuries (with their causes) and wear |
 | `Domain/SeasonSchedule.cs`, `ScheduledMatch.cs`, `Match.cs` | The schedule and its invariants |
@@ -20,7 +20,7 @@ is in [match engine](match-engine.md).
 | `Domain/TeamRecord.cs`, `TeamSeasonStatistics.cs`, `SkaterSeasonStatistics.cs`, `GoalieSeasonStatistics.cs`, `SeasonAverages.cs` | Season totals and the rates derived from them |
 | `Domain/StandingsRanking.cs`, `StandingsEntry.cs` | NHL tie-breaking |
 | `Domain/WildCardStandings.cs`, `PlayoffRace.cs`, `PlayoffStatus.cs` | Wild-card qualification, and clinch and elimination statuses |
-| `Management/Scheduling/` | `ScheduleGenerator`: `MeetingPlanner` then `RoundCalendar` |
+| `Management/Scheduling/` | `ScheduleGenerator`: `MeetingPlanner` then `RoundCalendar`; `PreseasonGenerator`; `RoundRobin` rounds shared by both |
 | `Management/SeasonPlay/LeagueDay.cs` | Plays a day's matches and converts results |
 | `Management/GameManagement/GameManager.cs` | `AdvanceDay`, command serialization |
 | `Management/GameManagement/Snapshots/SeasonSnapshot.cs`, `ScheduleSnapshot.cs`, `StandingsSnapshot.cs` | Read-only season views |
@@ -33,6 +33,7 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | File | Covers |
 | --- | --- |
 | `Domain.Tests/SeasonTests.cs` | Day atomicity, points per decision, terminal state |
+| `Domain.Tests/PreseasonTests.cs` | Phases, preseason results counting toward nothing, no preseason injuries or wear, the move to opening day |
 | `Domain.Tests/InjuryTests.cs`, `SeasonHealthTests.cs` | The injury catalogue, healing, expected returns, playing through, wear, the cap, and applying a day's health changes |
 | `Domain.Tests/BoxScoreTests.cs` | Completed-match reconciliation rules |
 | `Domain.Tests/MatchSummaryTests.cs` | Summaries agreeing with the box scores, shot totals across teams and skaters |
@@ -42,10 +43,11 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | `Domain.Tests/PlayoffRaceTests.cs` | Wild-card qualification, each status on constructed scenarios, tie-breakers in guarantees, final statuses |
 | `Domain.Tests/SeasonScheduleTests.cs` | Schedule invariants |
 | `Management.Tests/ScheduleTests.cs` | Opponent matrix, home/away balance, dates, over several seeds |
+| `Management.Tests/PreseasonTests.cs` | The preseason schedule (opponents, dates, home balance), exclusion from every total, the move to opening day, determinism, saving mid-preseason |
 | `Management.Tests/SeasonAdvancementTests.cs` | Advancing days, failures leaving nothing applied, threading |
 | `Management.Tests/StandingsTests.cs` | Standings and wild-card tables and snapshot isolation |
 | `Management.Tests/FullSeasonTests.cs` | A shared fixture plays a full 1,344-match season and reconciles it, including every season total and summary, and checks every playoff status held to the end |
-| `Domain.Tests/TestLeague.cs`, `TestResults.cs` | Builders |
+| `Domain.Tests/TestLeague.cs`, `TestResults.cs`, `Management.Tests/PreseasonPlay.cs` | Builders; most Management tests start on opening day after playing the preseason |
 
 ## Behaviour
 
@@ -63,22 +65,40 @@ every other day. Authentic NHL dates, travel, rest, and rotation constraints are
 not modelled; see [future features](../future-features.md#realistic-season-calendar). The schedule is exposed as a read-only
 snapshot and is unchanged by managed-team selection.
 
-Domain's `Season` aggregate holds the league, schedule, current date, the
-completed-match history, team records, team and player season statistics, and
-each rostered player's health. A new
-season's current date is opening day. `CompleteDay` accepts exactly one
+The preseason is generated next, from the same stream. Each team plays each of
+its seven divisional opponents once: around a shuffled circle of each division,
+a team hosts the next three teams and the team opposite it is host or visitor by
+chance, so every team has three or four home matches. The pairings form seven
+rounds in which every team plays (a round robin within each division), one round
+every other day ending the day before opening day (September 18 to 30). Its
+schedule is exposed beside the regular season's as
+`ScheduleSnapshot.PreseasonMatches`. Training camp and roster cuts are not
+modelled; see [future features](../future-features.md#preseason-roster-decisions).
+
+Domain's `Season` aggregate holds the league, the preseason and regular-season
+schedules, current date, the completed-match history of each, team records, team
+and player season statistics, and each rostered player's health. A new season's
+current date is its first preseason day, or opening day without a preseason. Its
+`Phase` is the preseason until opening day, then the regular season;
+`CurrentDateMatches` reads the current phase's schedule. Preseason matches are
+kept apart in `PreseasonMatches` rather than tagged in one history, so the
+records, statistics, standings, head-to-head, playoff race, and health only ever
+see the regular season. `CompleteDay` accepts exactly one
 completed match for each match scheduled on the current date, validates the
 whole day (scheduled teams, decisive scores, statistics that reconcile with the
 score, rostered players, no appearance by a player who cannot play, and the
 injury cap) before changing anything, applies each match's injuries and wear to
-the players' health, and then moves to the next calendar day; a scheduled match therefore cannot be completed twice, and a day
-is never partly applied. Management's `AdvanceDay` command first rejects the day,
+the players' health, and then moves to the next calendar day; a scheduled match
+therefore cannot be completed twice, and a day is never partly applied. A
+preseason day is validated the same way, is also rejected if any match injures
+or wears anyone, and its results are only kept. Management's `AdvanceDay` command first rejects the day,
 changing nothing, if the managed team plays on the current date with a dressed
 player who cannot play (see
 [injured players in lineups](players-and-lineups.md#injured-players-in-lineups)).
 It then simulates the day's matches in schedule order, the managed team from its
 lineup and each AI team from its match-day lineup, with the players' health on
-the current date, on one continuous random stream; converts each Simulation
+the current date, on one continuous random stream, preseason matches with injuries switched off
+in the engine (`MatchHealth.InjuriesPossible`); converts each Simulation
 result into a Domain completed match; commits the random state only after the
 season accepts the day; and then delivers the head trainer's injury reports. `GameManager`
 serializes its commands, rejects commands issued from inside a day being played,
