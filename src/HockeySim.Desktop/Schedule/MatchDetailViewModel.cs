@@ -24,7 +24,6 @@ public sealed class MatchDetailViewModel
         HomeTeamId = result.Home.TeamId;
         DateLabel = MatchDisplay.LongDate(result.Date);
         FinalLabel = MatchDisplay.FinalLabel(result.Decision);
-        IsShootout = result.Decision == MatchDecision.Shootout;
         Away = new MatchSideViewModel(result.Away, players, teamName(result.Away.TeamId), result.WinnerId == result.Away.TeamId);
         Home = new MatchSideViewModel(result.Home, players, teamName(result.Home.TeamId), result.WinnerId == result.Home.TeamId);
 
@@ -51,13 +50,6 @@ public sealed class MatchDetailViewModel
     public string DateLabel { get; }
 
     public string FinalLabel { get; }
-
-    public bool IsShootout { get; }
-
-    /// <summary>
-    /// Explains why a shootout score is one more than the goals in the box score.
-    /// </summary>
-    public string ShootoutNote => "The shootout winner is credited one goal that no player scored; shootout attempts are not in the box score.";
 
     public MatchSideViewModel Away { get; }
 

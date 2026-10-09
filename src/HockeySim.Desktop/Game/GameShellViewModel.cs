@@ -158,27 +158,25 @@ public sealed partial class GameShellViewModel : ObservableObject
             var season = Session.Snapshot.Season;
             if (season.IsComplete)
             {
-                return "The regular season is complete. Results and rosters remain available.";
+                return "Regular season complete";
             }
 
             var date = MatchDisplay.ShortDate(season.CurrentDate);
             if (HasPlayersToReplace)
             {
-                return $"Replace the injured players in your lineup before playing {date}.";
+                return $"{date} · Injured players to replace";
             }
 
             var matches = Session.Snapshot.Schedule.Matches.Where(match => match.Date == season.CurrentDate).ToList();
             if (matches.Count == 0)
             {
-                return $"No league matches on {date}. Continue to the next day.";
+                return $"{date} · No league matches";
             }
 
             var managedTeamId = Session.Snapshot.ManagedTeamId;
             var managedMatch = matches.FirstOrDefault(match => match.HomeTeamId == managedTeamId || match.AwayTeamId == managedTeamId);
             var count = matches.Count == 1 ? "1 league match" : $"{matches.Count} league matches";
-            return managedMatch is null
-                ? $"Play {date}: {count}. Your team does not play."
-                : $"Play {date}: {count}, including yours.";
+            return managedMatch is null ? $"{date} · {count}" : $"{date} · {count}, including yours";
         }
     }
 
@@ -201,8 +199,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             }
 
             var names = Session.Snapshot.PlayersToReplace.Select(id => Session.PlayersById[id]).Select(player => $"{PlayerDisplay.FullName(player)} (#{player.Number})");
-            return $"Your lineup dresses injured players who cannot play: {string.Join(", ", names)}. "
-                + "Replace them on the Lines page and save the lineup to continue.";
+            return $"Injured players dressed: {string.Join(", ", names)}";
         }
     }
 

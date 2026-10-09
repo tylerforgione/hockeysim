@@ -21,10 +21,6 @@
                      Foreground="{DynamicResource OnTeamPrimaryBrush}"
                      FontSize="16"
                      FontWeight="Bold" />
-          <TextBlock Text="Choose a saved game to continue"
-                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
-                     Opacity="0.7"
-                     FontSize="11" />
         </StackPanel>
       </Grid>
     </Border>
@@ -61,7 +57,7 @@
         <Grid>
           <TextBlock x:Name="NoSavesText"
                      Classes="caption"
-                     Text="No saved games yet. Save a game from the title bar while playing."
+                     Text="No saved games"
                      IsVisible="{Binding !HasSaves}"
                      HorizontalAlignment="Center"
                      VerticalAlignment="Center" />

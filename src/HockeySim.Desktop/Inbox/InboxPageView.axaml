@@ -3,7 +3,7 @@
              xmlns:inbox="using:HockeySim.Desktop.Inbox"
              x:Class="HockeySim.Desktop.Inbox.InboxPageView"
              x:DataType="inbox:InboxPageViewModel">
-  <Grid ColumnDefinitions="360,*" ColumnSpacing="8">
+  <Grid ColumnDefinitions="360,*" ColumnSpacing="6">
     <Border Classes="panel">
       <DockPanel>
         <Border DockPanel.Dock="Top" Classes="panel-header">
@@ -47,11 +47,6 @@
 
     <Border Grid.Column="1" Classes="panel">
       <Grid>
-        <TextBlock Classes="caption"
-                   Text="Select a message to read it."
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   IsVisible="{Binding !HasSelectedMessage}" />
         <DockPanel IsVisible="{Binding HasSelectedMessage}">
           <Border DockPanel.Dock="Top"
                   Background="{DynamicResource SurfaceRaisedBrush}"

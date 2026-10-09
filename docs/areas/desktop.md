@@ -23,7 +23,7 @@ view model together.
 | `Roster/TeamStatisticsDisplay.cs`, `InjuryReportRowViewModel.cs` | The team statistics strip and injury report above each roster |
 | `Schedule/MatchDetail*`, `MatchDisplay.cs` | The box score with its summaries, and shared match and statistic formatting |
 | `Confirmation/` | The confirmation shown over every screen |
-| `Theme/` | Colours, control styles, icons |
+| `Theme/` | Palette, control styles, icons, the bundled PT Sans fonts and their licence (`Fonts/`), and `TeamPalette`, which colours the window with the managed team |
 
 ## Tests
 
@@ -32,7 +32,7 @@ games, plus a headless Avalonia walkthrough.
 
 | File | Covers |
 | --- | --- |
-| `MainWindowViewTests.cs` | Headless walkthrough of every page, saving, loading, closing |
+| `MainWindowViewTests.cs` | Headless walkthrough of every page, team colours, saving, loading, closing |
 | `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup, navigation, browsing teams |
 | `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings |
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, a full season |
@@ -40,6 +40,7 @@ games, plus a headless Avalonia walkthrough.
 | `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, the team strip |
 | `SaveAndLoadTests.cs` | Save and load screens, unsaved progress, confirmations |
 | `PlayerBiographyDisplayTests.cs`, `AppVersionTests.cs` | Formatting, version display |
+| `TeamPaletteTests.cs` | Readable text on team colours |
 | `InjuryDisplayTests.cs` | Continue waiting for replacements, Lines-page injury warnings, roster markers, the injury report, the profile's health |
 | `GameTestData.cs`, `TestMatchSimulators.cs`, `TemporarySaveDirectory.cs`, `InjuredPlayerReplacement.cs` | Builders, test engines, and replacing injured players between days |
 
@@ -107,9 +108,19 @@ player who has not appeared shows zeros, and every percentage, average, and rate
 is a dash until it is defined. Advanced figures are five-on-five only; views by
 situation are a [future feature](../future-features.md#situational-statistics-views).
 Pages rebuild from whichever snapshot the session last published.
-Colours and control styles live in `HockeySim.Desktop/Theme/`; team identity
-colours are dynamic resources so a chosen team's colours can replace the
-league defaults later.
+The look is a dense "front office": square panels with 1 px dark borders and
+6 px gutters on a slate palette, PT Sans for body text (its digits are
+fixed-width, so numbers line up) and PT Sans Narrow for headings, panel titles,
+and large figures. Both fonts are bundled under the SIL Open Font License, whose
+text is copied beside the executable. Panel headers are upper case on the team's
+primary colour with a 2 px underline in its secondary colour. Segmented button
+groups switch views; the selected button and primary actions are the secondary
+colour with primary-coloured text. Tables are zebra-striped, with the managed
+team's or selected player's row highlighted. Copy is labels and data only. The
+palette and control styles live in `Theme/`. The team colours are dynamic
+resources: while a game is open, `TeamPalette` sets them on the main window from
+the managed team's colours, with light or dark text on the primary, whichever
+contrasts more; before the first game they are the league's black and silver.
 
 Desktop composes `GameSaveDirectory` with the game manager at startup. The
 title bar's Save Game button saves under a typed or chosen name, and the startup

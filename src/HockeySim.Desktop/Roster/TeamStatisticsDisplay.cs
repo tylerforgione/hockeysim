@@ -26,8 +26,8 @@ public static class TeamStatisticsDisplay
                 CultureInfo.CurrentCulture,
                 $"Penalty-kill percentage: {statistics.PowerPlayGoalsAgainst} goals against in {statistics.TimesShorthanded} times shorthanded")),
             new("FO%", MatchDisplay.Percentage(statistics.FaceoffPercentage), "Faceoff percentage"),
-            new("CF%", MatchDisplay.Percentage(fiveOnFive.CorsiPercentage), "5-on-5 Corsi percentage: share of shot attempts"),
-            new("FF%", MatchDisplay.Percentage(fiveOnFive.FenwickPercentage), "5-on-5 Fenwick percentage: share of unblocked attempts"),
+            new("CF%", MatchDisplay.Percentage(fiveOnFive.CorsiPercentage), "5-on-5 Corsi percentage"),
+            new("FF%", MatchDisplay.Percentage(fiveOnFive.FenwickPercentage), "5-on-5 Fenwick percentage"),
             new("SF%", MatchDisplay.Percentage(fiveOnFive.ShotsPercentage), "5-on-5 share of shots on goal"),
             new("xGF%", MatchDisplay.Percentage(fiveOnFive.ExpectedGoalsPercentage), "5-on-5 share of expected goals"),
         ];

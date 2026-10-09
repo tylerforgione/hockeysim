@@ -160,12 +160,14 @@ public sealed class TeamSnapshot
     private TeamSnapshot(
         TeamId id,
         string name,
+        TeamColours colours,
         IReadOnlyList<PlayerSnapshot> roster,
         IReadOnlyList<PlayerId> scratchedPlayerIds,
         LineupSnapshot lineup)
     {
         Id = id;
         Name = name;
+        Colours = colours;
         _roster = new ReadOnlyCollection<PlayerSnapshot>(roster.ToList());
         Lineup = lineup;
         _scratchedPlayerIds = new ReadOnlyCollection<PlayerId>(
@@ -176,6 +178,8 @@ public sealed class TeamSnapshot
     public TeamId Id { get; }
 
     public string Name { get; }
+
+    public TeamColours Colours { get; }
 
     public IReadOnlyList<PlayerSnapshot> Roster => _roster;
 
@@ -202,6 +206,7 @@ public sealed class TeamSnapshot
         return new(
             team.Id,
             team.Name,
+            team.Colours,
             team.Roster.Select(player => PlayerSnapshot.Create(player, season)).ToList(),
             scratchedPlayerIds,
             LineupSnapshot.Create(lineup));

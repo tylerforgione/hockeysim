@@ -67,11 +67,11 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
     public bool HasSelectedResult => SelectedResult is not null;
 
     /// <summary>
-    /// Explains the empty detail pane: nothing selected, or a match not yet played.
+    /// Fills the empty detail pane: blank with nothing selected, or a match not yet played.
     /// </summary>
     public string SelectionHint => SelectedMatch is null
-        ? "Select a completed match to see its box score."
-        : $"{SelectedMatch.Matchup} is scheduled for {MatchDisplay.LongDate(SelectedMatch.Date)}.";
+        ? string.Empty
+        : $"{SelectedMatch.Matchup} · {MatchDisplay.LongDate(SelectedMatch.Date)}";
 
     /// <summary>
     /// Shows one match, switching to the given team's schedule. The team must play in the match.
