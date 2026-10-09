@@ -15,7 +15,9 @@ public sealed partial class LineupSlotViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(FitNote), nameof(HasFitNote), nameof(InjuryNote), nameof(HasInjuryNote), nameof(IsOutNote))]
     private PlayerOptionViewModel? _selectedPlayer;
 
-    /// <param name="role">The skater role the slot plays, or none for a goalie slot.</param>
+    /// <param name="role">
+    /// The skater role the slot plays, or none for a slot any of its players suits: a goalie or extra-attacker slot.
+    /// </param>
     public LineupSlotViewModel(
         string label,
         IReadOnlyList<PlayerOptionViewModel> options,

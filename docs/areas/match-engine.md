@@ -72,7 +72,7 @@ pull its goalie to tie a match). Keep them independent of the engine's code.
 | `OnIceStatisticsTests.cs` | On-ice and team shot totals recounted by situation, with `ManpowerReplay` as the oracle |
 | `OvertimeTests.cs` | Three-on-three, shootouts, playoff overtime |
 | `ShiftAndFatigueTests.cs`, `PhysicalPlayTests.cs` | Ice-time shares, stamina, hits |
-| `LineupFitTests.cs` | Relative statistical checks for out-of-position and off-hand play |
+| `LineupFitTests.cs` | Relative statistical checks for out-of-position and off-hand play; an extra attacker of any position keeps their full strengths |
 | `PenaltyTests.cs` | Every manpower rule, replayed through `ManpowerReplay` |
 | `GoaliePullTests.cs` | Pulls, empty-net goals, extra attackers, checked against `GoaliePullRule` |
 | `InjuryTests.cs` | Injuries and wear, players leaving or missing matches, the cap, goalies, durability and wear, playing through, matches without injuries, determinism |
@@ -163,9 +163,9 @@ into either overtime. Goalies are pulled to tie a match only in regulation.
 
 Any skater can fill any skater slot. A forward line plays left wing, centre,
 and right wing; a pair, left and right defence; a unit, its format's roles and
-sides; and an extra attacker, a wing with no side. A skater's strengths in the
-slot are their ratings adjusted in rating points by `OnIceSkater`, then scaled
-by fatigue as usual:
+sides; and an extra attacker joins the forwards with no side. A skater's
+strengths in the slot are their ratings adjusted in rating points by
+`OnIceSkater`, then scaled by fatigue as usual:
 
 | Assignment | Effect in the slot |
 | --- | --- |
@@ -176,7 +176,9 @@ by fatigue as usual:
 
 A skater is off-hand on the side opposite their handedness. The centre, a lone
 wing or defence player in a unit, and an extra attacker have no side, so
-handedness does not matter there. The effects combine, so a right-shot
+handedness does not matter there. No skater is out of position as an extra
+attacker, whatever their natural position, whether the goalie is pulled to tie
+the match or for a delayed penalty. The effects combine, so a right-shot
 defenceman at left wing takes both the larger position penalty and the off-hand
 wing effects. Offence and defence move the attacking edge (shot rates, danger,
 turnovers), faceoffs decide draws taken from the centre slot, puck protection
@@ -423,26 +425,26 @@ are scaled from 82 games to 84.
 
 | Target | NHL | Measured | Source |
 | --- | ---: | ---: | --- |
-| Goals (with shootout winners) | 3.06 | 3.03 | Hockey-Reference |
-| Shots on goal | 28.8 | 29.1 | Hockey-Reference |
-| Shot attempts | 59.5 | 59.2 | NHL.com team real-time |
-| Expected goals | 3.12 | 3.08 | MoneyPuck, all situations |
-| Save percentage | .900 | .903 | Hockey-Reference |
-| Regulation / overtime / shootout share of matches | 78.0 / 15.0 / 7.1% | 80.9 / 12.6 / 6.5% | Hockey-Reference games |
-| Power-play opportunities | 2.87 | 2.91 | Hockey-Reference |
-| Power-play percentage | 21.2% | 20.1% | Hockey-Reference |
-| Penalty minutes | 8.84 | 8.56 | NHL.com team penalties |
-| Fights per match | about 0.20 | 0.21 | NHL.com majors, most for fighting |
+| Goals (with shootout winners) | 3.06 | 3.05 | Hockey-Reference |
+| Shots on goal | 28.8 | 29.2 | Hockey-Reference |
+| Shot attempts | 59.5 | 59.4 | NHL.com team real-time |
+| Expected goals | 3.12 | 3.09 | MoneyPuck, all situations |
+| Save percentage | .900 | .902 | Hockey-Reference |
+| Regulation / overtime / shootout share of matches | 78.0 / 15.0 / 7.1% | 80.7 / 11.5 / 7.8% | Hockey-Reference games |
+| Power-play opportunities | 2.87 | 2.93 | Hockey-Reference |
+| Power-play percentage | 21.2% | 20.6% | Hockey-Reference |
+| Penalty minutes | 8.84 | 8.76 | NHL.com team penalties |
+| Fights per match | about 0.20 | 0.20 | NHL.com majors, most for fighting |
 | Hits | 21.5 | 21.4 | NHL.com team real-time |
 | Blocked shots | 15.1 | 15.3 | NHL.com team real-time |
 | Takeaways | 4.7 | 4.8 | NHL.com, 2024-25 and 2025-26 |
 | Giveaways | 14.8 | 14.9 | NHL.com, 2024-25 and 2025-26 |
-| Faceoffs per match | 56.4 | 57.1 | NHL.com team faceoffs |
+| Faceoffs per match | 56.4 | 57.0 | NHL.com team faceoffs |
 | Centre-ice share of faceoffs | 30% | 29% | NHL.com neutral-zone faceoffs |
-| Empty-net goals per match | 0.375 | 0.390 | NHL.com team real-time |
+| Empty-net goals per match | 0.375 | 0.348 | NHL.com team real-time |
 | Forward lines' share of forward ice time | 31/27/23/19% | 31/28/22/19% | NHL.com skater time on ice |
 | Defence pairs' share of defence ice time | 39/34/28% | 37/34/29% | NHL.com skater time on ice |
-| Standings points: spread, fewest, most | 15.4, 54, 120 | 14.0, 70, 131 | Hockey-Reference standings |
+| Standings points: spread, fewest, most | 15.4, 54, 120 | 15.9, 62, 122 | Hockey-Reference standings |
 | Injuries missing matches | about 0.30 | 0.24 | Estimated from man-games lost |
 | Recovery days of injuries missing matches | about 11 | 12.5 | Estimated from man-games lost |
 | Players out injured (man-games lost) | about 1.67 | 1.24 | Estimated from man-games lost |

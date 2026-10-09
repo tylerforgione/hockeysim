@@ -19,7 +19,8 @@ position; goalies only play in goal.
 **Out of position**:
 A skater filling a lineup role other than their natural position: a centre on
 the wing or a winger at centre (a moderate penalty), or a forward on defence or
-a defenceman at forward (a larger one).
+a defenceman at forward (a larger one). No skater is out of position as an extra
+attacker.
 
 **Off-hand side**:
 The side of the ice opposite a skater's handedness, such as a left shot at right

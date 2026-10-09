@@ -80,9 +80,9 @@ public sealed partial class LineupEditorViewModel : ObservableObject
         PowerPlay = CreateGroups(PowerPlaySituations);
         PenaltyKill = CreateGroups(PenaltyKillSituations);
         OtherSituationUnits = CreateGroups(OtherSituations);
-        // The extra attacker joins the forwards, so the match engine plays them as a wing.
+        // No skater is out of position as an extra attacker, so these slots have no role to warn about.
         ExtraAttackers = _savedLineup.ExtraAttackerIds
-            .Select((id, index) => Slot(index == 0 ? "1ST CHOICE" : "2ND CHOICE", _skaterOptions, id, SkaterRole.Wing))
+            .Select((id, index) => Slot(index == 0 ? "1ST CHOICE" : "2ND CHOICE", _skaterOptions, id, role: null))
             .ToList();
         AddSwapGroup(ExtraAttackers);
 
