@@ -33,7 +33,7 @@ Paths are under `src/HockeySim.Simulation/`.
 | `Play/MatchSide.cs` | One team during a match: who is on the ice, line changes, strength state, pulled goalie |
 | `Play/Rotation.cs` | The groups rotated through one set of positions, and target ice-time shares |
 | `Play/SkaterState.cs`, `Play/PlayerStrength.cs`, `Play/EffectiveRatings.cs` | A skater's energy and composite strengths from ratings, less injury reductions |
-| `Play/MatchInjuries.cs`, `Play/InjuryCause.cs`, `Play/InjuryTuning.cs` | Injuries and wear from contacts and strains, and their tuning |
+| `Play/MatchInjuries.cs`, `Play/InjuryTuning.cs` | Injuries and wear from contacts and strains, and their tuning (the causes are Domain's `InjuryCause`) |
 | `Play/PenaltyBox.cs` | Timed penalties on the game clock |
 | `Play/ShootoutPlay.cs` | Shootouts (penalty shots reuse its attempt) |
 | `Play/ExpectedGoalsModel.cs` | xG by shot context (its values are in `MatchTuning`) |
@@ -75,7 +75,7 @@ pull its goalie to tie a match). Keep them independent of the engine's code.
 | `LineupFitTests.cs` | Relative statistical checks for out-of-position and off-hand play; an extra attacker of any position keeps their full strengths |
 | `PenaltyTests.cs` | Every manpower rule, replayed through `ManpowerReplay` |
 | `GoaliePullTests.cs` | Pulls, empty-net goals, extra attackers, checked against `GoaliePullRule` |
-| `InjuryTests.cs` | Injuries and wear, players leaving or missing matches, the cap, goalies, durability and wear, playing through, matches without injuries, determinism |
+| `InjuryTests.cs` | Injuries and wear, their causes, how often knocks are played through, players leaving or missing matches, the cap, goalies, durability and wear, playing through, matches without injuries, determinism |
 | `TestTeams.cs`, `TestMatches.cs`, `TestBiography.cs` | Builders |
 
 Management's `FullSeasonTests.cs` plays a whole season through the engine, and
@@ -287,10 +287,14 @@ the foot and hand; a fight the hand, face, and head. The contact adds a point of
 wear to that part (two in a fight). A moment of strain comes about once every
 2,000 seconds a player spends on the ice or in net, more often for a tired skater,
 and strikes the groin, back, knee, or ankle without adding wear. Either may then
-injure the part, with a chance set by the cause, moved in log-odds by durability
-from the reference rating, and raised by 2% for every point of the part's wear,
-from earlier matches and this one. The injury is drawn from the part's
-injuries for that cause, and its recovery time is the shortest of three draws
+injure the part. Each injury the part can suffer from that cause has its own
+chance relative to the cause's base chance, and the part's chances add up to how
+likely it is to be injured at all; injuries a player can play through are scaled
+to 0.22 of their share, so a contact more often causes an injury that keeps a
+player out than a knock. The chance is moved in log-odds by durability from the
+reference rating and raised by 2% for every point of the part's wear, from
+earlier matches and this one. The injury is drawn from the part's injuries by
+their chances, and its recovery time is the shortest of three draws
 from its range, so most heal toward the short end. An injury adds five points of
 wear to its part, plus one for every three recovery days. The catalogue and its
 recovery ranges are in Domain's `InjuryCatalogue`; the causes, parts, and chances
@@ -303,7 +307,8 @@ reductions from then on. An injury that would leave the team fewer than 18
 skaters or 2 goalies able to play, counting the whole roster, does not happen,
 and neither does one the goalie in net cannot play through, since one goalie
 plays the whole match. The impact's wear still counts. The match records each
-injury as an `InjuryEvent` and returns the wear in `MatchResult.Wear`.
+injury, with its cause, as an `InjuryEvent` and returns the wear in
+`MatchResult.Wear`.
 
 Players start the match with their current health: a skater playing through an
 injury plays at reduced ratings. Management never dresses a player who cannot
@@ -425,29 +430,31 @@ are scaled from 82 games to 84.
 
 | Target | NHL | Measured | Source |
 | --- | ---: | ---: | --- |
-| Goals (with shootout winners) | 3.06 | 3.05 | Hockey-Reference |
-| Shots on goal | 28.8 | 29.2 | Hockey-Reference |
-| Shot attempts | 59.5 | 59.4 | NHL.com team real-time |
-| Expected goals | 3.12 | 3.09 | MoneyPuck, all situations |
+| Goals (with shootout winners) | 3.06 | 3.06 | Hockey-Reference |
+| Shots on goal | 28.8 | 29.3 | Hockey-Reference |
+| Shot attempts | 59.5 | 59.5 | NHL.com team real-time |
+| Expected goals | 3.12 | 3.07 | MoneyPuck, all situations |
 | Save percentage | .900 | .902 | Hockey-Reference |
-| Regulation / overtime / shootout share of matches | 78.0 / 15.0 / 7.1% | 80.7 / 11.5 / 7.8% | Hockey-Reference games |
-| Power-play opportunities | 2.87 | 2.93 | Hockey-Reference |
-| Power-play percentage | 21.2% | 20.6% | Hockey-Reference |
-| Penalty minutes | 8.84 | 8.76 | NHL.com team penalties |
-| Fights per match | about 0.20 | 0.20 | NHL.com majors, most for fighting |
-| Hits | 21.5 | 21.4 | NHL.com team real-time |
-| Blocked shots | 15.1 | 15.3 | NHL.com team real-time |
+| Regulation / overtime / shootout share of matches | 78.0 / 15.0 / 7.1% | 80.0 / 11.9 / 8.1% | Hockey-Reference games |
+| Power-play opportunities | 2.87 | 2.92 | Hockey-Reference |
+| Power-play percentage | 21.2% | 21.3% | Hockey-Reference |
+| Penalty minutes | 8.84 | 8.60 | NHL.com team penalties |
+| Fights per match | about 0.20 | 0.22 | NHL.com majors, most for fighting |
+| Hits | 21.5 | 21.3 | NHL.com team real-time |
+| Blocked shots | 15.1 | 15.4 | NHL.com team real-time |
 | Takeaways | 4.7 | 4.8 | NHL.com, 2024-25 and 2025-26 |
-| Giveaways | 14.8 | 14.9 | NHL.com, 2024-25 and 2025-26 |
+| Giveaways | 14.8 | 15.0 | NHL.com, 2024-25 and 2025-26 |
 | Faceoffs per match | 56.4 | 57.0 | NHL.com team faceoffs |
 | Centre-ice share of faceoffs | 30% | 29% | NHL.com neutral-zone faceoffs |
-| Empty-net goals per match | 0.375 | 0.348 | NHL.com team real-time |
+| Empty-net goals per match | 0.375 | 0.356 | NHL.com team real-time |
 | Forward lines' share of forward ice time | 31/27/23/19% | 31/28/22/19% | NHL.com skater time on ice |
 | Defence pairs' share of defence ice time | 39/34/28% | 37/34/29% | NHL.com skater time on ice |
-| Standings points: spread, fewest, most | 15.4, 54, 120 | 15.9, 62, 122 | Hockey-Reference standings |
+| Standings points: spread, fewest, most | 15.4, 54, 120 | 15.9, 45, 127 | Hockey-Reference standings |
 | Injuries missing matches | about 0.30 | 0.24 | Estimated from man-games lost |
-| Recovery days of injuries missing matches | about 11 | 12.5 | Estimated from man-games lost |
+| Recovery days of injuries missing matches | about 11 | 12.2 | Estimated from man-games lost |
 | Players out injured (man-games lost) | about 1.67 | 1.24 | Estimated from man-games lost |
+| Injuries played through | about 0.20 | 0.20 | Estimated; see notes |
+| Share of matches with someone playing hurt | about 30% | 30% | Estimated; see notes |
 
 Sources: [Hockey-Reference league averages](https://www.hockey-reference.com/leagues/stats.html),
 season pages and game results; the NHL.com statistics API (`api.nhle.com/stats/rest/en/team/`
@@ -464,6 +471,11 @@ targets:
   a season) include injuries away from matches, which are not modelled. Players
   out injured counts every rostered player who cannot play on a match's date.
   Line and pair shares count only matches in which no skater left injured.
+- No public source counts knocks played through. The target, chosen with the
+  maintainer, is about one a team every five matches (17 a season), about as many
+  as injuries that miss matches. Each lasts about a week (5.5 days measured), so a
+  team carries it for two or three more matches and dresses someone playing hurt
+  in about three matches in ten.
 - Line and pair shares rank each team's regulars by time on ice per game and
   group forwards in threes and defence in twos, which only approximates real
   lines.

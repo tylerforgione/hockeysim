@@ -223,6 +223,8 @@ either side of it.
 Playing while an injury heals, with a few points off the ratings it affects. A
 player who cannot play through an injury is out of the match in which it
 happens and of every match before it heals, and must not be dressed until then.
+An injury a player can play through is a knock.
+_Avoid_: Minor injury, when meaning a knock; severity is how long an injury takes.
 
 **Wear**:
 Hidden damage a player's body part accumulates from impacts and injuries. It
@@ -400,5 +402,6 @@ A rostered player who is not dressed in the current lineup.
 **Inbox message**:
 A message delivered to the user from someone in the game world, such as the
 owner, staff, or a player. Messages describe real game state and can be marked
-read. The head trainer reports each injury to a managed-team player, with its
-expected return, and each recovery.
+read. The head trainer reports each managed-team injury that keeps a player out,
+with its expected return, and each recovery from one; knocks played through go
+into a weekly health report.
