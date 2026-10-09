@@ -35,13 +35,13 @@ games, plus a headless Avalonia walkthrough.
 | `MainWindowViewTests.cs` | Headless walkthrough of every page, saving, loading, closing |
 | `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup, navigation, browsing teams |
 | `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings |
-| `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, a full season |
+| `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, the preseason labels, a full season |
 | `StandingsAndStatisticsTests.cs` | Standings scopes including the wild card, playoff markers, season totals |
 | `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, the team strip |
 | `SaveAndLoadTests.cs` | Save and load screens, unsaved progress, confirmations |
 | `PlayerBiographyDisplayTests.cs`, `AppVersionTests.cs` | Formatting, version display |
 | `InjuryDisplayTests.cs` | Continue waiting for replacements, Lines-page injury warnings, roster markers, the injury report, the profile's health |
-| `GameTestData.cs`, `TestMatchSimulators.cs`, `TemporarySaveDirectory.cs`, `InjuredPlayerReplacement.cs` | Builders, test engines, and replacing injured players between days |
+| `GameTestData.cs`, `TestMatchSimulators.cs`, `TemporarySaveDirectory.cs`, `InjuredPlayerReplacement.cs`, `PreseasonPlay.cs` | Builders (sessions start on opening day unless a test needs the preseason), test engines, and replacing injured players between days |
 
 ## Behaviour
 
@@ -72,7 +72,10 @@ While Management's `PlayersToReplace` is not empty, Continue is disabled and a
 banner under the title bar names the injured players to replace, with a button
 to the Lines page; it clears once a saved lineup leaves them out.
 A failed day is shown as an error banner; Management applied nothing, so the
-pages still show the unplayed day. Once the season is complete, Continue is
+pages still show the unplayed day. During the preseason the title bar says
+Preseason, Continue counts the day's preseason matches, and the home page's next
+match is marked as one; preseason results are not listed anywhere yet (#61).
+Once the season is complete, Continue is
 disabled and every page remains browsable. The schedule page lists one team's
 84 matches with results and opens a completed match's score, decision, and box
 score; these are single-match figures, kept apart from season totals. The box

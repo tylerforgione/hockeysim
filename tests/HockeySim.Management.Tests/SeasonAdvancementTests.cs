@@ -18,7 +18,7 @@ public sealed class SeasonAdvancementTests
     [Fact]
     public void ANewGameStartsOnOpeningDayWithNothingPlayed()
     {
-        var snapshot = StartGame(new GameManager());
+        var snapshot = StartAtOpeningDay(new GameManager());
 
         Assert.Equal(OpeningDay, snapshot.Season.CurrentDate);
         Assert.Equal(snapshot.Schedule.Matches[0].Date, snapshot.Season.CurrentDate);
@@ -34,7 +34,7 @@ public sealed class SeasonAdvancementTests
     public void AdvancingPlaysEveryMatchScheduledOnTheCurrentDate()
     {
         var manager = new GameManager();
-        var before = StartGame(manager);
+        var before = StartAtOpeningDay(manager);
 
         var after = manager.AdvanceDay();
 
@@ -52,7 +52,7 @@ public sealed class SeasonAdvancementTests
     public void ADayWithoutMatchesMovesTheDateWithoutPlayingOrUsingRandomness()
     {
         var manager = new GameManager();
-        StartGame(manager);
+        StartAtOpeningDay(manager);
         var afterOpeningDay = manager.AdvanceDay();
 
         var afterEmptyDay = manager.AdvanceDay();
@@ -67,7 +67,7 @@ public sealed class SeasonAdvancementTests
     public void ALineupChangeIsUsedForTheNextMatch()
     {
         var manager = new GameManager();
-        var before = StartGame(manager);
+        var before = StartAtOpeningDay(manager);
         var team = ManagedTeam(before);
         var scratchedGoalieId = team.ScratchedPlayerIds.Single(
             id => team.Roster.Single(player => player.Id == id).Position == Position.Goalie);
@@ -99,7 +99,7 @@ public sealed class SeasonAdvancementTests
     {
         var simulator = new InterceptingSimulator();
         var manager = new GameManager(simulator);
-        var before = StartGame(manager);
+        var before = StartAtOpeningDay(manager);
         simulator.BeforeMatch = call =>
         {
             if (call == 5)
@@ -122,7 +122,7 @@ public sealed class SeasonAdvancementTests
         simulator.BeforeMatch = null;
         var retried = manager.AdvanceDay();
         var reference = new GameManager();
-        StartGame(reference);
+        StartAtOpeningDay(reference);
         var uninterrupted = reference.AdvanceDay();
         Assert.Equal(Fingerprint(uninterrupted), Fingerprint(retried));
         Assert.Equal(uninterrupted.RandomState, retried.RandomState);
@@ -133,7 +133,7 @@ public sealed class SeasonAdvancementTests
     {
         var simulator = new InterceptingSimulator();
         var manager = new GameManager(simulator);
-        var before = StartGame(manager);
+        var before = StartAtOpeningDay(manager);
         var lineup = CurrentLineup(ManagedTeam(before).Lineup);
         Exception? nestedAdvance = null;
         Exception? nestedLineupChange = null;
@@ -164,7 +164,7 @@ public sealed class SeasonAdvancementTests
         using var releaseFirstDay = new ManualResetEventSlim();
         var simulator = new InterceptingSimulator();
         var manager = new GameManager(simulator);
-        StartGame(manager);
+        StartAtOpeningDay(manager);
         simulator.BeforeMatch = call =>
         {
             if (call == 1)
@@ -192,7 +192,7 @@ public sealed class SeasonAdvancementTests
     public void EarlierSnapshotsAreUnchangedByAdvancingAndCannotBeModified()
     {
         var manager = new GameManager();
-        var before = StartGame(manager);
+        var before = StartAtOpeningDay(manager);
 
         var after = manager.AdvanceDay();
 
@@ -213,7 +213,7 @@ public sealed class SeasonAdvancementTests
         static GameSnapshot Play()
         {
             var manager = new GameManager();
-            var start = StartGame(manager);
+            var start = StartAtOpeningDay(manager);
             for (var day = 0; day < 10; day++)
             {
                 manager.AdvanceDayReplacingInjured();
@@ -249,6 +249,13 @@ public sealed class SeasonAdvancementTests
     internal static GameSnapshot StartGame(GameManager manager, ulong seed = 12345) =>
         manager.StartNewGame(new NewGameCommand(2026, new RandomState(seed), ManagedTeamName));
 
+    /// <summary>Starts a game and plays its preseason, for tests of the regular season.</summary>
+    internal static GameSnapshot StartAtOpeningDay(GameManager manager, ulong seed = 12345)
+    {
+        StartGame(manager, seed);
+        return manager.PlayPreseason();
+    }
+
     internal static TeamSnapshot ManagedTeam(GameSnapshot snapshot) =>
         snapshot.League.Teams.Single(team => team.Id == snapshot.ManagedTeamId);
 
@@ -283,10 +290,13 @@ public sealed class SeasonAdvancementTests
     /// A complete textual description of every result, including each box score, so equal
     /// fingerprints mean identical results.
     /// </summary>
-    internal static string Fingerprint(GameSnapshot snapshot) =>
+    internal static string Fingerprint(GameSnapshot snapshot) => Fingerprint(snapshot.Season.Results);
+
+    /// <inheritdoc cref="Fingerprint(GameSnapshot)"/>
+    internal static string Fingerprint(IEnumerable<CompletedMatchSnapshot> results) =>
         string.Join(
             Environment.NewLine,
-            snapshot.Season.Results.Select(result =>
+            results.Select(result =>
                 $"{result.Date:yyyy-MM-dd} {result.Decision} {Side(result.Home)} @ {Side(result.Away)} "
                 + $"goals [{string.Join(",", result.Goals)}] penalties [{string.Join(",", result.Penalties)}]"));
 

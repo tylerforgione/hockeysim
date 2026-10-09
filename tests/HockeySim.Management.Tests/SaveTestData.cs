@@ -7,14 +7,14 @@ internal static class SaveTestData
 {
     /// <summary>
     /// Describes everything a snapshot shows, one line per fact, so equal descriptions mean the
-    /// user sees the same game: the world, lineups, schedule, every result, the totals and
+    /// user sees the same game: the world, lineups, both schedules, every result, the totals and
     /// standings derived from them, the inbox, and the hidden random state.
     /// </summary>
     public static IReadOnlyList<string> Describe(GameSnapshot snapshot)
     {
         var lines = new List<string>
         {
-            $"year {snapshot.League.SeasonYear}, date {snapshot.Season.CurrentDate:yyyy-MM-dd}, "
+            $"year {snapshot.League.SeasonYear}, date {snapshot.Season.CurrentDate:yyyy-MM-dd} ({snapshot.Season.Phase}), "
             + $"complete {snapshot.Season.IsComplete}, managed {snapshot.ManagedTeamId}, {snapshot.RandomState}, "
             + $"to replace {string.Join(",", snapshot.PlayersToReplace)}",
         };
@@ -43,7 +43,9 @@ internal static class SaveTestData
             lines.Add($"  scratches {string.Join(",", team.ScratchedPlayerIds)}");
         }
 
+        lines.AddRange(snapshot.Schedule.PreseasonMatches.Select(match => $"preseason {match}"));
         lines.AddRange(snapshot.Schedule.Matches.Select(match => $"scheduled {match}"));
+        lines.Add(SeasonAdvancementTests.Fingerprint(snapshot.Season.PreseasonResults));
         lines.Add(SeasonAdvancementTests.Fingerprint(snapshot));
         lines.AddRange(snapshot.Season.TeamRecords.Select(record => record.ToString()));
         lines.AddRange(snapshot.Season.TeamStatistics.Select(statistics => statistics.ToString()));

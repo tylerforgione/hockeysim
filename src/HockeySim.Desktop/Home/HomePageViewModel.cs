@@ -189,7 +189,7 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
 
         var next = season.IsComplete
             ? null
-            : snapshot.Schedule.Matches.FirstOrDefault(match =>
+            : snapshot.Schedule.PreseasonMatches.Concat(snapshot.Schedule.Matches).FirstOrDefault(match =>
                 match.Date >= season.CurrentDate && (match.HomeTeamId == team.Id || match.AwayTeamId == team.Id));
         if (next is null)
         {
@@ -200,7 +200,8 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
 
         NextMatchTitle = Opponent(next.HomeTeamId, next.AwayTeamId, team.Id);
         var when = next.Date == season.CurrentDate ? "Today" : MatchDisplay.ShortDate(next.Date);
-        NextMatchCaption = $"{when} · {(next.HomeTeamId == team.Id ? "Home" : "Away")}";
+        var venue = next.HomeTeamId == team.Id ? "Home" : "Away";
+        NextMatchCaption = snapshot.Schedule.PreseasonMatches.Contains(next) ? $"{when} · {venue} · Preseason" : $"{when} · {venue}";
     }
 
     /// <summary>

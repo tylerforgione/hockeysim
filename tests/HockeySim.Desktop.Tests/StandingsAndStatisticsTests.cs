@@ -191,7 +191,9 @@ public sealed class StandingsAndStatisticsTests
         var session = GameTestData.StartSession();
         var shell = new GameShellViewModel(session);
         await shell.AdvanceDayCommand.ExecuteAsync(null);
-        var other = session.Snapshot.League.Teams.First(team => team.Id != session.Snapshot.ManagedTeamId);
+        // A team without injuries still dresses the lineup it played with.
+        var other = session.Snapshot.League.Teams.First(team =>
+            team.Id != session.Snapshot.ManagedTeamId && team.Roster.All(player => player.Injuries.Count == 0));
         var season = session.Snapshot.Season;
 
         shell.Teams.SelectTeam(other.Id);

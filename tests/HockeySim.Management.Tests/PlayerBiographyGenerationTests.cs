@@ -179,7 +179,10 @@ public sealed class PlayerBiographyGenerationTests
 
     private static (GameSnapshot Game, List<PlayerSnapshot> Players) StartGame(ulong seed)
     {
-        var game = new GameManager().StartNewGame(new NewGameCommand(SeasonYear, new RandomState(seed), "Halifax Mariners"));
+        // Ages are generated for opening day, so a player can still be 17 in the preseason.
+        var manager = new GameManager();
+        manager.StartNewGame(new NewGameCommand(SeasonYear, new RandomState(seed), "Halifax Mariners"));
+        var game = manager.PlayPreseason();
         return (game, game.League.Teams.SelectMany(team => team.Roster).ToList());
     }
 

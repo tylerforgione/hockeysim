@@ -17,7 +17,7 @@ public sealed class StandingsTests
     [Fact]
     public void BeforeAnyMatchEveryTableListsItsTeamsLevelInLeagueOrder()
     {
-        var snapshot = StartGame(new GameManager());
+        var snapshot = StartAtOpeningDay(new GameManager());
 
         AssertTablesMatchTheLeague(snapshot);
         var standings = snapshot.Season.Standings;
@@ -34,7 +34,7 @@ public sealed class StandingsTests
     public void MidseasonTablesAreRankedFromTheResultsSoFar()
     {
         var manager = new GameManager();
-        var snapshot = StartGame(manager);
+        var snapshot = StartAtOpeningDay(manager);
         for (var day = 0; day < 15; day++)
         {
             snapshot = manager.AdvanceDayReplacingInjured();
@@ -53,7 +53,7 @@ public sealed class StandingsTests
     public void EarlierStandingsAreUnchangedByAdvancingAndCannotBeModified()
     {
         var manager = new GameManager();
-        var before = StartGame(manager);
+        var before = StartAtOpeningDay(manager);
 
         var after = manager.AdvanceDay();
 
@@ -75,7 +75,7 @@ public sealed class StandingsTests
     public void TheWildCardViewListsEachDivisionsTopThreeThenTheRestOfItsConference()
     {
         var manager = new GameManager();
-        StartGame(manager);
+        StartAtOpeningDay(manager);
         GameSnapshot snapshot = null!;
         for (var day = 0; day < 15; day++)
         {
@@ -112,7 +112,7 @@ public sealed class StandingsTests
     [Fact]
     public void NoTeamHasClinchedOrBeenEliminatedOnOpeningDay()
     {
-        var snapshot = StartGame(new GameManager());
+        var snapshot = StartAtOpeningDay(new GameManager());
 
         Assert.All(snapshot.Season.Standings.League, entry => Assert.Equal(PlayoffStatus.Undecided, entry.PlayoffStatus));
     }

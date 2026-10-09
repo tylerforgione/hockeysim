@@ -24,7 +24,7 @@ public sealed class InjuredPlayerTests
     public void AdvancingIsRejectedWhileTheManagedLineupDressesAPlayerWhoCannotPlay()
     {
         var manager = new GameManager();
-        StartGame(manager);
+        StartAtOpeningDay(manager);
 
         var (before, rejection) = AdvanceUntilRejected(manager);
 
@@ -49,7 +49,7 @@ public sealed class InjuredPlayerTests
     public void ReplacingThePlayersWhoCannotPlayLetsTheDayBePlayed()
     {
         var manager = new GameManager();
-        StartGame(manager);
+        StartAtOpeningDay(manager);
         var (before, _) = AdvanceUntilRejected(manager);
 
         var replaced = manager.SetLineup(InjuredPlayerReplacement.ReplacingInjured(before));
@@ -67,7 +67,7 @@ public sealed class InjuredPlayerTests
     public void AnInjuredPlayerCanStayDressedOnADayTheManagedTeamDoesNotPlay()
     {
         var manager = new GameManager();
-        var snapshot = StartGame(manager);
+        var snapshot = StartAtOpeningDay(manager);
         for (var day = 0; day < MaximumDays; day++)
         {
             var team = ManagedTeam(snapshot);
@@ -92,7 +92,7 @@ public sealed class InjuredPlayerTests
     public void AiTeamsDressHealthyScratchesInPlaceOfPlayersWhoCannotPlayAndRestoreTheirLineups()
     {
         var manager = new GameManager();
-        var opening = StartGame(manager);
+        var opening = StartAtOpeningDay(manager);
         var preferred = opening.League.Teams.ToDictionary(team => team.Id, team => team.Lineup);
         var snapshot = opening;
         var replacedTeams = new HashSet<TeamId>();
@@ -132,7 +132,7 @@ public sealed class InjuredPlayerTests
     public void TheHeadTrainerReportsEachInjuryThatKeepsAPlayerOutAndItsRecovery()
     {
         var manager = new GameManager();
-        var snapshot = StartGame(manager);
+        var snapshot = StartAtOpeningDay(manager);
         PlayerSnapshot? injured = null;
         InjurySnapshot? injury = null;
         for (var day = 0; day < MaximumDays && injury is null; day++)
@@ -170,7 +170,7 @@ public sealed class InjuredPlayerTests
     public void KnocksPlayedThroughAreReportedInTheWeeklyHealthReportRatherThanOnTheirOwn()
     {
         var manager = new GameManager();
-        var snapshot = StartGame(manager);
+        var snapshot = StartAtOpeningDay(manager);
         PlayerSnapshot? injured = null;
         InjurySnapshot? knock = null;
         var individualReports = 0;
@@ -204,7 +204,7 @@ public sealed class InjuredPlayerTests
     public void SnapshotsShowOnlyInjuriesThatHaveNotHealed()
     {
         var manager = new GameManager();
-        var snapshot = StartGame(manager);
+        var snapshot = StartAtOpeningDay(manager);
         Assert.All(snapshot.League.Teams.SelectMany(team => team.Roster), player =>
         {
             Assert.Empty(player.Injuries);

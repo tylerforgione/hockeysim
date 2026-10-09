@@ -3,13 +3,21 @@ using System.Collections.ObjectModel;
 namespace HockeySim.Domain;
 
 /// <summary>
-/// The regular season in progress: the current date, the completed-match history, and the
-/// current-season team and player totals and player health derived from it. The season advances one league day at a time; a day's
-/// results are applied together or not at all, so the history never holds part of a day and a
-/// scheduled match can be completed only once.
+/// A season in progress: its preseason and regular season, the current date, the completed-match
+/// history, and the current-season team and player totals and player health derived from the
+/// regular season. The season advances one league day at a time; a day's results are applied
+/// together or not at all, so the history never holds part of a day and a scheduled match can be
+/// completed only once.
 /// </summary>
+/// <remarks>
+/// Preseason matches are kept apart from the regular season's: they never reach the records,
+/// statistics, standings, or health, so everything derived from the regular season reads only
+/// its own schedule and history.
+/// </remarks>
 public sealed class Season
 {
+    private readonly List<CompletedMatch> _preseasonMatches = [];
+    private readonly ReadOnlyCollection<CompletedMatch> _preseasonMatchesView;
     private readonly List<CompletedMatch> _completedMatches = [];
     private readonly ReadOnlyCollection<CompletedMatch> _completedMatchesView;
     private readonly Dictionary<TeamId, TeamRecord> _teamRecords;
@@ -18,9 +26,19 @@ public sealed class Season
     private readonly Dictionary<PlayerId, GoalieSeasonStatistics> _goalieStatistics = [];
     private readonly Dictionary<PlayerId, PlayerHealth> _health;
 
+    /// <summary>Creates a season without a preseason, starting on opening day.</summary>
     public Season(League league, SeasonSchedule schedule)
+        : this(league, new SeasonSchedule([]), schedule)
+    {
+    }
+
+    /// <summary>Creates a season starting on the first preseason day, or on opening day without one.</summary>
+    /// <param name="preseasonSchedule">The exhibition matches, all before opening day; possibly none.</param>
+    /// <param name="schedule">The regular season.</param>
+    public Season(League league, SeasonSchedule preseasonSchedule, SeasonSchedule schedule)
     {
         ArgumentNullException.ThrowIfNull(league);
+        ArgumentNullException.ThrowIfNull(preseasonSchedule);
         ArgumentNullException.ThrowIfNull(schedule);
 
         if (schedule.Matches.Count == 0)
@@ -29,13 +47,18 @@ public sealed class Season
         }
 
         var leagueTeamIds = league.Teams.Select(team => team.Id).ToHashSet();
-        if (schedule.Matches.Any(match =>
+        if (schedule.Matches.Concat(preseasonSchedule.Matches).Any(match =>
                 !leagueTeamIds.Contains(match.HomeTeamId) || !leagueTeamIds.Contains(match.AwayTeamId)))
         {
             throw new ArgumentException("Every scheduled team must belong to the league.", nameof(schedule));
         }
 
         var openingDay = schedule.Matches[0].Date;
+        if (preseasonSchedule.Matches.Any(match => match.Date >= openingDay))
+        {
+            throw new ArgumentException("Every preseason match must be before opening day.", nameof(preseasonSchedule));
+        }
+
         if (league.Teams.SelectMany(team => team.Roster).Any(player =>
                 player.Biography.BirthDate > openingDay
                 || player.AgeOn(openingDay) is < Player.MinimumAge or > Player.MaximumAge))
@@ -46,8 +69,11 @@ public sealed class Season
         }
 
         League = league;
+        PreseasonSchedule = preseasonSchedule;
         Schedule = schedule;
-        CurrentDate = openingDay;
+        OpeningDay = openingDay;
+        CurrentDate = preseasonSchedule.Matches.Count > 0 ? preseasonSchedule.Matches[0].Date : openingDay;
+        _preseasonMatchesView = _preseasonMatches.AsReadOnly();
         _completedMatchesView = _completedMatches.AsReadOnly();
         _teamRecords = league.Teams.ToDictionary(team => team.Id, team => new TeamRecord(team.Id));
         _teamStatistics = league.Teams.ToDictionary(team => team.Id, team => new TeamSeasonStatistics(team.Id));
@@ -58,7 +84,14 @@ public sealed class Season
 
     public League League { get; }
 
+    /// <summary>The exhibition matches before opening day, possibly none.</summary>
+    public SeasonSchedule PreseasonSchedule { get; }
+
+    /// <summary>The regular season.</summary>
     public SeasonSchedule Schedule { get; }
+
+    /// <summary>The date of the first regular-season match.</summary>
+    public DateOnly OpeningDay { get; }
 
     /// <summary>
     /// The next league day to be played. Once the season is complete, the day after the final
@@ -66,14 +99,24 @@ public sealed class Season
     /// </summary>
     public DateOnly CurrentDate { get; private set; }
 
+    /// <summary>The phase of <see cref="CurrentDate"/>: the preseason until opening day.</summary>
+    public SeasonPhase Phase => CurrentDate < OpeningDay ? SeasonPhase.Preseason : SeasonPhase.RegularSeason;
+
+    /// <summary>Whether every regular-season match has been played.</summary>
     public bool IsComplete => _completedMatches.Count == Schedule.Matches.Count;
 
-    /// <summary>Every completed match, in schedule order.</summary>
+    /// <summary>Every completed preseason match, in schedule order.</summary>
+    public IReadOnlyList<CompletedMatch> PreseasonMatches => _preseasonMatchesView;
+
+    /// <summary>Every completed regular-season match, in schedule order.</summary>
     public IReadOnlyList<CompletedMatch> CompletedMatches => _completedMatchesView;
 
-    /// <summary>The matches scheduled on <see cref="CurrentDate"/>, possibly none.</summary>
+    /// <summary>The matches scheduled on <see cref="CurrentDate"/> in its phase, possibly none.</summary>
     public IReadOnlyList<ScheduledMatch> CurrentDateMatches =>
-        Schedule.Matches.Where(match => match.Date == CurrentDate).ToList().AsReadOnly();
+        (Phase == SeasonPhase.Preseason ? PreseasonSchedule : Schedule).Matches
+            .Where(match => match.Date == CurrentDate)
+            .ToList()
+            .AsReadOnly();
 
     /// <summary>Every team's record, in league team order.</summary>
     public IReadOnlyList<TeamRecord> TeamRecords =>
@@ -168,7 +211,8 @@ public sealed class Season
 
     /// <summary>
     /// Records the results of every match scheduled on <see cref="CurrentDate"/> and moves to the
-    /// next calendar day. The whole day is validated before anything changes.
+    /// next calendar day. The whole day is validated before anything changes. A preseason day's
+    /// results are only kept: they cannot injure or wear anyone, and count toward nothing.
     /// </summary>
     /// <param name="results">Exactly one result for each match scheduled today; none on an empty day.</param>
     public void CompleteDay(IEnumerable<CompletedMatch> results)
@@ -184,9 +228,18 @@ public sealed class Season
         ValidateDay(resultList);
 
         // Keep the history in schedule order regardless of the order results were supplied in.
+        var isPreseason = Phase == SeasonPhase.Preseason;
         foreach (var scheduledMatch in CurrentDateMatches)
         {
-            Apply(resultList.Single(result => ReferenceEquals(result.ScheduledMatch, scheduledMatch)));
+            var result = resultList.Single(result => ReferenceEquals(result.ScheduledMatch, scheduledMatch));
+            if (isPreseason)
+            {
+                _preseasonMatches.Add(result);
+            }
+            else
+            {
+                Apply(result);
+            }
         }
 
         CurrentDate = CurrentDate.AddDays(1);
@@ -210,6 +263,12 @@ public sealed class Season
             throw new ArgumentException(
                 $"Exactly one result is required for each match scheduled on {CurrentDate:yyyy-MM-dd}.",
                 nameof(results));
+        }
+
+        if (Phase == SeasonPhase.Preseason
+            && results.Any(result => result.Health.Injuries.Count > 0 || result.Health.Wear.Count > 0))
+        {
+            throw new ArgumentException("A preseason match cannot injure or wear any player.", nameof(results));
         }
 
         foreach (var result in results)

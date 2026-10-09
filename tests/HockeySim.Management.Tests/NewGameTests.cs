@@ -157,7 +157,6 @@ public sealed class NewGameTests
         {
             Assert.False(string.IsNullOrWhiteSpace(player.FirstName));
             Assert.False(string.IsNullOrWhiteSpace(player.LastName));
-            Assert.InRange(player.Age, 18, 40);
             Assert.Equal(VisibleRatings, player.Ratings.Keys.Order());
             Assert.All(player.Ratings.Values, rating => Assert.InRange(rating, 0, 100));
             Assert.Equal(

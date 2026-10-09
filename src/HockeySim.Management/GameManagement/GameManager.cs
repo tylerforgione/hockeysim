@@ -70,10 +70,11 @@ public sealed class GameManager
             }
 
             var schedule = ScheduleGenerator.Create(league, random);
+            var preseason = PreseasonGenerator.Create(league, schedule.Matches[0].Date, random);
             var inbox = new InboxMessages();
             NewGameMessages.Deliver(inbox, managedTeam, command.SeasonYear);
 
-            _season = new Season(league, schedule);
+            _season = new Season(league, preseason, schedule);
             _managedTeamId = managedTeam.Id;
             _randomState = random.State;
             _inbox = inbox;

@@ -5,10 +5,11 @@ using HockeySim.Domain;
 namespace HockeySim.Management.GameManagement.Snapshots;
 
 /// <summary>
-/// The regular season's progress: the current date, completed results, and current-season totals.
+/// The season's progress: the current date and phase, completed results, and current-season totals.
 /// </summary>
 public sealed class SeasonSnapshot
 {
+    private readonly ReadOnlyCollection<CompletedMatchSnapshot> _preseasonResults;
     private readonly ReadOnlyCollection<CompletedMatchSnapshot> _results;
     private readonly ReadOnlyCollection<TeamRecordSnapshot> _teamRecords;
     private readonly ReadOnlyCollection<TeamSeasonStatisticsSnapshot> _teamStatistics;
@@ -17,7 +18,9 @@ public sealed class SeasonSnapshot
 
     private SeasonSnapshot(
         DateOnly currentDate,
+        SeasonPhase phase,
         bool isComplete,
+        IReadOnlyList<CompletedMatchSnapshot> preseasonResults,
         IReadOnlyList<CompletedMatchSnapshot> results,
         IReadOnlyList<TeamRecordSnapshot> teamRecords,
         IReadOnlyList<TeamSeasonStatisticsSnapshot> teamStatistics,
@@ -26,7 +29,9 @@ public sealed class SeasonSnapshot
         IReadOnlyList<GoalieSeasonStatisticsSnapshot> goalieStatistics)
     {
         CurrentDate = currentDate;
+        Phase = phase;
         IsComplete = isComplete;
+        _preseasonResults = new ReadOnlyCollection<CompletedMatchSnapshot>(preseasonResults.ToList());
         _results = new ReadOnlyCollection<CompletedMatchSnapshot>(results.ToList());
         _teamRecords = new ReadOnlyCollection<TeamRecordSnapshot>(teamRecords.ToList());
         _teamStatistics = new ReadOnlyCollection<TeamSeasonStatisticsSnapshot>(teamStatistics.ToList());
@@ -41,12 +46,21 @@ public sealed class SeasonSnapshot
     /// </summary>
     public DateOnly CurrentDate { get; }
 
+    /// <summary>The phase of the current date: the preseason until opening day.</summary>
+    public SeasonPhase Phase { get; }
+
     /// <summary>
-    /// Whether every scheduled match has been played. A complete season cannot be advanced.
+    /// Whether every regular-season match has been played. A complete season cannot be advanced.
     /// </summary>
     public bool IsComplete { get; }
 
-    /// <summary>Every completed match, in schedule order.</summary>
+    /// <summary>
+    /// Every completed preseason match, in schedule order. They count toward no record, statistic,
+    /// or standings.
+    /// </summary>
+    public IReadOnlyList<CompletedMatchSnapshot> PreseasonResults => _preseasonResults;
+
+    /// <summary>Every completed regular-season match, in schedule order.</summary>
     public IReadOnlyList<CompletedMatchSnapshot> Results => _results;
 
     /// <summary>Every team's record, in league team order; see <see cref="Standings"/> for rankings.</summary>
@@ -67,7 +81,9 @@ public sealed class SeasonSnapshot
     internal static SeasonSnapshot Create(Season season) =>
         new(
             season.CurrentDate,
+            season.Phase,
             season.IsComplete,
+            season.PreseasonMatches.Select(CompletedMatchSnapshot.Create).ToList(),
             season.CompletedMatches.Select(CompletedMatchSnapshot.Create).ToList(),
             season.TeamRecords.Select(TeamRecordSnapshot.Create).ToList(),
             season.TeamStatistics.Select(TeamSeasonStatisticsSnapshot.Create).ToList(),
