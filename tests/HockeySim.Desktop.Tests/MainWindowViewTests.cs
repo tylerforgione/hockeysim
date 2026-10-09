@@ -20,6 +20,7 @@ using HockeySim.Desktop.Schedule;
 using HockeySim.Desktop.Standings;
 using HockeySim.Desktop.Startup;
 using HockeySim.Desktop.Teams;
+using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 
 using Xunit;
@@ -126,8 +127,17 @@ public sealed class MainWindowViewTests
         Dispatcher.UIThread.RunJobs();
         Assert.True(saveButton.IsEffectivelyVisible);
 
-        // Play opening night from the title bar, then open a result from the home page.
+        // Play the preseason and opening night from the title bar, then open a result from the
+        // home page.
         AssertNavigationRenders<HomePageView>(window, ShellPage.Home);
+        Assert.StartsWith("Preseason", shellView.FindControl<TextBlock>("PhaseLabel")?.Text, StringComparison.Ordinal);
+        while (gameManager.GetSnapshot().Season.Phase == SeasonPhase.Preseason)
+        {
+            ClickAndWait(continueButton, () => !viewModel.Game!.Session.IsAdvancing);
+        }
+
+        Assert.Equal(112, gameManager.GetSnapshot().Season.PreseasonResults.Count);
+        Assert.Empty(gameManager.GetSnapshot().Season.Results);
         ClickAndWait(continueButton, () => !viewModel.Game!.Session.IsAdvancing);
         Assert.Equal(16, gameManager.GetSnapshot().Season.Results.Count);
         Assert.Contains("Oct", shellView.FindControl<TextBlock>("PhaseLabel")?.Text, StringComparison.Ordinal);

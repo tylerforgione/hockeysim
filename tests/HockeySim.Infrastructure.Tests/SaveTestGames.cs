@@ -48,13 +48,13 @@ internal static class SaveTestGames
 
     /// <summary>
     /// Describes the game as the user sees it, so equal descriptions mean the same game: rosters
-    /// and lineups, every result and box score, totals, standings, inbox, and random state.
+    /// and lineups, every preseason and regular-season result and box score, totals, standings, inbox, and random state.
     /// </summary>
     public static IReadOnlyList<string> Describe(GameSnapshot snapshot)
     {
         var lines = new List<string>
         {
-            $"date {snapshot.Season.CurrentDate:yyyy-MM-dd}, complete {snapshot.Season.IsComplete}, "
+            $"date {snapshot.Season.CurrentDate:yyyy-MM-dd} ({snapshot.Season.Phase}), complete {snapshot.Season.IsComplete}, "
             + $"managed {snapshot.ManagedTeamId}, {snapshot.RandomState}, to replace {string.Join(",", snapshot.PlayersToReplace)}",
         };
 
@@ -70,8 +70,9 @@ internal static class SaveTestGames
                 + $" injuries {string.Join(";", player.Injuries)}"));
         }
 
+        lines.AddRange(snapshot.Schedule.PreseasonMatches.Select(match => $"preseason {match}"));
         lines.AddRange(snapshot.Schedule.Matches.Select(match => match.ToString()));
-        lines.AddRange(snapshot.Season.Results.Select(result =>
+        lines.AddRange(snapshot.Season.PreseasonResults.Concat(snapshot.Season.Results).Select(result =>
             $"{result.Date:yyyy-MM-dd} {result.Decision} {Side(result.Home)} @ {Side(result.Away)}"));
         lines.AddRange(snapshot.Season.TeamRecords.Select(record => record.ToString()));
         lines.Add(string.Join(",", snapshot.Season.Standings.League.Select(entry => $"{entry.Rank}:{entry.Record.TeamId}")));

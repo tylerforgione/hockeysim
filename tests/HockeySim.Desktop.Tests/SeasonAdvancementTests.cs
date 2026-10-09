@@ -29,6 +29,28 @@ public sealed class SeasonAdvancementTests
     }
 
     [Fact]
+    public async Task ThePreseasonIsShownAsSuchUntilOpeningDay()
+    {
+        var session = GameTestData.StartPreseasonSession();
+        var shell = new GameShellViewModel(session);
+        var firstDay = MatchDisplay.ShortDate(session.Snapshot.Season.CurrentDate);
+
+        Assert.Equal($"Preseason · {firstDay}", shell.PhaseLabel);
+        Assert.Equal($"Play {firstDay}: 16 preseason matches, including yours.", shell.ContinueDescription);
+        Assert.EndsWith(" · Preseason", shell.Home.NextMatchCaption, StringComparison.Ordinal);
+
+        while (session.Snapshot.Season.Phase == SeasonPhase.Preseason)
+        {
+            await shell.AdvanceDayCommand.ExecuteAsync(null);
+        }
+
+        Assert.Equal($"Regular season · {MatchDisplay.ShortDate(OpeningDay)}", shell.PhaseLabel);
+        Assert.Equal($"Play {MatchDisplay.ShortDate(OpeningDay)}: 16 league matches, including yours.", shell.ContinueDescription);
+        Assert.DoesNotContain("Preseason", shell.Home.NextMatchCaption, StringComparison.Ordinal);
+        Assert.All(shell.Home.DivisionStandings, row => Assert.Equal(0, row.GamesPlayed));
+    }
+
+    [Fact]
     public async Task AdvancingPlaysTheDayAndRefreshesEveryPage()
     {
         var session = GameTestData.StartSession();
@@ -181,7 +203,7 @@ public sealed class SeasonAdvancementTests
     [Fact]
     public async Task AFailedDayIsReportedAndNothingIsApplied()
     {
-        var session = GameTestData.StartSession(new GameManager(new FailingMatchSimulator()));
+        var session = GameTestData.StartPreseasonSession(new GameManager(new FailingMatchSimulator()));
         var shell = new GameShellViewModel(session);
         var before = session.Snapshot;
 
@@ -207,8 +229,9 @@ public sealed class SeasonAdvancementTests
     public async Task OverlappingAdvancementIsPrevented()
     {
         using var engine = new GatedMatchSimulator();
-        var session = GameTestData.StartSession(new GameManager(engine));
+        var session = GameTestData.StartPreseasonSession(new GameManager(engine));
         var shell = new GameShellViewModel(session);
+        var firstDay = session.Snapshot.Season.CurrentDate;
 
         var advancing = shell.AdvanceDayCommand.ExecuteAsync(null);
         await engine.WaitUntilPlayingAsync();
@@ -224,8 +247,8 @@ public sealed class SeasonAdvancementTests
         Assert.Null(shell.AdvanceError);
         Assert.False(session.IsAdvancing);
         Assert.Equal("Continue", shell.ContinueLabel);
-        Assert.Equal(16, session.Snapshot.Season.Results.Count);
-        Assert.Equal(OpeningDay.AddDays(1), session.Snapshot.Season.CurrentDate);
+        Assert.Equal(16, session.Snapshot.Season.PreseasonResults.Count);
+        Assert.Equal(firstDay.AddDays(1), session.Snapshot.Season.CurrentDate);
         Assert.True(shell.AdvanceDayCommand.CanExecute(null));
     }
 

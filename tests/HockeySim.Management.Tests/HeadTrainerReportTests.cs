@@ -92,9 +92,9 @@ public sealed class HeadTrainerReportTests(HeadTrainerReportTests.PlayedSeason s
     public void TheSameGameWritesTheSameReportsAfterBeingSavedAndLoaded()
     {
         var uninterrupted = new GameManager();
-        StartGame(uninterrupted);
+        StartAtOpeningDay(uninterrupted);
         var interrupted = new GameManager();
-        StartGame(interrupted);
+        StartAtOpeningDay(interrupted);
         for (var day = 0; day < 20; day++)
         {
             uninterrupted.AdvanceDayReplacingInjured();
@@ -128,7 +128,7 @@ public sealed class HeadTrainerReportTests(HeadTrainerReportTests.PlayedSeason s
         public PlayedSeason()
         {
             var manager = new GameManager();
-            Snapshot = StartGame(manager);
+            Snapshot = StartAtOpeningDay(manager);
             for (var advances = 0; !Snapshot.Season.IsComplete && advances < MaximumAdvances; advances++)
             {
                 Snapshot = manager.AdvanceDayReplacingInjured();
