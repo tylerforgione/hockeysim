@@ -1,8 +1,8 @@
 namespace HockeySim.Domain;
 
 /// <summary>
-/// An injury suffered in a completed match: when it happened, to whom, and how many league days it
-/// takes to heal.
+/// An injury suffered in a completed match: when it happened, to whom, what caused it, and how many
+/// league days it takes to heal.
 /// </summary>
 public sealed record MatchInjury
 {
@@ -16,9 +16,15 @@ public sealed record MatchInjury
         TeamId teamId,
         PlayerId playerId,
         InjuryType type,
+        InjuryCause cause,
         int recoveryDays)
     {
         MatchClock.ThrowIfInvalid(period, timeInPeriod);
+
+        if (!Enum.IsDefined(cause))
+        {
+            throw new ArgumentOutOfRangeException(nameof(cause), "The injury cause is not recognised.");
+        }
 
         if (!InjuryCatalogue.For(type).AllowsRecoveryDays(recoveryDays))
         {
@@ -32,6 +38,7 @@ public sealed record MatchInjury
         TeamId = teamId;
         PlayerId = playerId;
         Type = type;
+        Cause = cause;
         RecoveryDays = recoveryDays;
     }
 
@@ -44,6 +51,8 @@ public sealed record MatchInjury
     public PlayerId PlayerId { get; }
 
     public InjuryType Type { get; }
+
+    public InjuryCause Cause { get; }
 
     public int RecoveryDays { get; }
 

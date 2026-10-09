@@ -16,7 +16,10 @@ namespace HockeySim.Simulation.Play;
 /// </remarks>
 internal static class InjuryTuning
 {
-    /// <summary>The chance that one contact, or one strain moment, injures a reference player with no wear.</summary>
+    /// <summary>
+    /// The chance that one contact, or one strain moment, injures a reference player with no wear, for
+    /// a struck part whose injuries' chances add up to one.
+    /// </summary>
     public static double BaseChance(InjuryCause cause) => cause switch
     {
         InjuryCause.Hit => 0.016,
@@ -56,8 +59,11 @@ internal static class InjuryTuning
     public const double ExhaustedStrainIncrease = 1.0;
 
     /// <summary>
-    /// The body parts each cause strikes, by weight, and the injuries a struck part can suffer, by
-    /// weight. Every injury's body part matches its catalogue entry.
+    /// The body parts each cause strikes, by weight, and the injuries a struck part can suffer, each
+    /// with its chance relative to the cause's <see cref="BaseChance"/>: a part's chances add up to
+    /// how likely it is to be injured at all. Injuries a player can play through are scaled by
+    /// <see cref="PlayThroughChance"/>. Every injury's body
+    /// part matches its catalogue entry.
     /// </summary>
     public static IReadOnlyList<StruckPart> PartsStruck(InjuryCause cause) => cause switch
     {
@@ -68,49 +74,59 @@ internal static class InjuryTuning
         _ => StrainParts,
     };
 
+    /// <summary>
+    /// How much rarer an injury a player can play through is than its share of contacts to the part
+    /// would make it. Calibrated so a team suffers about one every five matches.
+    /// </summary>
+    private const double PlayThroughChance = 0.22;
+
     private static readonly StruckPart[] HitParts =
     [
         new(BodyPart.Head, 1.5, [(InjuryType.Concussion, 1)]),
-        new(BodyPart.Face, 0.8, [(InjuryType.BrokenNose, 1)]),
-        new(BodyPart.Shoulder, 3, [(InjuryType.SeparatedShoulder, 1), (InjuryType.BruisedShoulder, 1.5)]),
-        new(BodyPart.Ribs, 2, [(InjuryType.BruisedRibs, 1)]),
-        new(BodyPart.Back, 0.6, [(InjuryType.BackSpasms, 1)]),
-        new(BodyPart.Knee, 1.2, [(InjuryType.SprainedKnee, 1), (InjuryType.BruisedKnee, 1)]),
-        new(BodyPart.Ankle, 0.6, [(InjuryType.HighAnkleSprain, 1), (InjuryType.SprainedAnkle, 1)]),
+        new(BodyPart.Face, 0.8, [(InjuryType.BrokenNose, PlayThroughChance)]),
+        new(BodyPart.Shoulder, 3, [(InjuryType.SeparatedShoulder, 0.4), (InjuryType.BruisedShoulder, 0.6 * PlayThroughChance)]),
+        new(BodyPart.Ribs, 2, [(InjuryType.BruisedRibs, PlayThroughChance)]),
+        new(BodyPart.Back, 0.6, [(InjuryType.BackSpasms, PlayThroughChance)]),
+        new(BodyPart.Knee, 1.2, [(InjuryType.SprainedKnee, 0.5), (InjuryType.BruisedKnee, 0.5 * PlayThroughChance)]),
+        new(BodyPart.Ankle, 0.6, [(InjuryType.HighAnkleSprain, 0.5), (InjuryType.SprainedAnkle, 0.5 * PlayThroughChance)]),
     ];
 
     private static readonly StruckPart[] CollisionParts =
     [
         new(BodyPart.Head, 0.5, [(InjuryType.Concussion, 1)]),
-        new(BodyPart.Shoulder, 2, [(InjuryType.SeparatedShoulder, 1), (InjuryType.BruisedShoulder, 2)]),
-        new(BodyPart.Ribs, 1, [(InjuryType.BruisedRibs, 1)]),
-        new(BodyPart.Knee, 1.5, [(InjuryType.SprainedKnee, 1), (InjuryType.BruisedKnee, 1)]),
+        new(BodyPart.Shoulder, 2, [(InjuryType.SeparatedShoulder, 0.33), (InjuryType.BruisedShoulder, 0.67 * PlayThroughChance)]),
+        new(BodyPart.Ribs, 1, [(InjuryType.BruisedRibs, PlayThroughChance)]),
+        new(BodyPart.Knee, 1.5, [(InjuryType.SprainedKnee, 0.5), (InjuryType.BruisedKnee, 0.5 * PlayThroughChance)]),
     ];
 
     private static readonly StruckPart[] BlockedShotParts =
     [
-        new(BodyPart.Foot, 3, [(InjuryType.BrokenFoot, 1), (InjuryType.BruisedFoot, 1.5)]),
-        new(BodyPart.Hand, 1.5, [(InjuryType.BrokenHand, 1), (InjuryType.BrokenFinger, 1.5)]),
-        new(BodyPart.Ankle, 0.7, [(InjuryType.SprainedAnkle, 1)]),
-        new(BodyPart.Knee, 1, [(InjuryType.BruisedKnee, 1)]),
-        new(BodyPart.Face, 0.3, [(InjuryType.BrokenNose, 1)]),
+        new(BodyPart.Foot, 3, [(InjuryType.BrokenFoot, 0.4), (InjuryType.BruisedFoot, 0.6 * PlayThroughChance)]),
+        new(BodyPart.Hand, 1.5, [(InjuryType.BrokenHand, 0.4), (InjuryType.BrokenFinger, 0.6 * PlayThroughChance)]),
+        new(BodyPart.Ankle, 0.7, [(InjuryType.SprainedAnkle, PlayThroughChance)]),
+        new(BodyPart.Knee, 1, [(InjuryType.BruisedKnee, PlayThroughChance)]),
+        new(BodyPart.Face, 0.3, [(InjuryType.BrokenNose, PlayThroughChance)]),
     ];
 
     private static readonly StruckPart[] FightParts =
     [
-        new(BodyPart.Hand, 3, [(InjuryType.BrokenHand, 1), (InjuryType.BrokenFinger, 3)]),
-        new(BodyPart.Face, 2, [(InjuryType.BrokenNose, 1)]),
+        new(BodyPart.Hand, 3, [(InjuryType.BrokenHand, 0.25), (InjuryType.BrokenFinger, 0.75 * PlayThroughChance)]),
+        new(BodyPart.Face, 2, [(InjuryType.BrokenNose, PlayThroughChance)]),
         new(BodyPart.Head, 1, [(InjuryType.Concussion, 1)]),
     ];
 
     private static readonly StruckPart[] StrainParts =
     [
-        new(BodyPart.Groin, 3, [(InjuryType.GroinStrain, 1), (InjuryType.TightGroin, 1)]),
-        new(BodyPart.Back, 1.5, [(InjuryType.BackSpasms, 1)]),
+        new(BodyPart.Groin, 3, [(InjuryType.GroinStrain, 0.5), (InjuryType.TightGroin, 0.5 * PlayThroughChance)]),
+        new(BodyPart.Back, 1.5, [(InjuryType.BackSpasms, PlayThroughChance)]),
         new(BodyPart.Knee, 0.5, [(InjuryType.SprainedKnee, 1)]),
-        new(BodyPart.Ankle, 0.5, [(InjuryType.HighAnkleSprain, 1), (InjuryType.SprainedAnkle, 1)]),
+        new(BodyPart.Ankle, 0.5, [(InjuryType.HighAnkleSprain, 0.5), (InjuryType.SprainedAnkle, 0.5 * PlayThroughChance)]),
     ];
 
     /// <summary>A body part a cause can strike, and the injuries it can suffer there.</summary>
-    internal sealed record StruckPart(BodyPart BodyPart, double Weight, (InjuryType Type, double Weight)[] Injuries);
+    internal sealed record StruckPart(BodyPart BodyPart, double Weight, (InjuryType Type, double Chance)[] Injuries)
+    {
+        /// <summary>How likely the part is to be injured, relative to the cause's base chance.</summary>
+        public double Chance => Injuries.Sum(injury => injury.Chance);
+    }
 }

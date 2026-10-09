@@ -16,5 +16,6 @@ public sealed record InjuryEvent(
     TeamId TeamId,
     PlayerId PlayerId,
     InjuryType Type,
+    InjuryCause Cause,
     int RecoveryDays)
     : MatchEvent(Period, TimeInPeriod, OnIce);
