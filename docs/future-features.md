@@ -7,8 +7,8 @@ when implementation begins.
 
 v0.2.0 (the `v0.2.0` GitHub milestone) still plays one season: the event-based
 match engine with special teams and advanced statistics, player identities and
-flexible lineup roles, in-match injuries, a preseason and playoffs, and Desktop
-navigation and home-page customization. Season rollover is planned as v0.3.0.
+flexible lineup roles, in-match injuries, a preseason and playoffs, a Desktop
+redesign, simulating ahead, navigation, and home-page customization. Season rollover is planned as v0.3.0.
 Entries marked **Needs season rollover** only pay off once several seasons can
 be played.
 
@@ -40,9 +40,10 @@ Direction:
   Desktop only edits settings through Management commands.
 - Save the settings with the game. The same save, settings, and random state must
   produce the same results ([reproducible saves](adr/0002-reproducible-saves.md)).
-- Decide whether settings can change mid-season or only when a game is created,
-  and bound each option so extreme values cannot make matches degenerate (for
-  example, a shootout that almost never produces a winner).
+- Settings are chosen when a game is created and cannot change afterwards
+  (maintainer decision). Bound each option so extreme values cannot make
+  matches degenerate (for example, a shootout that almost never produces a
+  winner).
 
 ## Side-specific positions
 
@@ -147,16 +148,17 @@ Direction:
 
 ## Skip-to-date and bulk simulation
 
-Desktop advances the season one league day per Continue press. Playing a full
-season therefore takes 167 presses.
+v0.2.0 adds a Continue menu that simulates ahead by day, match, week, month,
+round, or phase, stopping early when the user must act (#85). Later:
 
-Add controls that play several days in one request: to the managed team's next
-match, to a chosen date, or to the end of the regular season. Build them on
-Management's existing day-atomic `AdvanceDay`, so each day still applies
-completely or not at all and a failure stops at the last complete day. Report
-progress and allow cancellation between days. Publish a snapshot when the run
-ends rather than after every day. Decide whether events such as injuries or
-inbox messages should interrupt a run once those features exist.
+- **To the trade deadline**, once [trades](#season-rollover) and a
+  [realistic season calendar](#realistic-season-calendar) give it a date.
+- **Offseason options**, once the [offseason](#offseason) exists: next day,
+  one week, one month, to the draft, to the re-signing period, to free-agent
+  signing, and to the preseason.
+- **To a chosen date** on the schedule.
+- More early stops as events arrive: trade offers, contract demands, and
+  [off-ice events](#off-ice-events).
 
 ## Parallel match simulation
 
@@ -207,7 +209,8 @@ Direction:
 
 ## Playoff odds and projections
 
-The standings show current records only.
+The standings show current records and guaranteed clinch and elimination
+markers only.
 
 Estimate each team's chance of making the playoffs, winning its division, and
 winning the championship, and project final points, by simulating the rest of
@@ -237,6 +240,11 @@ hits, blocks, faceoffs, takeaways and giveaways) and keeps playoff totals apart
 from the regular season, but totals are still not kept once a later season
 begins.
 
+Current-season leader pages need no rollover and can come once the
+[Desktop redesign](https://github.com/tylerforgione/hockeysim/issues/86)
+settles: sortable league-wide tables of every recorded statistic, for skaters,
+goalies, and teams, filtered by position, team, and minimum games or ice time.
+
 Keep per-season regular-season and playoff totals as history when subsequent
 seasons exist, and show career lines on the player profile and team history on
 the team page. Add sortable league-wide leader tables for the current season,
@@ -260,6 +268,36 @@ Direction:
   totals.
 - Consider score- and venue-adjusted shares once score effects exist in the
   engine.
+
+## Line and unit combination statistics
+
+Statistics are kept per player and per team. Add them for combinations of
+players who were on the ice together: a defence pair, a forward line, a full
+five-skater unit, or any group the user picks, with their time on ice together
+and the shot, goal, and xG figures for and against in that time, by
+[situation](#situational-statistics-views).
+
+Direction:
+
+- Shifts already record who is on the ice for every event, but only
+  Simulation holds the play-by-play. Decide how much a completed match keeps:
+  the totals for every combination that played together would grow quickly
+  (every pair, trio, and five-man group), so start with the pairs, lines, and
+  units the lineup named, plus on-the-fly queries if
+  [play-by-play retention](#play-by-play-retention) keeps shifts.
+- Decide how deep it goes (pairs and lines first; arbitrary groups later).
+
+## Custom charts
+
+Let the user add charts to a page and keep them there, as Football Manager
+does: for example, a bar chart of the team's skaters' xG percentage in each
+situation (five-on-five, power play, penalty kill). The user picks the chart
+kind, the statistic, the players, lines, or teams, and the situation, and the
+chart is saved with the page layout. Builds on the
+[situational statistics views](#situational-statistics-views),
+[combination statistics](#line-and-unit-combination-statistics), and the
+home-page canvas's saved layout (#65). Needs a charting control approved under
+the [dependency policy](tech-stack.md).
 
 ## Play-by-play retention
 
@@ -510,10 +548,12 @@ usage, and have the simulation respond to them. AI teams choose tactics too.
 
 ## Coaches, staff, and facilities
 
-**Needs season rollover.** Lower priority. Add head and assistant coaches,
-goalie and skills coaches, trainers and medical staff, and scouts with ratings
-that affect player development, tactics, recovery from injury, and scouting
-accuracy. Facilities (training, medical, arena) could add longer-term
+**Needs season rollover.** Add a head coach, assistant coaches, a goalie
+coach and skills coaches, trainers and a team doctor, and scouts, with ratings
+that affect play (coaching in matches and [tactics](#tactics-and-formations)),
+[player development](#season-rollover), recovery from injury (see the
+[full injury system](#full-injury-and-health-system)), and
+[scouting](#scouting-and-hidden-information) accuracy. Facilities (training, medical, arena) could add longer-term
 investments. Staff need contracts and a hiring market.
 
 ## Scouting and hidden information
@@ -548,11 +588,23 @@ for new players from their identity so it never changes after it is created
 and is the same on every machine. Decide whether real players (see
 [real players](#real-players)) get drawn or generated portraits.
 
-## Desktop redesign
+## In-game settings
 
-The maintainer may want to rework Desktop's visual design and layout.
-Capture specific concerns here before starting; colours and control styles
-already live in `HockeySim.Desktop/Theme/`.
+Desktop has no settings screen, in or out of a game. Add one reachable from
+the in-game menu bar as well as the main menu, holding
+[display settings](#display-settings), what pauses simulating ahead, and
+autosave options.
+
+Direction:
+
+- Gameplay options that change outcomes (injuries on or off, injury
+  frequency, scoring) are [configurable match tuning](#configurable-match-tuning):
+  chosen on the new-game screen, saved with the game, and shown read-only in
+  game. They never change once the game starts.
+- Turning injuries off can reuse the engine's `injuriesPossible: false` path
+  that the preseason uses.
+- Presentation preferences (units, table density) belong to Desktop, not the
+  save.
 
 ## Display settings
 

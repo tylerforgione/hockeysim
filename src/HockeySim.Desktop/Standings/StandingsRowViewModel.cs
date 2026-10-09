@@ -10,10 +10,17 @@ namespace HockeySim.Desktop.Standings;
 /// <param name="Losses">Regulation losses; overtime and shootout losses are counted in <paramref name="OvertimeLosses"/>.</param>
 /// <param name="PointsPercentage">".625" style, or a dash before the team has played.</param>
 /// <param name="GoalDifferential">Signed, such as "+4" or "-2".</param>
+/// <param name="PlayoffMarker">The NHL's clinch or elimination letter, or empty while undecided.</param>
+/// <param name="PlayoffStatus">The marker's meaning, or <see langword="null"/> while undecided.</param>
+/// <param name="IsLastQualifier">
+/// The table's last playoff position as it stands, drawn with a line beneath it.
+/// </param>
 public sealed record StandingsRowViewModel(
     int Rank,
     string TeamName,
     bool IsManaged,
+    string PlayoffMarker,
+    string? PlayoffStatus,
     int GamesPlayed,
     int Wins,
     int Losses,
@@ -24,7 +31,8 @@ public sealed record StandingsRowViewModel(
     int RegulationAndOvertimeWins,
     int GoalsFor,
     int GoalsAgainst,
-    string GoalDifferential)
+    string GoalDifferential,
+    bool IsLastQualifier = false)
 {
     public static StandingsRowViewModel Create(StandingsEntrySnapshot entry, string teamName, bool isManaged)
     {
@@ -35,6 +43,8 @@ public sealed record StandingsRowViewModel(
             entry.Rank,
             teamName,
             isManaged,
+            PlayoffStatusDisplay.Marker(entry.PlayoffStatus),
+            PlayoffStatusDisplay.Describe(entry.PlayoffStatus),
             record.GamesPlayed,
             record.Wins,
             record.RegulationLosses,

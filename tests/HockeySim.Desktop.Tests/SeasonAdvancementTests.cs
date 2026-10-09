@@ -1,6 +1,7 @@
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Schedule;
+using HockeySim.Desktop.Standings;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 
@@ -256,6 +257,18 @@ public sealed class SeasonAdvancementTests
         Assert.All(shell.Home.DivisionStandings, row => Assert.Equal(84, row.GamesPlayed));
         Assert.EndsWith("final standings", shell.Standings.Subtitle, StringComparison.Ordinal);
         Assert.All(shell.Standings.Tables.SelectMany(table => table.Rows), row => Assert.Equal(84, row.GamesPlayed));
+
+        // The final standings decide every team: each wild-card race's top two clinched a spot and
+        // the rest are eliminated.
+        Assert.All(shell.Standings.Tables.SelectMany(table => table.Rows), row => Assert.NotEmpty(row.PlayoffMarker));
+        shell.Standings.SelectScopeCommand.Execute(StandingsScope.WildCard);
+        var wildCardRaces = shell.Standings.Tables.Where(table => table.Title.EndsWith("WILD CARD", StringComparison.Ordinal)).ToList();
+        Assert.Equal(2, wildCardRaces.Count);
+        Assert.All(wildCardRaces, table =>
+        {
+            Assert.Equal(["x", "x"], table.Rows.Take(2).Select(row => row.PlayoffMarker));
+            Assert.All(table.Rows.Skip(2), row => Assert.Equal("e", row.PlayoffMarker));
+        });
         Assert.Equal(84, shell.Roster.Roster.Goalies.Sum(row => row.Season.GamesPlayed));
         Assert.All(shell.Schedule.Matches, match => Assert.True(match.IsCompleted));
         Assert.DoesNotContain(shell.Schedule.Matches, match => match.IsNext);

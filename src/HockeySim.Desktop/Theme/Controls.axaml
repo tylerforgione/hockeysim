@@ -404,6 +404,14 @@
     <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
     <Setter Property="BorderThickness" Value="2,0,0,0" />
   </Style>
+  <!-- The playoff line under a table's last qualifier; a managed row keeps its left accent. -->
+  <Style Selector="Border.standing-row.last-qualifier">
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+  </Style>
+  <Style Selector="Border.standing-row.managed.last-qualifier">
+    <Setter Property="BorderThickness" Value="2,0,0,2" />
+  </Style>
 
   <!-- Inputs. -->
   <Style Selector="TextBox">

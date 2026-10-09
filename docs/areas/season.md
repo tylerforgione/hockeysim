@@ -19,6 +19,7 @@ is in [match engine](match-engine.md).
 | `Domain/MatchDecision.cs` | Regulation, overtime, or shootout |
 | `Domain/TeamRecord.cs`, `TeamSeasonStatistics.cs`, `SkaterSeasonStatistics.cs`, `GoalieSeasonStatistics.cs`, `SeasonAverages.cs` | Season totals and the rates derived from them |
 | `Domain/StandingsRanking.cs`, `StandingsEntry.cs` | NHL tie-breaking |
+| `Domain/WildCardStandings.cs`, `PlayoffRace.cs`, `PlayoffStatus.cs` | Wild-card qualification, and clinch and elimination statuses |
 | `Management/Scheduling/` | `ScheduleGenerator`: `MeetingPlanner` then `RoundCalendar` |
 | `Management/SeasonPlay/LeagueDay.cs` | Plays a day's matches and converts results |
 | `Management/GameManagement/GameManager.cs` | `AdvanceDay`, command serialization |
@@ -38,11 +39,12 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | `Domain.Tests/ShotTotalsTests.cs` | Shot totals, their shares, reversing, and adding |
 | `Domain.Tests/SeasonStatisticsTests.cs` | Accumulating every statistic and each derived rate and percentage, undefined values |
 | `Domain.Tests/StandingsTests.cs` | Each tie-breaker, head-to-head cases, odd-game exclusion |
+| `Domain.Tests/PlayoffRaceTests.cs` | Wild-card qualification, each status on constructed scenarios, tie-breakers in guarantees, final statuses |
 | `Domain.Tests/SeasonScheduleTests.cs` | Schedule invariants |
 | `Management.Tests/ScheduleTests.cs` | Opponent matrix, home/away balance, dates, over several seeds |
 | `Management.Tests/SeasonAdvancementTests.cs` | Advancing days, failures leaving nothing applied, threading |
-| `Management.Tests/StandingsTests.cs` | Standings tables and snapshot isolation |
-| `Management.Tests/FullSeasonTests.cs` | A shared fixture plays a full 1,344-match season and reconciles it, including every season total and summary |
+| `Management.Tests/StandingsTests.cs` | Standings and wild-card tables and snapshot isolation |
+| `Management.Tests/FullSeasonTests.cs` | A shared fixture plays a full 1,344-match season and reconciles it, including every season total and summary, and checks every playoff status held to the end |
 | `Domain.Tests/TestLeague.cs`, `TestResults.cs` | Builders |
 
 ## Behaviour
@@ -130,7 +132,46 @@ differential rather than recomputing head-to-head among themselves. That choice
 is provisional and isolated in `StandingsRanking`. Teams level on every
 criterion share a rank and keep league team order. Management exposes league,
 conference, and division tables in `SeasonSnapshot.Standings`, each ranked
-independently. Playoff qualification is not modelled.
+independently.
+
+### Playoff qualification
+
+Sixteen teams qualify, in the NHL wild-card format: the top three of each
+division, then the two best of each conference's other teams (the wild cards).
+`Season.RankWildCard` ranks a conference this way: each division's table
+supplies its top three with their division ranks, and the conference's other
+ten teams are ranked among themselves, so head-to-head there considers only
+teams tied within the race. Teams level on every criterion at a cut-off are
+taken in table order, which is league team order. The playoffs themselves are
+not played yet.
+
+`Season.PlayoffStatuses` reports each team's guaranteed status, shown in the
+standings by the NHL's letters: clinched a playoff spot (x), the division (y),
+the conference (z), or the best record in the league (p), or eliminated (e).
+A team reports only its strongest. During the season `PlayoffRace` reports a
+status only when no outcome of the remaining schedule could change it, and
+errs towards reporting later. It compares teams pairwise on the per-team
+criteria (points, final games played, regulation wins, regulation and overtime
+wins, wins), using each team's worst finish (losing every remaining game in
+regulation) and best (winning every one, in regulation). A team is certainly
+ahead of another only when its worst finish outranks the other's best; a team
+that could draw level on all of those is treated as possibly ahead, because
+head-to-head and goals depend on which clubs tie and on future scores. A team
+clinches the best record, its conference, or its division when no team in that
+group can finish ahead of it. It clinches a playoff spot when at most two
+division rivals can finish ahead of it, or when at most one wild-card contender
+can: a team from a division that finishes ahead of it but outside that
+division's top three has the division's top three ahead of it too, so each
+division contributes at most (teams that can finish ahead − 3) contenders. It
+is eliminated when three division rivals and, by the same count over teams
+certainly ahead, two wild-card contenders are certainly ahead. Counting teams
+pairwise also ignores that rivals take points from each other, which again only
+delays a status. In a simulated season most statuses appear over the last
+quarter of the schedule. Once the season is complete there is nothing left to
+guarantee: the final standings, with every tie-breaker, decide every team.
+Statuses are derived from the season and not saved. Management attaches each
+team's status to every standings entry and adds each conference's wild-card
+view to `SeasonSnapshot.Standings`.
 
 ### Season statistics
 

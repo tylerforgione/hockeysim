@@ -110,6 +110,47 @@ public sealed class Season
         return StandingsRanking.Rank(records, _completedMatchesView);
     }
 
+    /// <summary>
+    /// Ranks a conference in the wild-card format: each division's leaders, then the rest of
+    /// the conference for the wild cards. As the season stands, these are its playoff qualifiers.
+    /// </summary>
+    public WildCardStandings RankWildCard(Conference conference)
+    {
+        ArgumentNullException.ThrowIfNull(conference);
+
+        if (!League.Conferences.Contains(conference))
+        {
+            throw new ArgumentException("The conference must belong to the league.", nameof(conference));
+        }
+
+        var divisionLeaders = conference.Divisions
+            .Select(division => new DivisionLeaders(
+                division,
+                RankStandings(division.Teams.Select(team => team.Id))
+                    .Take(WildCardStandings.DivisionQualifiers)
+                    .ToList()
+                    .AsReadOnly()))
+            .ToList();
+        var leaderIds = divisionLeaders
+            .SelectMany(leaders => leaders.Teams)
+            .Select(entry => entry.Record.TeamId)
+            .ToHashSet();
+        var wildCardRace = RankStandings(conference.Divisions
+            .SelectMany(division => division.Teams)
+            .Select(team => team.Id)
+            .Where(teamId => !leaderIds.Contains(teamId)));
+
+        return new WildCardStandings(conference, divisionLeaders, wildCardRace);
+    }
+
+    /// <summary>
+    /// Every team's guaranteed playoff status. During the season a status
+    /// is reported only once no remaining result can change it; once the season is complete, the
+    /// final standings decide every team.
+    /// </summary>
+    public IReadOnlyDictionary<TeamId, PlayoffStatus> PlayoffStatuses() =>
+        PlayoffRace.Statuses(this).AsReadOnly();
+
     /// <summary>Totals for every skater who has appeared, in league team and roster order.</summary>
     public IReadOnlyList<SkaterSeasonStatistics> SkaterStatistics => InRosterOrder(_skaterStatistics);
 
