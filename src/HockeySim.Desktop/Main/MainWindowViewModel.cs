@@ -5,6 +5,7 @@ using HockeySim.Desktop.Game;
 using HockeySim.Desktop.NewGame;
 using HockeySim.Desktop.Saves;
 using HockeySim.Desktop.Startup;
+using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.Saves;
 
@@ -28,6 +29,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private object _currentScreen;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TeamColours))]
     private GameShellViewModel? _game;
 
     public MainWindowViewModel(GameManager gameManager, ISavedGameLibrary saves, Action? exitApplication = null)
@@ -58,6 +60,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public bool IsNewGameVisible => CurrentScreen is NewGameViewModel;
 
     public bool IsGameVisible => CurrentScreen is GameShellViewModel;
+
+    /// <summary>
+    /// Gets the colours the window wears: the managed team's while a game is open, on every screen,
+    /// or none before the first game, leaving the league defaults.
+    /// </summary>
+    public TeamColours? TeamColours => Game?.Session.ManagedTeam.Colours;
 
     /// <summary>
     /// Gets whether a game is in progress with changes that closing it would lose.

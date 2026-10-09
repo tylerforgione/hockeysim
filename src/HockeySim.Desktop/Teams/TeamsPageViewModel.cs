@@ -54,8 +54,8 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
     public string SelectedTeamInitials => PlayerDisplay.TeamInitials(SelectedTeam.Name);
 
     public string OwnershipNote => IsSelectedTeamManaged
-        ? "Your team · change lines from the Lines page"
-        : "Read-only · other clubs set their own lineups";
+        ? "Your team"
+        : "Read-only";
 
     public void SelectTeam(TeamId teamId)
     {

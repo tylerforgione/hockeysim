@@ -5,13 +5,13 @@
              x:Class="HockeySim.Desktop.Teams.TeamsPageView"
              x:DataType="teams:TeamsPageViewModel">
   <DockPanel>
-    <Border DockPanel.Dock="Top" Classes="panel" Margin="0,0,0,8" Padding="12,8">
+    <Border DockPanel.Dock="Top" Classes="panel" Margin="0,0,0,6" Padding="12,8">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
         <Border Classes="badge" Width="44" Height="44">
           <TextBlock Text="{Binding SelectedTeamInitials}" FontSize="14" />
         </Border>
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-          <StackPanel Orientation="Horizontal" Spacing="8">
+          <StackPanel Orientation="Horizontal" Spacing="6">
             <TextBlock x:Name="SelectedTeamName"
                        Text="{Binding SelectedTeam.Name}"
                        FontSize="17"

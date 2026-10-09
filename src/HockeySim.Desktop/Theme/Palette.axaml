@@ -2,8 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:theme="using:HockeySim.Desktop.Theme">
   <!--
-    Team identity. These default to the NHL's black, silver, and white until the user's team
-    colours replace them at runtime, so always reference them with DynamicResource.
+    Team identity. These are the NHL's black, silver, and white until a game is open; TeamPalette
+    then replaces them with the managed team's colours, so always reference them with
+    DynamicResource. Text on the secondary colour is the primary colour.
   -->
   <SolidColorBrush x:Key="TeamPrimaryBrush">#000000</SolidColorBrush>
   <SolidColorBrush x:Key="OnTeamPrimaryBrush">#FFFFFF</SolidColorBrush>
@@ -11,24 +12,34 @@
   <SolidColorBrush x:Key="OnTeamSecondaryBrush">#000000</SolidColorBrush>
 
   <!-- Neutral surfaces carry the layout and never change with the team. -->
-  <SolidColorBrush x:Key="AppBackgroundBrush">#101215</SolidColorBrush>
-  <SolidColorBrush x:Key="SunkenBrush">#0B0D0F</SolidColorBrush>
-  <SolidColorBrush x:Key="SurfaceBrush">#181B1F</SolidColorBrush>
-  <SolidColorBrush x:Key="SurfaceRaisedBrush">#20242A</SolidColorBrush>
-  <SolidColorBrush x:Key="RowAltBrush">#1C1F24</SolidColorBrush>
-  <SolidColorBrush x:Key="HoverBrush">#272C33</SolidColorBrush>
-  <SolidColorBrush x:Key="SelectedBrush">#2F363E</SolidColorBrush>
-  <SolidColorBrush x:Key="BorderBrush">#2A2F36</SolidColorBrush>
-  <SolidColorBrush x:Key="BorderStrongBrush">#3E454E</SolidColorBrush>
-  <SolidColorBrush x:Key="PrimaryTextBrush">#E8EBEE</SolidColorBrush>
-  <SolidColorBrush x:Key="SecondaryTextBrush">#98A1AB</SolidColorBrush>
-  <SolidColorBrush x:Key="DisabledTextBrush">#565E67</SolidColorBrush>
+  <SolidColorBrush x:Key="AppBackgroundBrush">#1A1F25</SolidColorBrush>
+  <SolidColorBrush x:Key="SurfaceBrush">#20262D</SolidColorBrush>
+  <SolidColorBrush x:Key="RowAltBrush">#242A32</SolidColorBrush>
+  <SolidColorBrush x:Key="TableHeaderBrush">#2A313A</SolidColorBrush>
+  <SolidColorBrush x:Key="SurfaceRaisedBrush">#2A313A</SolidColorBrush>
+  <SolidColorBrush x:Key="SunkenBrush">#151A1F</SolidColorBrush>
+  <SolidColorBrush x:Key="HoverBrush">#2E363F</SolidColorBrush>
+  <SolidColorBrush x:Key="SelectedBrush">#353E49</SolidColorBrush>
+  <SolidColorBrush x:Key="BorderBrush">#0D1014</SolidColorBrush>
+  <SolidColorBrush x:Key="BorderStrongBrush">#3A434D</SolidColorBrush>
+
+  <!-- Window chrome. -->
+  <SolidColorBrush x:Key="TitleBarBrush">#0D1014</SolidColorBrush>
+  <SolidColorBrush x:Key="MenuBarBrush">#232931</SolidColorBrush>
+  <SolidColorBrush x:Key="TabStripBrush">#12161B</SolidColorBrush>
+  <SolidColorBrush x:Key="StatusBarBrush">#0D1014</SolidColorBrush>
+
+  <!-- Text. -->
+  <SolidColorBrush x:Key="PrimaryTextBrush">#DDE3E9</SolidColorBrush>
+  <SolidColorBrush x:Key="SecondaryTextBrush">#AAB4BF</SolidColorBrush>
+  <SolidColorBrush x:Key="MutedTextBrush">#8A949F</SolidColorBrush>
+  <SolidColorBrush x:Key="DisabledTextBrush">#5F6974</SolidColorBrush>
 
   <!-- State. -->
-  <SolidColorBrush x:Key="PositiveBrush">#56B881</SolidColorBrush>
+  <SolidColorBrush x:Key="PositiveBrush">#6CC28F</SolidColorBrush>
   <SolidColorBrush x:Key="WarningBrush">#E2B04A</SolidColorBrush>
-  <SolidColorBrush x:Key="NegativeBrush">#E06464</SolidColorBrush>
-  <SolidColorBrush x:Key="ErrorBrush">#E06464</SolidColorBrush>
+  <SolidColorBrush x:Key="NegativeBrush">#E07A7A</SolidColorBrush>
+  <SolidColorBrush x:Key="ErrorBrush">#E07A7A</SolidColorBrush>
 
   <!-- Rating tiers, applied through RatingBrushConverter. -->
   <SolidColorBrush x:Key="RatingEliteBrush">#4FC27E</SolidColorBrush>
@@ -36,6 +47,15 @@
   <SolidColorBrush x:Key="RatingAverageBrush">#E2C04A</SolidColorBrush>
   <SolidColorBrush x:Key="RatingWeakBrush">#E58B4B</SolidColorBrush>
   <SolidColorBrush x:Key="RatingPoorBrush">#E06464</SolidColorBrush>
+
+  <!--
+    Type. PT Sans and PT Sans Narrow are bundled under the SIL Open Font License (Fonts/OFL.txt).
+    Their digits share one width, so numbers line up in columns without a tabular-figures feature.
+  -->
+  <FontFamily x:Key="BodyFontFamily">avares://HockeySim/Theme/Fonts#PT Sans</FontFamily>
+  <FontFamily x:Key="HeadingFontFamily">avares://HockeySim/Theme/Fonts#PT Sans Narrow</FontFamily>
+  <!-- Fluent's controls and pop-ups read this rather than the window's font. -->
+  <FontFamily x:Key="ContentControlThemeFontFamily">avares://HockeySim/Theme/Fonts#PT Sans</FontFamily>
 
   <theme:RatingBrushConverter x:Key="RatingBrush" />
 </ResourceDictionary>

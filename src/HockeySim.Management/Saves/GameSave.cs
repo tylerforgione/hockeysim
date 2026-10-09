@@ -32,8 +32,15 @@ public sealed record SavedConference(string Name, IReadOnlyList<SavedDivision> D
 
 public sealed record SavedDivision(string Name, IReadOnlyList<SavedTeam> Teams);
 
+/// <param name="PrimaryColour">Written as #RRGGBB, as is <paramref name="SecondaryColour"/>.</param>
 /// <param name="Roster">The players in roster order. Undressed players are the scratches.</param>
-public sealed record SavedTeam(TeamId Id, string Name, IReadOnlyList<SavedPlayer> Roster, SavedLineup Lineup);
+public sealed record SavedTeam(
+    TeamId Id,
+    string Name,
+    string PrimaryColour,
+    string SecondaryColour,
+    IReadOnlyList<SavedPlayer> Roster,
+    SavedLineup Lineup);
 
 public sealed record SavedPlayer(
     PlayerId Id,

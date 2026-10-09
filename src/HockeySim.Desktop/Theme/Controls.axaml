@@ -1,8 +1,12 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <!-- See .agents/ui-style.md for when to use each class. -->
+  <!--
+    The front-office look: dense, square panels tiled edge to edge with 6 px gutters, headed in the
+    managed team's colours. Body text is PT Sans; headings and large figures are PT Sans Narrow.
+  -->
 
   <Style Selector="Window">
+    <Setter Property="FontFamily" Value="{DynamicResource BodyFontFamily}" />
     <Setter Property="FontSize" Value="13" />
     <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
   </Style>
@@ -11,14 +15,19 @@
     <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
-    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="CornerRadius" Value="0" />
     <Setter Property="FontSize" Value="12" />
   </Style>
 
   <!-- Text roles. -->
   <Style Selector="TextBlock.page-title">
-    <Setter Property="FontSize" Value="20" />
-    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}" />
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="TextBlock.heading">
+    <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}" />
+    <Setter Property="FontWeight" Value="Bold" />
   </Style>
   <Style Selector="TextBlock.caption">
     <Setter Property="FontSize" Value="12" />
@@ -31,11 +40,12 @@
     <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
   </Style>
   <Style Selector="TextBlock.stat">
-    <Setter Property="FontSize" Value="26" />
+    <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}" />
+    <Setter Property="FontSize" Value="28" />
     <Setter Property="FontWeight" Value="Bold" />
   </Style>
   <Style Selector="TextBlock.muted">
-    <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
   </Style>
   <Style Selector="TextBlock.strong">
     <Setter Property="FontWeight" Value="Bold" />
@@ -63,32 +73,40 @@
     <Setter Property="HorizontalAlignment" Value="Center" />
   </Style>
 
-  <!-- Panels. -->
+  <!-- Panels: square, with 1 px dark borders. Panel titles are written in upper case. -->
   <Style Selector="Border.panel">
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="CornerRadius" Value="0" />
     <Setter Property="ClipToBounds" Value="True" />
   </Style>
   <Style Selector="Border.panel-header">
-    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Background" Value="{DynamicResource TeamPrimaryBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
     <Setter Property="Padding" Value="10,0" />
-    <Setter Property="Height" Value="32" />
+    <Setter Property="Height" Value="30" />
   </Style>
   <Style Selector="TextBlock.panel-title">
-    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}" />
+    <Setter Property="FontSize" Value="14" />
     <Setter Property="FontWeight" Value="Bold" />
-    <Setter Property="LetterSpacing" Value="0.8" />
+    <Setter Property="LetterSpacing" Value="0.6" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
+  <Style Selector="Border.panel-header TextBlock.panel-title">
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamPrimaryBrush}" />
+  </Style>
+  <Style Selector="Border.panel-header TextBlock.caption">
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamPrimaryBrush}" />
+    <Setter Property="Opacity" Value="0.75" />
+  </Style>
   <Style Selector="Border.table-header">
-    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+    <Setter Property="Background" Value="{DynamicResource TableHeaderBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
-    <Setter Property="Height" Value="26" />
+    <Setter Property="Height" Value="24" />
     <Setter Property="Padding" Value="8,0" />
   </Style>
   <Style Selector="Border.table-header TextBlock">
@@ -106,10 +124,11 @@
   <Style Selector="Border.badge">
     <Setter Property="Background" Value="{DynamicResource TeamPrimaryBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
-    <Setter Property="BorderThickness" Value="1.5" />
-    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="CornerRadius" Value="0" />
   </Style>
   <Style Selector="Border.badge TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}" />
     <Setter Property="Foreground" Value="{DynamicResource OnTeamPrimaryBrush}" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="HorizontalAlignment" Value="Center" />
@@ -117,8 +136,8 @@
   </Style>
   <Style Selector="Border.pill">
     <Setter Property="Background" Value="{DynamicResource TeamSecondaryBrush}" />
-    <Setter Property="CornerRadius" Value="8" />
-    <Setter Property="Padding" Value="6,0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="5,0" />
     <Setter Property="MinWidth" Value="18" />
     <Setter Property="Height" Value="16" />
     <Setter Property="VerticalAlignment" Value="Center" />
@@ -148,7 +167,7 @@
   </Style>
   <Style Selector="Border.position">
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
-    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Width" Value="22" />
     <Setter Property="Height" Value="16" />
     <Setter Property="HorizontalAlignment" Value="Center" />
@@ -163,7 +182,7 @@
 
   <!-- Buttons. Fluent draws the background on the template's ContentPresenter. -->
   <Style Selector="Button">
-    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="CornerRadius" Value="0" />
     <Setter Property="FontSize" Value="13" />
   </Style>
 
@@ -175,8 +194,9 @@
     <Setter Property="Padding" Value="16,6" />
   </Style>
   <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource OnTeamPrimaryBrush}" />
+    <Setter Property="Background" Value="{DynamicResource TeamSecondaryBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource OnTeamSecondaryBrush}" />
+    <Setter Property="Opacity" Value="0.85" />
   </Style>
   <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
@@ -228,29 +248,38 @@
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
   </Style>
+  <!-- In a panel header the link sits on the primary colour, so hovering brightens it instead. -->
+  <Style Selector="Border.panel-header Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamPrimaryBrush}" />
+  </Style>
 
-  <!-- Segmented choices, such as which columns or standings a page shows. -->
+  <!--
+    Segmented button groups switch a view, such as which columns or standings a page shows. Put the
+    buttons side by side with no spacing; the selected one takes the team's secondary colour.
+  -->
   <Style Selector="Button.tab">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="0,0,0,2" />
-    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Background" Value="{DynamicResource TabStripBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
     <Setter Property="FontSize" Value="12" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Padding" Value="8,3" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Padding" Value="10,3" />
+    <Setter Property="MinHeight" Value="24" />
   </Style>
   <Style Selector="Button.tab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
-    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
   </Style>
   <Style Selector="Button.tab.selected">
-    <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+    <Setter Property="Background" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamSecondaryBrush}" />
   </Style>
   <Style Selector="Button.tab.selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="Background" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamSecondaryBrush}" />
   </Style>
 
   <!-- Title-bar buttons sit on the team primary colour. -->
@@ -289,8 +318,9 @@
     <Setter Property="BorderBrush" Value="Transparent" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
-    <Setter Property="FontSize" Value="17" />
-    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}" />
+    <Setter Property="FontSize" Value="19" />
+    <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Left" />
     <Setter Property="Padding" Value="12,0" />
@@ -374,8 +404,8 @@
   </Style>
   <Style Selector="ListBox.table ListBoxItem">
     <Setter Property="Padding" Value="8,0" />
-    <Setter Property="MinHeight" Value="26" />
-    <Setter Property="Height" Value="26" />
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Height" Value="24" />
     <Setter Property="BorderThickness" Value="2,0,0,0" />
     <Setter Property="BorderBrush" Value="Transparent" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -399,6 +429,10 @@
     <Setter Property="Padding" Value="10,8" />
   </Style>
 
+  <!-- Zebra stripes for rows drawn outside a ListBox; the managed team's row stands out. -->
+  <Style Selector="ItemsControl.table ContentPresenter:nth-child(2n) > Border.standing-row">
+    <Setter Property="Background" Value="{DynamicResource RowAltBrush}" />
+  </Style>
   <Style Selector="Border.standing-row.managed">
     <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
@@ -407,33 +441,33 @@
 
   <!-- Inputs. -->
   <Style Selector="TextBox">
-    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Background" Value="{DynamicResource SunkenBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
     <Setter Property="MinHeight" Value="30" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="ComboBox">
-    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Background" Value="{DynamicResource SunkenBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
-    <Setter Property="MinHeight" Value="28" />
-    <Setter Property="Height" Value="28" />
-    <Setter Property="Padding" Value="8,0,4,0" />
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Padding" Value="6,0,2,0" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="FontSize" Value="12" />
   </Style>
   <Style Selector="ComboBoxItem">
     <Setter Property="FontSize" Value="12" />
-    <Setter Property="Padding" Value="8,4" />
-    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Padding" Value="8,3" />
+    <Setter Property="MinHeight" Value="22" />
   </Style>
 
   <Style Selector="ProgressBar.rating-bar">
     <Setter Property="MinHeight" Value="6" />
     <Setter Property="Height" Value="6" />
     <Setter Property="MinWidth" Value="0" />
-    <Setter Property="CornerRadius" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Minimum" Value="0" />
     <Setter Property="Maximum" Value="100" />
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />

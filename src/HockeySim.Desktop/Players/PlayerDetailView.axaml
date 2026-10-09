@@ -145,7 +145,7 @@
                 <ItemsControl ItemsSource="{Binding Ratings}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="players:RatingLineViewModel">
-                      <Grid ColumnDefinitions="*,70,30" ColumnSpacing="8" Height="20">
+                      <Grid ColumnDefinitions="*,70,30" ColumnSpacing="6" Height="20">
                         <TextBlock Classes="cell" Text="{Binding Name}" />
                         <ProgressBar Grid.Column="1"
                                      Classes="rating-bar"

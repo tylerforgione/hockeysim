@@ -75,6 +75,9 @@ internal static class GameSaveRestorer
         return new Team(
             saved.Id,
             saved.Name,
+            new TeamColours(
+                Colour.FromHex(Required(saved.PrimaryColour, "primary team colour")),
+                Colour.FromHex(Required(saved.SecondaryColour, "secondary team colour"))),
             roster,
             new Lineup(
                 Items(lineup.ForwardLines, "forward lines")

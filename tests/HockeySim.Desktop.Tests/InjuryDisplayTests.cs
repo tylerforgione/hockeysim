@@ -29,7 +29,7 @@ public sealed class InjuryDisplayTests
 
         Assert.True(shell.HasPlayersToReplace);
         Assert.False(shell.AdvanceDayCommand.CanExecute(null));
-        Assert.StartsWith("Replace the injured players in your lineup", shell.ContinueDescription, StringComparison.Ordinal);
+        Assert.EndsWith("Injured players to replace", shell.ContinueDescription, StringComparison.Ordinal);
         Assert.All(session.Snapshot.PlayersToReplace, id =>
             Assert.Contains(PlayerDisplay.FullName(session.PlayersById[id]), shell.PlayersToReplaceMessage, StringComparison.Ordinal));
 

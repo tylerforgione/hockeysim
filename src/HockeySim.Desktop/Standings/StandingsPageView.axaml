@@ -1,13 +1,14 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:theme="using:HockeySim.Desktop.Theme"
              xmlns:standings="using:HockeySim.Desktop.Standings"
              x:Class="HockeySim.Desktop.Standings.StandingsPageView"
              x:DataType="standings:StandingsPageViewModel">
   <!-- Header and row templates share ColumnDefinitions so columns align. -->
   <DockPanel>
-    <Border DockPanel.Dock="Top" Classes="panel" Margin="0,0,0,8" Padding="8,4">
+    <Border DockPanel.Dock="Top" Classes="panel" Margin="0,0,0,6" Padding="8,4">
       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-        <StackPanel Orientation="Horizontal" Spacing="2">
+        <StackPanel Orientation="Horizontal" Spacing="0">
           <Button x:Name="DivisionScopeButton"
                   Classes="tab"
                   Classes.selected="{Binding IsDivisionScope}"
@@ -27,12 +28,6 @@
                   Command="{Binding SelectScopeCommand}"
                   CommandParameter="{x:Static standings:StandingsScope.League}" />
         </StackPanel>
-        <TextBlock Grid.Column="1"
-                   Classes="caption"
-                   VerticalAlignment="Center"
-                   HorizontalAlignment="Right"
-                   TextTrimming="CharacterEllipsis"
-                   Text="Ranked by points, then fewer games played, RW, ROW, wins, head-to-head, goal differential, and goals for" />
       </Grid>
     </Border>
 
@@ -40,7 +35,7 @@
       <ItemsControl x:Name="StandingsTables" ItemsSource="{Binding Tables}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
-            <StackPanel Spacing="8" />
+            <StackPanel Spacing="6" />
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
@@ -49,7 +44,7 @@
               <StackPanel>
                 <Border Classes="panel-header">
                   <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Classes="panel-title" Text="{Binding Title}" />
+                    <TextBlock Classes="panel-title" Text="{Binding Title, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
                     <TextBlock Grid.Column="1" Classes="caption" VerticalAlignment="Center" Text="{Binding Caption}" />
                   </Grid>
                 </Border>
@@ -65,12 +60,12 @@
                     <TextBlock Grid.Column="7" Text="P%" HorizontalAlignment="Center" />
                     <TextBlock Grid.Column="8" Text="RW" HorizontalAlignment="Center" />
                     <TextBlock Grid.Column="9" Text="ROW" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="10" Text="GF" HorizontalAlignment="Center" ToolTip.Tip="Goals for, including shootout deciding goals" />
-                    <TextBlock Grid.Column="11" Text="GA" HorizontalAlignment="Center" ToolTip.Tip="Goals against, including shootout deciding goals" />
+                    <TextBlock Grid.Column="10" Text="GF" HorizontalAlignment="Center" ToolTip.Tip="Goals for" />
+                    <TextBlock Grid.Column="11" Text="GA" HorizontalAlignment="Center" ToolTip.Tip="Goals against" />
                     <TextBlock Grid.Column="12" Text="DIFF" HorizontalAlignment="Center" />
                   </Grid>
                 </Border>
-                <ItemsControl ItemsSource="{Binding Rows}">
+                <ItemsControl Classes="table" ItemsSource="{Binding Rows}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="standings:StandingsRowViewModel">
                       <Border Classes="standing-row" Classes.managed="{Binding IsManaged}" Height="26" Padding="8,0">

@@ -3,6 +3,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
@@ -20,6 +21,7 @@ using HockeySim.Desktop.Schedule;
 using HockeySim.Desktop.Standings;
 using HockeySim.Desktop.Startup;
 using HockeySim.Desktop.Teams;
+using HockeySim.Desktop.Theme;
 using HockeySim.Management.GameManagement;
 
 using Xunit;
@@ -50,6 +52,7 @@ public sealed class MainWindowViewTests
         Dispatcher.UIThread.RunJobs();
 
         var startupView = Single<StartupView>(window);
+        Assert.False(window.Resources.ContainsKey(TeamPalette.PrimaryKey));
         Assert.Equal(
             $"Version {AppVersion.Current} · Pre-release build",
             startupView.FindControl<TextBlock>("VersionLabel")?.Text);
@@ -76,6 +79,15 @@ public sealed class MainWindowViewTests
 
         var shellView = Single<GameShellView>(window);
         Assert.Equal("Seattle Evergreens", shellView.FindControl<TextBlock>("ShellTeamName")?.Text);
+
+        // The window wears the managed team's colours, with primary-coloured text on the secondary.
+        var seattlePrimary = Color.Parse("#0B4F3C");
+        Assert.Equal(seattlePrimary, ResourceColor(window, TeamPalette.PrimaryKey));
+        Assert.Equal(Colors.White, ResourceColor(window, TeamPalette.OnPrimaryKey));
+        Assert.Equal(Color.Parse("#99D9C1"), ResourceColor(window, TeamPalette.SecondaryKey));
+        Assert.Equal(seattlePrimary, ResourceColor(window, TeamPalette.OnSecondaryKey));
+        var panelHeader = window.GetVisualDescendants().OfType<Border>().First(border => border.Classes.Contains("panel-header"));
+        Assert.Equal(seattlePrimary, Assert.IsAssignableFrom<ISolidColorBrush>(panelHeader.Background).Color);
         var continueButton = Assert.IsType<Button>(shellView.FindControl<Button>("ContinueButton"));
         Assert.True(continueButton.IsEffectivelyEnabled);
         Assert.Single(window.GetVisualDescendants().OfType<HomePageView>());
@@ -288,6 +300,9 @@ public sealed class MainWindowViewTests
         Assert.True(view.Bounds.Width > 600);
         Assert.True(view.Bounds.Height > 400);
     }
+
+    private static Color ResourceColor(Window window, string key) =>
+        Assert.IsAssignableFrom<ISolidColorBrush>(window.FindResource(key)).Color;
 
     private static T Single<T>(Visual root)
         where T : Visual =>

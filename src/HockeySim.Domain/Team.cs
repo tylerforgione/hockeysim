@@ -8,7 +8,7 @@ public sealed class Team
 
     private readonly ReadOnlyCollection<Player> _roster;
 
-    public Team(TeamId id, string name, IEnumerable<Player> roster, Lineup lineup)
+    public Team(TeamId id, string name, TeamColours colours, IEnumerable<Player> roster, Lineup lineup)
     {
         if (id.Value == Guid.Empty)
         {
@@ -16,6 +16,7 @@ public sealed class Team
         }
 
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(colours);
         ArgumentNullException.ThrowIfNull(roster);
         ArgumentNullException.ThrowIfNull(lineup);
 
@@ -44,6 +45,7 @@ public sealed class Team
 
         Id = id;
         Name = name;
+        Colours = colours;
         _roster = rosterList.AsReadOnly();
         Lineup = lineup;
     }
@@ -69,6 +71,8 @@ public sealed class Team
     public TeamId Id { get; }
 
     public string Name { get; }
+
+    public TeamColours Colours { get; }
 
     public IReadOnlyList<Player> Roster => _roster;
 

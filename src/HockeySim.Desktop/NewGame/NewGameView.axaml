@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:theme="using:HockeySim.Desktop.Theme"
              xmlns:viewModels="using:HockeySim.Desktop.NewGame"
              x:Class="HockeySim.Desktop.NewGame.NewGameView"
              x:DataType="viewModels:NewGameViewModel"
@@ -21,10 +22,6 @@
                      Foreground="{DynamicResource OnTeamPrimaryBrush}"
                      FontSize="16"
                      FontWeight="Bold" />
-          <TextBlock Text="Name your career and choose a club to manage"
-                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
-                     Opacity="0.7"
-                     FontSize="11" />
         </StackPanel>
       </Grid>
     </Border>
@@ -49,7 +46,7 @@
       </Grid>
     </Border>
 
-    <Grid Margin="12" ColumnDefinitions="300,*" ColumnSpacing="8">
+    <Grid Margin="12" ColumnDefinitions="300,*" ColumnSpacing="6">
       <Border Classes="panel" VerticalAlignment="Top">
         <StackPanel>
           <Border Classes="panel-header">
@@ -69,7 +66,6 @@
               <Border Background="{DynamicResource SunkenBrush}"
                       BorderBrush="{DynamicResource BorderBrush}"
                       BorderThickness="1"
-                      CornerRadius="2"
                       Padding="10">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                   <Border Classes="badge" Width="40" Height="40">
@@ -99,7 +95,7 @@
       <ItemsControl x:Name="ConferencesList" Grid.Column="1" ItemsSource="{Binding Conferences}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
-            <UniformGrid Columns="2" ColumnSpacing="8" VerticalAlignment="Top" />
+            <UniformGrid Columns="2" ColumnSpacing="6" VerticalAlignment="Top" />
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
@@ -107,7 +103,7 @@
             <Border Classes="panel">
               <StackPanel>
                 <Border Classes="panel-header">
-                  <TextBlock Classes="panel-title" Text="{Binding Name}" />
+                  <TextBlock Classes="panel-title" Text="{Binding Name, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
                 </Border>
                 <ItemsControl ItemsSource="{Binding Divisions}" Margin="0,4,0,8">
                   <ItemsControl.ItemsPanel>

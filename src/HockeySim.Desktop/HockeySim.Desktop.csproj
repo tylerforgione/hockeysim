@@ -12,6 +12,18 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
   </ItemGroup>
 
+  <!--
+    PT Sans and PT Sans Narrow are embedded for the theme. The SIL Open Font License asks that its
+    text travel with the fonts, so it is copied beside the executable as well.
+  -->
+  <ItemGroup>
+    <AvaloniaResource Include="Theme\Fonts\*.ttf" />
+    <None Include="Theme\Fonts\OFL.txt"
+          Link="Licenses\PT-Sans-OFL.txt"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <!-- Players run "HockeySim"; Avalonia resource URIs use this name (avares://HockeySim/...). -->

@@ -41,14 +41,17 @@ internal static class LeagueGenerator
         DateOnly openingDay,
         ControlledRandom random)
     {
-        var teams = definition.TeamNames
-            .Select(teamName => CreateTeam(teamName, openingDay, random))
+        var teams = definition.Teams
+            .Select(team => CreateTeam(team, openingDay, random))
             .ToList();
 
         return new Division(definition.Name, teams);
     }
 
-    private static Team CreateTeam(string name, DateOnly openingDay, ControlledRandom random)
+    private static Team CreateTeam(
+        FictionalLeagueData.TeamDefinition definition,
+        DateOnly openingDay,
+        ControlledRandom random)
     {
         var numbers = CreatePlayerNumbers(random);
         var players = new List<Player>(Team.RequiredRosterSize);
@@ -79,7 +82,7 @@ internal static class LeagueGenerator
             .ToList();
         var lineup = Lineup.CreateWithDefaultUnits(forwardLines, defencePairs, goalies[0], goalies[1]);
 
-        return new Team(new TeamId(random.NextGuid()), name, players, lineup);
+        return new Team(new TeamId(random.NextGuid()), definition.Name, definition.Colours, players, lineup);
     }
 
     /// <summary>

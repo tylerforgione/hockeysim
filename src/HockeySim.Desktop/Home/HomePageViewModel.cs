@@ -194,7 +194,7 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
         if (next is null)
         {
             NextMatchTitle = "Regular season complete";
-            NextMatchCaption = "No further matches are scheduled.";
+            NextMatchCaption = string.Empty;
             return;
         }
 
@@ -215,7 +215,7 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
         {
             LatestResultsTitle = "LEAGUE RESULTS";
             LatestResults = [];
-            LatestResultsCaption = $"The regular season opens {MatchDisplay.LongDate(openingDay)}.";
+            LatestResultsCaption = $"Opening day · {MatchDisplay.LongDate(openingDay)}";
             return;
         }
 
@@ -233,7 +233,7 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
                 () => _openMatch(result.Date, Involves(result, team.Id) ? team.Id : result.Home.TeamId)))
             .ToList();
         LatestResultsCaption = LatestResults.Count == 0
-            ? $"No league matches were scheduled on {MatchDisplay.LongDate(day)}."
+            ? "No league matches"
             : string.Empty;
     }
 
