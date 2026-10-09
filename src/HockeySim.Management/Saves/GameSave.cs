@@ -14,17 +14,21 @@ namespace HockeySim.Management.Saves;
 /// through the season, so they are always rebuilt from the history and can never disagree with it.
 /// Changing this shape changes the save format, so the storage's format version must change too.
 /// </remarks>
-/// <param name="Schedule">The scheduled matches in schedule order.</param>
+/// <param name="PreseasonSchedule">The scheduled preseason matches in schedule order.</param>
+/// <param name="Schedule">The scheduled regular-season matches in schedule order.</param>
 /// <param name="CurrentDate">The next league day to be played.</param>
-/// <param name="CompletedMatches">Every completed match, each played on a date before the current date.</param>
+/// <param name="PreseasonMatches">Every completed preseason match, each played on a date before the current date.</param>
+/// <param name="CompletedMatches">Every completed regular-season match, each played on a date before the current date.</param>
 /// <param name="Inbox">The inbox messages, newest first.</param>
 public sealed record GameSave(
     int SeasonYear,
     TeamId ManagedTeamId,
     RandomState RandomState,
     IReadOnlyList<SavedConference> Conferences,
+    IReadOnlyList<SavedScheduledMatch> PreseasonSchedule,
     IReadOnlyList<SavedScheduledMatch> Schedule,
     DateOnly CurrentDate,
+    IReadOnlyList<SavedCompletedMatch> PreseasonMatches,
     IReadOnlyList<SavedCompletedMatch> CompletedMatches,
     IReadOnlyList<SavedInboxMessage> Inbox);
 

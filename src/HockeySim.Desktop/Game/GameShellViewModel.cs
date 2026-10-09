@@ -142,9 +142,12 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     public string SeasonLabel => $"{PlayerDisplay.FormatSeason(Session.Snapshot.League.SeasonYear)} Season";
 
-    public string PhaseLabel => Session.Snapshot.Season.IsComplete
-        ? "Regular season complete"
-        : $"Regular season · {MatchDisplay.ShortDate(Session.Snapshot.Season.CurrentDate)}";
+    public string PhaseLabel => Session.Snapshot.Season switch
+    {
+        { IsComplete: true } => "Regular season complete",
+        { Phase: SeasonPhase.Preseason } season => $"Preseason · {MatchDisplay.ShortDate(season.CurrentDate)}",
+        var season => $"Regular season · {MatchDisplay.ShortDate(season.CurrentDate)}",
+    };
 
     public string ContinueLabel => Session.IsAdvancing ? "Playing…" : "Continue";
 
@@ -167,7 +170,9 @@ public sealed partial class GameShellViewModel : ObservableObject
                 return $"Replace the injured players in your lineup before playing {date}.";
             }
 
-            var matches = Session.Snapshot.Schedule.Matches.Where(match => match.Date == season.CurrentDate).ToList();
+            var isPreseason = season.Phase == SeasonPhase.Preseason;
+            var schedule = isPreseason ? Session.Snapshot.Schedule.PreseasonMatches : Session.Snapshot.Schedule.Matches;
+            var matches = schedule.Where(match => match.Date == season.CurrentDate).ToList();
             if (matches.Count == 0)
             {
                 return $"No league matches on {date}. Continue to the next day.";
@@ -175,7 +180,8 @@ public sealed partial class GameShellViewModel : ObservableObject
 
             var managedTeamId = Session.Snapshot.ManagedTeamId;
             var managedMatch = matches.FirstOrDefault(match => match.HomeTeamId == managedTeamId || match.AwayTeamId == managedTeamId);
-            var count = matches.Count == 1 ? "1 league match" : $"{matches.Count} league matches";
+            var kind = isPreseason ? "preseason" : "league";
+            var count = matches.Count == 1 ? $"1 {kind} match" : $"{matches.Count} {kind} matches";
             return managedMatch is null
                 ? $"Play {date}: {count}. Your team does not play."
                 : $"Play {date}: {count}, including yours.";
