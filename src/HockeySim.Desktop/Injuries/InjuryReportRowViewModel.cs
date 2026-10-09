@@ -1,7 +1,7 @@
 using HockeySim.Desktop.Players;
 using HockeySim.Management.GameManagement.Snapshots;
 
-namespace HockeySim.Desktop.Roster;
+namespace HockeySim.Desktop.Injuries;
 
 /// <summary>One injury in a team's injury report.</summary>
 public sealed class InjuryReportRowViewModel

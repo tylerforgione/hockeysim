@@ -4,15 +4,15 @@ using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Schedule;
 using HockeySim.Management.GameManagement.Snapshots;
 
-namespace HockeySim.Desktop.Roster;
+namespace HockeySim.Desktop.TeamStatistics;
 
 /// <summary>
-/// Formats a team's season statistics for the strip above its roster. Shot, attempt, and
+/// Formats a team's season statistics for the team statistics page. Shot, attempt, and
 /// expected-goal shares are at five-on-five so special-teams time does not distort them.
 /// </summary>
 public static class TeamStatisticsDisplay
 {
-    public static IReadOnlyList<SeasonStatViewModel> Strip(TeamSeasonStatisticsSnapshot statistics)
+    public static IReadOnlyList<SeasonStatViewModel> Rows(TeamSeasonStatisticsSnapshot statistics)
     {
         ArgumentNullException.ThrowIfNull(statistics);
 

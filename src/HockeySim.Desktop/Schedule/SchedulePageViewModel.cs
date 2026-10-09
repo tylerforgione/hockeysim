@@ -48,8 +48,6 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
         Refresh();
     }
 
-    public override string Title => "Schedule";
-
     public override string Subtitle
     {
         get
@@ -72,6 +70,12 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
     public string SelectionHint => SelectedMatch is null
         ? string.Empty
         : $"{SelectedMatch.Matchup} · {MatchDisplay.LongDate(SelectedMatch.Date)}";
+
+    /// <summary>Shows a team's schedule, keeping the selected match when it is already shown.</summary>
+    public void ShowTeam(TeamId teamId)
+    {
+        SelectedTeam = Teams.Single(team => team.Id == teamId);
+    }
 
     /// <summary>
     /// Shows one match, switching to the given team's schedule. The team must play in the match.

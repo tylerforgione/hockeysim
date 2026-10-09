@@ -40,8 +40,6 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
         _roster = new TeamRosterViewModel(session, _selectedTeam.Id);
     }
 
-    public override string Title => "League Teams";
-
     public override string Subtitle => $"{SelectedTeam.Name} · {SelectedTeam.Division}";
 
     /// <summary>

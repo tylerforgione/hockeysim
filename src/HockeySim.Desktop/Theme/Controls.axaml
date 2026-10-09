@@ -282,7 +282,7 @@
     <Setter Property="Foreground" Value="{DynamicResource OnTeamSecondaryBrush}" />
   </Style>
 
-  <!-- Title-bar buttons sit on the team primary colour. -->
+  <!-- Buttons on a bar in the team's primary colour. -->
   <Style Selector="Button.chrome">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="1" />
@@ -299,16 +299,6 @@
   <Style Selector="Button.chrome:disabled /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Foreground" Value="#66FFFFFF" />
-  </Style>
-  <Style Selector="Button.chrome.continue">
-    <Setter Property="Background" Value="{DynamicResource TeamSecondaryBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource OnTeamSecondaryBrush}" />
-    <Setter Property="FontWeight" Value="Bold" />
-    <Setter Property="Padding" Value="18,6" />
-  </Style>
-  <Style Selector="Button.chrome.continue:disabled /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#33FFFFFF" />
-    <Setter Property="Foreground" Value="#99FFFFFF" />
   </Style>
 
   <!-- Startup menu. -->
@@ -336,38 +326,229 @@
     <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}" />
   </Style>
 
-  <!-- Sidebar navigation. -->
-  <Style Selector="Button.nav">
+  <!-- Menu bar: history and home buttons, text menus, the date, and Continue. -->
+  <Style Selector="Border.menu-bar">
+    <Setter Property="Background" Value="{DynamicResource MenuBarBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="Padding" Value="6,0,0,0" />
+  </Style>
+  <Style Selector="Border.menu-separator">
+    <Setter Property="Width" Value="1" />
+    <Setter Property="Margin" Value="6,8" />
+    <Setter Property="Background" Value="{DynamicResource BorderStrongBrush}" />
+  </Style>
+  <Style Selector="Button.menu-icon">
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="3,0,0,0" />
-    <Setter Property="BorderBrush" Value="Transparent" />
-    <Setter Property="CornerRadius" Value="0" />
-    <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
-    <Setter Property="HorizontalAlignment" Value="Stretch" />
-    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-    <Setter Property="Padding" Value="13,0,12,0" />
-    <Setter Property="Height" Value="32" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
-  <Style Selector="Button.nav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+  <Style Selector="Button.menu-icon Path">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="StrokeThickness" Value="1.6" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Stroke" Value="{Binding $parent[Button].Foreground}" />
+  </Style>
+  <Style Selector="Button.menu-icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
-    <Setter Property="BorderBrush" Value="Transparent" />
     <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
   </Style>
-  <Style Selector="Button.nav.active">
-    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-  </Style>
-  <Style Selector="Button.nav.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
-  </Style>
-  <Style Selector="Button.nav:disabled /template/ ContentPresenter#PART_ContentPresenter">
+  <Style Selector="Button.menu-icon:disabled /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}" />
   </Style>
-  <Style Selector="Button.nav Path">
+  <Style Selector="Button.menu-icon.active">
+    <Setter Property="Background" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamSecondaryBrush}" />
+  </Style>
+  <Style Selector="Button.menu-icon.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamSecondaryBrush}" />
+  </Style>
+  <Style Selector="Border.menu-bar Menu">
+    <Setter Property="Height" Value="33" />
+  </Style>
+  <Style Selector="Border.menu-bar Menu > MenuItem">
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="Height" Value="33" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="MenuItem">
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="MenuFlyoutPresenter, ContextMenu">
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+  </Style>
+  <Style Selector="Border.menu-bar Menu > MenuItem /template/ Popup > Border">
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+  </Style>
+
+  <!-- Continue: a split button in the team's secondary colour. -->
+  <Style Selector="Button.continue">
+    <Setter Property="Background" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamSecondaryBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.continue:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamSecondaryBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="Opacity" Value="0.85" />
+  </Style>
+  <Style Selector="Button.continue:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}" />
+  </Style>
+  <Style Selector="Button.continue-arrow">
+    <Setter Property="BorderThickness" Value="0,1,1,1" />
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.continue-arrow Path">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="StrokeThickness" Value="2" />
     <Setter Property="Stroke" Value="{Binding $parent[Button].Foreground}" />
+  </Style>
+  <!-- Icons follow the button's colour, which disabled styles set on its presenter instead. -->
+  <Style Selector="Button.menu-icon:disabled Path, Button.continue-arrow:disabled Path">
+    <Setter Property="Stroke" Value="{DynamicResource DisabledTextBrush}" />
+  </Style>
+  <Style Selector="Button.continue Path.continue-glyph">
+    <Setter Property="Fill" Value="{Binding $parent[Button].Foreground}" />
+  </Style>
+  <Style Selector="Button.continue:disabled Path.continue-glyph">
+    <Setter Property="Fill" Value="{DynamicResource DisabledTextBrush}" />
+  </Style>
+
+  <!-- Banner under the menu bar: the team's crest, name, standing, and key figures. -->
+  <Style Selector="Border.banner">
+    <Setter Property="Background" Value="{DynamicResource TeamPrimaryBrush}" />
+    <Setter Property="Height" Value="64" />
+    <Setter Property="Padding" Value="14,0,0,0" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Border.crest">
+    <Setter Property="Background" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="50" />
+    <Setter Property="Padding" Value="0,0,0,8" />
+    <Setter Property="Clip" Value="M0,0 H44 V35 L22,50 L0,35 Z" />
+  </Style>
+  <Style Selector="Border.crest TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}" />
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamSecondaryBrush}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.banner-title">
+    <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}" />
+    <Setter Property="FontSize" Value="26" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LineHeight" Value="26" />
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamPrimaryBrush}" />
+  </Style>
+  <Style Selector="TextBlock.banner-caption">
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamPrimaryBrush}" />
+    <Setter Property="Opacity" Value="0.8" />
+  </Style>
+  <Style Selector="Path.banner-stripe">
+    <Setter Property="Fill" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+  </Style>
+  <!-- A light shade rather than black, so text on the primary stays readable on light colours. -->
+  <Style Selector="Border.banner-figure">
+    <Setter Property="Background" Value="#26000000" />
+    <Setter Property="Padding" Value="14,8" />
+    <Setter Property="MinWidth" Value="80" />
+  </Style>
+  <Style Selector="TextBlock.banner-figure-label">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamPrimaryBrush}" />
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <Style Selector="TextBlock.banner-figure-value">
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{DynamicResource OnTeamPrimaryBrush}" />
+  </Style>
+
+  <!-- Page tabs for the current section. -->
+  <Style Selector="Border.tab-strip">
+    <Setter Property="Background" Value="{DynamicResource TabStripBrush}" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="Padding" Value="10,0" />
+  </Style>
+  <Style Selector="Button.page-tab">
+    <Setter Property="Background" Value="{DynamicResource MenuBarBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.page-tab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+  </Style>
+  <Style Selector="Button.page-tab:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource MenuBarBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}" />
+  </Style>
+  <Style Selector="Button.page-tab.active">
+    <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.page-tab.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+  </Style>
+
+  <!-- Status bar. -->
+  <Style Selector="Border.status-bar">
+    <Setter Property="Background" Value="{DynamicResource StatusBarBrush}" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="Padding" Value="10,0" />
+  </Style>
+  <Style Selector="Border.status-bar TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+  </Style>
+  <Style Selector="Button.status-link">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.status-link.warning">
+    <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
+  </Style>
+  <Style Selector="Button.status-link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
   </Style>
 
   <!-- Rows that behave like list items outside a ListBox. -->

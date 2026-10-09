@@ -17,13 +17,13 @@ view model together.
 | `Program.cs`, `App.axaml*`, `AppVersion.cs` | Startup and composition |
 | `Main/` | The window and top-level screen choice, with discard confirmation |
 | `Startup/`, `NewGame/`, `Saves/` | The startup menu, new-game setup, save and load screens |
-| `Game/` | `GameSession` (commands, snapshots, unsaved progress) and the in-game shell |
-| `Home/`, `Inbox/`, `Roster/`, `Lines/`, `Teams/`, `Standings/`, `Schedule/` | The shell's pages |
+| `Game/` | `GameSession` (commands, snapshots, unsaved progress) and the in-game shell: menu bar, sections and page tabs (`ShellPage`, `NavigationItemViewModel`), the team banner (`TeamBannerViewModel`), and the status bar |
+| `Home/`, `Inbox/`, `Roster/`, `Lines/`, `TeamStatistics/`, `Injuries/`, `Teams/`, `Standings/`, `Schedule/` | The shell's pages |
 | `Players/` | Player profile, season totals as displayed (`PlayerSeasonTotals`), and shared player and injury formatting (`PlayerDisplay`, `InjuryDisplay`) |
-| `Roster/TeamStatisticsDisplay.cs`, `InjuryReportRowViewModel.cs` | The team statistics strip and injury report above each roster |
+| `TeamStatistics/TeamStatisticsDisplay.cs`, `Injuries/InjuryReportRowViewModel.cs` | Team statistic and injury report formatting |
 | `Schedule/MatchDetail*`, `MatchDisplay.cs` | The box score with its summaries, and shared match and statistic formatting |
 | `Confirmation/` | The confirmation shown over every screen |
-| `Theme/` | Palette, control styles, icons, the bundled PT Sans fonts and their licence (`Fonts/`), and `TeamPalette`, which colours the window with the managed team |
+| `Theme/` | Palette, control styles (including the menu bar, banner, tabs, and status bar), menu-bar icons, the bundled PT Sans fonts and their licence (`Fonts/`), and `TeamPalette`, which colours the window with the managed team |
 
 ## Tests
 
@@ -32,16 +32,16 @@ games, plus a headless Avalonia walkthrough.
 
 | File | Covers |
 | --- | --- |
-| `MainWindowViewTests.cs` | Headless walkthrough of every page, team colours, saving, loading, closing |
-| `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup, navigation, browsing teams |
+| `MainWindowViewTests.cs` | Headless walkthrough of the menu bar and every page, team colours, saving, loading, closing |
+| `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup; sections, tabs, planned pages, the banner, and the status bar; browsing teams |
 | `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings |
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, a full season |
 | `StandingsAndStatisticsTests.cs` | Standings scopes, season totals |
-| `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, the team strip |
+| `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, team statistics |
 | `SaveAndLoadTests.cs` | Save and load screens, unsaved progress, confirmations |
 | `PlayerBiographyDisplayTests.cs`, `AppVersionTests.cs` | Formatting, version display |
 | `TeamPaletteTests.cs` | Readable text on team colours |
-| `InjuryDisplayTests.cs` | Continue waiting for replacements, Lines-page injury warnings, roster markers, the injury report, the profile's health |
+| `InjuryDisplayTests.cs` | Continue waiting for replacements, the status bar's lineup state, Lines-page injury warnings, roster markers, the injury report, the profile's health |
 | `GameTestData.cs`, `TestMatchSimulators.cs`, `TemporarySaveDirectory.cs`, `InjuredPlayerReplacement.cs` | Builders, test engines, and replacing injured players between days |
 
 ## Behaviour
@@ -49,8 +49,31 @@ games, plus a headless Avalonia walkthrough.
 Desktop wires a Management game manager at startup. After the new-game screen
 starts a game, a `GameSession` forwards commands (lineup changes, reading
 messages, advancing a league day) to Management and publishes each resulting
-snapshot to the in-game shell's feature pages: home, inbox, roster, lines,
-league teams, standings, and schedule. Only the managed team's lineup is editable, and
+snapshot to the in-game shell and its pages.
+
+The shell fills the window. The menu bar holds back, home, and forward buttons
+(back and forward stay disabled until [navigation history](https://github.com/tylerforgione/hockeysim/issues/62)),
+then text menus: Game (save, load, quit to menu), Team (roster, lines, schedule,
+team statistics, injuries), League (standings, teams, league leaders, playoff
+picture, schedule), Stats (player statistics, team statistics, league leaders),
+Club (staff, transactions), and Inbox with its unread count. Pages that do not
+exist yet are listed but disabled. Every menu and item has an access key, and
+save and load show their shortcuts (Ctrl+S and Ctrl+O; Cmd on macOS). Load
+opens the saved games, whose back button returns to the game. On the right
+are the date, the days to the managed team's next match and to the end of the
+regular season, and Continue, a split button whose arrow stays disabled until
+[simulating ahead](https://github.com/tylerforgione/hockeysim/issues/85). Under
+the menu bar is the managed team's banner in its colours: crest, name, record,
+points, division and conference rank, and the next match, last result, and
+streak. A page may show its own banner instead; none does yet. Below the banner,
+the current section's pages are tabs, with the page's subtitle on the right.
+Home, Team, League, and Inbox are sections; the team and league schedules are
+one page, and opening it from Team shows the managed team. The status bar shows
+the game's name and save state, whether any dressed player is out injured
+(opening Lines), the newest unread message with how many more are unread
+(opening it), and the version.
+
+Only the managed team's lineup is editable, and
 Management validates every change. The lines page shows any team's lineup, read-only
 for other clubs, on tabs for even strength, power play, penalty kill, and the
 other situations (4-on-4, 3-on-3, extra attacker); each unit shows its forwards
@@ -65,12 +88,12 @@ warned about there; the roster and player profile show it. AI teams' lineups are
 shown as they dress today, with injured players already replaced.
 Choosing a player already in the same line set, unit, or
 extra-attacker pair swaps the two; dressing a scratched player hands them the
-replaced player's unit slots. Unsaved edits survive browsing other teams. The title bar's Continue button plays the
+replaced player's unit slots. Unsaved edits survive browsing other teams. Continue plays the
 current league day off the UI thread; the session rejects a second request while
 one runs and then publishes Management's latest snapshot, since a command
 issued meanwhile waits on Management's lock and may have produced newer state.
 While Management's `PlayersToReplace` is not empty, Continue is disabled and a
-banner under the title bar names the injured players to replace, with a button
+banner under the page tabs names the injured players to replace, with a button
 to the Lines page; it clears once a saved lineup leaves them out.
 A failed day is shown as an error banner; Management applied nothing, so the
 pages still show the unplayed day. Once the season is complete, Continue is
@@ -89,11 +112,12 @@ each team's power play (goals of opportunities) and penalty minutes under its
 shots; the two teams are stacked, away first, because each table needs the full
 width.
 The standings page presents Management's division, conference, or league tables
-as ranked, without re-sorting them. Each roster starts with a strip of the team's
-season statistics: power-play, penalty-kill, and faceoff percentages and its
-five-on-five Corsi, Fenwick, shot, and xG shares, then the team's injury report:
-each injury that has not healed, players who cannot play first, with its status
-and expected return. Roster tables mark an injured player OUT or INJ beside
+as ranked, without re-sorting them. The team statistics page lists the managed
+team's power-play, penalty-kill, and faceoff percentages and its five-on-five
+Corsi, Fenwick, shot, and xG shares. The injuries page is the managed team's
+injury report: each injury that has not healed, players who cannot play first,
+with its status and expected return. Other teams' figures wait for
+[team pages](https://github.com/tylerforgione/hockeysim/issues/63). Roster tables mark an injured player OUT or INJ beside
 their name, with the details in a tooltip, and the player profile shows the
 player's health: each injury, its expected return, and either that the player
 cannot play or the rating points it costs while playing through. The exact
@@ -123,8 +147,8 @@ the managed team's colours, with light or dark text on the primary, whichever
 contrasts more; before the first game they are the league's black and silver.
 
 Desktop composes `GameSaveDirectory` with the game manager at startup. The
-title bar's Save Game button saves under a typed or chosen name, and the startup
-menu's Load Game screen lists the saves. A `GameSession` tracks whether the game
+Game menu's Save game item saves under a typed or chosen name, and the Load
+Game screen, from the startup menu or the Game menu, lists the saves. A `GameSession` tracks whether the game
 has changed since it was last saved or loaded; overwriting an existing save, and
 anything that would discard unsaved progress (loading, starting a new game,
 exiting, or closing the window), asks first through a confirmation shown over

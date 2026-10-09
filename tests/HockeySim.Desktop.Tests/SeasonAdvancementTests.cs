@@ -17,7 +17,7 @@ public sealed class SeasonAdvancementTests
     {
         var shell = new GameShellViewModel(GameTestData.StartSession());
 
-        Assert.Equal($"Regular season · {MatchDisplay.ShortDate(OpeningDay)}", shell.PhaseLabel);
+        Assert.Equal("Thu 1 Oct 2026 · Next match today · Regular season ends in 166 days", shell.CalendarLabel);
         Assert.Equal("Continue", shell.ContinueLabel);
         Assert.True(shell.AdvanceDayCommand.CanExecute(null));
         Assert.Equal($"{MatchDisplay.ShortDate(OpeningDay)} · 16 league matches, including yours", shell.ContinueDescription);
@@ -39,7 +39,8 @@ public sealed class SeasonAdvancementTests
         Assert.Null(shell.AdvanceError);
         Assert.Equal(16, season.Results.Count);
         Assert.Equal(OpeningDay.AddDays(1), season.CurrentDate);
-        Assert.Equal($"Regular season · {MatchDisplay.ShortDate(OpeningDay.AddDays(1))}", shell.PhaseLabel);
+        Assert.StartsWith("Fri 2 Oct 2026 · Next match ", shell.CalendarLabel, StringComparison.Ordinal);
+        Assert.EndsWith("Regular season ends in 165 days", shell.CalendarLabel, StringComparison.Ordinal);
 
         Assert.Equal($"LEAGUE RESULTS · {MatchDisplay.ShortDate(OpeningDay).ToUpperInvariant()}", shell.Home.LatestResultsTitle);
         Assert.Equal(16, shell.Home.LatestResults.Count);
@@ -248,7 +249,7 @@ public sealed class SeasonAdvancementTests
 
         Assert.True(session.Snapshot.Season.IsComplete);
         Assert.False(shell.AdvanceDayCommand.CanExecute(null));
-        Assert.Equal("Regular season complete", shell.PhaseLabel);
+        Assert.EndsWith(" · Regular season complete", shell.CalendarLabel, StringComparison.Ordinal);
         Assert.Equal("Regular season complete", shell.ContinueDescription);
         Assert.Equal("Regular season complete", shell.Home.NextMatchTitle);
         Assert.Equal(16, shell.Home.LatestResults.Count);

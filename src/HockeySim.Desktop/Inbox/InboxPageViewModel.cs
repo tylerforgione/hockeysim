@@ -28,8 +28,6 @@ public sealed partial class InboxPageViewModel : ShellPageViewModel
         Refresh();
     }
 
-    public override string Title => "Inbox";
-
     public override string Subtitle
     {
         get

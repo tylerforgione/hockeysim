@@ -58,8 +58,6 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel
         _lineup = _managedLineup;
     }
 
-    public override string Title => "Lines";
-
     public override string Subtitle => SelectedTeam.Name;
 
     /// <summary>

@@ -4,6 +4,7 @@ using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Schedule;
+using HockeySim.Desktop.TeamStatistics;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 
@@ -203,17 +204,16 @@ public sealed class AdvancedStatisticsDisplayTests
     }
 
     [Fact]
-    public async Task TheTeamStripShowsSpecialTeamsFaceoffsAndFiveOnFiveShares()
+    public async Task TeamStatisticsShowSpecialTeamsFaceoffsAndFiveOnFiveShares()
     {
         var session = GameTestData.StartSession();
-        var opening = new TeamRosterViewModel(session, session.ManagedTeam.Id);
-        Assert.Equal(["PP%", "PK%", "FO%", "CF%", "FF%", "SF%", "xGF%"], opening.TeamStatistics.Select(stat => stat.Label));
-        Assert.All(opening.TeamStatistics, stat => Assert.Equal("—", stat.Value));
+        var opening = new TeamStatisticsPageViewModel(session);
+        Assert.Equal(["PP%", "PK%", "FO%", "CF%", "FF%", "SF%", "xGF%"], opening.Statistics.Select(stat => stat.Label));
+        Assert.All(opening.Statistics, stat => Assert.Equal("—", stat.Value));
 
         session = await PlayDays(3);
-        var other = session.Snapshot.League.Teams.First(team => team.Id != session.Snapshot.ManagedTeamId);
-        var statistics = session.Snapshot.Season.TeamStatistics.Single(team => team.TeamId == other.Id);
-        var strip = new TeamRosterViewModel(session, other.Id).TeamStatistics.ToDictionary(stat => stat.Label, stat => stat.Value);
+        var statistics = session.Snapshot.Season.TeamStatistics.Single(team => team.TeamId == session.Snapshot.ManagedTeamId);
+        var strip = new TeamStatisticsPageViewModel(session).Statistics.ToDictionary(stat => stat.Label, stat => stat.Value);
 
         Assert.Equal(MatchDisplay.Percentage(statistics.PowerPlayPercentage), strip["PP%"]);
         Assert.Equal(MatchDisplay.Percentage(statistics.PenaltyKillPercentage), strip["PK%"]);

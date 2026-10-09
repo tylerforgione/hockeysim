@@ -40,7 +40,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _gameManager = gameManager;
         _saves = saves;
         _exitApplication = exitApplication ?? (() => { });
-        Startup = new StartupViewModel(ShowNewGame, ContinueGame, ShowLoadGame, RequestExit);
+        Startup = new StartupViewModel(ShowNewGame, ContinueGame, () => ShowLoadGame(ShowStartup), RequestExit);
         _currentScreen = Startup;
     }
 
@@ -123,13 +123,14 @@ public sealed partial class MainWindowViewModel : ObservableObject
             () => CurrentScreen = new NewGameViewModel(_gameManager, ShowStartup, StartGame));
     }
 
-    private void ShowLoadGame()
+    /// <param name="back">Where the load screen's back button returns: the menu or game it was opened from.</param>
+    private void ShowLoadGame(Action back)
     {
         CurrentScreen = new LoadGameViewModel(
             _gameManager,
             _saves,
             ConfirmDiscardingProgress,
-            ShowStartup,
+            back,
             name => ShowGame(new GameSession(_gameManager, name.Value, isSaved: true)),
             hasActiveGame: Game is not null);
     }
@@ -159,7 +160,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// </summary>
     private void ShowGame(GameSession session)
     {
-        Game = new GameShellViewModel(session, ShowStartup, _saves, Confirmation);
+        Game = new GameShellViewModel(session, ShowStartup, _saves, Confirmation, () => ShowLoadGame(ContinueGame));
         Startup.CanContinue = true;
         CurrentScreen = Game;
     }

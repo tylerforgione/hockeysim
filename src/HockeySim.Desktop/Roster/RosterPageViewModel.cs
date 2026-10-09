@@ -23,8 +23,6 @@ public sealed partial class RosterPageViewModel : ShellPageViewModel
         _roster = new TeamRosterViewModel(session, session.ManagedTeam.Id);
     }
 
-    public override string Title => "Roster";
-
     public override string Subtitle
     {
         get
