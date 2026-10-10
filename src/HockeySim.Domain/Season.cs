@@ -3,16 +3,16 @@ using System.Collections.ObjectModel;
 namespace HockeySim.Domain;
 
 /// <summary>
-/// A season in progress: its preseason and regular season, the current date, the completed-match
-/// history, and the current-season team and player totals and player health derived from the
-/// regular season. The season advances one league day at a time; a day's results are applied
-/// together or not at all, so the history never holds part of a day and a scheduled match can be
-/// completed only once.
+/// A season in progress: its preseason, regular season, and playoffs, the current date, the
+/// completed-match history, the regular-season team and player totals, and player health. The
+/// season advances one league day at a time; a day's results are applied together or not at all,
+/// so the history never holds part of a day and a scheduled match can be completed only once.
 /// </summary>
 /// <remarks>
-/// Preseason matches are kept apart from the regular season's: they never reach the records,
-/// statistics, standings, or health, so everything derived from the regular season reads only
-/// its own schedule and history.
+/// Each phase keeps its own matches. Preseason matches never reach the records, statistics,
+/// standings, or health. The playoffs keep their own records and statistics and, like the regular
+/// season, injure and wear players. The standings and the playoff race read only the regular
+/// season.
 /// </remarks>
 public sealed class Season
 {
@@ -20,11 +20,9 @@ public sealed class Season
     private readonly ReadOnlyCollection<CompletedMatch> _preseasonMatchesView;
     private readonly List<CompletedMatch> _completedMatches = [];
     private readonly ReadOnlyCollection<CompletedMatch> _completedMatchesView;
-    private readonly Dictionary<TeamId, TeamRecord> _teamRecords;
-    private readonly Dictionary<TeamId, TeamSeasonStatistics> _teamStatistics;
-    private readonly Dictionary<PlayerId, SkaterSeasonStatistics> _skaterStatistics = [];
-    private readonly Dictionary<PlayerId, GoalieSeasonStatistics> _goalieStatistics = [];
+    private readonly SeasonTotals _totals;
     private readonly Dictionary<PlayerId, PlayerHealth> _health;
+    private Playoffs? _playoffs;
 
     /// <summary>Creates a season without a preseason, starting on opening day.</summary>
     public Season(League league, SeasonSchedule schedule)
@@ -75,8 +73,7 @@ public sealed class Season
         CurrentDate = preseasonSchedule.Matches.Count > 0 ? preseasonSchedule.Matches[0].Date : openingDay;
         _preseasonMatchesView = _preseasonMatches.AsReadOnly();
         _completedMatchesView = _completedMatches.AsReadOnly();
-        _teamRecords = league.Teams.ToDictionary(team => team.Id, team => new TeamRecord(team.Id));
-        _teamStatistics = league.Teams.ToDictionary(team => team.Id, team => new TeamSeasonStatistics(team.Id));
+        _totals = new SeasonTotals(league.Teams);
         _health = league.Teams
             .SelectMany(team => team.Roster)
             .ToDictionary(player => player.Id, player => PlayerHealth.Healthy(player.Id));
@@ -95,15 +92,30 @@ public sealed class Season
 
     /// <summary>
     /// The next league day to be played. Once the season is complete, the day after the final
-    /// scheduled match.
+    /// playoff match.
     /// </summary>
     public DateOnly CurrentDate { get; private set; }
 
-    /// <summary>The phase of <see cref="CurrentDate"/>: the preseason until opening day.</summary>
-    public SeasonPhase Phase => CurrentDate < OpeningDay ? SeasonPhase.Preseason : SeasonPhase.RegularSeason;
+    /// <summary>
+    /// The phase of <see cref="CurrentDate"/>: the preseason until opening day, the regular season
+    /// until every regular-season match is played, then the playoffs.
+    /// </summary>
+    public SeasonPhase Phase =>
+        CurrentDate < OpeningDay ? SeasonPhase.Preseason
+        : IsRegularSeasonComplete ? SeasonPhase.Playoffs
+        : SeasonPhase.RegularSeason;
 
-    /// <summary>Whether every regular-season match has been played.</summary>
-    public bool IsComplete => _completedMatches.Count == Schedule.Matches.Count;
+    /// <summary>Whether every regular-season match has been played, which seeds the playoffs.</summary>
+    public bool IsRegularSeasonComplete => _completedMatches.Count == Schedule.Matches.Count;
+
+    /// <summary>Whether the playoffs have crowned a champion, after which no further days can be played.</summary>
+    public bool IsComplete => _playoffs?.IsComplete == true;
+
+    /// <summary>
+    /// The playoffs, from the end of the regular season; <see langword="null"/> until then,
+    /// because the qualifiers are not yet known.
+    /// </summary>
+    public Playoffs? Playoffs => _playoffs;
 
     /// <summary>Every completed preseason match, in schedule order.</summary>
     public IReadOnlyList<CompletedMatch> PreseasonMatches => _preseasonMatchesView;
@@ -112,19 +124,18 @@ public sealed class Season
     public IReadOnlyList<CompletedMatch> CompletedMatches => _completedMatchesView;
 
     /// <summary>The matches scheduled on <see cref="CurrentDate"/> in its phase, possibly none.</summary>
-    public IReadOnlyList<ScheduledMatch> CurrentDateMatches =>
-        (Phase == SeasonPhase.Preseason ? PreseasonSchedule : Schedule).Matches
-            .Where(match => match.Date == CurrentDate)
-            .ToList()
-            .AsReadOnly();
+    public IReadOnlyList<ScheduledMatch> CurrentDateMatches => Phase switch
+    {
+        SeasonPhase.Preseason => MatchesOn(PreseasonSchedule.Matches, CurrentDate),
+        SeasonPhase.RegularSeason => MatchesOn(Schedule.Matches, CurrentDate),
+        _ => _playoffs!.MatchesOn(CurrentDate),
+    };
 
-    /// <summary>Every team's record, in league team order.</summary>
-    public IReadOnlyList<TeamRecord> TeamRecords =>
-        League.Teams.Select(team => _teamRecords[team.Id]).ToList().AsReadOnly();
+    /// <summary>Every team's regular-season record, in league team order.</summary>
+    public IReadOnlyList<TeamRecord> TeamRecords => _totals.TeamRecords;
 
-    /// <summary>Every team's special teams, faceoff, and shot totals, in league team order.</summary>
-    public IReadOnlyList<TeamSeasonStatistics> TeamStatistics =>
-        League.Teams.Select(team => _teamStatistics[team.Id]).ToList().AsReadOnly();
+    /// <summary>Every team's regular-season special teams, faceoff, and shot totals, in league team order.</summary>
+    public IReadOnlyList<TeamSeasonStatistics> TeamStatistics => _totals.TeamStatistics;
 
     /// <summary>
     /// Ranks a group of league teams, such as a division, a conference, or the whole league, by
@@ -141,14 +152,14 @@ public sealed class Season
         ArgumentNullException.ThrowIfNull(teamIds);
 
         var requested = teamIds.ToHashSet();
-        if (!requested.All(_teamRecords.ContainsKey))
+        if (!requested.All(_totals.Includes))
         {
             throw new ArgumentException("Every ranked team must belong to the league.", nameof(teamIds));
         }
 
         var records = League.Teams
             .Where(team => requested.Contains(team.Id))
-            .Select(team => _teamRecords[team.Id])
+            .Select(team => _totals.RecordOf(team.Id))
             .ToList();
         return StandingsRanking.Rank(records, _completedMatchesView);
     }
@@ -187,18 +198,18 @@ public sealed class Season
     }
 
     /// <summary>
-    /// Every team's guaranteed playoff status. During the season a status
-    /// is reported only once no remaining result can change it; once the season is complete, the
-    /// final standings decide every team.
+    /// Every team's guaranteed playoff status. During the regular season a status is reported only
+    /// once no remaining result can change it; once the regular season is complete, the final
+    /// standings decide every team.
     /// </summary>
     public IReadOnlyDictionary<TeamId, PlayoffStatus> PlayoffStatuses() =>
         PlayoffRace.Statuses(this).AsReadOnly();
 
-    /// <summary>Totals for every skater who has appeared, in league team and roster order.</summary>
-    public IReadOnlyList<SkaterSeasonStatistics> SkaterStatistics => InRosterOrder(_skaterStatistics);
+    /// <summary>Regular-season totals for every skater who has appeared, in league team and roster order.</summary>
+    public IReadOnlyList<SkaterSeasonStatistics> SkaterStatistics => _totals.SkaterStatistics;
 
-    /// <summary>Totals for every goalie who has started, in league team and roster order.</summary>
-    public IReadOnlyList<GoalieSeasonStatistics> GoalieStatistics => InRosterOrder(_goalieStatistics);
+    /// <summary>Regular-season totals for every goalie who has started, in league team and roster order.</summary>
+    public IReadOnlyList<GoalieSeasonStatistics> GoalieStatistics => _totals.GoalieStatistics;
 
     /// <summary>
     /// A rostered player's injuries and hidden wear, from every completed match so far. Injuries
@@ -212,7 +223,9 @@ public sealed class Season
     /// <summary>
     /// Records the results of every match scheduled on <see cref="CurrentDate"/> and moves to the
     /// next calendar day. The whole day is validated before anything changes. A preseason day's
-    /// results are only kept: they cannot injure or wear anyone, and count toward nothing.
+    /// results are only kept: they cannot injure or wear anyone, and count toward nothing. The
+    /// final regular-season day seeds the playoffs, and each day of playoff games schedules the
+    /// games that follow it, until the final is decided.
     /// </summary>
     /// <param name="results">Exactly one result for each match scheduled today; none on an empty day.</param>
     public void CompleteDay(IEnumerable<CompletedMatch> results)
@@ -221,25 +234,41 @@ public sealed class Season
 
         if (IsComplete)
         {
-            throw new InvalidOperationException("The regular season is complete; no further days can be played.");
+            throw new InvalidOperationException("The season is complete; no further days can be played.");
         }
 
         var resultList = results.ToList();
         ValidateDay(resultList);
 
         // Keep the history in schedule order regardless of the order results were supplied in.
-        var isPreseason = Phase == SeasonPhase.Preseason;
+        var phase = Phase;
         foreach (var scheduledMatch in CurrentDateMatches)
         {
             var result = resultList.Single(result => ReferenceEquals(result.ScheduledMatch, scheduledMatch));
-            if (isPreseason)
+            switch (phase)
             {
-                _preseasonMatches.Add(result);
+                case SeasonPhase.Preseason:
+                    _preseasonMatches.Add(result);
+                    break;
+                case SeasonPhase.RegularSeason:
+                    _completedMatches.Add(result);
+                    _totals.Add(result);
+                    ApplyHealth(result);
+                    break;
+                default:
+                    _playoffs!.Apply(result);
+                    ApplyHealth(result);
+                    break;
             }
-            else
-            {
-                Apply(result);
-            }
+        }
+
+        if (phase == SeasonPhase.RegularSeason && IsRegularSeasonComplete)
+        {
+            _playoffs = Playoffs.Start(this, Schedule.Matches[^1].Date.AddDays(Playoffs.DaysBetweenGames));
+        }
+        else if (phase == SeasonPhase.Playoffs && resultList.Count > 0)
+        {
+            _playoffs!.ScheduleAfter(CurrentDate);
         }
 
         CurrentDate = CurrentDate.AddDays(1);
@@ -269,6 +298,11 @@ public sealed class Season
             && results.Any(result => result.Health.Injuries.Count > 0 || result.Health.Wear.Count > 0))
         {
             throw new ArgumentException("A preseason match cannot injure or wear any player.", nameof(results));
+        }
+
+        if (Phase == SeasonPhase.Playoffs && results.Any(result => result.Decision == MatchDecision.Shootout))
+        {
+            throw new ArgumentException("A playoff match is decided in overtime, never by a shootout.", nameof(results));
         }
 
         foreach (var result in results)
@@ -328,27 +362,8 @@ public sealed class Season
         }
     }
 
-    private void Apply(CompletedMatch match)
+    private void ApplyHealth(CompletedMatch match)
     {
-        _completedMatches.Add(match);
-
-        foreach (var side in new[] { match.Home, match.Away })
-        {
-            _teamRecords[side.TeamId] = _teamRecords[side.TeamId].Add(match);
-            _teamStatistics[side.TeamId] = _teamStatistics[side.TeamId].Add(match);
-
-            foreach (var skater in side.Skaters)
-            {
-                var totals = _skaterStatistics.GetValueOrDefault(skater.PlayerId)
-                    ?? new SkaterSeasonStatistics(skater.PlayerId, side.TeamId);
-                _skaterStatistics[skater.PlayerId] = totals.Add(skater);
-            }
-
-            var goalieTotals = _goalieStatistics.GetValueOrDefault(side.Goalie.PlayerId)
-                ?? new GoalieSeasonStatistics(side.Goalie.PlayerId, side.TeamId);
-            _goalieStatistics[side.Goalie.PlayerId] = goalieTotals.Add(side.Goalie);
-        }
-
         foreach (var injury in match.Health.Injuries)
         {
             _health[injury.PlayerId] = _health[injury.PlayerId].Add(new Injury(injury.Type, match.Date, injury.RecoveryDays));
@@ -360,11 +375,6 @@ public sealed class Season
         }
     }
 
-    private ReadOnlyCollection<T> InRosterOrder<T>(Dictionary<PlayerId, T> statistics) =>
-        League.Teams
-            .SelectMany(team => team.Roster)
-            .Where(player => statistics.ContainsKey(player.Id))
-            .Select(player => statistics[player.Id])
-            .ToList()
-            .AsReadOnly();
+    private static ReadOnlyCollection<ScheduledMatch> MatchesOn(IEnumerable<ScheduledMatch> matches, DateOnly date) =>
+        matches.Where(match => match.Date == date).ToList().AsReadOnly();
 }

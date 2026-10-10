@@ -155,7 +155,7 @@ internal static class InjuryMessages
         DateOnly to)
     {
         var causes = new Dictionary<(PlayerId, InjuryType, DateOnly), InjuryCause>();
-        foreach (var match in season.CompletedMatches.Where(match =>
+        foreach (var match in MatchesThatCount(season).Where(match =>
             match.Date >= from && match.Date <= to && (match.Home.TeamId == teamId || match.Away.TeamId == teamId)))
         {
             foreach (var injury in match.Health.Injuries.Where(injury => injury.TeamId == teamId))
@@ -167,8 +167,12 @@ internal static class InjuryMessages
         return causes;
     }
 
+    /// <summary>The regular-season and playoff matches: the ones that can injure players.</summary>
+    private static IEnumerable<CompletedMatch> MatchesThatCount(Season season) =>
+        season.CompletedMatches.Concat(season.Playoffs?.CompletedMatches ?? []);
+
     private static CompletedMatch? ManagedMatchOn(Season season, TeamId managedTeamId, DateOnly date) =>
-        season.CompletedMatches.SingleOrDefault(match =>
+        MatchesThatCount(season).SingleOrDefault(match =>
             match.Date == date && (match.Home.TeamId == managedTeamId || match.Away.TeamId == managedTeamId));
 
     private static Team Opponent(Season season, CompletedMatch match, TeamId managedTeamId)

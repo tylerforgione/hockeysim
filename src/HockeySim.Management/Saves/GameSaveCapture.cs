@@ -20,6 +20,7 @@ internal static class GameSaveCapture
             season.CurrentDate,
             season.PreseasonMatches.Select(CaptureCompletedMatch).ToList(),
             season.CompletedMatches.Select(CaptureCompletedMatch).ToList(),
+            (season.Playoffs?.CompletedMatches ?? []).Select(CaptureCompletedMatch).ToList(),
             inbox.Messages.Select(CaptureInboxMessage).ToList());
 
     private static List<SavedScheduledMatch> CaptureSchedule(SeasonSchedule schedule) =>

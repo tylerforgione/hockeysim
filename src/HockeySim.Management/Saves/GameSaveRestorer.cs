@@ -119,7 +119,8 @@ internal static class GameSaveRestorer
     /// <summary>
     /// Plays back every saved league day from the first day of the season up to the saved current
     /// date. Each day must have a result for every match scheduled on it, saved with the matches
-    /// of its phase, and every saved result must be used.
+    /// of its phase, and every saved result must be used. The season schedules the playoffs from
+    /// the replayed results, just as it did when they were played.
     /// </summary>
     private static void ReplayLeagueDays(Season season, GameSave save)
     {
@@ -127,6 +128,7 @@ internal static class GameSaveRestorer
         {
             [SeasonPhase.Preseason] = ResultsByMatch(save.PreseasonMatches, "preseason matches"),
             [SeasonPhase.RegularSeason] = ResultsByMatch(save.CompletedMatches, "completed matches"),
+            [SeasonPhase.Playoffs] = ResultsByMatch(save.PlayoffMatches, "playoff matches"),
         };
 
         if (save.CurrentDate < season.CurrentDate)

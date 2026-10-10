@@ -9,6 +9,12 @@ public enum SeasonPhase
     /// </summary>
     Preseason,
 
-    /// <summary>From opening day, the matches that count.</summary>
+    /// <summary>From opening day until every regular-season match is played.</summary>
     RegularSeason,
+
+    /// <summary>
+    /// From the end of the regular season: the qualifiers' best-of-seven series, until the final
+    /// crowns a champion. Records and statistics are kept apart from the regular season's.
+    /// </summary>
+    Playoffs,
 }
