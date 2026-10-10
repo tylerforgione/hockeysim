@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:injuries="using:HockeySim.Desktop.Injuries"
+             x:Class="HockeySim.Desktop.Injuries.InjuriesPageView"
+             x:DataType="injuries:InjuriesPageViewModel">
+  <Border Classes="panel" VerticalAlignment="Top">
+    <StackPanel>
+      <Border Classes="panel-header">
+        <TextBlock Classes="panel-title" Text="INJURIES" />
+      </Border>
+      <Border Classes="table-header">
+        <Grid ColumnDefinitions="220,48,180,140,*">
+          <TextBlock Text="PLAYER" />
+          <TextBlock Grid.Column="1" Text="POS" />
+          <TextBlock Grid.Column="2" Text="INJURY" />
+          <TextBlock Grid.Column="3" Text="STATUS" />
+          <TextBlock Grid.Column="4" Text="EXPECTED BACK" />
+        </Grid>
+      </Border>
+      <TextBlock Classes="caption" Margin="8,6" Text="No injuries" IsVisible="{Binding !HasInjuries}" />
+      <ItemsControl x:Name="InjuryReport" Classes="table" ItemsSource="{Binding Injuries}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="injuries:InjuryReportRowViewModel">
+            <Border Classes="standing-row" Height="24" Padding="8,0">
+              <Grid ColumnDefinitions="220,48,180,140,*">
+                <TextBlock Classes="cell strong" Text="{Binding Name}" />
+                <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding Position}" />
+                <TextBlock Grid.Column="2" Classes="cell" Text="{Binding Injury}" />
+                <TextBlock Grid.Column="3"
+                           Classes="cell"
+                           Classes.error="{Binding IsOut}"
+                           Classes.warning="{Binding !IsOut}"
+                           Text="{Binding Status}" />
+                <TextBlock Grid.Column="4" Classes="cell muted" Text="{Binding ExpectedReturn}" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </Border>
+</UserControl>

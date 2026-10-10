@@ -7,6 +7,8 @@ namespace HockeySim.Domain.Tests;
 /// </summary>
 internal static class TestLeague
 {
+    public static TeamColours Colours { get; } = new(new Colour(0, 0, 0), new Colour(255, 255, 255));
+
     public static League Create()
     {
         var teamNumber = 0;
@@ -45,6 +47,7 @@ internal static class TestLeague
         return new Team(
             new TeamId(Guid.Parse($"00000000-0000-0000-{teamNumber:D4}-000000000000")),
             $"Team {teamNumber}",
+            Colours,
             roster,
             lineup);
     }

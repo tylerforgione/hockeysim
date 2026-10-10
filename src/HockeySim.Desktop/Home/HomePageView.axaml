@@ -6,11 +6,11 @@
              x:Class="HockeySim.Desktop.Home.HomePageView"
              x:DataType="home:HomePageViewModel">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-    <Grid RowDefinitions="Auto,*" RowSpacing="8">
+    <Grid RowDefinitions="Auto,*" RowSpacing="6">
       <ItemsControl ItemsSource="{Binding Tiles}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
-            <UniformGrid Rows="1" ColumnSpacing="8" />
+            <UniformGrid Rows="1" ColumnSpacing="6" />
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
@@ -26,8 +26,8 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
 
-      <Grid Grid.Row="1" ColumnDefinitions="3*,2*" ColumnSpacing="8">
-        <StackPanel Spacing="8">
+      <Grid Grid.Row="1" ColumnDefinitions="3*,2*" ColumnSpacing="6">
+        <StackPanel Spacing="6">
           <Border Classes="panel">
             <DockPanel>
               <Border DockPanel.Dock="Top" Classes="panel-header">
@@ -94,7 +94,7 @@
           </Border>
         </StackPanel>
 
-        <StackPanel Grid.Column="1" Spacing="8">
+        <StackPanel Grid.Column="1" Spacing="6">
           <Border Classes="panel">
             <DockPanel>
               <Border DockPanel.Dock="Top" Classes="panel-header">
@@ -117,7 +117,7 @@
                           Classes="link"
                           Content="Schedule ›"
                           Command="{Binding NavigateCommand}"
-                          CommandParameter="{x:Static game:ShellPage.Schedule}" />
+                          CommandParameter="{x:Static game:ShellPage.TeamSchedule}" />
                 </Grid>
               </Border>
               <StackPanel>
@@ -178,7 +178,7 @@
                   <TextBlock Grid.Column="6" Text="PTS" HorizontalAlignment="Center" />
                 </Grid>
               </Border>
-              <ItemsControl x:Name="DivisionStandingsList" ItemsSource="{Binding DivisionStandings}">
+              <ItemsControl x:Name="DivisionStandingsList" Classes="table" ItemsSource="{Binding DivisionStandings}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="standings:StandingsRowViewModel">
                     <Border Classes="standing-row" Classes.managed="{Binding IsManaged}" Height="24" Padding="8,0">

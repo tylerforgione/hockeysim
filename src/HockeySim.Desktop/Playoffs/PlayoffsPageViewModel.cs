@@ -39,8 +39,6 @@ public sealed partial class PlayoffsPageViewModel : ShellPageViewModel
         Refresh();
     }
 
-    public override string Title => "Playoffs";
-
     public override string Subtitle
     {
         get

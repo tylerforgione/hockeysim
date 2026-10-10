@@ -10,12 +10,11 @@
             BorderThickness="0,0,1,0">
       <DockPanel Margin="40,48,32,28">
         <StackPanel DockPanel.Dock="Top" Spacing="6">
-          <TextBlock Text="HOCKEYSIM"
-                     FontSize="30"
-                     FontWeight="Black"
-                     LetterSpacing="3" />
+          <TextBlock Classes="heading"
+                     Text="HOCKEYSIM"
+                     FontSize="34"
+                     LetterSpacing="2" />
           <Border Height="3" Width="56" HorizontalAlignment="Left" Background="{DynamicResource TeamSecondaryBrush}" />
-          <TextBlock Classes="caption" Text="Hockey management simulation" Margin="0,4,0,0" />
         </StackPanel>
 
         <TextBlock x:Name="VersionLabel"
@@ -41,7 +40,7 @@
                   Content="Options"
                   IsEnabled="False"
                   ToolTip.ShowOnDisabled="True"
-                  ToolTip.Tip="Options are not available yet." />
+                  ToolTip.Tip="Not available yet" />
           <Border Classes="divider" Margin="12,8" />
           <Button x:Name="ExitMenuButton"
                   Classes="menu"
@@ -65,16 +64,6 @@
           <Ellipse Canvas.Left="695" Canvas.Top="65" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource OnTeamPrimaryBrush}" />
           <Ellipse Canvas.Left="695" Canvas.Top="245" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource OnTeamPrimaryBrush}" />
         </Canvas>
-        <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="48" Spacing="6">
-          <TextBlock Text="Build a contender."
-                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
-                     FontSize="34"
-                     FontWeight="Bold" />
-          <TextBlock Text="Set your lines, read your scouts, and manage a franchise through a full season."
-                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
-                     Opacity="0.7"
-                     FontSize="15" />
-        </StackPanel>
       </Grid>
     </Border>
   </Grid>

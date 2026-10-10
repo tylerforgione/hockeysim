@@ -56,6 +56,21 @@ public sealed class NewGameTests
     }
 
     [Fact]
+    public void EveryTeamHasItsOwnColoursWithReadableTextOnTheSecondary()
+    {
+        var teams = StartGame(12345).League.Teams;
+
+        Assert.Equal(32, teams.Select(team => team.Colours).Distinct().Count());
+        Assert.Equal(
+            new TeamColours(Colour.FromHex("#0B2545"), Colour.FromHex("#3FA7A3")),
+            teams.Single(team => team.Name == InitialManagedTeam).Colours);
+        // Desktop writes primary-coloured text on the secondary colour; 4.5:1 is WCAG's body-text minimum.
+        Assert.All(teams, team => Assert.True(
+            ContrastRatio(team.Colours.Primary, team.Colours.Secondary) >= 4.5,
+            $"{team.Name}'s colours are too close for text."));
+    }
+
+    [Fact]
     public void EquivalentInputsCreateEquivalentWorldsAndRandomState()
     {
         var first = StartGame(987654321);
@@ -140,6 +155,24 @@ public sealed class NewGameTests
             Assert.All(sides, pair => Assert.False(
                 handedness[pair.Item1] == Handedness.Right && handedness[pair.Item2] == Handedness.Left));
         }
+    }
+
+    private static double ContrastRatio(Colour first, Colour second)
+    {
+        var firstLuminance = RelativeLuminance(first);
+        var secondLuminance = RelativeLuminance(second);
+        return (Math.Max(firstLuminance, secondLuminance) + 0.05) / (Math.Min(firstLuminance, secondLuminance) + 0.05);
+    }
+
+    private static double RelativeLuminance(Colour colour)
+    {
+        static double Linear(byte channel)
+        {
+            var value = channel / 255.0;
+            return value <= 0.04045 ? value / 12.92 : Math.Pow((value + 0.055) / 1.055, 2.4);
+        }
+
+        return (0.2126 * Linear(colour.Red)) + (0.7152 * Linear(colour.Green)) + (0.0722 * Linear(colour.Blue));
     }
 
     private static void AssertValidTeam(TeamSnapshot team)

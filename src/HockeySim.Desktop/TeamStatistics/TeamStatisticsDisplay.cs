@@ -5,10 +5,10 @@ using HockeySim.Desktop.Schedule;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
-namespace HockeySim.Desktop.Roster;
+namespace HockeySim.Desktop.TeamStatistics;
 
 /// <summary>
-/// Formats a team's season statistics for the strip above its roster. Shot, attempt, and
+/// Formats a team's season statistics for the team statistics page. Shot, attempt, and
 /// expected-goal shares are at five-on-five so special-teams time does not distort them.
 /// </summary>
 public static class TeamStatisticsDisplay
@@ -17,7 +17,7 @@ public static class TeamStatisticsDisplay
     public static TeamSeasonStatisticsSnapshot None(TeamId teamId) =>
         new(teamId, 0, 0, 0, null, 0, 0, null, 0, 0, 0, null, SituationalShotTotals.None);
 
-    public static IReadOnlyList<SeasonStatViewModel> Strip(TeamSeasonStatisticsSnapshot statistics)
+    public static IReadOnlyList<SeasonStatViewModel> Rows(TeamSeasonStatisticsSnapshot statistics)
     {
         ArgumentNullException.ThrowIfNull(statistics);
 
@@ -31,8 +31,8 @@ public static class TeamStatisticsDisplay
                 CultureInfo.CurrentCulture,
                 $"Penalty-kill percentage: {statistics.PowerPlayGoalsAgainst} goals against in {statistics.TimesShorthanded} times shorthanded")),
             new("FO%", MatchDisplay.Percentage(statistics.FaceoffPercentage), "Faceoff percentage"),
-            new("CF%", MatchDisplay.Percentage(fiveOnFive.CorsiPercentage), "5-on-5 Corsi percentage: share of shot attempts"),
-            new("FF%", MatchDisplay.Percentage(fiveOnFive.FenwickPercentage), "5-on-5 Fenwick percentage: share of unblocked attempts"),
+            new("CF%", MatchDisplay.Percentage(fiveOnFive.CorsiPercentage), "5-on-5 Corsi percentage"),
+            new("FF%", MatchDisplay.Percentage(fiveOnFive.FenwickPercentage), "5-on-5 Fenwick percentage"),
             new("SF%", MatchDisplay.Percentage(fiveOnFive.ShotsPercentage), "5-on-5 share of shots on goal"),
             new("xGF%", MatchDisplay.Percentage(fiveOnFive.ExpectedGoalsPercentage), "5-on-5 share of expected goals"),
         ];

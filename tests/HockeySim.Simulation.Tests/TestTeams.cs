@@ -69,7 +69,12 @@ internal static class TestTeams
             .Select(index => new DefencePair(defence[index * 2], defence[(index * 2) + 1]));
         var lineup = Lineup.CreateWithDefaultUnits(forwardLines, defencePairs, goalies[0], goalies[1]);
 
-        return new Team(new TeamId(NextGuid()), name, roster, lineup);
+        return new Team(
+            new TeamId(NextGuid()),
+            name,
+            new TeamColours(new Colour(0, 0, 0), new Colour(255, 255, 255)),
+            roster,
+            lineup);
     }
 
     public static Match CreateMatch(Team home, Team away) => new(home, away);

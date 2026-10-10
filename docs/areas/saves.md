@@ -49,7 +49,7 @@ saved. Save format version 4 added the event engine's box-score statistics,
 version 5 penalty minutes, power-play and shorthanded goals and assists, and
 power-play opportunities, version 6 empty-net goals, version 7 the shot
 totals and summaries, version 8 injuries and wear, version 9 each injury's cause, version 10 the
-preseason schedule and results, and version 11 the playoff results. The playoff
+preseason schedule and results, version 11 the playoff results, and version 12 team colours. The playoff
 bracket and its dates are not saved: the season derives them from the results
 (see [ADR 0011](../adr/0011-playoffs-derived-in-the-season.md)). The head trainer's sender role (#57) needed no new
 version: sender roles are saved by name, so older version 8 saves still load. The shot totals roughly triple a save's size: a complete

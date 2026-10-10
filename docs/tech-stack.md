@@ -6,6 +6,7 @@
 | SDK | Exact stable version in `global.json`; no roll-forward or previews | Configured for local development and CI |
 | Desktop | Avalonia on Windows, macOS, and Linux | New-game flow and in-game team-management shell (home, inbox, roster, lines, league teams, standings, schedule and results, season totals, daily advancement, named save and load); self-contained single-file release builds for `win-x64`, `osx-arm64`, `osx-x64`, and `linux-x64` ([ADR 0005](adr/0005-self-contained-desktop-builds.md)); native packaging and signing deferred |
 | Presentation | MVVM with `CommunityToolkit.Mvvm` | Configured for feature-oriented view models |
+| Fonts | PT Sans and PT Sans Narrow under the SIL Open Font License, bundled in Desktop with the licence text | Approved by the maintainer on 2026-10-08 (#90) |
 | Tests | xUnit v3; .NET 10's Microsoft.Testing.Platform runner | Domain, Simulation, Management, and Desktop test projects configured with coverage |
 | Dependency wiring | Constructor injection, manually composed at Desktop startup | Policy for future implementation |
 | Releases | Git tag `v<version>` sets the release (and engine) version; `0.x` releases are GitHub pre-releases | Release workflow publishes and attaches archives; source builds are `0.0.0-dev` |

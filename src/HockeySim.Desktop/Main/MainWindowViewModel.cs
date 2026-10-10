@@ -5,6 +5,7 @@ using HockeySim.Desktop.Game;
 using HockeySim.Desktop.NewGame;
 using HockeySim.Desktop.Saves;
 using HockeySim.Desktop.Startup;
+using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.Saves;
 
@@ -28,6 +29,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private object _currentScreen;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TeamColours))]
     private GameShellViewModel? _game;
 
     public MainWindowViewModel(GameManager gameManager, ISavedGameLibrary saves, Action? exitApplication = null)
@@ -38,7 +40,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _gameManager = gameManager;
         _saves = saves;
         _exitApplication = exitApplication ?? (() => { });
-        Startup = new StartupViewModel(ShowNewGame, ContinueGame, ShowLoadGame, RequestExit);
+        Startup = new StartupViewModel(ShowNewGame, ContinueGame, () => ShowLoadGame(ShowStartup), RequestExit);
         _currentScreen = Startup;
     }
 
@@ -58,6 +60,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public bool IsNewGameVisible => CurrentScreen is NewGameViewModel;
 
     public bool IsGameVisible => CurrentScreen is GameShellViewModel;
+
+    /// <summary>
+    /// Gets the colours the window wears: the managed team's while a game is open, on every screen,
+    /// or none before the first game, leaving the league defaults.
+    /// </summary>
+    public TeamColours? TeamColours => Game?.Session.ManagedTeam.Colours;
 
     /// <summary>
     /// Gets whether a game is in progress with changes that closing it would lose.
@@ -115,13 +123,14 @@ public sealed partial class MainWindowViewModel : ObservableObject
             () => CurrentScreen = new NewGameViewModel(_gameManager, ShowStartup, StartGame));
     }
 
-    private void ShowLoadGame()
+    /// <param name="back">Where the load screen's back button returns: the menu or game it was opened from.</param>
+    private void ShowLoadGame(Action back)
     {
         CurrentScreen = new LoadGameViewModel(
             _gameManager,
             _saves,
             ConfirmDiscardingProgress,
-            ShowStartup,
+            back,
             name => ShowGame(new GameSession(_gameManager, name.Value, isSaved: true)),
             hasActiveGame: Game is not null);
     }
@@ -151,7 +160,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// </summary>
     private void ShowGame(GameSession session)
     {
-        Game = new GameShellViewModel(session, ShowStartup, _saves, Confirmation);
+        Game = new GameShellViewModel(session, ShowStartup, _saves, Confirmation, () => ShowLoadGame(ContinueGame));
         Startup.CanContinue = true;
         CurrentScreen = Game;
     }

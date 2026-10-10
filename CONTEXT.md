@@ -49,6 +49,11 @@ The hand a skater shoots or a goalie catches with: left or right.
 **Team**:
 A group of hockey players competing together, with a roster and lineup.
 
+**Team colours**:
+A team's primary and secondary identity colours. Desktop wears the managed
+team's colours: panel headers and the team banner in the primary, selected
+controls and primary actions in the secondary.
+
 **Match**:
 An individual hockey contest between two teams, distinct from the overall
 management game.

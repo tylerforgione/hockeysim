@@ -36,7 +36,13 @@ internal static class GameSaveCapture
                 .ToList());
 
     private static SavedTeam CaptureTeam(Team team) =>
-        new(team.Id, team.Name, team.Roster.Select(CapturePlayer).ToList(), CaptureLineup(team.Lineup));
+        new(
+            team.Id,
+            team.Name,
+            team.Colours.Primary.ToString(),
+            team.Colours.Secondary.ToString(),
+            team.Roster.Select(CapturePlayer).ToList(),
+            CaptureLineup(team.Lineup));
 
     private static SavedPlayer CapturePlayer(Player player) =>
         new(

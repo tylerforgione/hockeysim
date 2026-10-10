@@ -46,6 +46,9 @@ public sealed class SaveAndLoadTests
         MissingOnIceShotTotals,
         DressedPlayerNotOnRoster,
         SkaterDressedInGoal,
+        MalformedTeamColour,
+        MissingTeamColour,
+        MatchingTeamColours,
         DuplicateRosterPlayer,
         RatingOutOfRange,
         MissingRating,
@@ -496,6 +499,9 @@ public sealed class SaveAndLoadTests
             {
                 Lineup = firstTeam.Lineup with { BackupGoalieId = firstTeam.Lineup.ForwardLines[0].CentreId },
             }),
+            MalformedTeamColour => WithFirstTeam(save, firstTeam with { PrimaryColour = "navy" }),
+            MissingTeamColour => WithFirstTeam(save, firstTeam with { SecondaryColour = null! }),
+            MatchingTeamColours => WithFirstTeam(save, firstTeam with { SecondaryColour = firstTeam.PrimaryColour }),
             DuplicateRosterPlayer => WithFirstTeam(save, firstTeam with
             {
                 Roster = [firstPlayer, firstPlayer with { Number = 100 - firstPlayer.Number }, .. firstTeam.Roster.Skip(2)],

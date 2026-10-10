@@ -3,6 +3,7 @@
              xmlns:game="using:HockeySim.Desktop.Game"
              xmlns:home="using:HockeySim.Desktop.Home"
              xmlns:inbox="using:HockeySim.Desktop.Inbox"
+             xmlns:injuries="using:HockeySim.Desktop.Injuries"
              xmlns:lines="using:HockeySim.Desktop.Lines"
              xmlns:playoffs="using:HockeySim.Desktop.Playoffs"
              xmlns:roster="using:HockeySim.Desktop.Roster"
@@ -10,6 +11,8 @@
              xmlns:schedule="using:HockeySim.Desktop.Schedule"
              xmlns:standings="using:HockeySim.Desktop.Standings"
              xmlns:teams="using:HockeySim.Desktop.Teams"
+             xmlns:teamStatistics="using:HockeySim.Desktop.TeamStatistics"
+             xmlns:theme="using:HockeySim.Desktop.Theme"
              x:Class="HockeySim.Desktop.Game.GameShellView"
              x:DataType="game:GameShellViewModel"
              Background="{DynamicResource AppBackgroundBrush}">
@@ -26,6 +29,12 @@
     <DataTemplate x:DataType="lines:LinesPageViewModel">
       <lines:LinesPageView />
     </DataTemplate>
+    <DataTemplate x:DataType="teamStatistics:TeamStatisticsPageViewModel">
+      <teamStatistics:TeamStatisticsPageView />
+    </DataTemplate>
+    <DataTemplate x:DataType="injuries:InjuriesPageViewModel">
+      <injuries:InjuriesPageView />
+    </DataTemplate>
     <DataTemplate x:DataType="teams:TeamsPageViewModel">
       <teams:TeamsPageView />
     </DataTemplate>
@@ -41,75 +50,186 @@
     <DataTemplate x:DataType="saves:SaveGameViewModel">
       <saves:SaveGameView />
     </DataTemplate>
+
+    <!-- The managed team's banner, unless the page brings its own. -->
+    <DataTemplate x:DataType="game:TeamBannerViewModel">
+      <Border Classes="banner">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+          <Border Classes="crest" VerticalAlignment="Center">
+            <TextBlock Text="{Binding TeamInitials}" />
+          </Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock x:Name="ShellTeamName"
+                       Classes="banner-title"
+                       Text="{Binding TeamName, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
+            <TextBlock x:Name="TeamSummaryText" Classes="banner-caption" Text="{Binding Summary}" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Orientation="Horizontal">
+            <!-- Two slanted stripes in the secondary colour, as on a sweater. -->
+            <Path Classes="banner-stripe" Data="M44,0 H86 L46,64 H4 Z" Opacity="0.9" />
+            <Path Classes="banner-stripe" Data="M8,0 H18 L-22,64 H-32 Z" Opacity="0.5" Margin="0,0,24,0" />
+            <ItemsControl x:Name="BannerFigures" ItemsSource="{Binding Figures}" VerticalAlignment="Center">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="1" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="game:BannerFigureViewModel">
+                  <Border Classes="banner-figure">
+                    <StackPanel>
+                      <TextBlock Classes="banner-figure-label" Text="{Binding Label}" />
+                      <TextBlock Classes="banner-figure-value" Text="{Binding Value}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
   </UserControl.DataTemplates>
+
+  <!-- Menu items show these gestures; they work wherever focus is in the game. -->
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="{OnPlatform Ctrl+S, macOS=Cmd+S}" Command="{Binding SaveGameCommand}" />
+    <KeyBinding Gesture="{OnPlatform Ctrl+O, macOS=Cmd+O}" Command="{Binding LoadGameCommand}" />
+  </UserControl.KeyBindings>
 
   <Grid>
     <DockPanel>
-      <!-- Title bar in the team's colours. -->
-      <Border DockPanel.Dock="Top"
-              Background="{DynamicResource TeamPrimaryBrush}"
-              BorderBrush="{DynamicResource TeamSecondaryBrush}"
-              BorderThickness="0,0,0,3"
-              Height="56"
-              Padding="12,0,12,0">
-        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
-          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-            <Border Classes="badge" Width="38" Height="38">
-              <TextBlock Text="{Binding TeamInitials}" FontSize="13" />
-            </Border>
-            <StackPanel VerticalAlignment="Center">
-              <TextBlock x:Name="ShellTeamName"
-                         Text="{Binding TeamName}"
-                         Foreground="{DynamicResource OnTeamPrimaryBrush}"
-                         FontSize="16"
-                         FontWeight="Bold" />
-              <TextBlock Text="{Binding TeamDivision}"
-                         Foreground="{DynamicResource OnTeamPrimaryBrush}"
-                         Opacity="0.7"
-                         FontSize="11" />
-            </StackPanel>
+      <!-- Menu bar: history and home, the menus, then the date and Continue. -->
+      <Border DockPanel.Dock="Top" Classes="menu-bar">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+            <!-- Back and forward wait for navigation history (#62). -->
+            <Button x:Name="BackButton"
+                    Classes="menu-icon"
+                    IsEnabled="False"
+                    AutomationProperties.Name="Back">
+              <Path Data="{x:Static theme:Icons.Back}" />
+            </Button>
+            <Button x:Name="HomeButton"
+                    Classes="menu-icon home"
+                    Classes.active="{Binding IsHomeSection}"
+                    AutomationProperties.Name="Home"
+                    ToolTip.Tip="Home"
+                    Command="{Binding OpenPageCommand}"
+                    CommandParameter="{x:Static game:ShellPage.Home}">
+              <Path Data="{x:Static theme:Icons.Home}" />
+            </Button>
+            <Button x:Name="ForwardButton"
+                    Classes="menu-icon"
+                    IsEnabled="False"
+                    AutomationProperties.Name="Forward">
+              <Path Data="{x:Static theme:Icons.Forward}" />
+            </Button>
           </StackPanel>
 
-          <StackPanel Grid.Column="1"
-                      HorizontalAlignment="Center"
-                      VerticalAlignment="Center">
-            <TextBlock Text="{Binding SeasonLabel}"
-                       Foreground="{DynamicResource OnTeamPrimaryBrush}"
-                       HorizontalAlignment="Center"
-                       FontWeight="SemiBold" />
-            <TextBlock x:Name="PhaseLabel"
-                       Text="{Binding PhaseLabel}"
-                       Foreground="{DynamicResource OnTeamPrimaryBrush}"
-                       Opacity="0.7"
-                       FontSize="11"
-                       HorizontalAlignment="Center" />
-          </StackPanel>
+          <Border Grid.Column="1" Classes="menu-separator" />
 
-          <Button x:Name="SaveGameButton"
-                  Grid.Column="2"
-                  Classes="chrome"
-                  Content="Save Game"
-                  VerticalAlignment="Center"
-                  Command="{Binding SaveGameCommand}" />
-          <Button Grid.Column="3"
-                  Classes="chrome"
-                  Content="Main Menu"
-                  VerticalAlignment="Center"
-                  Command="{Binding ShowMainMenuCommand}" />
-          <Button x:Name="ContinueButton"
-                  Grid.Column="4"
-                  Classes="chrome continue"
-                  VerticalAlignment="Center"
-                  Command="{Binding AdvanceDayCommand}"
-                  ToolTip.ShowOnDisabled="True"
-                  ToolTip.Tip="{Binding ContinueDescription}">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="{Binding ContinueLabel}" VerticalAlignment="Center" />
-              <Path Data="M1,1 L6,5 L1,9 Z"
-                    Fill="{Binding $parent[Button].Foreground}"
-                    VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
+          <Menu x:Name="MainMenu" Grid.Column="2">
+            <MenuItem Header="_Game">
+              <MenuItem x:Name="SaveGameMenuItem"
+                        Header="_Save game…"
+                        InputGesture="{OnPlatform Ctrl+S, macOS=Cmd+S}"
+                        Command="{Binding SaveGameCommand}" />
+              <MenuItem x:Name="LoadGameMenuItem"
+                        Header="_Load game…"
+                        InputGesture="{OnPlatform Ctrl+O, macOS=Cmd+O}"
+                        Command="{Binding LoadGameCommand}" />
+              <Separator />
+              <MenuItem x:Name="QuitToMenuItem"
+                        Header="_Quit to menu"
+                        Command="{Binding ShowMainMenuCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Team">
+              <MenuItem Header="_Roster" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.Roster}" />
+              <MenuItem Header="_Lines" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.Lines}" />
+              <MenuItem Header="_Schedule" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.TeamSchedule}" />
+              <MenuItem Header="_Team statistics" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.TeamStatistics}" />
+              <MenuItem Header="_Injuries" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.Injuries}" />
+            </MenuItem>
+            <MenuItem Header="_League">
+              <MenuItem Header="_Standings" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.Standings}" />
+              <MenuItem Header="_Teams" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.Teams}" />
+              <MenuItem Header="League _leaders" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.LeagueLeaders}" />
+              <MenuItem Header="_Playoff picture" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.PlayoffPicture}" />
+              <MenuItem Header="S_chedule" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.LeagueSchedule}" />
+            </MenuItem>
+            <MenuItem Header="_Stats">
+              <MenuItem Header="_Player statistics" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.PlayerStatistics}" />
+              <MenuItem Header="_Team statistics" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.TeamStatistics}" />
+              <MenuItem Header="League _leaders" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.LeagueLeaders}" />
+            </MenuItem>
+            <MenuItem Header="_Club">
+              <MenuItem Header="_Staff" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.Staff}" />
+              <MenuItem Header="_Transactions" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static game:ShellPage.Transactions}" />
+            </MenuItem>
+            <MenuItem x:Name="InboxMenuItem"
+                      Header="{Binding InboxMenuLabel, StringFormat='_{0}'}"
+                      Command="{Binding OpenPageCommand}"
+                      CommandParameter="{x:Static game:ShellPage.Inbox}" />
+          </Menu>
+
+          <TextBlock x:Name="CalendarLabel"
+                     Grid.Column="4"
+                     Classes="caption"
+                     FontSize="13"
+                     Margin="12,0"
+                     VerticalAlignment="Center"
+                     Text="{Binding CalendarLabel}" />
+
+          <!-- Continue plays a day; the arrow will offer simulating ahead (#85). -->
+          <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+            <Button x:Name="ContinueButton"
+                    Classes="continue"
+                    Command="{Binding AdvanceDayCommand}"
+                    ToolTip.ShowOnDisabled="True"
+                    ToolTip.Tip="{Binding ContinueDescription}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="{Binding ContinueLabel}" VerticalAlignment="Center" />
+                <Path Classes="continue-glyph"
+                      Data="M1,1 L6,5 L1,9 Z"
+                      VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Button x:Name="SimulateAheadButton"
+                    Classes="continue continue-arrow"
+                    IsEnabled="False"
+                    AutomationProperties.Name="Simulate ahead">
+              <Path Data="{x:Static theme:Icons.Expand}" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <ContentControl x:Name="BannerHost" DockPanel.Dock="Top" Content="{Binding Banner}" />
+
+      <!-- The current section's pages. -->
+      <Border DockPanel.Dock="Top" Classes="tab-strip">
+        <Grid ColumnDefinitions="*,Auto">
+          <ItemsControl x:Name="PageTabs" ItemsSource="{Binding CurrentSection.Items}" VerticalAlignment="Bottom">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="2" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="game:NavigationItemViewModel">
+                <Button Classes="page-tab"
+                        Classes.active="{Binding IsActive}"
+                        Content="{Binding Label}"
+                        Command="{Binding NavigateCommand}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock x:Name="PageSubtitle"
+                     Grid.Column="1"
+                     Classes="caption"
+                     VerticalAlignment="Center"
+                     Text="{Binding CurrentPage.Subtitle}" />
         </Grid>
       </Border>
 
@@ -155,87 +275,36 @@
         </Grid>
       </Border>
 
-      <!-- Status bar. -->
-      <Border DockPanel.Dock="Bottom"
-              Background="{DynamicResource SunkenBrush}"
-              BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="0,1,0,0"
-              Height="24"
-              Padding="12,0">
-        <Grid ColumnDefinitions="*,Auto">
+      <!-- Status bar: save state, lineup state, the newest unread message, and the version. -->
+      <Border DockPanel.Dock="Bottom" Classes="status-bar">
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="18">
           <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-            <TextBlock Classes="caption" FontSize="11" Text="Game:" />
-            <TextBlock x:Name="GameNameText"
-                       Classes="caption"
-                       FontSize="11"
-                       Foreground="{DynamicResource PrimaryTextBrush}"
-                       Text="{Binding GameName}" />
-            <TextBlock Classes="caption" FontSize="11" Text="·" />
-            <TextBlock x:Name="SaveStatusText" Classes="caption" FontSize="11" Text="{Binding SaveStatus}" />
+            <TextBlock x:Name="GameNameText" Foreground="{DynamicResource SecondaryTextBrush}" Text="{Binding GameName}" />
+            <TextBlock Text="·" />
+            <TextBlock x:Name="SaveStatusText" Text="{Binding SaveStatus}" />
           </StackPanel>
-          <TextBlock Grid.Column="1"
-                     Classes="caption"
+          <Button x:Name="LineupStatusButton"
+                  Grid.Column="1"
+                  Classes="status-link"
+                  Classes.warning="{Binding !IsLineupValid}"
+                  Content="{Binding LineupStatus}"
+                  Command="{Binding OpenLinesCommand}" />
+          <Button x:Name="LatestInboxItemButton"
+                  Grid.Column="2"
+                  Classes="status-link warning"
+                  HorizontalAlignment="Left"
+                  IsVisible="{Binding HasLatestInboxItem}"
+                  Content="{Binding LatestInboxItem}"
+                  Command="{Binding OpenLatestInboxItemCommand}" />
+          <TextBlock x:Name="VersionText"
+                     Grid.Column="3"
                      VerticalAlignment="Center"
-                     FontSize="11"
-                     Text="HockeySim · pre-release" />
+                     Text="{x:Static game:GameShellViewModel.Version}" />
         </Grid>
       </Border>
 
-      <!-- Sidebar navigation. -->
-      <Border DockPanel.Dock="Left"
-              Width="208"
-              Background="{DynamicResource SunkenBrush}"
-              BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="0,0,1,0">
-        <ItemsControl x:Name="NavigationSectionsList"
-                      ItemsSource="{Binding NavigationSections}"
-                      Margin="0,8,0,0">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="game:NavigationSectionViewModel">
-              <StackPanel Margin="0,0,0,10">
-                <TextBlock Classes="label" Text="{Binding Title}" Margin="16,6,12,4" />
-                <ItemsControl ItemsSource="{Binding Items}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="game:NavigationItemViewModel">
-                      <Button Classes="nav"
-                              Classes.active="{Binding IsActive}"
-                              Command="{Binding NavigateCommand}"
-                              ToolTip.ShowOnDisabled="True"
-                              ToolTip.Tip="{Binding UnavailableReason}">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                          <Path Data="{Binding Page, Converter={x:Static game:NavigationIconConverter.Instance}}"
-                                StrokeThickness="1.4"
-                                StrokeLineCap="Round"
-                                StrokeJoin="Round"
-                                Width="16"
-                                Height="16"
-                                VerticalAlignment="Center" />
-                          <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" />
-                          <Border Grid.Column="2" Classes="pill" IsVisible="{Binding HasBadge}">
-                            <TextBlock Text="{Binding BadgeCount}" />
-                          </Border>
-                          <Border Grid.Column="2" Classes="pill muted" IsVisible="{Binding IsUnavailable}">
-                            <TextBlock Text="SOON" />
-                          </Border>
-                        </Grid>
-                      </Button>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </Border>
-
       <!-- Page. -->
-      <DockPanel Margin="12,0,12,12">
-        <StackPanel DockPanel.Dock="Top" Margin="2,12,0,10">
-          <TextBlock x:Name="PageTitle" Classes="page-title" Text="{Binding CurrentPage.Title}" />
-          <TextBlock Classes="caption" Text="{Binding CurrentPage.Subtitle}" />
-        </StackPanel>
-        <ContentControl x:Name="PageHost" Content="{Binding CurrentPage}" />
-      </DockPanel>
+      <ContentControl x:Name="PageHost" Margin="6" Content="{Binding CurrentPage}" />
     </DockPanel>
 
     <!-- Save dialog over the whole shell. -->

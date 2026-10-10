@@ -4,7 +4,7 @@
              xmlns:teams="using:HockeySim.Desktop.Teams"
              x:Class="HockeySim.Desktop.Schedule.SchedulePageView"
              x:DataType="schedule:SchedulePageViewModel">
-  <Grid ColumnDefinitions="480,*" ColumnSpacing="8">
+  <Grid ColumnDefinitions="480,*" ColumnSpacing="6">
     <Border Classes="panel">
       <DockPanel>
         <Border DockPanel.Dock="Top" Classes="panel-header">

@@ -58,9 +58,7 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel
         _lineup = _managedLineup;
     }
 
-    public override string Title => "Lines";
-
-    public override string Subtitle => $"{SelectedTeam.Name} · lines, special-situation units, and goalies";
+    public override string Subtitle => SelectedTeam.Name;
 
     /// <summary>
     /// Gets every team in league order: by conference, then division.
@@ -70,8 +68,8 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel
     public bool IsEditable => SelectedTeam.IsManaged;
 
     public string OwnershipNote => IsEditable
-        ? "Your team · choosing a player who is already in a line or unit swaps the two"
-        : "Read-only · other clubs set their own lineups";
+        ? "Your team"
+        : "Read-only";
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 

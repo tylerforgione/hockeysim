@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:theme="using:HockeySim.Desktop.Theme"
              xmlns:lines="using:HockeySim.Desktop.Lines"
              xmlns:teams="using:HockeySim.Desktop.Teams"
              x:Class="HockeySim.Desktop.Lines.LinesPageView"
@@ -66,14 +67,14 @@
           <ItemsControl ItemsSource="{Binding Forwards}" HorizontalAlignment="Center">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="8" />
+                <StackPanel Orientation="Horizontal" Spacing="6" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
           </ItemsControl>
           <ItemsControl ItemsSource="{Binding Defence}" HorizontalAlignment="Center">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="8" />
+                <StackPanel Orientation="Horizontal" Spacing="6" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
           </ItemsControl>
@@ -85,7 +86,7 @@
       <Border Classes="panel">
         <StackPanel>
           <Border Classes="panel-header">
-            <TextBlock Classes="panel-title" Text="{Binding Title}" />
+            <TextBlock Classes="panel-title" Text="{Binding Title, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
           </Border>
           <ItemsControl ItemsSource="{Binding Units}" Margin="12,8,4,2">
             <ItemsControl.ItemsPanel>
@@ -109,9 +110,9 @@
   </UserControl.Styles>
 
   <DockPanel>
-    <Border DockPanel.Dock="Top" Classes="panel" Margin="0,0,0,8" Padding="8,4">
+    <Border DockPanel.Dock="Top" Classes="panel" Margin="0,0,0,6" Padding="8,4">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-        <StackPanel Orientation="Horizontal" Spacing="2">
+        <StackPanel Orientation="Horizontal" Spacing="0">
           <Button x:Name="EvenStrengthTabButton"
                   Classes="tab"
                   Classes.selected="{Binding IsEvenStrengthTab}"
@@ -164,7 +165,7 @@
             Margin="0,8,0,0"
             Padding="12,8"
             IsVisible="{Binding IsEditable}">
-      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
         <StackPanel VerticalAlignment="Center">
           <TextBlock x:Name="LineupError"
                      Classes="error"
@@ -175,7 +176,7 @@
                      Text="{Binding StatusMessage}"
                      IsVisible="{Binding !HasError}" />
           <TextBlock Classes="warning"
-                     Text="You have unsaved lineup changes."
+                     Text="Unsaved changes"
                      IsVisible="{Binding HasChanges}" />
         </StackPanel>
         <Button Grid.Column="1"
@@ -190,16 +191,16 @@
       </Grid>
     </Border>
 
-    <Grid ColumnDefinitions="*,280" ColumnSpacing="8">
+    <Grid ColumnDefinitions="*,280" ColumnSpacing="6">
       <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="8">
-          <StackPanel x:Name="EvenStrengthUnits" Spacing="8" IsVisible="{Binding IsEvenStrengthTab}">
+        <StackPanel Spacing="6">
+          <StackPanel x:Name="EvenStrengthUnits" Spacing="6" IsVisible="{Binding IsEvenStrengthTab}">
             <Border Classes="panel">
               <StackPanel>
                 <Border Classes="panel-header">
                   <TextBlock Classes="panel-title" Text="FORWARD LINES" />
                 </Border>
-                <Grid ColumnDefinitions="72,*,*,*" ColumnSpacing="8" Margin="12,8,12,2">
+                <Grid ColumnDefinitions="72,*,*,*" ColumnSpacing="6" Margin="12,8,12,2">
                   <TextBlock Grid.Column="1" Classes="label" Text="LEFT WING" />
                   <TextBlock Grid.Column="2" Classes="label" Text="CENTRE" />
                   <TextBlock Grid.Column="3" Classes="label" Text="RIGHT WING" />
@@ -207,7 +208,7 @@
                 <ItemsControl x:Name="ForwardLinesList" ItemsSource="{Binding Lineup.ForwardLines}" Margin="12,0,12,10">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="lines:ForwardLineRowViewModel">
-                      <Grid ColumnDefinitions="72,*,*,*" ColumnSpacing="8" Margin="0,3">
+                      <Grid ColumnDefinitions="72,*,*,*" ColumnSpacing="6" Margin="0,3">
                         <TextBlock Classes="slot-row-label" Text="{Binding Label}" />
                         <ContentControl Grid.Column="1" Content="{Binding LeftWing}" ContentTemplate="{StaticResource SlotPicker}" />
                         <ContentControl Grid.Column="2" Content="{Binding Centre}" ContentTemplate="{StaticResource SlotPicker}" />
@@ -219,20 +220,20 @@
               </StackPanel>
             </Border>
 
-            <Grid ColumnDefinitions="2*,*" ColumnSpacing="8">
+            <Grid ColumnDefinitions="2*,*" ColumnSpacing="6">
               <Border Classes="panel">
                 <StackPanel>
                   <Border Classes="panel-header">
                     <TextBlock Classes="panel-title" Text="DEFENCE PAIRS" />
                   </Border>
-                  <Grid ColumnDefinitions="72,*,*" ColumnSpacing="8" Margin="12,8,12,2">
+                  <Grid ColumnDefinitions="72,*,*" ColumnSpacing="6" Margin="12,8,12,2">
                     <TextBlock Grid.Column="1" Classes="label" Text="LEFT DEFENCE" />
                     <TextBlock Grid.Column="2" Classes="label" Text="RIGHT DEFENCE" />
                   </Grid>
                   <ItemsControl ItemsSource="{Binding Lineup.DefencePairs}" Margin="12,0,12,10">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="lines:DefencePairRowViewModel">
-                        <Grid ColumnDefinitions="72,*,*" ColumnSpacing="8" Margin="0,3">
+                        <Grid ColumnDefinitions="72,*,*" ColumnSpacing="6" Margin="0,3">
                           <TextBlock Classes="slot-row-label" Text="{Binding Label}" />
                           <ContentControl Grid.Column="1" Content="{Binding LeftDefence}" ContentTemplate="{StaticResource SlotPicker}" />
                           <ContentControl Grid.Column="2" Content="{Binding RightDefence}" ContentTemplate="{StaticResource SlotPicker}" />
@@ -267,7 +268,7 @@
           <ItemsControl x:Name="PowerPlayUnits" ItemsSource="{Binding Lineup.PowerPlay}" IsVisible="{Binding IsPowerPlayTab}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
-                <StackPanel Spacing="8" />
+                <StackPanel Spacing="6" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
           </ItemsControl>
@@ -275,16 +276,16 @@
           <ItemsControl x:Name="PenaltyKillUnits" ItemsSource="{Binding Lineup.PenaltyKill}" IsVisible="{Binding IsPenaltyKillTab}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
-                <StackPanel Spacing="8" />
+                <StackPanel Spacing="6" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
           </ItemsControl>
 
-          <StackPanel x:Name="OtherSituationUnits" Spacing="8" IsVisible="{Binding IsOtherTab}">
+          <StackPanel x:Name="OtherSituationUnits" Spacing="6" IsVisible="{Binding IsOtherTab}">
             <ItemsControl ItemsSource="{Binding Lineup.OtherSituationUnits}">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                  <StackPanel Spacing="8" />
+                  <StackPanel Spacing="6" />
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
             </ItemsControl>
@@ -296,7 +297,7 @@
                 <ItemsControl ItemsSource="{Binding Lineup.ExtraAttackers}" Margin="12,8,12,10">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                      <StackPanel Orientation="Horizontal" Spacing="8" />
+                      <StackPanel Orientation="Horizontal" Spacing="6" />
                     </ItemsPanelTemplate>
                   </ItemsControl.ItemsPanel>
                 </ItemsControl>

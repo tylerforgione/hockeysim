@@ -5,118 +5,59 @@
              x:Class="HockeySim.Desktop.Roster.TeamRosterView"
              x:DataType="roster:TeamRosterViewModel">
   <!-- Header and row templates share each table's ColumnDefinitions so columns align. -->
-  <Grid ColumnDefinitions="*,280" ColumnSpacing="8">
-    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
-      <Border x:Name="TeamStatistics" Classes="panel" Padding="12,6">
-        <DockPanel>
-          <TextBlock DockPanel.Dock="Left"
-                     Classes="panel-title"
-                     VerticalAlignment="Center"
-                     Margin="0,0,16,0"
-                     Text="TEAM"
-                     ToolTip.Tip="{Binding TeamStatisticsDescription}" />
-          <!-- Switches the strip, both tables, and the profile between the two sets of totals. -->
-          <StackPanel DockPanel.Dock="Right"
-                      Orientation="Horizontal"
-                      Spacing="2"
-                      VerticalAlignment="Center"
-                      IsVisible="{Binding HasPlayoffStatistics}">
-            <Button x:Name="ShowRegularSeasonButton"
-                    Classes="tab"
-                    Classes.selected="{Binding ShowsRegularSeason}"
-                    Content="Regular season"
-                    ToolTip.Tip="Show regular-season statistics"
-                    Command="{Binding ShowStatisticsSetCommand}"
-                    CommandParameter="{x:Static players:StatisticsSet.RegularSeason}" />
-            <Button x:Name="ShowPlayoffsButton"
-                    Classes="tab"
-                    Classes.selected="{Binding ShowsPlayoffs}"
-                    Content="Playoffs"
-                    ToolTip.Tip="Show playoff statistics"
-                    Command="{Binding ShowStatisticsSetCommand}"
-                    CommandParameter="{x:Static players:StatisticsSet.Playoffs}" />
-          </StackPanel>
-          <ItemsControl ItemsSource="{Binding TeamStatistics}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="20" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="players:SeasonStatViewModel">
-                <StackPanel Spacing="1" ToolTip.Tip="{Binding Description}">
-                  <TextBlock Classes="label" Text="{Binding Label}" />
-                  <TextBlock Text="{Binding Value}" FontSize="14" FontWeight="SemiBold" />
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </DockPanel>
-      </Border>
-
-      <Border x:Name="InjuryReport" Grid.Row="1" Classes="panel" Padding="12,6">
-        <DockPanel>
-          <TextBlock DockPanel.Dock="Left"
-                     Classes="panel-title"
-                     Margin="0,0,16,0"
-                     Text="INJURIES"
-                     ToolTip.Tip="Injuries that have not healed, with the staff's expected return" />
-          <TextBlock Classes="caption" Text="No injuries." IsVisible="{Binding !HasInjuries}" />
-          <ItemsControl ItemsSource="{Binding InjuryReport}" IsVisible="{Binding HasInjuries}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="roster:InjuryReportRowViewModel">
-                <Grid ColumnDefinitions="180,36,150,110,*" Margin="0,1">
-                  <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
-                  <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding Position}" />
-                  <TextBlock Grid.Column="2" Classes="cell" Text="{Binding Injury}" />
-                  <TextBlock Grid.Column="3"
-                             Classes="cell"
-                             Classes.error="{Binding IsOut}"
-                             Classes.warning="{Binding !IsOut}"
-                             Text="{Binding Status}" />
-                  <TextBlock Grid.Column="4" Classes="cell muted" Text="{Binding ExpectedReturn, StringFormat='Expected back {0}'}" />
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </DockPanel>
-      </Border>
-
-      <Border Grid.Row="2" Classes="panel">
+  <Grid ColumnDefinitions="*,280" ColumnSpacing="6">
+    <Grid RowDefinitions="*,Auto" RowSpacing="6">
+      <Border Classes="panel">
         <DockPanel>
           <Border DockPanel.Dock="Top" Classes="panel-header">
-            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
               <TextBlock Classes="panel-title" Text="SKATERS" />
-              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+              <!-- Switches both tables and the profile between the two sets of totals. -->
+              <StackPanel Grid.Column="1"
+                          Orientation="Horizontal"
+                          Spacing="0"
+                          VerticalAlignment="Center"
+                          IsVisible="{Binding HasPlayoffStatistics}">
+                <Button x:Name="ShowRegularSeasonButton"
+                        Classes="tab"
+                        Classes.selected="{Binding ShowsRegularSeason}"
+                        Content="Regular season"
+                        Command="{Binding ShowStatisticsSetCommand}"
+                        CommandParameter="{x:Static players:StatisticsSet.RegularSeason}" />
+                <Button x:Name="ShowPlayoffsButton"
+                        Classes="tab"
+                        Classes.selected="{Binding ShowsPlayoffs}"
+                        Content="Playoffs"
+                        Command="{Binding ShowStatisticsSetCommand}"
+                        CommandParameter="{x:Static players:StatisticsSet.Playoffs}" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
                 <Button x:Name="ShowRatingsButton"
                         Classes="tab"
                         Classes.selected="{Binding ShowsRatings}"
                         Content="Ratings"
-                        ToolTip.Tip="Show skater and goalie ratings"
                         Command="{Binding ShowColumnsCommand}"
                         CommandParameter="{x:Static roster:RosterColumns.Ratings}" />
                 <Button x:Name="ShowBasicButton"
                         Classes="tab"
                         Classes.selected="{Binding ShowsBasic}"
                         Content="Basic"
-                        ToolTip.Tip="Show counting totals and rates"
                         Command="{Binding ShowColumnsCommand}"
                         CommandParameter="{x:Static roster:RosterColumns.Basic}" />
                 <Button x:Name="ShowAdvancedButton"
                         Classes="tab"
                         Classes.selected="{Binding ShowsAdvanced}"
                         Content="Advanced"
-                        ToolTip.Tip="Show 5-on-5 on-ice shares and expected goals"
                         Command="{Binding ShowColumnsCommand}"
                         CommandParameter="{x:Static roster:RosterColumns.Advanced}" />
               </StackPanel>
-              <TextBlock Grid.Column="2" Classes="caption" VerticalAlignment="Center" Text="{Binding Skaters.Count, StringFormat='{}{0} players'}" />
+              <TextBlock Grid.Column="3" Classes="caption" VerticalAlignment="Center" Text="{Binding Skaters.Count, StringFormat='{}{0} players'}" />
             </Grid>
           </Border>
           <Panel>
             <DockPanel IsVisible="{Binding ShowsRatings}">
               <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,36,38,40,30,64,38,38,38,38,38,38,38,38,38,38,38">
+                <Grid ColumnDefinitions="36,*,36,32,36,30,58,30,30,30,30,30,30,30,30,30,30,30">
                   <TextBlock Text="#" />
                   <TextBlock Grid.Column="1" Text="NAME" />
                   <TextBlock Grid.Column="2" Text="POS" HorizontalAlignment="Center" />
@@ -143,7 +84,7 @@
                        SelectedItem="{Binding SelectedSkater}">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,36,38,40,30,64,38,38,38,38,38,38,38,38,38,38,38">
+                    <Grid ColumnDefinitions="36,*,36,32,36,30,58,30,30,30,30,30,30,30,30,30,30,30">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
                       <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
                         <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
@@ -179,7 +120,7 @@
             </DockPanel>
             <DockPanel IsVisible="{Binding ShowsBasic}">
               <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,36,38,40,30,64,40,40,40,40,40,40,40,40,40,56,48">
+                <Grid ColumnDefinitions="36,*,36,32,36,30,58,34,34,34,34,34,34,34,34,34,50,42">
                   <TextBlock Text="#" />
                   <TextBlock Grid.Column="1" Text="NAME" />
                   <TextBlock Grid.Column="2" Text="POS" HorizontalAlignment="Center" />
@@ -206,7 +147,7 @@
                        SelectedItem="{Binding SelectedSkater}">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,36,38,40,30,64,40,40,40,40,40,40,40,40,40,56,48">
+                    <Grid ColumnDefinitions="36,*,36,32,36,30,58,34,34,34,34,34,34,34,34,34,50,42">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
                       <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
                         <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
@@ -242,7 +183,7 @@
             </DockPanel>
             <DockPanel IsVisible="{Binding ShowsAdvanced}">
               <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,36,38,40,30,64,40,40,40,48,40,40,48,48,48,52,48">
+                <Grid ColumnDefinitions="36,*,36,32,36,30,58,36,36,36,44,36,36,44,44,44,48,40">
                   <TextBlock Text="#" />
                   <TextBlock Grid.Column="1" Text="NAME" />
                   <TextBlock Grid.Column="2" Text="POS" HorizontalAlignment="Center" />
@@ -260,7 +201,7 @@
                   <TextBlock Grid.Column="14" Text="xGF" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 team expected goals while on the ice" />
                   <TextBlock Grid.Column="15" Text="xGA" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 opponent expected goals while on the ice" />
                   <TextBlock Grid.Column="16" Text="xGF%" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 share of expected goals" />
-                  <TextBlock Grid.Column="17" Text="ixG" HorizontalAlignment="Center" ToolTip.Tip="Individual expected goals from the skater's own attempts, in all situations" />
+                  <TextBlock Grid.Column="17" Text="ixG" HorizontalAlignment="Center" ToolTip.Tip="Individual expected goals" />
                 </Grid>
               </Border>
               <ListBox x:Name="SkaterAdvancedTable"
@@ -269,7 +210,7 @@
                        SelectedItem="{Binding SelectedSkater}">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,36,38,40,30,64,40,40,40,48,40,40,48,48,48,52,48">
+                    <Grid ColumnDefinitions="36,*,36,32,36,30,58,36,36,36,44,36,36,44,44,44,48,40">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
                       <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
                         <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
@@ -307,7 +248,7 @@
         </DockPanel>
       </Border>
 
-      <Border Grid.Row="3" Classes="panel">
+      <Border Grid.Row="1" Classes="panel">
         <DockPanel>
           <Border DockPanel.Dock="Top" Classes="panel-header">
             <TextBlock Classes="panel-title" Text="GOALIES" />
@@ -315,7 +256,7 @@
           <Panel>
             <DockPanel IsVisible="{Binding ShowsRatings}">
               <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,38,40,30,64,38,38,38,38">
+                <Grid ColumnDefinitions="36,*,32,36,30,58,32,32,32,32">
                   <TextBlock Text="#" />
                   <TextBlock Grid.Column="1" Text="NAME" />
                   <TextBlock Grid.Column="2" Text="AGE" HorizontalAlignment="Center" />
@@ -335,7 +276,7 @@
                        ScrollViewer.VerticalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,38,40,30,64,38,38,38,38">
+                    <Grid ColumnDefinitions="36,*,32,36,30,58,32,32,32,32">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
                       <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
                         <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
@@ -363,7 +304,7 @@
             </DockPanel>
             <DockPanel IsVisible="{Binding ShowsBasic}">
               <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,38,40,30,64,40,48,48,48,56,52,40">
+                <Grid ColumnDefinitions="36,*,32,36,30,58,36,44,44,44,50,48,36">
                   <TextBlock Text="#" />
                   <TextBlock Grid.Column="1" Text="NAME" />
                   <TextBlock Grid.Column="2" Text="AGE" HorizontalAlignment="Center" />
@@ -375,7 +316,7 @@
                   <TextBlock Grid.Column="8" Text="SV" HorizontalAlignment="Center" ToolTip.Tip="Saves" />
                   <TextBlock Grid.Column="9" Text="GA" HorizontalAlignment="Center" ToolTip.Tip="Goals against" />
                   <TextBlock Grid.Column="10" Text="SV%" HorizontalAlignment="Center" ToolTip.Tip="Save percentage" />
-                  <TextBlock Grid.Column="11" Text="GAA" HorizontalAlignment="Center" ToolTip.Tip="Goals-against average: goals against per 60 minutes" />
+                  <TextBlock Grid.Column="11" Text="GAA" HorizontalAlignment="Center" ToolTip.Tip="Goals-against average" />
                   <TextBlock Grid.Column="12" Text="SO" HorizontalAlignment="Center" ToolTip.Tip="Shutouts" />
                 </Grid>
               </Border>
@@ -386,7 +327,7 @@
                        ScrollViewer.VerticalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,38,40,30,64,40,48,48,48,56,52,40">
+                    <Grid ColumnDefinitions="36,*,32,36,30,58,36,44,44,44,50,48,36">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
                       <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
                         <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
@@ -417,7 +358,7 @@
             </DockPanel>
             <DockPanel IsVisible="{Binding ShowsAdvanced}">
               <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,38,40,30,64,40,64,52,48,60,56">
+                <Grid ColumnDefinitions="36,*,32,36,30,58,36,58,48,44,54,50">
                   <TextBlock Text="#" />
                   <TextBlock Grid.Column="1" Text="NAME" />
                   <TextBlock Grid.Column="2" Text="AGE" HorizontalAlignment="Center" />
@@ -426,9 +367,9 @@
                   <TextBlock Grid.Column="5" Text="LINEUP" />
                   <TextBlock Grid.Column="6" Text="GP" HorizontalAlignment="Center" ToolTip.Tip="Games played (starts)" />
                   <TextBlock Grid.Column="7" Text="TOI" HorizontalAlignment="Center" ToolTip.Tip="Total time in net" />
-                  <TextBlock Grid.Column="8" Text="xGA" HorizontalAlignment="Center" ToolTip.Tip="Expected goals against: the expected-goal value of the shots faced" />
+                  <TextBlock Grid.Column="8" Text="xGA" HorizontalAlignment="Center" ToolTip.Tip="Expected goals against" />
                   <TextBlock Grid.Column="9" Text="GA" HorizontalAlignment="Center" ToolTip.Tip="Goals against" />
-                  <TextBlock Grid.Column="10" Text="GSAx" HorizontalAlignment="Center" ToolTip.Tip="Goals saved above expected: expected goals against less goals against" />
+                  <TextBlock Grid.Column="10" Text="GSAx" HorizontalAlignment="Center" ToolTip.Tip="Goals saved above expected" />
                   <TextBlock Grid.Column="11" Text="TOI/GP" HorizontalAlignment="Center" ToolTip.Tip="Average time in net per start" />
                 </Grid>
               </Border>
@@ -439,7 +380,7 @@
                        ScrollViewer.VerticalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,38,40,30,64,40,64,52,48,60,56">
+                    <Grid ColumnDefinitions="36,*,32,36,30,58,36,58,48,44,54,50">
                       <TextBlock Classes="cell muted" Text="{Binding Number}" />
                       <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
                         <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />

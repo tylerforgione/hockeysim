@@ -49,7 +49,7 @@
           <TextBlock x:Name="ConfirmationMessage"
                      TextWrapping="Wrap"
                      Text="{Binding Confirmation.Current.Message}" />
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
             <Button x:Name="CancelConfirmationButton"
                     Classes="secondary"
                     Content="Cancel"

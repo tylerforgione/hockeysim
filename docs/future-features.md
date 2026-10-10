@@ -265,7 +265,7 @@ Every skater and team records on-ice shot attempts, unblocked attempts, shots,
 goals, and xG for and against by strength situation (five-on-five, power play,
 penalty kill, and other), but Desktop shows only the five-on-five figures, the
 usual measure of possession. Later, let the user choose the situation for the
-advanced roster columns, the team strip, and the profile, including all
+advanced roster columns, the team statistics page, and the profile, including all
 situations together, so a power-play unit's xG and xG share can be compared with
 its five-on-five play.
 

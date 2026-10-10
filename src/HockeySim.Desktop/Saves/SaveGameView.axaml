@@ -39,7 +39,7 @@
                  IsVisible="{Binding HasError}"
                  TextWrapping="Wrap" />
 
-      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
         <Button Classes="secondary" Content="Cancel" Command="{Binding CancelCommand}" />
         <Button x:Name="ConfirmSaveButton" Classes="primary" Content="Save" Command="{Binding SaveCommand}" />
       </StackPanel>

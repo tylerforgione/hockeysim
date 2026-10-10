@@ -8,17 +8,17 @@
         <!-- Keeps Fluent's built-in controls (focus rings, scroll bars, pop-ups) on the app palette. -->
         <ColorPaletteResources x:Key="Dark"
                                Accent="#A2AAAD"
-                               AltHigh="#101215"
-                               AltMedium="#181B1F"
-                               AltMediumLow="#181B1F"
-                               AltLow="#181B1F"
-                               ChromeMedium="#20242A"
-                               ChromeMediumLow="#181B1F"
-                               ChromeLow="#20242A"
-                               ChromeAltLow="#E8EBEE"
-                               BaseHigh="#E8EBEE"
-                               RegionColor="#101215"
-                               ErrorText="#E06464" />
+                               AltHigh="#1A1F25"
+                               AltMedium="#20262D"
+                               AltMediumLow="#20262D"
+                               AltLow="#20262D"
+                               ChromeMedium="#2A313A"
+                               ChromeMediumLow="#20262D"
+                               ChromeLow="#2A313A"
+                               ChromeAltLow="#DDE3E9"
+                               BaseHigh="#DDE3E9"
+                               RegionColor="#1A1F25"
+                               ErrorText="#E07A7A" />
       </FluentTheme.Palettes>
     </FluentTheme>
     <StyleInclude Source="avares://HockeySim/Theme/Controls.axaml" />

@@ -99,8 +99,6 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
         Refresh();
     }
 
-    public override string Title => "Home";
-
     public override string Subtitle => $"{_session.ManagedTeam.Name} · {DivisionName}";
 
     public string DivisionTitle => DivisionName.ToUpperInvariant();
@@ -199,7 +197,7 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
         if (next is null)
         {
             NextMatchTitle = season.IsComplete ? "Season complete" : "No match scheduled";
-            NextMatchCaption = season.IsComplete ? "No further matches are scheduled." : "No match is scheduled yet.";
+            NextMatchCaption = string.Empty;
             return;
         }
 
@@ -258,10 +256,10 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
         var firstDay = snapshot.Schedule.PreseasonMatches.Concat(snapshot.Schedule.Matches).First().Date;
         if (season.CurrentDate <= firstDay)
         {
-            var opens = snapshot.Schedule.PreseasonMatches.Count > 0 ? "preseason" : "regular season";
+            var opens = snapshot.Schedule.PreseasonMatches.Count > 0 ? "Preseason" : "Opening day";
             LatestResultsTitle = "LEAGUE RESULTS";
             LatestResults = [];
-            LatestResultsCaption = $"The {opens} opens {MatchDisplay.LongDate(firstDay)}.";
+            LatestResultsCaption = $"{opens} · {MatchDisplay.LongDate(firstDay)}";
             return;
         }
 
@@ -281,7 +279,7 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
                 () => _openMatch(result.Date, Involves(result, team.Id) ? team.Id : result.Home.TeamId)))
             .ToList();
         LatestResultsCaption = LatestResults.Count == 0
-            ? $"No league matches were scheduled on {MatchDisplay.LongDate(day)}."
+            ? "No league matches"
             : string.Empty;
     }
 

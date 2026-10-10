@@ -57,7 +57,7 @@ internal static class LeagueDay
     private static Team DressedForToday(Team team, Season season)
     {
         var lineup = MatchDayLineup.ForAiTeam(team, season);
-        return ReferenceEquals(lineup, team.Lineup) ? team : new Team(team.Id, team.Name, team.Roster, lineup);
+        return ReferenceEquals(lineup, team.Lineup) ? team : new Team(team.Id, team.Name, team.Colours, team.Roster, lineup);
     }
 
     private static CompletedMatch ToCompletedMatch(ScheduledMatch scheduledMatch, MatchResult result) =>

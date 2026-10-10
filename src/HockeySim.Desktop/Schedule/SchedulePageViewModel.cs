@@ -50,8 +50,6 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
         Refresh();
     }
 
-    public override string Title => "Schedule";
-
     /// <summary>
     /// Counts the regular season's matches played; the preseason and playoffs are listed but
     /// vary in length.
@@ -74,11 +72,17 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
     public bool HasSelectedResult => SelectedResult is not null;
 
     /// <summary>
-    /// Explains the empty detail pane: nothing selected, or a match not yet played.
+    /// Fills the empty detail pane: blank with nothing selected, or a match not yet played.
     /// </summary>
     public string SelectionHint => SelectedMatch is null
-        ? "Select a completed match to see its box score."
-        : $"{SelectedMatch.Matchup} is scheduled for {MatchDisplay.LongDate(SelectedMatch.Date)}.";
+        ? string.Empty
+        : $"{SelectedMatch.Matchup} · {MatchDisplay.LongDate(SelectedMatch.Date)}";
+
+    /// <summary>Shows a team's schedule, keeping the selected match when it is already shown.</summary>
+    public void ShowTeam(TeamId teamId)
+    {
+        SelectedTeam = Teams.Single(team => team.Id == teamId);
+    }
 
     /// <summary>
     /// Shows one match, switching to the given team's schedule. The team must play in the match.

@@ -1,6 +1,7 @@
 using System.Globalization;
 
 using HockeySim.Desktop.Game;
+using HockeySim.Desktop.Injuries;
 using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
@@ -29,7 +30,9 @@ public sealed class InjuryDisplayTests
 
         Assert.True(shell.HasPlayersToReplace);
         Assert.False(shell.AdvanceDayCommand.CanExecute(null));
-        Assert.StartsWith("Replace the injured players in your lineup", shell.ContinueDescription, StringComparison.Ordinal);
+        Assert.EndsWith("Injured players to replace", shell.ContinueDescription, StringComparison.Ordinal);
+        Assert.False(shell.IsLineupValid);
+        Assert.StartsWith("Lineup: ", shell.LineupStatus, StringComparison.Ordinal);
         Assert.All(session.Snapshot.PlayersToReplace, id =>
             Assert.Contains(PlayerDisplay.FullName(session.PlayersById[id]), shell.PlayersToReplaceMessage, StringComparison.Ordinal));
 
@@ -40,6 +43,7 @@ public sealed class InjuryDisplayTests
 
         Assert.False(shell.HasPlayersToReplace);
         Assert.Empty(shell.PlayersToReplaceMessage);
+        Assert.Equal("Lineup valid", shell.LineupStatus);
         Assert.True(shell.AdvanceDayCommand.CanExecute(null));
     }
 
@@ -67,13 +71,18 @@ public sealed class InjuryDisplayTests
     {
         var session = SessionWhereContinueIsBlocked();
         var roster = new TeamRosterViewModel(session, session.ManagedTeam.Id);
+        var report = new InjuriesPageViewModel(session);
         var injured = session.ManagedTeam.Roster.Where(player => player.Injuries.Count > 0).ToList();
 
-        Assert.True(roster.HasInjuries);
-        Assert.Equal(injured.Sum(player => player.Injuries.Count), roster.InjuryReport.Count);
+        Assert.True(report.HasInjuries);
+        Assert.Equal(injured.Sum(player => player.Injuries.Count), report.Injuries.Count);
         Assert.Equal(
-            roster.InjuryReport.OrderBy(row => !row.IsOut).Select(row => row.Name),
-            roster.InjuryReport.Select(row => row.Name));
+            report.Injuries.OrderBy(row => !row.IsOut).Select(row => row.Name),
+            report.Injuries.Select(row => row.Name));
+        var outCount = report.Injuries.Count(row => row.IsOut);
+        Assert.Equal(
+            $"{session.ManagedTeam.Name} · {outCount} out · {report.Injuries.Count - outCount} playing hurt",
+            report.Subtitle);
 
         var rows = roster.Skaters.Concat(roster.Goalies).ToList();
         foreach (var player in session.ManagedTeam.Roster)
@@ -85,7 +94,7 @@ public sealed class InjuryDisplayTests
 
         var outPlayer = session.ManagedTeam.Roster.First(player => !player.CanPlay);
         var injury = outPlayer.Injuries.First(candidate => !candidate.CanPlayThrough);
-        var reportRow = roster.InjuryReport.First(row => row.Name == PlayerDisplay.FullName(outPlayer) && row.IsOut);
+        var reportRow = report.Injuries.First(row => row.Name == PlayerDisplay.FullName(outPlayer) && row.IsOut);
         Assert.Equal(InjuryDisplay.Name(injury.Type), reportRow.Injury);
         Assert.Equal("Out", reportRow.Status);
         Assert.Equal(InjuryDisplay.ExpectedReturn(injury.ExpectedReturn), reportRow.ExpectedReturn);
@@ -97,7 +106,7 @@ public sealed class InjuryDisplayTests
         var session = GameTestData.StartSession();
         var roster = new TeamRosterViewModel(session, session.ManagedTeam.Id);
 
-        Assert.False(roster.HasInjuries);
+        Assert.False(new InjuriesPageViewModel(session).HasInjuries);
         Assert.All(roster.Skaters.Concat(roster.Goalies), row => Assert.False(row.HasInjury));
         Assert.Equal("Healthy", roster.SelectedPlayer!.Health);
         Assert.False(roster.SelectedPlayer.HasInjuries);

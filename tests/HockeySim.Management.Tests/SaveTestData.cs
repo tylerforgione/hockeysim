@@ -29,7 +29,7 @@ internal static class SaveTestData
 
         foreach (var team in snapshot.League.Teams)
         {
-            lines.Add($"team {team.Id} {team.Name}");
+            lines.Add($"team {team.Id} {team.Name} {team.Colours}");
             lines.AddRange(team.Roster.Select(player =>
                 $"  {player.Id} {player.FirstName} {player.LastName} {player.Position} age {player.Age} {player.Biography} #{player.Number} "
                 + string.Join(",", player.Ratings.OrderBy(rating => rating.Key).Select(rating => $"{rating.Key}={rating.Value}"))

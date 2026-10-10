@@ -37,6 +37,10 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         Assert.False(roster.HasPlayoffStatistics);
         roster.ShowStatisticsSetCommand.Execute(StatisticsSet.Playoffs);
         Assert.True(roster.ShowsRegularSeason);
+
+        Assert.False(shell.TeamStatistics.HasPlayoffStatistics);
+        shell.TeamStatistics.ShowStatisticsSetCommand.Execute(StatisticsSet.Playoffs);
+        Assert.True(shell.TeamStatistics.ShowsRegularSeason);
     }
 
     [Fact]
@@ -49,7 +53,7 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         Assert.True(page.HasPlayoffs);
         Assert.False(page.HasChampion);
         Assert.EndsWith("first round in progress", page.Subtitle, StringComparison.Ordinal);
-        Assert.StartsWith("Playoffs · First round · ", shell.PhaseLabel, StringComparison.Ordinal);
+        Assert.EndsWith(" · Playoffs · First round", shell.CalendarLabel, StringComparison.Ordinal);
 
         var firstRound = page.Rounds[0].Series;
         Assert.Equal(8, firstRound.Count);
@@ -95,7 +99,7 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         var page = shell.Playoffs;
         string Name(TeamId teamId) => shell.Session.GetTeam(teamId).Name;
 
-        Assert.StartsWith("Playoffs · Second round · ", shell.PhaseLabel, StringComparison.Ordinal);
+        Assert.EndsWith(" · Playoffs · Second round", shell.CalendarLabel, StringComparison.Ordinal);
         Assert.Equal([8, 4, 0, 0], page.Rounds.Select(round => round.Series.Count));
         Assert.All(page.Rounds[0].Series, series =>
         {
@@ -119,7 +123,8 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         var lastGame = decided.Games[^1];
         lastGame.OpenCommand.Execute(null);
 
-        Assert.Equal(ShellPage.Schedule, shell.CurrentPageKind);
+        var managesSelectedTeam = shell.Schedule.SelectedTeam.Id == shell.Session.Snapshot.ManagedTeamId;
+        Assert.Equal(managesSelectedTeam ? ShellPage.TeamSchedule : ShellPage.LeagueSchedule, shell.CurrentPageKind);
         Assert.NotNull(shell.Schedule.SelectedResult);
         Assert.Equal(lastGame.Date, MatchDisplay.ShortDate(shell.Schedule.SelectedMatch!.Date));
         Assert.StartsWith("R1 G", shell.Schedule.SelectedMatch!.PhaseLabel, StringComparison.Ordinal);
@@ -158,10 +163,6 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         Assert.All(roster.Goalies, row => Assert.Equal(
             playoffs.GoalieStatistics.SingleOrDefault(candidate => candidate.PlayerId == row.Player.Id)?.GamesPlayed ?? 0,
             row.Season.GamesPlayed));
-        var teamStatistics = playoffs.TeamStatistics.Single(statistics => statistics.TeamId == qualifier);
-        Assert.Equal(
-            MatchDisplay.Percentage(teamStatistics.FaceoffPercentage),
-            roster.TeamStatistics.Single(stat => stat.Label == "FO%").Value);
 
         // The profile follows the switch and keeps the selected player.
         var profile = roster.SelectedPlayer!;
@@ -177,7 +178,6 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         roster = shell.Teams.Roster;
         Assert.True(roster.ShowsPlayoffs);
         Assert.All(roster.Skaters.Concat(roster.Goalies), row => Assert.Equal(PlayerSeasonTotals.None, row.Season));
-        Assert.All(roster.TeamStatistics, stat => Assert.Equal(MatchDisplay.Undefined, stat.Value));
         roster.SelectPlayer(roster.Skaters[0].Player.Id);
         Assert.Equal("No playoff appearances.", roster.SelectedPlayer!.SeasonCaption);
         roster.SelectPlayer(roster.Goalies[0].Player.Id);
@@ -196,6 +196,32 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
     }
 
     [Fact]
+    public void TeamStatisticsSwitchBetweenRegularSeasonAndPlayoffs()
+    {
+        var shell = new GameShellViewModel(season.Load(season.SecondRound));
+        var snapshot = shell.Session.Snapshot;
+        var page = shell.TeamStatistics;
+        string FaceoffPercentage() => page.Statistics.Single(stat => stat.Label == "FO%").Value;
+
+        Assert.True(page.HasPlayoffStatistics);
+        Assert.True(page.ShowsRegularSeason);
+        var regularSeason = snapshot.Season.TeamStatistics.Single(statistics => statistics.TeamId == snapshot.ManagedTeamId);
+        Assert.Equal(MatchDisplay.Percentage(regularSeason.FaceoffPercentage), FaceoffPercentage());
+
+        // A managed team that missed the playoffs has no playoff figures, so they show dashes.
+        page.ShowStatisticsSetCommand.Execute(StatisticsSet.Playoffs);
+        Assert.True(page.ShowsPlayoffs);
+        var playoffs = snapshot.Season.Playoffs!.TeamStatistics.SingleOrDefault(statistics => statistics.TeamId == snapshot.ManagedTeamId);
+        Assert.Equal(playoffs is null ? MatchDisplay.Undefined : MatchDisplay.Percentage(playoffs.FaceoffPercentage), FaceoffPercentage());
+
+        page.Refresh();
+        Assert.True(page.ShowsPlayoffs);
+
+        page.ShowStatisticsSetCommand.Execute(StatisticsSet.RegularSeason);
+        Assert.Equal(MatchDisplay.Percentage(regularSeason.FaceoffPercentage), FaceoffPercentage());
+    }
+
+    [Fact]
     public void ACompletedSeasonCannotBeAdvancedButStaysBrowsable()
     {
         var shell = season.Shell;
@@ -205,8 +231,8 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
 
         Assert.True(session.Snapshot.Season.IsComplete);
         Assert.False(shell.AdvanceDayCommand.CanExecute(null));
-        Assert.Equal($"Season complete · {champion} are champions", shell.PhaseLabel);
-        Assert.StartsWith("The season is complete", shell.ContinueDescription, StringComparison.Ordinal);
+        Assert.EndsWith($" · {champion} are champions", shell.CalendarLabel, StringComparison.Ordinal);
+        Assert.Equal("Season complete", shell.ContinueDescription);
         Assert.Equal("Season complete", shell.Home.NextMatchTitle);
         Assert.Equal("Complete", shell.Home.Tiles[0].Value);
         var finalGame = Assert.Single(shell.Home.LatestResults);
@@ -240,7 +266,7 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
 
         shell.Navigate(ShellPage.Roster);
         Assert.IsType<RosterPageViewModel>(shell.CurrentPage);
-        shell.Navigate(ShellPage.Playoffs);
+        shell.Navigate(ShellPage.PlayoffPicture);
         Assert.IsType<PlayoffsPageViewModel>(shell.CurrentPage);
         finalGame.OpenCommand.Execute(null);
         var schedule = Assert.IsType<SchedulePageViewModel>(shell.CurrentPage);

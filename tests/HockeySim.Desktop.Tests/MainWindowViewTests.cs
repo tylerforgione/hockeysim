@@ -3,6 +3,8 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.LogicalTree;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
@@ -10,6 +12,7 @@ using HockeySim.Desktop;
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Home;
 using HockeySim.Desktop.Inbox;
+using HockeySim.Desktop.Injuries;
 using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Main;
 using HockeySim.Desktop.NewGame;
@@ -21,6 +24,8 @@ using HockeySim.Desktop.Schedule;
 using HockeySim.Desktop.Standings;
 using HockeySim.Desktop.Startup;
 using HockeySim.Desktop.Teams;
+using HockeySim.Desktop.TeamStatistics;
+using HockeySim.Desktop.Theme;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 
@@ -52,6 +57,7 @@ public sealed class MainWindowViewTests
         Dispatcher.UIThread.RunJobs();
 
         var startupView = Single<StartupView>(window);
+        Assert.False(window.Resources.ContainsKey(TeamPalette.PrimaryKey));
         Assert.Equal(
             $"Version {AppVersion.Current} · Pre-release build",
             startupView.FindControl<TextBlock>("VersionLabel")?.Text);
@@ -77,18 +83,45 @@ public sealed class MainWindowViewTests
         Click(Assert.IsType<Button>(newGameView.FindControl<Button>("CreateGameButton")));
 
         var shellView = Single<GameShellView>(window);
-        Assert.Equal("Seattle Evergreens", shellView.FindControl<TextBlock>("ShellTeamName")?.Text);
+        Assert.Equal("SEATTLE EVERGREENS", Named<TextBlock>(shellView, "ShellTeamName").Text);
+        Assert.Equal(3, Named<ItemsControl>(shellView, "BannerFigures").ItemCount);
+        Assert.Contains(" · Next match ", shellView.FindControl<TextBlock>("CalendarLabel")?.Text, StringComparison.Ordinal);
+        Assert.Equal("Lineup valid", shellView.FindControl<Button>("LineupStatusButton")?.Content);
+        Assert.Equal($"HockeySim {AppVersion.Current}", shellView.FindControl<TextBlock>("VersionText")?.Text);
+        Assert.False(shellView.FindControl<Button>("BackButton")?.IsEffectivelyEnabled);
+        Assert.False(shellView.FindControl<Button>("ForwardButton")?.IsEffectivelyEnabled);
+        Assert.False(shellView.FindControl<Button>("SimulateAheadButton")?.IsEffectivelyEnabled);
+
+        // Every menu and item has an access key, so the keyboard reaches each one.
+        var menuItems = shellView.GetLogicalDescendants().OfType<MenuItem>().ToList();
+        Assert.Equal(24, menuItems.Count);
+        Assert.All(menuItems, item => Assert.Contains("_", item.Header?.ToString(), StringComparison.Ordinal));
+        Assert.Equal("_Inbox (4)", MenuItemNamed(shellView, "InboxMenuItem").Header);
+
+        // The window wears the managed team's colours, with primary-coloured text on the secondary.
+        var seattlePrimary = Color.Parse("#0B4F3C");
+        Assert.Equal(seattlePrimary, ResourceColor(window, TeamPalette.PrimaryKey));
+        Assert.Equal(Colors.White, ResourceColor(window, TeamPalette.OnPrimaryKey));
+        Assert.Equal(Color.Parse("#99D9C1"), ResourceColor(window, TeamPalette.SecondaryKey));
+        Assert.Equal(seattlePrimary, ResourceColor(window, TeamPalette.OnSecondaryKey));
+        var panelHeader = window.GetVisualDescendants().OfType<Border>().First(border => border.Classes.Contains("panel-header"));
+        Assert.Equal(seattlePrimary, Assert.IsAssignableFrom<ISolidColorBrush>(panelHeader.Background).Color);
         var continueButton = Assert.IsType<Button>(shellView.FindControl<Button>("ContinueButton"));
         Assert.True(continueButton.IsEffectivelyEnabled);
         Assert.Single(window.GetVisualDescendants().OfType<HomePageView>());
 
         AssertNavigationRenders<InboxPageView>(window, ShellPage.Inbox);
         AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
+        Assert.Equal(5, Named<ItemsControl>(shellView, "PageTabs").ItemCount);
         AssertNavigationRenders<TeamsPageView>(window, ShellPage.Teams);
         AssertNavigationRenders<StandingsPageView>(window, ShellPage.Standings);
-        AssertNavigationRenders<PlayoffsPageView>(window, ShellPage.Playoffs);
+        AssertNavigationRenders<PlayoffsPageView>(window, ShellPage.PlayoffPicture);
         Assert.True(Single<PlayoffsPageView>(window).FindControl<TextBlock>("PlayoffsNotStarted")?.IsEffectivelyVisible);
-        AssertNavigationRenders<SchedulePageView>(window, ShellPage.Schedule);
+        AssertNavigationRenders<SchedulePageView>(window, ShellPage.LeagueSchedule);
+        AssertNavigationRenders<SchedulePageView>(window, ShellPage.TeamSchedule);
+        AssertNavigationRenders<TeamStatisticsPageView>(window, ShellPage.TeamStatistics);
+        Assert.Equal(7, Named<ItemsControl>(window, "TeamStatisticsList").ItemCount);
+        AssertNavigationRenders<InjuriesPageView>(window, ShellPage.Injuries);
         AssertNavigationRenders<LinesPageView>(window, ShellPage.Lines);
 
         var linesView = Single<LinesPageView>(window);
@@ -130,10 +163,10 @@ public sealed class MainWindowViewTests
         Dispatcher.UIThread.RunJobs();
         Assert.True(saveButton.IsEffectivelyVisible);
 
-        // Play the preseason and opening night from the title bar, then open a result from the
+        // Play the preseason and opening night from the menu bar, then open a result from the
         // home page.
         AssertNavigationRenders<HomePageView>(window, ShellPage.Home);
-        Assert.StartsWith("Preseason", shellView.FindControl<TextBlock>("PhaseLabel")?.Text, StringComparison.Ordinal);
+        Assert.Contains(" · Regular season starts ", shellView.FindControl<TextBlock>("CalendarLabel")?.Text, StringComparison.Ordinal);
         while (gameManager.GetSnapshot().Season.Phase == SeasonPhase.Preseason)
         {
             ClickAndWait(continueButton, () => !viewModel.Game!.Session.IsAdvancing);
@@ -143,7 +176,12 @@ public sealed class MainWindowViewTests
         Assert.Empty(gameManager.GetSnapshot().Season.Results);
         ClickAndWait(continueButton, () => !viewModel.Game!.Session.IsAdvancing);
         Assert.Equal(16, gameManager.GetSnapshot().Season.Results.Count);
-        Assert.Contains("Oct", shellView.FindControl<TextBlock>("PhaseLabel")?.Text, StringComparison.Ordinal);
+        Assert.StartsWith("Fri 2 Oct 2026", shellView.FindControl<TextBlock>("CalendarLabel")?.Text, StringComparison.Ordinal);
+        var figureValues = Named<ItemsControl>(shellView, "BannerFigures").GetVisualDescendants().OfType<TextBlock>()
+            .Where(text => text.Classes.Contains("banner-figure-value"))
+            .Select(text => text.Text)
+            .ToList();
+        Assert.DoesNotContain("—", figureValues.Skip(1));
         Assert.False(shellView.FindControl<Border>("AdvanceErrorBanner")?.IsVisible);
 
         var homeView = Single<HomePageView>(window);
@@ -188,12 +226,10 @@ public sealed class MainWindowViewTests
             standingsView.GetVisualDescendants().OfType<Border>().Select(border => border.DataContext).OfType<StandingsRowViewModel>(),
             row => Assert.Equal(1, row.GamesPlayed));
 
-        // Roster: the team strip, then the tables switched to basic and advanced statistics; the
-        // detail panel always shows the full line.
+        // Roster: the tables switched to basic and advanced statistics; the detail panel always
+        // shows the full line.
         AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
         var rosterView = Single<TeamRosterView>(window);
-        Assert.True(rosterView.FindControl<Border>("TeamStatistics")?.IsEffectivelyVisible);
-        Assert.True(rosterView.FindControl<Border>("InjuryReport")?.IsEffectivelyVisible);
         var ratingsTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkatersTable"));
         var basicTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkaterBasicTable"));
         var advancedTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkaterAdvancedTable"));
@@ -226,9 +262,9 @@ public sealed class MainWindowViewTests
                 .Select(text => text.Text)
                 .Take(7));
 
-        // Save from the title bar under a typed name.
+        // Save from the Game menu under a typed name.
         Assert.Equal("Unsaved changes", Single<GameShellView>(window).FindControl<TextBlock>("SaveStatusText")?.Text);
-        Click(Assert.IsType<Button>(shellView.FindControl<Button>("SaveGameButton")));
+        Click(MenuItemNamed(shellView, "SaveGameMenuItem"));
         Assert.True(shellView.FindControl<Border>("SaveDialogOverlay")?.IsVisible);
         var saveView = Single<SaveGameView>(window);
         Assert.True(saveView.Bounds.Width > 300);
@@ -240,9 +276,16 @@ public sealed class MainWindowViewTests
         Assert.Equal("Opening Night", shellView.FindControl<TextBlock>("GameNameText")?.Text);
         Assert.Equal("Saved", shellView.FindControl<TextBlock>("SaveStatusText")?.Text);
 
+        // Load from the Game menu, and go back to the game.
+        Click(MenuItemNamed(shellView, "LoadGameMenuItem"));
+        Click(Assert.IsType<LoadGameViewModel>(Single<LoadGameView>(window).DataContext).BackCommand);
+        shellView = Single<GameShellView>(window);
+        Assert.Same(viewModel.Game, shellView.DataContext);
+        continueButton = Assert.IsType<Button>(shellView.FindControl<Button>("ContinueButton"));
+
         // Play on, then load the save from the main menu; the unsaved day must be confirmed away.
         ClickAndWait(continueButton, () => !viewModel.Game!.Session.IsAdvancing);
-        Click(window.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, "Main Menu")));
+        Click(MenuItemNamed(shellView, "QuitToMenuItem"));
         Click(Assert.IsType<Button>(Single<StartupView>(window).FindControl<Button>("LoadGameMenuButton")));
         var loadView = Single<LoadGameView>(window);
         var savesList = Assert.IsType<ListBox>(loadView.FindControl<ListBox>("SavesList"));
@@ -294,26 +337,56 @@ public sealed class MainWindowViewTests
         Dispatcher.UIThread.RunJobs();
     }
 
+    /// <summary>Opens a page from the menu bar: its menu item, or the home button.</summary>
     private static void AssertNavigationRenders<TView>(Window window, ShellPage page)
         where TView : Control
     {
-        var navButton = window.GetVisualDescendants()
-            .OfType<Button>()
-            .Single(button => button.DataContext is NavigationItemViewModel item && item.Page == page);
-        Click(navButton);
+        var shellView = Single<GameShellView>(window);
+        if (page == ShellPage.Home)
+        {
+            Click(Named<Button>(shellView, "HomeButton"));
+        }
+        else
+        {
+            Click(shellView.GetLogicalDescendants().OfType<MenuItem>().First(item => Equals(item.CommandParameter, page)));
+        }
 
         var view = Single<TView>(window);
         Assert.True(view.Bounds.Width > 600);
         Assert.True(view.Bounds.Height > 400);
     }
 
+    private static Color ResourceColor(Window window, string key) =>
+        Assert.IsAssignableFrom<ISolidColorBrush>(window.FindResource(key)).Color;
+
     private static T Single<T>(Visual root)
         where T : Visual =>
         root.GetVisualDescendants().OfType<T>().Single();
 
+    private static T Named<T>(Control root, string name)
+        where T : Control =>
+        Assert.IsType<T>(root.FindControl<T>(name) ?? root.GetVisualDescendants().OfType<T>().Single(control => control.Name == name));
+
+    /// <summary>Finds a menu item, which is not in the visual tree until its menu opens.</summary>
+    private static MenuItem MenuItemNamed(Control root, string name) =>
+        root.GetLogicalDescendants().OfType<MenuItem>().Single(item => item.Name == name);
+
     private static void Click(Button button)
     {
         button.Command?.Execute(button.CommandParameter);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void Click(MenuItem item)
+    {
+        Assert.True(item.Command?.CanExecute(item.CommandParameter));
+        item.Command!.Execute(item.CommandParameter);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void Click(System.Windows.Input.ICommand command)
+    {
+        command.Execute(null);
         Dispatcher.UIThread.RunJobs();
     }
 }

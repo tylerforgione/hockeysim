@@ -40,8 +40,6 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
         _roster = new TeamRosterViewModel(session, _selectedTeam.Id);
     }
 
-    public override string Title => "League Teams";
-
     public override string Subtitle => $"{SelectedTeam.Name} · {SelectedTeam.Division}";
 
     /// <summary>
@@ -54,8 +52,8 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
     public string SelectedTeamInitials => PlayerDisplay.TeamInitials(SelectedTeam.Name);
 
     public string OwnershipNote => IsSelectedTeamManaged
-        ? "Your team · change lines from the Lines page"
-        : "Read-only · other clubs set their own lineups";
+        ? "Your team"
+        : "Read-only";
 
     public void SelectTeam(TeamId teamId)
     {

@@ -9,10 +9,10 @@ using HockeySim.Management.GameManagement.Snapshots;
 namespace HockeySim.Desktop.Roster;
 
 /// <summary>
-/// A read-only roster split into skaters and goalies, with the team's season statistics and the
-/// selected player's profile. The tables show ratings, basic season totals, or advanced
-/// five-on-five figures; they do not fit side by side. Once the playoffs start, the totals, the
-/// team strip, and the profile switch together between the regular season and the playoffs.
+/// A read-only roster split into skaters and goalies, with the selected player's profile. The
+/// tables show ratings, basic season totals, or advanced five-on-five figures; they do not fit side
+/// by side. Once the playoffs start, the totals and the profile switch together between the regular
+/// season and the playoffs.
 /// </summary>
 public sealed partial class TeamRosterViewModel : ObservableObject
 {
@@ -24,9 +24,6 @@ public sealed partial class TeamRosterViewModel : ObservableObject
 
     [ObservableProperty]
     private IReadOnlyList<PlayerRowViewModel> _goalies = [];
-
-    [ObservableProperty]
-    private IReadOnlyList<SeasonStatViewModel> _teamStatistics = [];
 
     [ObservableProperty]
     private PlayerRowViewModel? _selectedSkater;
@@ -42,7 +39,7 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     private RosterColumns _columns;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsRegularSeason), nameof(ShowsPlayoffs), nameof(TeamStatisticsDescription))]
+    [NotifyPropertyChangedFor(nameof(ShowsRegularSeason), nameof(ShowsPlayoffs))]
     private StatisticsSet _statistics;
 
     /// <param name="statistics">
@@ -62,23 +59,11 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         _columns = columns;
         _statistics = HasPlayoffStatistics ? statistics : StatisticsSet.RegularSeason;
 
-        // Players who cannot play come first, then those playing hurt; each in roster order.
-        InjuryReport = _team.Roster
-            .SelectMany(player => player.Injuries.Select(injury => (Player: player, Injury: injury)))
-            .OrderBy(entry => entry.Injury.CanPlayThrough)
-            .Select(entry => new InjuryReportRowViewModel(entry.Player, entry.Injury))
-            .ToList();
-
         ShowStatistics();
         SelectPlayer(initiallySelectedPlayerId is { } id && _team.Roster.Any(player => player.Id == id)
             ? id
             : Skaters.Concat(Goalies).First().Player.Id);
     }
-
-    /// <summary>Every injury on the team that has not healed: who is out, who is playing hurt.</summary>
-    public IReadOnlyList<InjuryReportRowViewModel> InjuryReport { get; }
-
-    public bool HasInjuries => InjuryReport.Count > 0;
 
     /// <summary>Whether the playoffs have started, so there are playoff statistics to switch to.</summary>
     public bool HasPlayoffStatistics => _session.Snapshot.Season.Playoffs is not null;
@@ -86,10 +71,6 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     public bool ShowsRegularSeason => Statistics == StatisticsSet.RegularSeason;
 
     public bool ShowsPlayoffs => Statistics == StatisticsSet.Playoffs;
-
-    public string TeamStatisticsDescription => ShowsPlayoffs
-        ? "Playoff special teams, faceoffs, and 5-on-5 shares"
-        : "Regular-season special teams, faceoffs, and 5-on-5 shares";
 
     public bool ShowsRatings => Columns == RosterColumns.Ratings;
 
@@ -132,10 +113,7 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Rebuilds the tables and team strip from the chosen totals. A team that missed the playoffs
-    /// has none, so its playoff strip shows dashes.
-    /// </summary>
+    /// <summary>Rebuilds the tables from the chosen totals.</summary>
     private void ShowStatistics()
     {
         var rows = _team.Roster
@@ -147,11 +125,6 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         SelectedGoalie = null;
         Skaters = rows.Where(row => row.Player.Position != Position.Goalie).ToList();
         Goalies = rows.Where(row => row.Player.Position == Position.Goalie).ToList();
-
-        var season = _session.Snapshot.Season;
-        var teamStatistics = ShowsPlayoffs ? season.Playoffs?.TeamStatistics ?? [] : season.TeamStatistics;
-        TeamStatistics = TeamStatisticsDisplay.Strip(
-            teamStatistics.SingleOrDefault(statistics => statistics.TeamId == _team.Id) ?? TeamStatisticsDisplay.None(_team.Id));
     }
 
     partial void OnSelectedSkaterChanged(PlayerRowViewModel? value)
