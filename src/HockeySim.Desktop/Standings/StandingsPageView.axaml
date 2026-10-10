@@ -15,6 +15,12 @@
                   Content="Division"
                   Command="{Binding SelectScopeCommand}"
                   CommandParameter="{x:Static standings:StandingsScope.Division}" />
+          <Button x:Name="WildCardScopeButton"
+                  Classes="tab"
+                  Classes.selected="{Binding IsWildCardScope}"
+                  Content="Wild card"
+                  Command="{Binding SelectScopeCommand}"
+                  CommandParameter="{x:Static standings:StandingsScope.WildCard}" />
           <Button x:Name="ConferenceScopeButton"
                   Classes="tab"
                   Classes.selected="{Binding IsConferenceScope}"
@@ -30,6 +36,13 @@
         </StackPanel>
       </Grid>
     </Border>
+
+    <TextBlock x:Name="PlayoffStatusLegend"
+               DockPanel.Dock="Bottom"
+               Classes="caption"
+               Margin="8,8,8,0"
+               TextWrapping="Wrap"
+               Text="{x:Static standings:PlayoffStatusDisplay.Legend}" />
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
       <ItemsControl x:Name="StandingsTables" ItemsSource="{Binding Tables}">
@@ -49,40 +62,48 @@
                   </Grid>
                 </Border>
                 <Border Classes="table-header">
-                  <Grid ColumnDefinitions="32,*,40,40,40,44,44,52,40,44,40,40,48">
+                  <Grid ColumnDefinitions="32,16,*,40,40,40,44,44,52,40,44,40,40,48">
                     <TextBlock Text="#" />
-                    <TextBlock Grid.Column="1" Text="TEAM" />
-                    <TextBlock Grid.Column="2" Text="GP" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="3" Text="W" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="4" Text="L" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="5" Text="OTL" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="6" Text="PTS" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="7" Text="P%" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="8" Text="RW" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="9" Text="ROW" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="10" Text="GF" HorizontalAlignment="Center" ToolTip.Tip="Goals for" />
-                    <TextBlock Grid.Column="11" Text="GA" HorizontalAlignment="Center" ToolTip.Tip="Goals against" />
-                    <TextBlock Grid.Column="12" Text="DIFF" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="TEAM" />
+                    <TextBlock Grid.Column="3" Text="GP" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="4" Text="W" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="5" Text="L" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="6" Text="OTL" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="7" Text="PTS" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="8" Text="P%" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="9" Text="RW" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="10" Text="ROW" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="11" Text="GF" HorizontalAlignment="Center" ToolTip.Tip="Goals for" />
+                    <TextBlock Grid.Column="12" Text="GA" HorizontalAlignment="Center" ToolTip.Tip="Goals against" />
+                    <TextBlock Grid.Column="13" Text="DIFF" HorizontalAlignment="Center" />
                   </Grid>
                 </Border>
                 <ItemsControl Classes="table" ItemsSource="{Binding Rows}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="standings:StandingsRowViewModel">
-                      <Border Classes="standing-row" Classes.managed="{Binding IsManaged}" Height="26" Padding="8,0">
-                        <Grid ColumnDefinitions="32,*,40,40,40,44,44,52,40,44,40,40,48">
+                      <Border Classes="standing-row"
+                              Classes.managed="{Binding IsManaged}"
+                              Classes.last-qualifier="{Binding IsLastQualifier}"
+                              Height="26"
+                              Padding="8,0">
+                        <Grid ColumnDefinitions="32,16,*,40,40,40,44,44,52,40,44,40,40,48">
                           <TextBlock Classes="cell muted" Text="{Binding Rank}" />
-                          <TextBlock Grid.Column="1" Classes="cell" Classes.strong="{Binding IsManaged}" Text="{Binding TeamName}" />
-                          <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding GamesPlayed}" />
-                          <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Wins}" />
-                          <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Losses}" />
-                          <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding OvertimeLosses}" />
-                          <TextBlock Grid.Column="6" Classes="cell-center strong" Text="{Binding Points}" />
-                          <TextBlock Grid.Column="7" Classes="cell-center" Text="{Binding PointsPercentage}" />
-                          <TextBlock Grid.Column="8" Classes="cell-center" Text="{Binding RegulationWins}" />
-                          <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding RegulationAndOvertimeWins}" />
-                          <TextBlock Grid.Column="10" Classes="cell-center" Text="{Binding GoalsFor}" />
-                          <TextBlock Grid.Column="11" Classes="cell-center" Text="{Binding GoalsAgainst}" />
-                          <TextBlock Grid.Column="12" Classes="cell-center" Text="{Binding GoalDifferential}" />
+                          <TextBlock Grid.Column="1"
+                                     Classes="cell strong"
+                                     Text="{Binding PlayoffMarker}"
+                                     ToolTip.Tip="{Binding PlayoffStatus}" />
+                          <TextBlock Grid.Column="2" Classes="cell" Classes.strong="{Binding IsManaged}" Text="{Binding TeamName}" />
+                          <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding GamesPlayed}" />
+                          <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Wins}" />
+                          <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding Losses}" />
+                          <TextBlock Grid.Column="6" Classes="cell-center" Text="{Binding OvertimeLosses}" />
+                          <TextBlock Grid.Column="7" Classes="cell-center strong" Text="{Binding Points}" />
+                          <TextBlock Grid.Column="8" Classes="cell-center" Text="{Binding PointsPercentage}" />
+                          <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding RegulationWins}" />
+                          <TextBlock Grid.Column="10" Classes="cell-center" Text="{Binding RegulationAndOvertimeWins}" />
+                          <TextBlock Grid.Column="11" Classes="cell-center" Text="{Binding GoalsFor}" />
+                          <TextBlock Grid.Column="12" Classes="cell-center" Text="{Binding GoalsAgainst}" />
+                          <TextBlock Grid.Column="13" Classes="cell-center" Text="{Binding GoalDifferential}" />
                         </Grid>
                       </Border>
                     </DataTemplate>

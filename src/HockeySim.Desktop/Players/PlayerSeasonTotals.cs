@@ -95,16 +95,26 @@ public sealed class PlayerSeasonTotals
     private ShotTotals FiveOnFive => _skater?.OnIce.FiveOnFive ?? ShotTotals.None;
 
     /// <summary>
-    /// Indexes the season's totals by player. Skaters and goalies are disjoint: a goalie only
-    /// appears in goal, so no player has both kinds of totals.
+    /// Indexes the regular season's totals by player, or the playoffs' (none before they start).
+    /// Skaters and goalies are disjoint: a goalie only appears in goal, so no player has both
+    /// kinds of totals.
     /// </summary>
-    public static Dictionary<PlayerId, PlayerSeasonTotals> Index(SeasonSnapshot season)
+    public static Dictionary<PlayerId, PlayerSeasonTotals> Index(SeasonSnapshot season, StatisticsSet statistics)
     {
         ArgumentNullException.ThrowIfNull(season);
 
-        return season.SkaterStatistics
+        var (skaters, goalies) = statistics switch
+        {
+            StatisticsSet.RegularSeason => (season.SkaterStatistics, season.GoalieStatistics),
+            StatisticsSet.Playoffs => (
+                season.Playoffs?.SkaterStatistics ?? [],
+                season.Playoffs?.GoalieStatistics ?? (IReadOnlyList<GoalieSeasonStatisticsSnapshot>)[]),
+            _ => throw new ArgumentOutOfRangeException(nameof(statistics), statistics, "Unknown statistics set."),
+        };
+
+        return skaters
             .Select(skater => (skater.PlayerId, Totals: new PlayerSeasonTotals(skater, null)))
-            .Concat(season.GoalieStatistics.Select(goalie => (goalie.PlayerId, Totals: new PlayerSeasonTotals(null, goalie))))
+            .Concat(goalies.Select(goalie => (goalie.PlayerId, Totals: new PlayerSeasonTotals(null, goalie))))
             .ToDictionary(pair => pair.PlayerId, pair => pair.Totals);
     }
 

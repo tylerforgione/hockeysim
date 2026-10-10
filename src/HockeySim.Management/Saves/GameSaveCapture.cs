@@ -15,12 +15,18 @@ internal static class GameSaveCapture
             managedTeamId,
             randomState,
             season.League.Conferences.Select(CaptureConference).ToList(),
-            season.Schedule.Matches
-                .Select(match => new SavedScheduledMatch(match.Date, match.HomeTeamId, match.AwayTeamId))
-                .ToList(),
+            CaptureSchedule(season.PreseasonSchedule),
+            CaptureSchedule(season.Schedule),
             season.CurrentDate,
+            season.PreseasonMatches.Select(CaptureCompletedMatch).ToList(),
             season.CompletedMatches.Select(CaptureCompletedMatch).ToList(),
+            (season.Playoffs?.CompletedMatches ?? []).Select(CaptureCompletedMatch).ToList(),
             inbox.Messages.Select(CaptureInboxMessage).ToList());
+
+    private static List<SavedScheduledMatch> CaptureSchedule(SeasonSchedule schedule) =>
+        schedule.Matches
+            .Select(match => new SavedScheduledMatch(match.Date, match.HomeTeamId, match.AwayTeamId))
+            .ToList();
 
     private static SavedConference CaptureConference(Conference conference) =>
         new(

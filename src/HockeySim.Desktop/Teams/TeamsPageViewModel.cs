@@ -86,11 +86,11 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
     }
 
     /// <summary>
-    /// Rebuilds the roster from the latest snapshot, keeping the chosen columns so browsing from
-    /// team to team compares like with like.
+    /// Rebuilds the roster from the latest snapshot, keeping the chosen columns and statistics so
+    /// browsing from team to team compares like with like.
     /// </summary>
     private TeamRosterViewModel CreateRoster(TeamId teamId, PlayerId? selectedPlayerId) =>
-        new(_session, teamId, selectedPlayerId, Roster.Columns);
+        new(_session, teamId, selectedPlayerId, Roster.Columns, Roster.Statistics);
 }
 
 public sealed record TeamEntryViewModel(TeamId Id, string Name, string Division, bool IsManaged);

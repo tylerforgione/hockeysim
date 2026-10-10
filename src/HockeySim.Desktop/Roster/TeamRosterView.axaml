@@ -10,9 +10,28 @@
       <Border Classes="panel">
         <DockPanel>
           <Border DockPanel.Dock="Top" Classes="panel-header">
-            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
               <TextBlock Classes="panel-title" Text="SKATERS" />
-              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+              <!-- Switches both tables and the profile between the two sets of totals. -->
+              <StackPanel Grid.Column="1"
+                          Orientation="Horizontal"
+                          Spacing="0"
+                          VerticalAlignment="Center"
+                          IsVisible="{Binding HasPlayoffStatistics}">
+                <Button x:Name="ShowRegularSeasonButton"
+                        Classes="tab"
+                        Classes.selected="{Binding ShowsRegularSeason}"
+                        Content="Regular season"
+                        Command="{Binding ShowStatisticsSetCommand}"
+                        CommandParameter="{x:Static players:StatisticsSet.RegularSeason}" />
+                <Button x:Name="ShowPlayoffsButton"
+                        Classes="tab"
+                        Classes.selected="{Binding ShowsPlayoffs}"
+                        Content="Playoffs"
+                        Command="{Binding ShowStatisticsSetCommand}"
+                        CommandParameter="{x:Static players:StatisticsSet.Playoffs}" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
                 <Button x:Name="ShowRatingsButton"
                         Classes="tab"
                         Classes.selected="{Binding ShowsRatings}"
@@ -32,7 +51,7 @@
                         Command="{Binding ShowColumnsCommand}"
                         CommandParameter="{x:Static roster:RosterColumns.Advanced}" />
               </StackPanel>
-              <TextBlock Grid.Column="2" Classes="caption" VerticalAlignment="Center" Text="{Binding Skaters.Count, StringFormat='{}{0} players'}" />
+              <TextBlock Grid.Column="3" Classes="caption" VerticalAlignment="Center" Text="{Binding Skaters.Count, StringFormat='{}{0} players'}" />
             </Grid>
           </Border>
           <Panel>

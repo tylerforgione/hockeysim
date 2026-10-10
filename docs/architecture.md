@@ -97,12 +97,16 @@ collections. Namespaces follow the owning project and folder.
 ## Current implementation
 
 All five projects exist. A new game generates a fictional league, its players,
-and a balanced 84-game schedule. Each league day plays its matches through the
+a seven-match preseason, and a balanced 84-game schedule. Preseason matches
+count toward nothing. Each league day plays its matches through the
 event-based engine, applies the results to the season, and updates standings,
-season totals, and player health (injuries and hidden wear). AI teams replace injured players
+season totals, and player health (injuries and hidden wear). After the regular
+season, sixteen teams play NHL-format best-of-seven playoff series, with their
+own records and statistics, until a champion completes the season. AI teams replace injured players
 from their healthy scratches, and the user must replace their own before playing. Games save to and load from local files. The Desktop app
-covers the new-game flow, team management pages, daily advancement, box scores,
-and named saves.
+covers the new-game flow, team management pages, daily advancement, every
+phase's schedule and box scores, the playoff bracket, regular-season and playoff
+statistics, and named saves.
 
 Each area has its own document. Every one starts with a code map (which file
 holds what) and a test map. Read the one for the area a task touches, rather
@@ -111,7 +115,7 @@ than every document:
 | Area | Document | Read when the task touches |
 | --- | --- | --- |
 | Match engine | [match-engine.md](areas/match-engine.md) | Anything in `HockeySim.Simulation`: play, penalties, goalie pulls, injuries, statistics, xG, tuning |
-| Season | [season.md](areas/season.md) | Schedule, advancing days, completed matches and box-score rules, standings, season totals, player health |
+| Season | [season.md](areas/season.md) | Schedule, advancing days, completed matches and box-score rules, standings, season totals, player health, the playoffs |
 | Players and lineups | [players-and-lineups.md](areas/players-and-lineups.md) | World generation, ratings, biographies, lineups and units, the inbox |
 | Saves | [saves.md](areas/saves.md) | The save model, loading, save files, format versions |
 | Desktop | [desktop.md](areas/desktop.md) | Any Avalonia view or view model, the game session, release builds |

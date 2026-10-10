@@ -33,8 +33,7 @@ public sealed class GameSaveFileTests : IDisposable
     [Theory]
     [InlineData(0)]
     [InlineData(8)]
-    [InlineData(9)]
-    [InlineData(11)]
+    [InlineData(20)]
     public void ASavedGameLoadsAsSavedAndContinuesAsIfUninterrupted(int daysPlayed)
     {
         var uninterrupted = StartGame();
@@ -155,6 +154,7 @@ public sealed class GameSaveFileTests : IDisposable
     [InlineData(7)]
     [InlineData(8)]
     [InlineData(9)]
+    [InlineData(10)]
     [InlineData(11)]
     public void ASaveFromAnotherFormatVersionIsRejectedAsUnsupported(int version)
     {
@@ -176,14 +176,14 @@ public sealed class GameSaveFileTests : IDisposable
 
     [Theory]
     [InlineData("""[]""")]
-    [InlineData("""{"formatVersion":10,"game":{}}""")]
-    [InlineData("""{"format":"Another game","formatVersion":10,"game":{}}""")]
+    [InlineData("""{"formatVersion":12,"game":{}}""")]
+    [InlineData("""{"format":"Another game","formatVersion":12,"game":{}}""")]
     [InlineData("""{"format":"HockeySim save","game":{}}""")]
     [InlineData("""{"format":"HockeySim save","formatVersion":"3","game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":10}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":10,"game":null}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":10,"game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":10,"game":{"seasonYear":2026""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":12}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":12,"game":null}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":12,"game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":12,"game":{"seasonYear":2026""")]
     public void ADocumentThatIsNotAWholeSaveIsRejected(string json)
     {
         Directory.CreateDirectory(_directory);
@@ -313,7 +313,7 @@ public sealed class GameSaveFileTests : IDisposable
         Advance(source, 3);
         source.SaveGame(new GameSaveFile(SavePath));
         var document = SaveFileContents.Read(SavePath);
-        var firstResult = document["game"]!["completedMatches"]![0]!;
+        var firstResult = document["game"]!["preseasonMatches"]![0]!;
         firstResult["home"]!["shots"] = 0;
         SaveFileContents.Write(SavePath, document);
         var manager = StartGame(seed: 7);

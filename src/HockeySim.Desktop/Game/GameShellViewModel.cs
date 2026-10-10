@@ -10,6 +10,7 @@ using HockeySim.Desktop.Inbox;
 using HockeySim.Desktop.Injuries;
 using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Players;
+using HockeySim.Desktop.Playoffs;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Saves;
 using HockeySim.Desktop.Schedule;
@@ -83,6 +84,7 @@ public sealed partial class GameShellViewModel : ObservableObject
         Injuries = new InjuriesPageViewModel(session);
         Teams = new TeamsPageViewModel(session);
         Standings = new StandingsPageViewModel(session);
+        Playoffs = new PlayoffsPageViewModel(session, OpenMatch);
         _pages = new Dictionary<ShellPage, ShellPageViewModel>
         {
             [ShellPage.Home] = Home,
@@ -94,6 +96,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             [ShellPage.Injuries] = Injuries,
             [ShellPage.Standings] = Standings,
             [ShellPage.Teams] = Teams,
+            [ShellPage.PlayoffPicture] = Playoffs,
             [ShellPage.LeagueSchedule] = Schedule,
         };
 
@@ -150,6 +153,8 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     public StandingsPageViewModel Standings { get; }
 
+    public PlayoffsPageViewModel Playoffs { get; }
+
     /// <summary>Gets every section with its page tabs, including pages not available yet.</summary>
     public IReadOnlyList<NavigationSectionViewModel> Sections { get; }
 
@@ -163,8 +168,9 @@ public sealed partial class GameShellViewModel : ObservableObject
     public string TeamName => Session.ManagedTeam.Name;
 
     /// <summary>
-    /// Gets the date and what is coming: days to the managed team's next match and to the end of
-    /// the regular season.
+    /// Gets the date and what is coming: days to the managed team's next match, then the phase's
+    /// key date: opening day in the preseason, the end of the regular season, or the playoff round
+    /// under way. Once the season is complete, it names the champion.
     /// </summary>
     public string CalendarLabel
     {
@@ -172,22 +178,28 @@ public sealed partial class GameShellViewModel : ObservableObject
         {
             var snapshot = Session.Snapshot;
             var season = snapshot.Season;
+            var schedule = snapshot.Schedule;
             var date = season.CurrentDate.ToString("ddd d MMM yyyy", CultureInfo.CurrentCulture);
-            if (season.IsComplete)
+            if (season.Playoffs?.ChampionId is { } championId)
             {
-                return $"{date} · Regular season complete";
+                return $"{date} · {Session.GetTeam(championId).Name} are champions";
             }
 
             var parts = new List<string> { date };
             var managedTeamId = snapshot.ManagedTeamId;
-            var nextMatch = snapshot.Schedule.Matches.FirstOrDefault(match =>
+            var nextMatch = schedule.PreseasonMatches.Concat(schedule.Matches).Concat(schedule.PlayoffMatches).FirstOrDefault(match =>
                 match.Date >= season.CurrentDate && (match.HomeTeamId == managedTeamId || match.AwayTeamId == managedTeamId));
             if (nextMatch is not null)
             {
                 parts.Add($"Next match {DaysUntil(nextMatch.Date)}");
             }
 
-            parts.Add($"Regular season ends {DaysUntil(snapshot.Schedule.Matches[^1].Date)}");
+            parts.Add(season switch
+            {
+                { Phase: SeasonPhase.Preseason } => $"Regular season starts {DaysUntil(schedule.Matches[0].Date)}",
+                { Phase: SeasonPhase.Playoffs, Playoffs: { } playoffs } => $"Playoffs · {PlayoffDisplay.RoundName(playoffs.CurrentRound)}",
+                _ => $"Regular season ends {DaysUntil(schedule.Matches[^1].Date)}",
+            });
             return string.Join(" · ", parts);
         }
     }
@@ -204,7 +216,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             var season = Session.Snapshot.Season;
             if (season.IsComplete)
             {
-                return "Regular season complete";
+                return "Season complete";
             }
 
             var date = MatchDisplay.ShortDate(season.CurrentDate);
@@ -213,7 +225,13 @@ public sealed partial class GameShellViewModel : ObservableObject
                 return $"{date} · Injured players to replace";
             }
 
-            var matches = Session.Snapshot.Schedule.Matches.Where(match => match.Date == season.CurrentDate).ToList();
+            var schedule = season.Phase switch
+            {
+                SeasonPhase.Preseason => Session.Snapshot.Schedule.PreseasonMatches,
+                SeasonPhase.Playoffs => Session.Snapshot.Schedule.PlayoffMatches,
+                _ => Session.Snapshot.Schedule.Matches,
+            };
+            var matches = schedule.Where(match => match.Date == season.CurrentDate).ToList();
             if (matches.Count == 0)
             {
                 return $"{date} · No league matches";
@@ -221,7 +239,13 @@ public sealed partial class GameShellViewModel : ObservableObject
 
             var managedTeamId = Session.Snapshot.ManagedTeamId;
             var managedMatch = matches.FirstOrDefault(match => match.HomeTeamId == managedTeamId || match.AwayTeamId == managedTeamId);
-            var count = matches.Count == 1 ? "1 league match" : $"{matches.Count} league matches";
+            var kind = season.Phase switch
+            {
+                SeasonPhase.Preseason => "preseason",
+                SeasonPhase.Playoffs => "playoff",
+                _ => "league",
+            };
+            var count = matches.Count == 1 ? $"1 {kind} match" : $"{matches.Count} {kind} matches";
             return managedMatch is null ? $"{date} · {count}" : $"{date} · {count}, including yours";
         }
     }

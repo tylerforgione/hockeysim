@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Inbox;
 using HockeySim.Desktop.Players;
+using HockeySim.Desktop.Playoffs;
 using HockeySim.Desktop.Schedule;
 using HockeySim.Desktop.Standings;
 using HockeySim.Domain;
@@ -15,9 +16,9 @@ using HockeySim.Management.Inbox;
 namespace HockeySim.Desktop.Home;
 
 /// <summary>
-/// The dashboard shown when a game opens: a consolidated view of the club, the inbox, the
-/// division, the next match, the latest league results, and the current lineup, with shortcuts
-/// into the detailed pages.
+/// The dashboard shown when a game opens: a consolidated view of the season's phase, the club,
+/// the inbox, the division, the next match, the latest league results, and the current lineup,
+/// with shortcuts into the detailed pages.
 /// </summary>
 public sealed partial class HomePageViewModel : ShellPageViewModel
 {
@@ -116,6 +117,7 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
 
         Tiles =
         [
+            PhaseTile(snapshot, team.Id),
             new("ROSTER", team.Roster.Count.ToString(CultureInfo.CurrentCulture), "players under contract"),
             new("DRESSED", team.Lineup.DressedPlayerIds.Count.ToString(CultureInfo.CurrentCulture), $"{team.ScratchedPlayerIds.Count} healthy scratches"),
             new("AVERAGE AGE", team.Roster.Average(player => player.Age).ToString("0.0", CultureInfo.CurrentCulture), "years"),
@@ -180,46 +182,92 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
     private void RefreshNextMatch(GameSnapshot snapshot, TeamSnapshot team)
     {
         var season = snapshot.Season;
-        var lastResult = season.Results.LastOrDefault(result => Involves(result, team.Id));
+        var lastResult = season.Results.Concat(season.Playoffs?.Results ?? []).LastOrDefault(result => Involves(result, team.Id));
         LastResultCaption = lastResult is null
             ? string.Empty
             : $"Last: {MatchDisplay.ResultFor(lastResult, team.Id)} {Opponent(lastResult.Home.TeamId, lastResult.Away.TeamId, team.Id)} · {MatchDisplay.ShortDate(lastResult.Date)}";
 
         var next = season.IsComplete
             ? null
-            : snapshot.Schedule.Matches.FirstOrDefault(match =>
-                match.Date >= season.CurrentDate && (match.HomeTeamId == team.Id || match.AwayTeamId == team.Id));
+            : snapshot.Schedule.PreseasonMatches
+                .Concat(snapshot.Schedule.Matches)
+                .Concat(snapshot.Schedule.PlayoffMatches)
+                .FirstOrDefault(match =>
+                    match.Date >= season.CurrentDate && (match.HomeTeamId == team.Id || match.AwayTeamId == team.Id));
         if (next is null)
         {
-            NextMatchTitle = "Regular season complete";
+            NextMatchTitle = season.IsComplete ? "Season complete" : "No match scheduled";
             NextMatchCaption = string.Empty;
             return;
         }
 
         NextMatchTitle = Opponent(next.HomeTeamId, next.AwayTeamId, team.Id);
         var when = next.Date == season.CurrentDate ? "Today" : MatchDisplay.ShortDate(next.Date);
-        NextMatchCaption = $"{when} · {(next.HomeTeamId == team.Id ? "Home" : "Away")}";
+        var venue = next.HomeTeamId == team.Id ? "Home" : "Away";
+        NextMatchCaption = snapshot.Schedule.PreseasonMatches.Contains(next) ? $"{when} · {venue} · Preseason"
+            : PlayoffDisplay.FindGame(season.Playoffs, next.Date, team.Id) is { } game
+                ? $"{when} · {venue} · {PlayoffDisplay.RoundName(game.Series.Round)}, game {game.GameNumber} · {PlayoffDisplay.SeriesStatus(game.Series, Name)}"
+            : $"{when} · {venue}";
     }
 
     /// <summary>
-    /// Shows the most recently played league day: the day before the current date. A day with no
-    /// league matches says so, rather than repeating an older day's results.
+    /// Shows where the season stands: how much of the preseason or regular season is played, the
+    /// managed team's playoff series or how its season ended, and the champion.
+    /// </summary>
+    private SummaryTileViewModel PhaseTile(GameSnapshot snapshot, TeamId teamId)
+    {
+        var season = snapshot.Season;
+        if (season.Playoffs is { } playoffs)
+        {
+            var lastSeries = playoffs.Series.LastOrDefault(series =>
+                series.HigherRanked.TeamId == teamId || series.LowerRanked.TeamId == teamId);
+            if (playoffs.ChampionId is { } champion)
+            {
+                return new("SEASON", "Complete", champion == teamId ? "Your team are champions" : $"{Name(champion)} are champions");
+            }
+
+            var caption = lastSeries is null ? "Your team did not qualify"
+                : lastSeries.WinnerId is { } winner && winner != teamId ? $"Out in the {PlayoffDisplay.RoundName(lastSeries.Round).ToLower(CultureInfo.CurrentCulture)}"
+                : $"{PlayoffDisplay.RoundName(lastSeries.Round)} · {PlayoffDisplay.SeriesStatus(lastSeries, Name)}";
+            return new("SEASON", "Playoffs", caption);
+        }
+
+        if (season.Phase == SeasonPhase.Preseason)
+        {
+            var played = season.PreseasonResults.Count(result => Involves(result, teamId));
+            var total = snapshot.Schedule.PreseasonMatches.Count(match => match.HomeTeamId == teamId || match.AwayTeamId == teamId);
+            return new("SEASON", "Preseason", $"{played} of {total} played · counts toward nothing");
+        }
+
+        var regularPlayed = season.Results.Count(result => Involves(result, teamId));
+        var regularTotal = snapshot.Schedule.Matches.Count(match => match.HomeTeamId == teamId || match.AwayTeamId == teamId);
+        return new("SEASON", "Regular season", $"{regularPlayed} of {regularTotal} played");
+    }
+
+    private string Name(TeamId teamId) => _session.GetTeam(teamId).Name;
+
+    /// <summary>
+    /// Shows the most recently played league day: the day before the current date, in any phase.
+    /// A day with no league matches says so, rather than repeating an older day's results.
     /// </summary>
     private void RefreshLatestResults(GameSnapshot snapshot, TeamSnapshot team)
     {
         var season = snapshot.Season;
-        var openingDay = snapshot.Schedule.Matches[0].Date;
-        if (season.CurrentDate <= openingDay)
+        var firstDay = snapshot.Schedule.PreseasonMatches.Concat(snapshot.Schedule.Matches).First().Date;
+        if (season.CurrentDate <= firstDay)
         {
+            var opens = snapshot.Schedule.PreseasonMatches.Count > 0 ? "Preseason" : "Opening day";
             LatestResultsTitle = "LEAGUE RESULTS";
             LatestResults = [];
-            LatestResultsCaption = $"Opening day · {MatchDisplay.LongDate(openingDay)}";
+            LatestResultsCaption = $"{opens} · {MatchDisplay.LongDate(firstDay)}";
             return;
         }
 
         var day = season.CurrentDate.AddDays(-1);
         LatestResultsTitle = $"LEAGUE RESULTS · {MatchDisplay.ShortDate(day).ToUpperInvariant()}";
-        LatestResults = season.Results
+        LatestResults = season.PreseasonResults
+            .Concat(season.Results)
+            .Concat(season.Playoffs?.Results ?? [])
             .Where(result => result.Date == day)
             .Select(result => new LeagueResultRowViewModel(
                 _session.GetTeam(result.Away.TeamId).Name,
@@ -250,6 +298,7 @@ public sealed partial class LeagueResultRowViewModel
 {
     private readonly Action _open;
 
+    /// <param name="open">Opens the match's box score.</param>
     public LeagueResultRowViewModel(
         string awayTeamName,
         int awayScore,

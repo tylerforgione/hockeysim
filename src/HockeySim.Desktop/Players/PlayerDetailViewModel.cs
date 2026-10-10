@@ -7,8 +7,8 @@ namespace HockeySim.Desktop.Players;
 
 /// <summary>
 /// Read-only profile of one player: identity, age, position, lineup role, overall rating,
-/// biographical details, injuries, the full current-season statistic line, and the ratings that
-/// matter to their position.
+/// biographical details, injuries, the full regular-season or playoff statistic line, and the
+/// ratings that matter to their position.
 /// </summary>
 /// <remarks>
 /// A skater's goaltending ratings and a goalie's skater ratings are generated low and play no
@@ -30,7 +30,13 @@ public sealed class PlayerDetailViewModel
         ("GAME", [Rating.Stamina, Rating.Discipline]),
     ];
 
-    public PlayerDetailViewModel(PlayerSnapshot player, TeamSnapshot team, PlayerSeasonTotals seasonTotals, int seasonYear)
+    /// <param name="seasonTotals">The player's totals in <paramref name="statistics"/>.</param>
+    public PlayerDetailViewModel(
+        PlayerSnapshot player,
+        TeamSnapshot team,
+        PlayerSeasonTotals seasonTotals,
+        int seasonYear,
+        StatisticsSet statistics = StatisticsSet.RegularSeason)
     {
         ArgumentNullException.ThrowIfNull(player);
         ArgumentNullException.ThrowIfNull(team);
@@ -56,12 +62,13 @@ public sealed class PlayerDetailViewModel
         Injuries = player.Injuries.Select(injury => new PlayerInjuryViewModel(injury)).ToList();
 
         var isGoalie = player.Position == Domain.Position.Goalie;
-        SeasonTitle = $"{PlayerDisplay.FormatSeason(seasonYear)} REGULAR SEASON";
+        var isPlayoffs = statistics == StatisticsSet.Playoffs;
+        SeasonTitle = $"{PlayerDisplay.FormatSeason(seasonYear)} {(isPlayoffs ? "PLAYOFFS" : "REGULAR SEASON")}";
         SeasonStatisticGroups = seasonTotals.ProfileGroups(isGoalie);
 
         // Only the starting goalie appears in a match, so a goalie's games are starts.
-        SeasonCaption = seasonTotals.GamesPlayed > 0
-            ? string.Empty
+        SeasonCaption = seasonTotals.GamesPlayed > 0 ? string.Empty
+            : isPlayoffs ? (isGoalie ? "No playoff starts." : "No playoff appearances.")
             : isGoalie ? "No starts yet this season." : "No appearances yet this season.";
 
         var groups = isGoalie ? GoalieGroups : SkaterGroups;
@@ -123,7 +130,7 @@ public sealed class PlayerDetailViewModel
     public string SeasonTitle { get; }
 
     /// <summary>
-    /// The full current-season statistic line, grouped. Counts are zero before a first appearance,
+    /// The full statistic line for the chosen part of the season, grouped. Counts are zero before a first appearance,
     /// and a percentage, average, or rate is a dash until it is defined.
     /// </summary>
     public IReadOnlyList<SeasonStatGroupViewModel> SeasonStatisticGroups { get; }

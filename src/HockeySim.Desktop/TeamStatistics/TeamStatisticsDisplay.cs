@@ -2,6 +2,7 @@ using System.Globalization;
 
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Schedule;
+using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
 namespace HockeySim.Desktop.TeamStatistics;

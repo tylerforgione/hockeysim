@@ -49,8 +49,9 @@ public sealed class CalibrationTests(CalibrationTests.CalibratedSeason season)
         {
             var simulator = new RecordingMatchSimulator();
             var manager = new GameManager(simulator);
-            var snapshot = StartGame(manager, seed: 2026);
-            for (var advances = 0; !snapshot.Season.IsComplete && advances < MaximumAdvances; advances++)
+            var snapshot = StartAtOpeningDay(manager, seed: 2026);
+            simulator.IsRecording = true;
+            for (var advances = 0; !snapshot.Season.IsRegularSeasonComplete && advances < MaximumAdvances; advances++)
             {
                 snapshot = manager.AdvanceDayReplacingInjured();
             }
@@ -76,6 +77,9 @@ public sealed class CalibrationTests(CalibrationTests.CalibratedSeason season)
 
         public IReadOnlyList<MatchResult> Results => _results;
 
+        /// <summary>Whether matches are being recorded; off for the preseason, which is not calibrated.</summary>
+        public bool IsRecording { get; set; }
+
         /// <summary>Rostered players who could not play, summed over both teams of every match.</summary>
         public int PlayersOut { get; private set; }
 
@@ -84,6 +88,11 @@ public sealed class CalibrationTests(CalibrationTests.CalibratedSeason season)
 
         public MatchResult Simulate(Match match, OvertimeFormat overtime, MatchHealth health, RandomState randomState)
         {
+            if (!IsRecording)
+            {
+                return _simulator.Simulate(match, overtime, health, randomState);
+            }
+
             PlayersOut += match.Home.Roster.Concat(match.Away.Roster).Count(player => !health.CanPlay(player.Id));
             SidesPlayingHurt += new[] { match.Home, match.Away }.Count(team => team.Lineup.DressedPlayers.Any(player =>
                 health.CanPlay(player.Id) && health.For(player.Id).InjuriesOn(health.Date).Count > 0));

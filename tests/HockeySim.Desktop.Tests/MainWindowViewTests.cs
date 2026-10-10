@@ -17,6 +17,7 @@ using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Main;
 using HockeySim.Desktop.NewGame;
 using HockeySim.Desktop.Players;
+using HockeySim.Desktop.Playoffs;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Saves;
 using HockeySim.Desktop.Schedule;
@@ -25,6 +26,7 @@ using HockeySim.Desktop.Startup;
 using HockeySim.Desktop.Teams;
 using HockeySim.Desktop.TeamStatistics;
 using HockeySim.Desktop.Theme;
+using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 
 using Xunit;
@@ -83,7 +85,7 @@ public sealed class MainWindowViewTests
         var shellView = Single<GameShellView>(window);
         Assert.Equal("SEATTLE EVERGREENS", Named<TextBlock>(shellView, "ShellTeamName").Text);
         Assert.Equal(3, Named<ItemsControl>(shellView, "BannerFigures").ItemCount);
-        Assert.StartsWith("Thu 1 Oct 2026 · Next match ", shellView.FindControl<TextBlock>("CalendarLabel")?.Text, StringComparison.Ordinal);
+        Assert.Contains(" · Next match ", shellView.FindControl<TextBlock>("CalendarLabel")?.Text, StringComparison.Ordinal);
         Assert.Equal("Lineup valid", shellView.FindControl<Button>("LineupStatusButton")?.Content);
         Assert.Equal($"HockeySim {AppVersion.Current}", shellView.FindControl<TextBlock>("VersionText")?.Text);
         Assert.False(shellView.FindControl<Button>("BackButton")?.IsEffectivelyEnabled);
@@ -113,6 +115,8 @@ public sealed class MainWindowViewTests
         Assert.Equal(5, Named<ItemsControl>(shellView, "PageTabs").ItemCount);
         AssertNavigationRenders<TeamsPageView>(window, ShellPage.Teams);
         AssertNavigationRenders<StandingsPageView>(window, ShellPage.Standings);
+        AssertNavigationRenders<PlayoffsPageView>(window, ShellPage.PlayoffPicture);
+        Assert.True(Single<PlayoffsPageView>(window).FindControl<TextBlock>("PlayoffsNotStarted")?.IsEffectivelyVisible);
         AssertNavigationRenders<SchedulePageView>(window, ShellPage.LeagueSchedule);
         AssertNavigationRenders<SchedulePageView>(window, ShellPage.TeamSchedule);
         AssertNavigationRenders<TeamStatisticsPageView>(window, ShellPage.TeamStatistics);
@@ -159,8 +163,17 @@ public sealed class MainWindowViewTests
         Dispatcher.UIThread.RunJobs();
         Assert.True(saveButton.IsEffectivelyVisible);
 
-        // Play opening night from the title bar, then open a result from the home page.
+        // Play the preseason and opening night from the menu bar, then open a result from the
+        // home page.
         AssertNavigationRenders<HomePageView>(window, ShellPage.Home);
+        Assert.Contains(" · Regular season starts ", shellView.FindControl<TextBlock>("CalendarLabel")?.Text, StringComparison.Ordinal);
+        while (gameManager.GetSnapshot().Season.Phase == SeasonPhase.Preseason)
+        {
+            ClickAndWait(continueButton, () => !viewModel.Game!.Session.IsAdvancing);
+        }
+
+        Assert.Equal(112, gameManager.GetSnapshot().Season.PreseasonResults.Count);
+        Assert.Empty(gameManager.GetSnapshot().Season.Results);
         ClickAndWait(continueButton, () => !viewModel.Game!.Session.IsAdvancing);
         Assert.Equal(16, gameManager.GetSnapshot().Season.Results.Count);
         Assert.StartsWith("Fri 2 Oct 2026", shellView.FindControl<TextBlock>("CalendarLabel")?.Text, StringComparison.Ordinal);
@@ -196,11 +209,16 @@ public sealed class MainWindowViewTests
             detailViewModel.PenaltySummary.Count,
             matchDetail.GetVisualDescendants().OfType<Grid>().Count(grid => grid.DataContext is PenaltySummaryRowViewModel));
 
-        // Standings: four division tables by default, then the single league table.
+        // Standings: four division tables by default with the marker legend, then the wild-card
+        // view's four division leader tables and two races, then the single league table.
         AssertNavigationRenders<StandingsPageView>(window, ShellPage.Standings);
         var standingsView = Single<StandingsPageView>(window);
         Assert.Equal(32, CountStandingsRows(standingsView));
         Assert.Equal(4, standingsView.FindControl<ItemsControl>("StandingsTables")?.ItemCount);
+        Assert.True(standingsView.FindControl<TextBlock>("PlayoffStatusLegend")?.IsEffectivelyVisible);
+        Click(Assert.IsType<Button>(standingsView.FindControl<Button>("WildCardScopeButton")));
+        Assert.Equal(6, standingsView.FindControl<ItemsControl>("StandingsTables")?.ItemCount);
+        Assert.Equal(32, CountStandingsRows(standingsView));
         Click(Assert.IsType<Button>(standingsView.FindControl<Button>("LeagueScopeButton")));
         Assert.Equal(1, standingsView.FindControl<ItemsControl>("StandingsTables")?.ItemCount);
         Assert.Equal(32, CountStandingsRows(standingsView));

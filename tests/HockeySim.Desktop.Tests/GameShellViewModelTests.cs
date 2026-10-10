@@ -42,7 +42,6 @@ public sealed class GameShellViewModelTests
 
     [Theory]
     [InlineData(ShellPage.LeagueLeaders)]
-    [InlineData(ShellPage.PlayoffPicture)]
     [InlineData(ShellPage.PlayerStatistics)]
     [InlineData(ShellPage.Staff)]
     [InlineData(ShellPage.Transactions)]

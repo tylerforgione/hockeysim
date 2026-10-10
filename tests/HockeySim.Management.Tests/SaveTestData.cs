@@ -7,14 +7,14 @@ internal static class SaveTestData
 {
     /// <summary>
     /// Describes everything a snapshot shows, one line per fact, so equal descriptions mean the
-    /// user sees the same game: the world, lineups, schedule, every result, the totals and
+    /// user sees the same game: the world, lineups, both schedules, every result, the totals and
     /// standings derived from them, the inbox, and the hidden random state.
     /// </summary>
     public static IReadOnlyList<string> Describe(GameSnapshot snapshot)
     {
         var lines = new List<string>
         {
-            $"year {snapshot.League.SeasonYear}, date {snapshot.Season.CurrentDate:yyyy-MM-dd}, "
+            $"year {snapshot.League.SeasonYear}, date {snapshot.Season.CurrentDate:yyyy-MM-dd} ({snapshot.Season.Phase}), "
             + $"complete {snapshot.Season.IsComplete}, managed {snapshot.ManagedTeamId}, {snapshot.RandomState}, "
             + $"to replace {string.Join(",", snapshot.PlayersToReplace)}",
         };
@@ -43,7 +43,9 @@ internal static class SaveTestData
             lines.Add($"  scratches {string.Join(",", team.ScratchedPlayerIds)}");
         }
 
+        lines.AddRange(snapshot.Schedule.PreseasonMatches.Select(match => $"preseason {match}"));
         lines.AddRange(snapshot.Schedule.Matches.Select(match => $"scheduled {match}"));
+        lines.Add(SeasonAdvancementTests.Fingerprint(snapshot.Season.PreseasonResults));
         lines.Add(SeasonAdvancementTests.Fingerprint(snapshot));
         lines.AddRange(snapshot.Season.TeamRecords.Select(record => record.ToString()));
         lines.AddRange(snapshot.Season.TeamStatistics.Select(statistics => statistics.ToString()));
@@ -56,8 +58,30 @@ internal static class SaveTestData
 
         lines.AddRange(snapshot.Season.SkaterStatistics.Select(statistics => statistics.ToString()));
         lines.AddRange(snapshot.Season.GoalieStatistics.Select(statistics => statistics.ToString()));
+        lines.AddRange(DescribePlayoffs(snapshot));
         lines.AddRange(snapshot.Inbox.Select(message => message.ToString()));
         return lines;
+    }
+
+    /// <summary>The playoff schedule, bracket, results, and totals, if the playoffs have started.</summary>
+    private static IEnumerable<string> DescribePlayoffs(GameSnapshot snapshot)
+    {
+        var playoffs = snapshot.Season.Playoffs;
+        if (playoffs is null)
+        {
+            return ["no playoffs"];
+        }
+
+        return snapshot.Schedule.PlayoffMatches.Select(match => $"playoff {match}")
+            .Append($"round {playoffs.CurrentRound}, champion {playoffs.ChampionId}")
+            .Concat(playoffs.Series.Select(series =>
+                $"{series.Round} {series.HigherRanked} {series.HigherRankedWins}-{series.LowerRankedWins} {series.LowerRanked} "
+                + $"winner {series.WinnerId} next {series.NextGame}"))
+            .Append(SeasonAdvancementTests.Fingerprint(playoffs.Results))
+            .Concat(playoffs.TeamRecords.Select(record => record.ToString()))
+            .Concat(playoffs.TeamStatistics.Select(statistics => statistics.ToString()))
+            .Concat(playoffs.SkaterStatistics.Select(statistics => statistics.ToString()))
+            .Concat(playoffs.GoalieStatistics.Select(statistics => statistics.ToString()));
     }
 
     private static string Ranking(IEnumerable<StandingsEntrySnapshot> entries) =>

@@ -62,7 +62,7 @@ public sealed class GameSnapshot
         InboxMessages inbox) =>
         new(
             LeagueSnapshot.Create(season, managedTeamId),
-            ScheduleSnapshot.Create(season.Schedule),
+            ScheduleSnapshot.Create(season),
             SeasonSnapshot.Create(season),
             managedTeamId,
             playersToReplace,

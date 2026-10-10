@@ -33,9 +33,10 @@ internal static class GameSaveRestorer
                 throw Invalid("The managed team is not in the saved league.");
             }
 
-            var schedule = new SeasonSchedule(Items(save.Schedule, "schedule")
-                .Select(match => new ScheduledMatch(match.Date, match.HomeTeamId, match.AwayTeamId)));
-            var season = new Season(league, schedule);
+            var season = new Season(
+                league,
+                RestoreSchedule(save.PreseasonSchedule, "preseason schedule"),
+                RestoreSchedule(save.Schedule, "schedule"));
             ReplayLeagueDays(season, save);
 
             return new RestoredGame(season, save.ManagedTeamId, save.RandomState, RestoreInbox(save));
@@ -115,24 +116,27 @@ internal static class GameSaveRestorer
             new Weight(saved.WeightPounds));
     }
 
+    private static SeasonSchedule RestoreSchedule(IReadOnlyList<SavedScheduledMatch>? saved, string description) =>
+        new(Items(saved, description).Select(match => new ScheduledMatch(match.Date, match.HomeTeamId, match.AwayTeamId)));
+
     /// <summary>
-    /// Plays back every saved league day from opening day up to the saved current date. Each day
-    /// must have a result for every match scheduled on it, and every saved result must be used.
+    /// Plays back every saved league day from the first day of the season up to the saved current
+    /// date. Each day must have a result for every match scheduled on it, saved with the matches
+    /// of its phase, and every saved result must be used. The season schedules the playoffs from
+    /// the replayed results, just as it did when they were played.
     /// </summary>
     private static void ReplayLeagueDays(Season season, GameSave save)
     {
-        var savedResults = new Dictionary<(DateOnly Date, TeamId HomeTeamId), SavedCompletedMatch>();
-        foreach (var result in Items(save.CompletedMatches, "completed matches"))
+        var savedResults = new Dictionary<SeasonPhase, Dictionary<(DateOnly Date, TeamId HomeTeamId), SavedCompletedMatch>>
         {
-            if (!savedResults.TryAdd((result.Date, Required(result.Home, "home side").TeamId), result))
-            {
-                throw Invalid($"More than one result is saved for the home team's match on {result.Date:yyyy-MM-dd}.");
-            }
-        }
+            [SeasonPhase.Preseason] = ResultsByMatch(save.PreseasonMatches, "preseason matches"),
+            [SeasonPhase.RegularSeason] = ResultsByMatch(save.CompletedMatches, "completed matches"),
+            [SeasonPhase.Playoffs] = ResultsByMatch(save.PlayoffMatches, "playoff matches"),
+        };
 
         if (save.CurrentDate < season.CurrentDate)
         {
-            throw Invalid("The saved current date is before opening day.");
+            throw Invalid("The saved current date is before the first day of the season.");
         }
 
         while (season.CurrentDate < save.CurrentDate)
@@ -142,18 +146,35 @@ internal static class GameSaveRestorer
                 throw Invalid("The saved current date is after the end of the season.");
             }
 
+            var phaseResults = savedResults[season.Phase];
             var day = season.CurrentDateMatches
-                .Select(match => savedResults.Remove((match.Date, match.HomeTeamId), out var result)
+                .Select(match => phaseResults.Remove((match.Date, match.HomeTeamId), out var result)
                     ? RestoreCompletedMatch(match, result)
                     : throw Invalid($"A match on {match.Date:yyyy-MM-dd}, before the saved current date, has no result."))
                 .ToList();
             season.CompleteDay(day);
         }
 
-        if (savedResults.Count > 0)
+        if (savedResults.Values.Any(results => results.Count > 0))
         {
             throw Invalid("The save has results for matches that are not scheduled before its current date.");
         }
+    }
+
+    private static Dictionary<(DateOnly Date, TeamId HomeTeamId), SavedCompletedMatch> ResultsByMatch(
+        IReadOnlyList<SavedCompletedMatch>? saved,
+        string description)
+    {
+        var results = new Dictionary<(DateOnly Date, TeamId HomeTeamId), SavedCompletedMatch>();
+        foreach (var result in Items(saved, description))
+        {
+            if (!results.TryAdd((result.Date, Required(result.Home, "home side").TeamId), result))
+            {
+                throw Invalid($"More than one result is saved for the home team's match on {result.Date:yyyy-MM-dd}.");
+            }
+        }
+
+        return results;
     }
 
     private static CompletedMatch RestoreCompletedMatch(ScheduledMatch scheduledMatch, SavedCompletedMatch saved) =>

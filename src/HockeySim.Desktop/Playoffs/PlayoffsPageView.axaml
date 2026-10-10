@@ -1,0 +1,148 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:playoffs="using:HockeySim.Desktop.Playoffs"
+             x:Class="HockeySim.Desktop.Playoffs.PlayoffsPageView"
+             x:DataType="playoffs:PlayoffsPageViewModel">
+  <Grid>
+    <!-- Before the regular season ends there is no bracket. -->
+    <Border Classes="panel" IsVisible="{Binding !HasPlayoffs}">
+      <TextBlock x:Name="PlayoffsNotStarted"
+                 Classes="caption"
+                 Text="{Binding NotStartedMessage}"
+                 TextWrapping="Wrap"
+                 MaxWidth="480"
+                 TextAlignment="Center"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center" />
+    </Border>
+
+    <Grid RowDefinitions="Auto,*" RowSpacing="8" IsVisible="{Binding HasPlayoffs}">
+      <Border x:Name="ChampionBanner"
+              Classes="panel"
+              Padding="12,8"
+              BorderBrush="{DynamicResource TeamSecondaryBrush}"
+              IsVisible="{Binding HasChampion}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Classes="label" Text="CHAMPIONS" VerticalAlignment="Center" />
+          <TextBlock x:Name="ChampionText"
+                     Text="{Binding ChampionAnnouncement}"
+                     FontSize="16"
+                     FontWeight="Bold"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+
+      <Grid Grid.Row="1" ColumnDefinitions="*,340" ColumnSpacing="8">
+        <!-- One column per round; each round's series are in bracket order, so neighbouring
+             series feed the same series in the next round. -->
+        <ItemsControl x:Name="PlayoffRounds" ItemsSource="{Binding Rounds}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Rows="1" ColumnSpacing="8" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="playoffs:PlayoffRoundViewModel">
+              <Border Classes="panel">
+                <DockPanel>
+                  <Border DockPanel.Dock="Top" Classes="panel-header">
+                    <TextBlock Classes="panel-title" Text="{Binding Title}" />
+                  </Border>
+                  <Grid>
+                    <TextBlock Classes="caption"
+                               Margin="12,10"
+                               Text="To be decided."
+                               IsVisible="{Binding !HasStarted}" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                      <ItemsControl ItemsSource="{Binding Series}" Margin="0,4">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <StackPanel Spacing="4" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="playoffs:PlayoffSeriesViewModel">
+                            <Button Classes="list-item"
+                                    Classes.selected="{Binding IsSelected}"
+                                    Command="{Binding SelectCommand}"
+                                    Padding="10,6">
+                              <StackPanel Spacing="2">
+                                <Grid ColumnDefinitions="36,*,20" DataContext="{Binding HigherRanked}">
+                                  <TextBlock Classes="cell muted" Text="{Binding Seed}" ToolTip.Tip="{Binding SeedDescription}" />
+                                  <TextBlock Grid.Column="1"
+                                             Classes="cell"
+                                             Classes.strong="{Binding IsEmphasized}"
+                                             Classes.muted="{Binding IsEliminated}"
+                                             TextTrimming="CharacterEllipsis"
+                                             Text="{Binding Name}" />
+                                  <TextBlock Grid.Column="2" Classes="cell-center strong" Text="{Binding Wins}" />
+                                </Grid>
+                                <Grid ColumnDefinitions="36,*,20" DataContext="{Binding LowerRanked}">
+                                  <TextBlock Classes="cell muted" Text="{Binding Seed}" ToolTip.Tip="{Binding SeedDescription}" />
+                                  <TextBlock Grid.Column="1"
+                                             Classes="cell"
+                                             Classes.strong="{Binding IsEmphasized}"
+                                             Classes.muted="{Binding IsEliminated}"
+                                             TextTrimming="CharacterEllipsis"
+                                             Text="{Binding Name}" />
+                                  <TextBlock Grid.Column="2" Classes="cell-center strong" Text="{Binding Wins}" />
+                                </Grid>
+                                <TextBlock Classes="caption" TextTrimming="CharacterEllipsis" Text="{Binding Status}" />
+                              </StackPanel>
+                            </Button>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </ScrollViewer>
+                  </Grid>
+                </DockPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Border Grid.Column="1" Classes="panel">
+          <ContentControl x:Name="SeriesDetail" Content="{Binding SelectedSeries}">
+            <ContentControl.ContentTemplate>
+              <DataTemplate x:DataType="playoffs:PlayoffSeriesViewModel">
+                <DockPanel>
+                  <Border DockPanel.Dock="Top" Classes="panel-header">
+                    <StackPanel>
+                      <TextBlock Classes="panel-title" Text="{Binding RoundName}" />
+                      <TextBlock Classes="cell" FontWeight="SemiBold" TextWrapping="Wrap" Text="{Binding Title}" />
+                      <TextBlock Classes="caption" Text="{Binding Status}" />
+                    </StackPanel>
+                  </Border>
+                  <ItemsControl x:Name="SeriesGames" ItemsSource="{Binding Games}" Margin="0,4">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="playoffs:PlayoffGameRowViewModel">
+                        <Button Classes="list-item"
+                                Command="{Binding OpenCommand}"
+                                ToolTip.Tip="Open on the schedule"
+                                Padding="12,5">
+                          <Grid ColumnDefinitions="60,*">
+                            <StackPanel>
+                              <TextBlock Classes="cell" FontWeight="SemiBold" Text="{Binding Game}" />
+                              <TextBlock Classes="caption" Text="{Binding Date}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                              <TextBlock Classes="cell"
+                                         Classes.strong="{Binding IsPlayed}"
+                                         Classes.muted="{Binding !IsPlayed}"
+                                         Text="{Binding Result}" />
+                              <TextBlock Classes="caption" TextTrimming="CharacterEllipsis" Text="{Binding Matchup}" />
+                            </StackPanel>
+                          </Grid>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </DockPanel>
+              </DataTemplate>
+            </ContentControl.ContentTemplate>
+          </ContentControl>
+        </Border>
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

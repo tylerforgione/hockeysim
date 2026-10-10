@@ -6,20 +6,41 @@ namespace HockeySim.Management.GameManagement.Snapshots;
 
 public sealed class ScheduleSnapshot
 {
+    private readonly ReadOnlyCollection<ScheduledMatchSnapshot> _preseasonMatches;
     private readonly ReadOnlyCollection<ScheduledMatchSnapshot> _matches;
+    private readonly ReadOnlyCollection<ScheduledMatchSnapshot> _playoffMatches;
 
-    private ScheduleSnapshot(IReadOnlyList<ScheduledMatchSnapshot> matches)
+    private ScheduleSnapshot(
+        IReadOnlyList<ScheduledMatchSnapshot> preseasonMatches,
+        IReadOnlyList<ScheduledMatchSnapshot> matches,
+        IReadOnlyList<ScheduledMatchSnapshot> playoffMatches)
     {
+        _preseasonMatches = new ReadOnlyCollection<ScheduledMatchSnapshot>(preseasonMatches.ToList());
         _matches = new ReadOnlyCollection<ScheduledMatchSnapshot>(matches.ToList());
+        _playoffMatches = new ReadOnlyCollection<ScheduledMatchSnapshot>(playoffMatches.ToList());
     }
+
+    /// <summary>
+    /// Gets every preseason match in chronological order, all before the regular season's.
+    /// </summary>
+    public IReadOnlyList<ScheduledMatchSnapshot> PreseasonMatches => _preseasonMatches;
 
     /// <summary>
     /// Gets every regular-season match in chronological order.
     /// </summary>
     public IReadOnlyList<ScheduledMatchSnapshot> Matches => _matches;
 
-    internal static ScheduleSnapshot Create(SeasonSchedule schedule) =>
-        new(schedule.Matches.Select(ScheduledMatchSnapshot.Create).ToList());
+    /// <summary>
+    /// Gets every playoff match scheduled so far, played or not, in chronological order. Playoff
+    /// games are scheduled one at a time as series progress, so this grows during the playoffs.
+    /// </summary>
+    public IReadOnlyList<ScheduledMatchSnapshot> PlayoffMatches => _playoffMatches;
+
+    internal static ScheduleSnapshot Create(Season season) =>
+        new(
+            season.PreseasonSchedule.Matches.Select(ScheduledMatchSnapshot.Create).ToList(),
+            season.Schedule.Matches.Select(ScheduledMatchSnapshot.Create).ToList(),
+            (season.Playoffs?.Schedule ?? []).Select(ScheduledMatchSnapshot.Create).ToList());
 }
 
 public sealed record ScheduledMatchSnapshot(DateOnly Date, TeamId HomeTeamId, TeamId AwayTeamId)

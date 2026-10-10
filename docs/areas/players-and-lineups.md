@@ -20,7 +20,7 @@ commands).
 | `Management/NewGame/LeagueGenerator.cs` | Builds the league |
 | `Management/NewGame/PlayerRatingGenerator.cs`, `PlayerBiographyGenerator.cs`, `PlayerOriginData.cs`, `FictionalLeagueData.cs` | Generated players, names, and teams with their colours |
 | `Management/Lineups/` | `SetLineupCommand` and its selections; `MatchDayLineup` (players who cannot play, AI teams' replacements) and `UnavailablePlayersException` |
-| `Management/Inbox/`, `Snapshots/InboxMessageSnapshot.cs` | Inbox messages: the new-game messages, and the head trainer's `InjuryMessages` and their phrasings (`InjuryWording`) |
+| `Management/Inbox/`, `Snapshots/InboxMessageSnapshot.cs` | Inbox messages: the new-game messages, and the head trainer's `InjuryMessages` and their phrasings (`InjuryWording`), and the champion's announcement (`ChampionMessages`) |
 | `Management/GameManagement/GameManager.cs` | Commands: new game, select team, set lineup, read message |
 | `Management/GameManagement/Snapshots/GameSnapshot.cs` | `PlayerSnapshot` with its injuries, team and lineup snapshots, and `PlayersToReplace` |
 
@@ -68,7 +68,11 @@ and is not sent in a week with none of these. Each phrase is chosen from several
 by the injury, its cause, and its severity (where the recovery time falls in the
 injury's range), using a stable hash of the player, date, and injury rather than
 the game's random state, so a game always writes the same words, including after
-it is saved and loaded. Marking a message read is a Management command.
+it is saved and loaded. On the day the final is decided, the champion is
+announced: by the owner, congratulating the user, when the managed team wins,
+and otherwise by the assistant GM, with the final's score and how the managed
+team's season ended (missing the playoffs, or the round, opponent, and score of
+its last series). Marking a message read is a Management command.
 Domain's `Lineup` also holds the special-situation units and two extra
 attackers. `SpecialSituationFormat` fixes each situation's unit count and the
 skater role of every slot (5-on-4 and 5-on-3: LW C RW / LD RD; 4-on-3, 4-on-5,
