@@ -146,6 +146,14 @@ Direction:
   conflicts, reproducibility) still apply. Add checks for blocked dates, rest
   limits, and pinned matches, and replace the 16-matches-per-date check.
 
+The playoffs have a simple calendar of their own, derived in Domain's `Season`
+([ADR 0011](adr/0011-playoffs-derived-in-the-season.md)): rounds run in
+lockstep, every series playing every other day, and the next round waits for the
+whole round to finish. The NHL instead staggers series across nights, starts a
+second-round series as soon as both of its feeder series are done, and varies
+rest between games. A realistic playoff calendar should keep the season deciding
+when a series needs its next game, and take the dates from a calendar policy.
+
 ## Skip-to-date and bulk simulation
 
 v0.2.0 adds a Continue menu that simulates ahead by day, match, week, month,
