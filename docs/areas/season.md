@@ -49,7 +49,7 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | `Management.Tests/PreseasonTests.cs` | The preseason schedule (opponents, dates, home balance), exclusion from every total, the move to opening day, determinism, saving mid-preseason |
 | `Management.Tests/SeasonAdvancementTests.cs` | Advancing days, failures leaving nothing applied, threading |
 | `Management.Tests/StandingsTests.cs` | Standings and wild-card tables and snapshot isolation |
-| `Management.Tests/FullSeasonTests.cs` | A shared fixture plays a full 1,344-match season and its playoffs and reconciles them: every season total and summary, every playoff status held to the end, the bracket, home ice and dates, and playoff totals |
+| `Management.Tests/FullSeasonTests.cs` | A shared fixture plays a full 1,344-match season and its playoffs and reconciles them: every season total and summary, every playoff status held to the end, the bracket, home ice and dates, playoff totals, and the champion's announcement |
 | `Management.Tests/PlayoffsTests.cs` | Overtime format by phase, saving and loading mid-series, continuing a loaded game to the same champion |
 | `Domain.Tests/TestLeague.cs`, `TestResults.cs`, `Management.Tests/PreseasonPlay.cs` | Builders; most Management tests start on opening day after playing the preseason |
 
