@@ -14,6 +14,7 @@ using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Main;
 using HockeySim.Desktop.NewGame;
 using HockeySim.Desktop.Players;
+using HockeySim.Desktop.Playoffs;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Saves;
 using HockeySim.Desktop.Schedule;
@@ -85,6 +86,8 @@ public sealed class MainWindowViewTests
         AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
         AssertNavigationRenders<TeamsPageView>(window, ShellPage.Teams);
         AssertNavigationRenders<StandingsPageView>(window, ShellPage.Standings);
+        AssertNavigationRenders<PlayoffsPageView>(window, ShellPage.Playoffs);
+        Assert.True(Single<PlayoffsPageView>(window).FindControl<TextBlock>("PlayoffsNotStarted")?.IsEffectivelyVisible);
         AssertNavigationRenders<SchedulePageView>(window, ShellPage.Schedule);
         AssertNavigationRenders<LinesPageView>(window, ShellPage.Lines);
 

@@ -14,7 +14,28 @@
                      VerticalAlignment="Center"
                      Margin="0,0,16,0"
                      Text="TEAM"
-                     ToolTip.Tip="Current-season special teams, faceoffs, and 5-on-5 shares" />
+                     ToolTip.Tip="{Binding TeamStatisticsDescription}" />
+          <!-- Switches the strip, both tables, and the profile between the two sets of totals. -->
+          <StackPanel DockPanel.Dock="Right"
+                      Orientation="Horizontal"
+                      Spacing="2"
+                      VerticalAlignment="Center"
+                      IsVisible="{Binding HasPlayoffStatistics}">
+            <Button x:Name="ShowRegularSeasonButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsRegularSeason}"
+                    Content="Regular season"
+                    ToolTip.Tip="Show regular-season statistics"
+                    Command="{Binding ShowStatisticsSetCommand}"
+                    CommandParameter="{x:Static players:StatisticsSet.RegularSeason}" />
+            <Button x:Name="ShowPlayoffsButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsPlayoffs}"
+                    Content="Playoffs"
+                    ToolTip.Tip="Show playoff statistics"
+                    Command="{Binding ShowStatisticsSetCommand}"
+                    CommandParameter="{x:Static players:StatisticsSet.Playoffs}" />
+          </StackPanel>
           <ItemsControl ItemsSource="{Binding TeamStatistics}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
@@ -78,7 +99,7 @@
                         Classes="tab"
                         Classes.selected="{Binding ShowsBasic}"
                         Content="Basic"
-                        ToolTip.Tip="Show current-season totals"
+                        ToolTip.Tip="Show counting totals and rates"
                         Command="{Binding ShowColumnsCommand}"
                         CommandParameter="{x:Static roster:RosterColumns.Basic}" />
                 <Button x:Name="ShowAdvancedButton"

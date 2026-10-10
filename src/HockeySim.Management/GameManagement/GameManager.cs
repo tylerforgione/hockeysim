@@ -229,6 +229,12 @@ public sealed class GameManager
 
             InjuryMessages.Deliver(_inbox, season, _managedTeamId, playedDate);
 
+            // Advancing a complete season is rejected above, so a season complete now was won today.
+            if (season.IsComplete)
+            {
+                ChampionMessages.Deliver(_inbox, season, _managedTeamId);
+            }
+
             return CreateSnapshot();
         }
     }

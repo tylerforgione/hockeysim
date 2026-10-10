@@ -8,6 +8,7 @@ using HockeySim.Desktop.Home;
 using HockeySim.Desktop.Inbox;
 using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Players;
+using HockeySim.Desktop.Playoffs;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Saves;
 using HockeySim.Desktop.Schedule;
@@ -67,6 +68,7 @@ public sealed partial class GameShellViewModel : ObservableObject
         Lines = new LinesPageViewModel(session);
         Teams = new TeamsPageViewModel(session);
         Standings = new StandingsPageViewModel(session);
+        Playoffs = new PlayoffsPageViewModel(session, OpenMatch);
         Schedule = new SchedulePageViewModel(session);
         _pages = new Dictionary<ShellPage, ShellPageViewModel>
         {
@@ -76,6 +78,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             [ShellPage.Lines] = Lines,
             [ShellPage.Teams] = Teams,
             [ShellPage.Standings] = Standings,
+            [ShellPage.Playoffs] = Playoffs,
             [ShellPage.Schedule] = Schedule,
         };
 
@@ -93,6 +96,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             [
                 new(ShellPage.Teams, "Teams", Navigate),
                 new(ShellPage.Standings, "Standings", Navigate),
+                new(ShellPage.Playoffs, "Playoffs", Navigate),
                 new(ShellPage.Schedule, "Schedule", Navigate),
             ]),
             new("TRANSACTIONS",
@@ -123,6 +127,8 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     public StandingsPageViewModel Standings { get; }
 
+    public PlayoffsPageViewModel Playoffs { get; }
+
     public SchedulePageViewModel Schedule { get; }
 
     public IReadOnlyList<NavigationSectionViewModel> NavigationSections { get; }
@@ -142,11 +148,16 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     public string SeasonLabel => $"{PlayerDisplay.FormatSeason(Session.Snapshot.League.SeasonYear)} Season";
 
+    /// <summary>
+    /// The current phase and date, naming the playoff round under way, and the champion once the
+    /// season is complete.
+    /// </summary>
     public string PhaseLabel => Session.Snapshot.Season switch
     {
-        { IsComplete: true } => "Season complete",
+        { Playoffs.ChampionId: { } champion } => $"Season complete · {Session.GetTeam(champion).Name} are champions",
         { Phase: SeasonPhase.Preseason } season => $"Preseason · {MatchDisplay.ShortDate(season.CurrentDate)}",
-        { Phase: SeasonPhase.Playoffs } season => $"Playoffs · {MatchDisplay.ShortDate(season.CurrentDate)}",
+        { Phase: SeasonPhase.Playoffs, Playoffs: { } playoffs } season =>
+            $"Playoffs · {PlayoffDisplay.RoundName(playoffs.CurrentRound)} · {MatchDisplay.ShortDate(season.CurrentDate)}",
         var season => $"Regular season · {MatchDisplay.ShortDate(season.CurrentDate)}",
     };
 

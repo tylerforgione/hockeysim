@@ -8,6 +8,7 @@ public enum ShellPage
     Lines,
     Teams,
     Standings,
+    Playoffs,
     Schedule,
     FreeAgents,
     Trades,

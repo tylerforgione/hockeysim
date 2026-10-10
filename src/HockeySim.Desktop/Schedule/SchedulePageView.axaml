@@ -4,7 +4,7 @@
              xmlns:teams="using:HockeySim.Desktop.Teams"
              x:Class="HockeySim.Desktop.Schedule.SchedulePageView"
              x:DataType="schedule:SchedulePageViewModel">
-  <Grid ColumnDefinitions="420,*" ColumnSpacing="8">
+  <Grid ColumnDefinitions="480,*" ColumnSpacing="8">
     <Border Classes="panel">
       <DockPanel>
         <Border DockPanel.Dock="Top" Classes="panel-header">
@@ -25,10 +25,11 @@
           </Grid>
         </Border>
         <Border DockPanel.Dock="Top" Classes="table-header">
-          <Grid ColumnDefinitions="96,28,*,96">
-            <TextBlock Text="DATE" />
-            <TextBlock Grid.Column="2" Text="OPPONENT" />
-            <TextBlock Grid.Column="3" Text="RESULT" HorizontalAlignment="Right" />
+          <Grid ColumnDefinitions="60,96,28,*,96">
+            <TextBlock Text="PHASE" ToolTip.Tip="Preseason, regular season, or a playoff round and game" />
+            <TextBlock Grid.Column="1" Text="DATE" />
+            <TextBlock Grid.Column="3" Text="OPPONENT" />
+            <TextBlock Grid.Column="4" Text="RESULT" HorizontalAlignment="Right" />
           </Grid>
         </Border>
         <ListBox x:Name="ScheduleMatchesList"
@@ -37,17 +38,21 @@
                  SelectedItem="{Binding SelectedMatch}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="schedule:ScheduleMatchRowViewModel">
-              <Grid ColumnDefinitions="96,28,*,96">
-                <TextBlock Classes="cell muted" Text="{Binding DateLabel}" />
-                <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding Venue}" />
-                <TextBlock Grid.Column="2" Classes="cell" Text="{Binding Opponent}" />
-                <TextBlock Grid.Column="3"
+              <Grid ColumnDefinitions="60,96,28,*,96">
+                <TextBlock Classes="cell muted"
+                           Classes.strong="{Binding IsPlayoff}"
+                           Text="{Binding PhaseLabel}"
+                           ToolTip.Tip="{Binding PhaseDescription}" />
+                <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding DateLabel}" />
+                <TextBlock Grid.Column="2" Classes="cell muted" Text="{Binding Venue}" />
+                <TextBlock Grid.Column="3" Classes="cell" Text="{Binding Opponent}" />
+                <TextBlock Grid.Column="4"
                            Classes="cell strong"
                            Classes.success="{Binding IsWin}"
                            Classes.error="{Binding IsLoss}"
                            HorizontalAlignment="Right"
                            Text="{Binding Result}" />
-                <Border Grid.Column="3"
+                <Border Grid.Column="4"
                         Classes="pill"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"

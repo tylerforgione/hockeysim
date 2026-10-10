@@ -104,8 +104,9 @@ season totals, and player health (injuries and hidden wear). After the regular
 season, sixteen teams play NHL-format best-of-seven playoff series, with their
 own records and statistics, until a champion completes the season. AI teams replace injured players
 from their healthy scratches, and the user must replace their own before playing. Games save to and load from local files. The Desktop app
-covers the new-game flow, team management pages, daily advancement, box scores,
-and named saves.
+covers the new-game flow, team management pages, daily advancement, every
+phase's schedule and box scores, the playoff bracket, regular-season and playoff
+statistics, and named saves.
 
 Each area has its own document. Every one starts with a code map (which file
 holds what) and a test map. Read the one for the area a task touches, rather
