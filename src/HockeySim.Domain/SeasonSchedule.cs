@@ -3,7 +3,8 @@ using System.Collections.ObjectModel;
 namespace HockeySim.Domain;
 
 /// <summary>
-/// The regular-season calendar in chronological order. A team plays at most once on any date.
+/// One phase's calendar, such as the preseason or the regular season, in chronological order. A
+/// team plays at most once on any date.
 /// </summary>
 public sealed class SeasonSchedule
 {

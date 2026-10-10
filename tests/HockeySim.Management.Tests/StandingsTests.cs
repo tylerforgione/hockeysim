@@ -1,3 +1,4 @@
+using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.GameManagement.Snapshots;
 
@@ -16,7 +17,7 @@ public sealed class StandingsTests
     [Fact]
     public void BeforeAnyMatchEveryTableListsItsTeamsLevelInLeagueOrder()
     {
-        var snapshot = StartGame(new GameManager());
+        var snapshot = StartAtOpeningDay(new GameManager());
 
         AssertTablesMatchTheLeague(snapshot);
         var standings = snapshot.Season.Standings;
@@ -33,7 +34,7 @@ public sealed class StandingsTests
     public void MidseasonTablesAreRankedFromTheResultsSoFar()
     {
         var manager = new GameManager();
-        var snapshot = StartGame(manager);
+        var snapshot = StartAtOpeningDay(manager);
         for (var day = 0; day < 15; day++)
         {
             snapshot = manager.AdvanceDayReplacingInjured();
@@ -52,7 +53,7 @@ public sealed class StandingsTests
     public void EarlierStandingsAreUnchangedByAdvancingAndCannotBeModified()
     {
         var manager = new GameManager();
-        var before = StartGame(manager);
+        var before = StartAtOpeningDay(manager);
 
         var after = manager.AdvanceDay();
 
@@ -68,6 +69,52 @@ public sealed class StandingsTests
             () => ((IList<DivisionStandingsSnapshot>)standings.Conferences[0].Divisions).Clear());
         Assert.Throws<NotSupportedException>(
             () => ((IList<StandingsEntrySnapshot>)standings.Conferences[0].Divisions[0].Teams).Clear());
+    }
+
+    [Fact]
+    public void TheWildCardViewListsEachDivisionsTopThreeThenTheRestOfItsConference()
+    {
+        var manager = new GameManager();
+        StartAtOpeningDay(manager);
+        GameSnapshot snapshot = null!;
+        for (var day = 0; day < 15; day++)
+        {
+            snapshot = manager.AdvanceDayReplacingInjured();
+        }
+
+        var standings = snapshot.Season.Standings;
+        Assert.Equal(standings.Conferences.Select(conference => conference.Name), standings.WildCard.Select(view => view.Name));
+        foreach (var (conference, view) in standings.Conferences.Zip(standings.WildCard))
+        {
+            Assert.Equal(2, view.WildCardCount);
+            Assert.Equal(conference.Divisions.Select(division => division.Name), view.DivisionLeaders.Select(division => division.Name));
+            foreach (var (division, leaders) in conference.Divisions.Zip(view.DivisionLeaders))
+            {
+                Assert.Equal(division.Teams.Take(3), leaders.Teams);
+            }
+
+            // The rest of the conference, ranked among themselves.
+            var leaderIds = view.DivisionLeaders.SelectMany(division => division.Teams).Select(entry => entry.Record.TeamId).ToHashSet();
+            Assert.Equal(10, view.WildCardRace.Count);
+            Assert.Equal(
+                conference.Teams.Select(entry => entry.Record.TeamId).Where(teamId => !leaderIds.Contains(teamId)).Select(teamId => teamId.Value).Order(),
+                view.WildCardRace.Select(entry => entry.Record.TeamId.Value).Order());
+            AssertRanked(view.WildCardRace);
+        }
+
+        Assert.Throws<NotSupportedException>(() => ((IList<WildCardStandingsSnapshot>)standings.WildCard).Clear());
+        Assert.Throws<NotSupportedException>(
+            () => ((IList<DivisionStandingsSnapshot>)standings.WildCard[0].DivisionLeaders).Clear());
+        Assert.Throws<NotSupportedException>(
+            () => ((IList<StandingsEntrySnapshot>)standings.WildCard[0].WildCardRace).Clear());
+    }
+
+    [Fact]
+    public void NoTeamHasClinchedOrBeenEliminatedOnOpeningDay()
+    {
+        var snapshot = StartAtOpeningDay(new GameManager());
+
+        Assert.All(snapshot.Season.Standings.League, entry => Assert.Equal(PlayoffStatus.Undecided, entry.PlayoffStatus));
     }
 
     /// <summary>

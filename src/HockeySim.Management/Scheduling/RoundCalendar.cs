@@ -66,7 +66,7 @@ internal static class RoundCalendar
         var rounds = new List<IReadOnlyList<TeamPair>>();
         for (var pass = 0; pass < LeagueRoundRobinCount; pass++)
         {
-            rounds.AddRange(CreateRoundRobin(RandomOrder.Shuffle(league.Teams.Select(team => team.Id), random)));
+            rounds.AddRange(RoundRobin.Create(RandomOrder.Shuffle(league.Teams.Select(team => team.Id), random)));
         }
 
         var conferences = league.Conferences
@@ -78,33 +78,11 @@ internal static class RoundCalendar
         var divisions = conferences.SelectMany(divisionsInConference => divisionsInConference).ToList();
         for (var pass = 0; pass < DivisionRoundRobinCount; pass++)
         {
-            rounds.AddRange(CombineRounds(divisions.Select(CreateRoundRobin)));
+            rounds.AddRange(RoundRobin.Combine(divisions.Select(RoundRobin.Create)));
         }
 
-        rounds.AddRange(CombineRounds(conferences.Select(divisionsInConference =>
+        rounds.AddRange(RoundRobin.Combine(conferences.Select(divisionsInConference =>
             CreateCrossDivisionRounds(divisionsInConference[0], divisionsInConference[1]))));
-
-        return rounds;
-    }
-
-    /// <summary>
-    /// Pairs every team with every other team once, using the circle method: one team stays
-    /// fixed while the rest rotate, so each round is a perfect matching.
-    /// </summary>
-    private static IReadOnlyList<IReadOnlyList<TeamPair>> CreateRoundRobin(IReadOnlyList<TeamId> teams)
-    {
-        var rotating = teams.Skip(1).ToList();
-        var rounds = new List<IReadOnlyList<TeamPair>>(rotating.Count);
-
-        for (var round = 0; round < rotating.Count; round++)
-        {
-            var order = new List<TeamId>(teams.Count) { teams[0] };
-            order.AddRange(rotating.Skip(round).Concat(rotating.Take(round)));
-
-            rounds.Add(Enumerable.Range(0, order.Count / 2)
-                .Select(index => TeamPair.Create(order[index], order[order.Count - 1 - index]))
-                .ToList());
-        }
 
         return rounds;
     }
@@ -120,15 +98,4 @@ internal static class RoundCalendar
                 .Select(index => TeamPair.Create(first[index], second[(index + offset) % second.Count]))
                 .ToList())
             .ToList();
-
-    /// <summary>
-    /// Merges same-numbered rounds from disjoint groups of teams into league-wide rounds.
-    /// </summary>
-    private static IEnumerable<IReadOnlyList<TeamPair>> CombineRounds(
-        IEnumerable<IReadOnlyList<IReadOnlyList<TeamPair>>> groups)
-    {
-        var groupList = groups.ToList();
-        return Enumerable.Range(0, groupList[0].Count)
-            .Select(round => groupList.SelectMany(group => group[round]).ToList());
-    }
 }

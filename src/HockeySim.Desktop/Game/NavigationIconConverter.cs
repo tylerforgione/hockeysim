@@ -22,6 +22,7 @@ public sealed class NavigationIconConverter : IValueConverter
         ShellPage.Lines => Icons.Lines,
         ShellPage.Teams => Icons.Teams,
         ShellPage.Standings => Icons.Standings,
+        ShellPage.Playoffs => Icons.Playoffs,
         ShellPage.Schedule => Icons.Schedule,
         ShellPage.FreeAgents => Icons.FreeAgents,
         ShellPage.Trades => Icons.Trades,

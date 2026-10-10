@@ -21,7 +21,13 @@ public sealed class SaveAndLoadTests
         MissingResultBeforeCurrentDate,
         ResultOnOrAfterCurrentDate,
         DuplicateResult,
-        CurrentDateBeforeOpeningDay,
+        CurrentDateBeforeTheFirstDay,
+        MissingPreseasonSchedule,
+        PreseasonMatchOnOpeningDay,
+        PreseasonResultSavedWithTheRegularSeason,
+        InjuryInAPreseasonMatch,
+        MissingPlayoffMatches,
+        RegularSeasonResultSavedWithThePlayoffs,
         ScoreNotMatchingGoals,
         UndefinedDecision,
         BoxScoreForUnrosteredPlayer,
@@ -67,7 +73,7 @@ public sealed class SaveAndLoadTests
     public void ANewGameLoadsExactlyAsSaved()
     {
         var manager = new GameManager();
-        var saved = StartGame(manager);
+        var saved = StartAtOpeningDay(manager);
 
         var loaded = SaveAndLoadIntoNewManager(manager).Snapshot;
 
@@ -78,7 +84,7 @@ public sealed class SaveAndLoadTests
     public void AMidseasonGameLoadsExactlyAsSaved()
     {
         var manager = new GameManager();
-        StartGame(manager);
+        StartAtOpeningDay(manager);
         manager.SetLineup(SwapGoalies(ManagedTeam(manager.GetSnapshot())));
         manager.SetLineup(ReshuffleUnits(ManagedTeam(manager.GetSnapshot())));
         var readId = manager.GetSnapshot().Inbox[1].Id;
@@ -96,7 +102,7 @@ public sealed class SaveAndLoadTests
     public void ACompletedSeasonLoadsAsSavedAndStillCannotAdvance()
     {
         var manager = new GameManager();
-        StartGame(manager);
+        StartAtOpeningDay(manager);
         var saved = manager.GetSnapshot();
         while (!saved.Season.IsComplete)
         {
@@ -107,6 +113,7 @@ public sealed class SaveAndLoadTests
 
         Assert.Equal(Describe(saved), Describe(loaded));
         Assert.Equal(1344, loaded.Season.Results.Count);
+        Assert.NotNull(loaded.Season.Playoffs!.ChampionId);
         Assert.Throws<InvalidOperationException>(loadedManager.AdvanceDay);
     }
 
@@ -114,7 +121,7 @@ public sealed class SaveAndLoadTests
     public void ACompletedSeasonCannotBeSavedAsContinuingPastItsEnd()
     {
         var manager = new GameManager();
-        StartGame(manager);
+        StartAtOpeningDay(manager);
         while (!manager.GetSnapshot().Season.IsComplete)
         {
             manager.AdvanceDayReplacingInjured();
@@ -137,7 +144,7 @@ public sealed class SaveAndLoadTests
     public void ContinuingALoadedGameMatchesUninterruptedPlay()
     {
         var uninterrupted = new GameManager();
-        StartGame(uninterrupted);
+        StartAtOpeningDay(uninterrupted);
         Advance(uninterrupted, 7);
         var store = new MemorySaveStore();
         uninterrupted.SaveGame(store);
@@ -155,7 +162,7 @@ public sealed class SaveAndLoadTests
     public void InjuriesAndWearAreSavedAndRebuiltFromTheCompletedMatches()
     {
         var manager = new GameManager();
-        StartGame(manager);
+        StartAtOpeningDay(manager);
         Advance(manager, 15);
         var first = new MemorySaveStore();
         manager.SaveGame(first);
@@ -173,12 +180,12 @@ public sealed class SaveAndLoadTests
     public void LoadingReplacesADifferentActiveGame()
     {
         var source = new GameManager();
-        StartGame(source);
+        StartAtOpeningDay(source);
         var saved = Advance(source, 3);
         var store = new MemorySaveStore();
         source.SaveGame(store);
         var target = new GameManager();
-        StartGame(target, seed: 999);
+        StartAtOpeningDay(target, seed: 999);
         target.SelectManagedTeam(target.GetSnapshot().League.Teams[^1].Id);
         Advance(target, 5);
 
@@ -192,7 +199,7 @@ public sealed class SaveAndLoadTests
     public void EveryRatingIncludingHiddenDurabilityIsSavedAndRestored()
     {
         var manager = new GameManager();
-        StartGame(manager);
+        StartAtOpeningDay(manager);
         var store = new MemorySaveStore();
         manager.SaveGame(store);
         var loadedManager = new GameManager();
@@ -212,7 +219,7 @@ public sealed class SaveAndLoadTests
     public void ASaveIsACopyThatLaterPlayDoesNotChange()
     {
         var manager = new GameManager();
-        var saved = StartGame(manager);
+        var saved = StartAtOpeningDay(manager);
         var store = new MemorySaveStore();
         manager.SaveGame(store);
 
@@ -228,7 +235,7 @@ public sealed class SaveAndLoadTests
     public void ALoadedGameAcceptsCommandsAgainstItsRestoredWorld()
     {
         var manager = new GameManager();
-        StartGame(manager);
+        StartAtOpeningDay(manager);
         Advance(manager, 2);
         var (loadedManager, loaded) = SaveAndLoadIntoNewManager(manager);
         var team = ManagedTeam(loaded);
@@ -259,12 +266,12 @@ public sealed class SaveAndLoadTests
     {
         var store = new MemorySaveStore();
         var source = new GameManager();
-        StartGame(source);
+        StartAtOpeningDay(source);
         source.SaveGame(store);
         GameManager? manager = null;
         Exception? rejection = null;
         manager = new GameManager(new CallbackSimulator(() => rejection ??= Record.Exception(() => manager!.LoadGame(store))));
-        StartGame(manager);
+        StartAtOpeningDay(manager);
 
         manager.AdvanceDay();
 
@@ -276,10 +283,10 @@ public sealed class SaveAndLoadTests
     public void AnInvalidSaveIsRejectedAndTheActiveGameContinuesUnchanged(InvalidSave invalidSave)
     {
         var control = new GameManager();
-        StartGame(control);
+        StartAtOpeningDay(control);
         Advance(control, 5);
         var manager = new GameManager();
-        StartGame(manager);
+        StartAtOpeningDay(manager);
         var before = Advance(manager, 5);
         var store = new MemorySaveStore();
         manager.SaveGame(store);
@@ -296,7 +303,7 @@ public sealed class SaveAndLoadTests
     public void AStoreFailureLeavesTheActiveGameUnchanged()
     {
         var manager = new GameManager();
-        StartGame(manager);
+        StartAtOpeningDay(manager);
         var before = Advance(manager, 2);
 
         Assert.Throws<UnsupportedGameSaveVersionException>(() => manager.LoadGame(new FailingStore()));
@@ -306,12 +313,13 @@ public sealed class SaveAndLoadTests
     public static TheoryData<InvalidSave> InvalidSaves() => new(Enum.GetValues<InvalidSave>());
 
     /// <summary>
-    /// Damages a save taken after five league days (opening day, an empty day, and a third with
-    /// matches), so it has results to break and the current date is the fourth day.
+    /// Damages a save taken after the preseason and five regular-season days (opening day, an
+    /// empty day, and a third with matches), so it has results of both phases to break.
     /// </summary>
     private static GameSave Corrupt(GameSave save, InvalidSave invalidSave)
     {
         var firstResult = save.CompletedMatches[0];
+        var firstPreseasonResult = save.PreseasonMatches[0];
         var homeScored = save.CompletedMatches.First(result => result.Home.Skaters.Any(skater => skater.Goals > 0));
         var homeScorer = homeScored.Home.Skaters.First(skater => skater.Goals > 0);
         var regulationResult = save.CompletedMatches.First(result => result.Decision == MatchDecision.Regulation);
@@ -334,7 +342,34 @@ public sealed class SaveAndLoadTests
             MissingResultBeforeCurrentDate => save with { CompletedMatches = save.CompletedMatches.SkipLast(1).ToList() },
             ResultOnOrAfterCurrentDate => save with { CurrentDate = save.CompletedMatches[^1].Date },
             DuplicateResult => save with { CompletedMatches = [.. save.CompletedMatches, firstResult] },
-            CurrentDateBeforeOpeningDay => save with { CurrentDate = save.Schedule[0].Date.AddDays(-1) },
+            CurrentDateBeforeTheFirstDay => save with { CurrentDate = save.PreseasonSchedule[0].Date.AddDays(-1) },
+            MissingPreseasonSchedule => save with { PreseasonSchedule = null! },
+            PreseasonMatchOnOpeningDay => save with
+            {
+                PreseasonSchedule = [.. save.PreseasonSchedule.SkipLast(1), save.PreseasonSchedule[^1] with { Date = save.Schedule[0].Date }],
+            },
+            PreseasonResultSavedWithTheRegularSeason => save with
+            {
+                PreseasonMatches = save.PreseasonMatches.Skip(1).ToList(),
+                CompletedMatches = [save.PreseasonMatches[0], .. save.CompletedMatches],
+            },
+            MissingPlayoffMatches => save with { PlayoffMatches = null! },
+            RegularSeasonResultSavedWithThePlayoffs => save with
+            {
+                CompletedMatches = save.CompletedMatches.SkipLast(1).ToList(),
+                PlayoffMatches = [save.CompletedMatches[^1]],
+            },
+            InjuryInAPreseasonMatch => save with
+            {
+                PreseasonMatches =
+                [
+                    firstPreseasonResult with
+                    {
+                        Injuries = [new SavedInjury(1, 60, firstPreseasonResult.Home.TeamId, firstPreseasonResult.Home.Skaters[0].PlayerId, InjuryType.BruisedFoot, InjuryCause.BlockedShot, 3)],
+                    },
+                    .. save.PreseasonMatches.Skip(1),
+                ],
+            },
             ScoreNotMatchingGoals => WithResult(save, regulationResult, regulationResult with
             {
                 Home = regulationResult.Home with { Score = regulationResult.Home.Score + 10 },

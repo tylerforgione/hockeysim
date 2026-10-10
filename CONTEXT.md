@@ -205,8 +205,9 @@ Harm to one body part, such as a concussion or a sprained ankle, suffered in a
 match from a hit (taken or given), a blocked shot, a fight, or a non-contact
 strain. Each kind has a range of recovery times; how long a particular injury
 takes is its severity. An injured player either cannot play until it heals or can
-play through it at reduced ratings. Injuries happen only in matches that count:
-never in the preseason, and not away from the rink.
+play through it at reduced ratings. Injuries happen only in matches that count,
+the regular season and the playoffs: never in the preseason, and not away from
+the rink.
 
 **Recovery time**:
 The league days an injury takes to heal, counted from the date of its match
@@ -307,6 +308,23 @@ against each divisional opponent, three against each other same-conference
 opponent, and two against each opposite-conference opponent, with 42 at home and
 42 away. A team plays at most once on any date.
 
+**Season phase**:
+The part of the season a league day belongs to: the preseason until opening day,
+the regular season until every regular-season match is played, then the
+playoffs.
+
+**Opening day**:
+The date of the first regular-season match.
+
+**Preseason**:
+Exhibition matches before opening day, in which each team plays each divisional
+opponent once, at home three or four times. A new game starts on its first day.
+Preseason matches are played like regular-season matches and keep their box
+scores, but nothing counts: they add to no team record, season statistics, or
+standings, and injure or wear nobody. The managed team may change its lineup
+between them.
+_Avoid_: Exhibition season, training camp.
+
 **League day**:
 One calendar date of the season. Advancing a league day plays every match
 scheduled on the current date, which may be none, and moves to the next date.
@@ -332,9 +350,10 @@ infraction, and kind.
 An appearing player's match statistics as recorded in a completed match.
 
 **Team record**:
-A team's current-season wins and losses, each kept by how the match was decided
-(regulation, overtime, or shootout), with goals for and against. Team goals
-include a shootout deciding goal.
+A team's wins and losses in the regular season, each kept by how the match was
+decided (regulation, overtime, or shootout), with goals for and against. Team
+goals include a shootout deciding goal. A qualifier's playoff record is kept
+separately.
 
 **Standings points**:
 Two for any win, one for an overtime or shootout loss, and none for a regulation
@@ -347,6 +366,60 @@ tie-breakers: fewer games played, regulation wins, regulation and overtime wins,
 wins, head-to-head points among the tied clubs, goal differential, and goals
 for. Teams level on all of them share a rank.
 
+**Playoff qualification**:
+The sixteen teams that reach the playoffs: the top three of each division
+(division qualifiers) and, in each conference, the two best of its other teams
+(the wild cards), each group ranked by the standings.
+
+**Wild-card race**:
+A conference's teams outside its divisions' top three, ranked among themselves
+for the two wild cards.
+
+**Playoff status**:
+What the remaining schedule can no longer change about a team's playoff
+qualification: clinched a playoff spot (x), the division (y), the conference
+(z), or the best record in the league (p), or eliminated (e). A status is shown
+only once guaranteed; until then the team is undecided. _Avoid_: magic number
+for the status itself.
+
+**Playoffs**:
+The best-of-seven playoff series that follow the regular season, in four rounds:
+the first round and second round within each division's bracket, the
+conference final, and the final. They start two days after the final
+regular-season day; every series in a round plays on the same days, every other
+day, and the next round starts two days after the round's last game.
+_Avoid_: Postseason.
+
+**Bracket**:
+The fixed pairings of the playoffs. Each division's bracket holds its top three
+and one wild card: the conference's division winner with the better record meets
+the lower wild card, the other division winner the upper one, and second meets
+third. A wild card may play in the other division's bracket. Winners within a
+bracket meet in the second round, the two bracket winners of a conference in the
+conference final, and the conference champions in the final.
+
+**Playoff series**:
+Two qualifiers playing until one wins four games; at most seven are played, and
+none is scheduled once the series is decided. Games are decided in regulation or
+playoff overtime, never a shootout.
+_Avoid_: Matchup, when meaning the series.
+
+**Home ice**:
+Hosting games one, two, five, and seven of a series (the 2-2-1-1-1 pattern),
+held by the higher-ranked team. Through the second round that is the team that
+placed higher in its bracket, whatever the teams' points: a division qualifier
+above a wild card, and a better division finish above a worse one. From the
+conference final, it is the team with the better regular-season record.
+
+**Champion**:
+The winner of the final. Crowning it completes the season.
+
+**Playoff statistics**:
+Each qualifier's playoff record and team statistics and each player's playoff
+totals, accumulated from playoff matches like season statistics but kept apart
+from the regular season's. Playoff matches never change the standings, the
+playoff statuses, or head-to-head.
+
 **Head-to-head**:
 The standings points tied clubs earned in games among themselves. Where two
 clubs have met an odd number of times, the first game in the city that hosted
@@ -354,7 +427,7 @@ the extra meeting (the odd game) is not counted. For more than two clubs, the
 share of available points is compared.
 
 **Season statistics**:
-A player's current-season totals, accumulated from every statistic in their box
+A player's regular-season totals, accumulated from every statistic in their box
 scores, and the rates derived from them, such as faceoff percentage, time on ice
 per game, save percentage, and GAA. A team's season statistics are its power
 play, penalty kill, faceoffs, and shot totals. Like match statistics, they
@@ -366,9 +439,9 @@ was shorthanded (the opponents' opportunities) in which it did not concede a
 power-play goal.
 
 **Completed season**:
-The state after the final scheduled match is played. It can still be browsed
-and managed, but no further league days can be played; playoffs and the next
-season are not modelled.
+The state after the champion is crowned. It can still be browsed, managed, and
+saved, but no further league days can be played; the next season is not
+modelled.
 
 **Saved game**:
 A stored copy of a whole game, from which play resumes exactly as it would have

@@ -70,10 +70,11 @@ public sealed class GameManager
             }
 
             var schedule = ScheduleGenerator.Create(league, random);
+            var preseason = PreseasonGenerator.Create(league, schedule.Matches[0].Date, random);
             var inbox = new InboxMessages();
             NewGameMessages.Deliver(inbox, managedTeam, command.SeasonYear);
 
-            _season = new Season(league, schedule);
+            _season = new Season(league, preseason, schedule);
             _managedTeamId = managedTeam.Id;
             _randomState = random.State;
             _inbox = inbox;
@@ -194,7 +195,8 @@ public sealed class GameManager
     /// The managed team plays today and its lineup dresses players who cannot play.
     /// </exception>
     /// <exception cref="InvalidOperationException">
-    /// No game has started, the season is complete, or a day is already being advanced.
+    /// No game has started, the season is complete (the playoffs have a champion), or a day is
+    /// already being advanced.
     /// </exception>
     public GameSnapshot AdvanceDay()
     {
@@ -205,7 +207,7 @@ public sealed class GameManager
             var season = GetSeason();
             if (season.IsComplete)
             {
-                throw new InvalidOperationException("The regular season is complete; no further days can be played.");
+                throw new InvalidOperationException("The season is complete; no further days can be played.");
             }
 
             var unavailable = ManagedPlayersToReplace(season);
@@ -226,6 +228,12 @@ public sealed class GameManager
             }
 
             InjuryMessages.Deliver(_inbox, season, _managedTeamId, playedDate);
+
+            // Advancing a complete season is rejected above, so a season complete now was won today.
+            if (season.IsComplete)
+            {
+                ChampionMessages.Deliver(_inbox, season, _managedTeamId);
+            }
 
             return CreateSnapshot();
         }

@@ -8,6 +8,7 @@ using HockeySim.Desktop.Home;
 using HockeySim.Desktop.Inbox;
 using HockeySim.Desktop.Lines;
 using HockeySim.Desktop.Players;
+using HockeySim.Desktop.Playoffs;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Saves;
 using HockeySim.Desktop.Schedule;
@@ -67,6 +68,7 @@ public sealed partial class GameShellViewModel : ObservableObject
         Lines = new LinesPageViewModel(session);
         Teams = new TeamsPageViewModel(session);
         Standings = new StandingsPageViewModel(session);
+        Playoffs = new PlayoffsPageViewModel(session, OpenMatch);
         Schedule = new SchedulePageViewModel(session);
         _pages = new Dictionary<ShellPage, ShellPageViewModel>
         {
@@ -76,6 +78,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             [ShellPage.Lines] = Lines,
             [ShellPage.Teams] = Teams,
             [ShellPage.Standings] = Standings,
+            [ShellPage.Playoffs] = Playoffs,
             [ShellPage.Schedule] = Schedule,
         };
 
@@ -93,6 +96,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             [
                 new(ShellPage.Teams, "Teams", Navigate),
                 new(ShellPage.Standings, "Standings", Navigate),
+                new(ShellPage.Playoffs, "Playoffs", Navigate),
                 new(ShellPage.Schedule, "Schedule", Navigate),
             ]),
             new("TRANSACTIONS",
@@ -123,6 +127,8 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     public StandingsPageViewModel Standings { get; }
 
+    public PlayoffsPageViewModel Playoffs { get; }
+
     public SchedulePageViewModel Schedule { get; }
 
     public IReadOnlyList<NavigationSectionViewModel> NavigationSections { get; }
@@ -142,9 +148,18 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     public string SeasonLabel => $"{PlayerDisplay.FormatSeason(Session.Snapshot.League.SeasonYear)} Season";
 
-    public string PhaseLabel => Session.Snapshot.Season.IsComplete
-        ? "Regular season complete"
-        : $"Regular season · {MatchDisplay.ShortDate(Session.Snapshot.Season.CurrentDate)}";
+    /// <summary>
+    /// The current phase and date, naming the playoff round under way, and the champion once the
+    /// season is complete.
+    /// </summary>
+    public string PhaseLabel => Session.Snapshot.Season switch
+    {
+        { Playoffs.ChampionId: { } champion } => $"Season complete · {Session.GetTeam(champion).Name} are champions",
+        { Phase: SeasonPhase.Preseason } season => $"Preseason · {MatchDisplay.ShortDate(season.CurrentDate)}",
+        { Phase: SeasonPhase.Playoffs, Playoffs: { } playoffs } season =>
+            $"Playoffs · {PlayoffDisplay.RoundName(playoffs.CurrentRound)} · {MatchDisplay.ShortDate(season.CurrentDate)}",
+        var season => $"Regular season · {MatchDisplay.ShortDate(season.CurrentDate)}",
+    };
 
     public string ContinueLabel => Session.IsAdvancing ? "Playing…" : "Continue";
 
@@ -158,7 +173,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             var season = Session.Snapshot.Season;
             if (season.IsComplete)
             {
-                return "The regular season is complete. Results and rosters remain available.";
+                return "The season is complete. Results and rosters remain available.";
             }
 
             var date = MatchDisplay.ShortDate(season.CurrentDate);
@@ -167,7 +182,13 @@ public sealed partial class GameShellViewModel : ObservableObject
                 return $"Replace the injured players in your lineup before playing {date}.";
             }
 
-            var matches = Session.Snapshot.Schedule.Matches.Where(match => match.Date == season.CurrentDate).ToList();
+            var schedule = season.Phase switch
+            {
+                SeasonPhase.Preseason => Session.Snapshot.Schedule.PreseasonMatches,
+                SeasonPhase.Playoffs => Session.Snapshot.Schedule.PlayoffMatches,
+                _ => Session.Snapshot.Schedule.Matches,
+            };
+            var matches = schedule.Where(match => match.Date == season.CurrentDate).ToList();
             if (matches.Count == 0)
             {
                 return $"No league matches on {date}. Continue to the next day.";
@@ -175,7 +196,13 @@ public sealed partial class GameShellViewModel : ObservableObject
 
             var managedTeamId = Session.Snapshot.ManagedTeamId;
             var managedMatch = matches.FirstOrDefault(match => match.HomeTeamId == managedTeamId || match.AwayTeamId == managedTeamId);
-            var count = matches.Count == 1 ? "1 league match" : $"{matches.Count} league matches";
+            var kind = season.Phase switch
+            {
+                SeasonPhase.Preseason => "preseason",
+                SeasonPhase.Playoffs => "playoff",
+                _ => "league",
+            };
+            var count = matches.Count == 1 ? $"1 {kind} match" : $"{matches.Count} {kind} matches";
             return managedMatch is null
                 ? $"Play {date}: {count}. Your team does not play."
                 : $"Play {date}: {count}, including yours.";

@@ -204,15 +204,17 @@ public sealed class SeasonTests
     }
 
     [Fact]
-    public void AfterTheFinalMatchTheSeasonIsCompleteAndRejectsFurtherDays()
+    public void AfterTheFinalRegularSeasonMatchThePlayoffsBeginAndTheSeasonContinues()
     {
         PlayOpeningDay();
         _season.CompleteDay([]);
+        Assert.Null(_season.Playoffs);
         _season.CompleteDay([Result(_finalMatch, 2, 1)]);
 
-        Assert.True(_season.IsComplete);
-        Assert.Equal(OpeningDay.AddDays(3), _season.CurrentDate);
-        Assert.Throws<InvalidOperationException>(() => _season.CompleteDay([]));
+        Assert.True(_season.IsRegularSeasonComplete);
+        Assert.False(_season.IsComplete);
+        Assert.Equal(SeasonPhase.Playoffs, _season.Phase);
+        Assert.NotNull(_season.Playoffs);
         Assert.Equal(OpeningDay.AddDays(3), _season.CurrentDate);
     }
 

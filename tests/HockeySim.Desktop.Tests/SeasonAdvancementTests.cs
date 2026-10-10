@@ -1,6 +1,7 @@
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Schedule;
+using HockeySim.Desktop.Standings;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 
@@ -22,8 +23,39 @@ public sealed class SeasonAdvancementTests
         Assert.True(shell.AdvanceDayCommand.CanExecute(null));
         Assert.Equal($"Play {MatchDisplay.ShortDate(OpeningDay)}: 16 league matches, including yours.", shell.ContinueDescription);
         Assert.StartsWith("Today · ", shell.Home.NextMatchCaption, StringComparison.Ordinal);
+        Assert.Equal("Regular season", shell.Home.Tiles[0].Value);
+        Assert.Equal("0 of 84 played", shell.Home.Tiles[0].Caption);
+
+        // The last preseason day is the latest played, and its results open like any other.
+        Assert.Equal($"LEAGUE RESULTS · {MatchDisplay.ShortDate(OpeningDay.AddDays(-1)).ToUpperInvariant()}", shell.Home.LatestResultsTitle);
+        Assert.Equal(16, shell.Home.LatestResults.Count);
+        Assert.All(shell.Home.LatestResults, result => Assert.True(result.OpenCommand.CanExecute(null)));
+        Assert.All(shell.Home.DivisionStandings, row => Assert.Equal(0, row.GamesPlayed));
+    }
+
+    [Fact]
+    public async Task ThePreseasonIsShownAsSuchUntilOpeningDay()
+    {
+        var session = GameTestData.StartPreseasonSession();
+        var shell = new GameShellViewModel(session);
+        var firstDay = MatchDisplay.ShortDate(session.Snapshot.Season.CurrentDate);
+
+        Assert.Equal($"Preseason · {firstDay}", shell.PhaseLabel);
+        Assert.Equal($"Play {firstDay}: 16 preseason matches, including yours.", shell.ContinueDescription);
+        Assert.EndsWith(" · Preseason", shell.Home.NextMatchCaption, StringComparison.Ordinal);
+        Assert.Equal("Preseason", shell.Home.Tiles[0].Value);
+        Assert.Equal("0 of 7 played · counts toward nothing", shell.Home.Tiles[0].Caption);
         Assert.Empty(shell.Home.LatestResults);
-        Assert.Contains("opens", shell.Home.LatestResultsCaption, StringComparison.Ordinal);
+        Assert.Equal($"The preseason opens {MatchDisplay.LongDate(session.Snapshot.Season.CurrentDate)}.", shell.Home.LatestResultsCaption);
+
+        while (session.Snapshot.Season.Phase == SeasonPhase.Preseason)
+        {
+            await shell.AdvanceDayCommand.ExecuteAsync(null);
+        }
+
+        Assert.Equal($"Regular season · {MatchDisplay.ShortDate(OpeningDay)}", shell.PhaseLabel);
+        Assert.Equal($"Play {MatchDisplay.ShortDate(OpeningDay)}: 16 league matches, including yours.", shell.ContinueDescription);
+        Assert.DoesNotContain("Preseason", shell.Home.NextMatchCaption, StringComparison.Ordinal);
         Assert.All(shell.Home.DivisionStandings, row => Assert.Equal(0, row.GamesPlayed));
     }
 
@@ -54,12 +86,13 @@ public sealed class SeasonAdvancementTests
             Assert.True(pair.First.Points >= pair.Second.Points);
         });
 
-        var firstMatch = shell.Schedule.Matches[0];
+        var regularSeason = shell.Schedule.Matches.Where(match => match.Phase == SeasonPhase.RegularSeason).ToList();
+        var firstMatch = regularSeason[0];
         Assert.True(firstMatch.IsCompleted);
         Assert.Equal(MatchDisplay.ResultFor(season.Results.Single(result =>
             result.Home.TeamId == session.ManagedTeam.Id || result.Away.TeamId == session.ManagedTeam.Id), session.ManagedTeam.Id), firstMatch.Result);
-        Assert.True(shell.Schedule.Matches[1].IsNext);
-        Assert.Equal($"{session.ManagedTeam.Name} · 1 of 84 played", shell.Schedule.Subtitle);
+        Assert.True(regularSeason[1].IsNext);
+        Assert.Equal($"{session.ManagedTeam.Name} · 1 of 84 regular-season matches played", shell.Schedule.Subtitle);
     }
 
     [Fact]
@@ -157,13 +190,16 @@ public sealed class SeasonAdvancementTests
     {
         var session = GameTestData.StartSession();
         var schedule = new GameShellViewModel(session).Schedule;
+        var regularSeason = schedule.Matches.Where(match => match.Phase == SeasonPhase.RegularSeason).ToList();
 
-        Assert.Equal(84, schedule.Matches.Count);
-        Assert.Equal(42, schedule.Matches.Count(match => match.Venue == "vs"));
-        Assert.True(schedule.Matches[0].IsNext);
-        Assert.All(schedule.Matches, match => Assert.False(match.IsCompleted));
+        Assert.Equal(84, regularSeason.Count);
+        Assert.Equal(42, regularSeason.Count(match => match.Venue == "vs"));
+        Assert.All(regularSeason, match => Assert.Equal("REG", match.PhaseLabel));
+        Assert.True(regularSeason[0].IsNext);
+        Assert.All(regularSeason, match => Assert.False(match.IsCompleted));
+        Assert.DoesNotContain(schedule.Matches, match => match.Phase == SeasonPhase.Playoffs);
 
-        schedule.SelectedMatch = schedule.Matches[3];
+        schedule.SelectedMatch = regularSeason[3];
 
         Assert.Null(schedule.SelectedResult);
         Assert.Contains("is scheduled for", schedule.SelectionHint, StringComparison.Ordinal);
@@ -172,15 +208,46 @@ public sealed class SeasonAdvancementTests
         schedule.SelectedTeam = otherTeam;
 
         Assert.Null(schedule.SelectedMatch);
-        Assert.Equal(84, schedule.Matches.Count);
+        Assert.Equal(91, schedule.Matches.Count);
         Assert.All(schedule.Matches, match => Assert.NotEqual(otherTeam.Name, match.Opponent));
         Assert.StartsWith(otherTeam.Name, schedule.Subtitle, StringComparison.Ordinal);
     }
 
     [Fact]
+    public async Task ThePreseasonIsListedFirstOnTheScheduleAndItsResultsOpen()
+    {
+        var session = GameTestData.StartPreseasonSession();
+        var shell = new GameShellViewModel(session);
+        var schedule = shell.Schedule;
+
+        Assert.Equal(91, schedule.Matches.Count);
+        Assert.All(schedule.Matches.Take(7), match =>
+        {
+            Assert.Equal(SeasonPhase.Preseason, match.Phase);
+            Assert.Equal("PRE", match.PhaseLabel);
+        });
+        Assert.All(schedule.Matches.Skip(7), match => Assert.Equal(SeasonPhase.RegularSeason, match.Phase));
+        Assert.True(schedule.Matches[0].IsNext);
+        Assert.Equal($"{session.ManagedTeam.Name} · 0 of 84 regular-season matches played", schedule.Subtitle);
+
+        await shell.AdvanceDayCommand.ExecuteAsync(null);
+
+        var played = schedule.Matches[0];
+        Assert.True(played.IsCompleted);
+        Assert.True(schedule.Matches[1].IsNext);
+        var managedResult = Assert.Single(shell.Home.LatestResults, result => result.InvolvesManagedTeam);
+        managedResult.OpenCommand.Execute(null);
+
+        Assert.Equal(ShellPage.Schedule, shell.CurrentPageKind);
+        Assert.Same(schedule.Matches[0], schedule.SelectedMatch);
+        Assert.NotNull(schedule.SelectedResult);
+        Assert.Equal("1 of 7 played · counts toward nothing", shell.Home.Tiles[0].Caption);
+    }
+
+    [Fact]
     public async Task AFailedDayIsReportedAndNothingIsApplied()
     {
-        var session = GameTestData.StartSession(new GameManager(new FailingMatchSimulator()));
+        var session = GameTestData.StartPreseasonSession(new GameManager(new FailingMatchSimulator()));
         var shell = new GameShellViewModel(session);
         var before = session.Snapshot;
 
@@ -206,8 +273,9 @@ public sealed class SeasonAdvancementTests
     public async Task OverlappingAdvancementIsPrevented()
     {
         using var engine = new GatedMatchSimulator();
-        var session = GameTestData.StartSession(new GameManager(engine));
+        var session = GameTestData.StartPreseasonSession(new GameManager(engine));
         var shell = new GameShellViewModel(session);
+        var firstDay = session.Snapshot.Season.CurrentDate;
 
         var advancing = shell.AdvanceDayCommand.ExecuteAsync(null);
         await engine.WaitUntilPlayingAsync();
@@ -223,47 +291,9 @@ public sealed class SeasonAdvancementTests
         Assert.Null(shell.AdvanceError);
         Assert.False(session.IsAdvancing);
         Assert.Equal("Continue", shell.ContinueLabel);
-        Assert.Equal(16, session.Snapshot.Season.Results.Count);
-        Assert.Equal(OpeningDay.AddDays(1), session.Snapshot.Season.CurrentDate);
+        Assert.Equal(16, session.Snapshot.Season.PreseasonResults.Count);
+        Assert.Equal(firstDay.AddDays(1), session.Snapshot.Season.CurrentDate);
         Assert.True(shell.AdvanceDayCommand.CanExecute(null));
-    }
-
-    [Fact]
-    public async Task ACompletedSeasonCannotBeAdvancedButStaysBrowsable()
-    {
-        var session = GameTestData.StartSession();
-        var shell = new GameShellViewModel(session);
-
-        // 84 rounds, every other day, finish 167 days after opening night. Injured players are
-        // replaced whenever Continue waits for it, as the user would.
-        for (var day = 0; day < 200 && !session.Snapshot.Season.IsComplete; day++)
-        {
-            if (shell.HasPlayersToReplace)
-            {
-                session.SetLineup(InjuredPlayerReplacement.ReplacingInjured(session.Snapshot));
-            }
-
-            await shell.AdvanceDayCommand.ExecuteAsync(null);
-            Assert.Null(shell.AdvanceError);
-        }
-
-        Assert.True(session.Snapshot.Season.IsComplete);
-        Assert.False(shell.AdvanceDayCommand.CanExecute(null));
-        Assert.Equal("Regular season complete", shell.PhaseLabel);
-        Assert.StartsWith("The regular season is complete", shell.ContinueDescription, StringComparison.Ordinal);
-        Assert.Equal("Regular season complete", shell.Home.NextMatchTitle);
-        Assert.Equal(16, shell.Home.LatestResults.Count);
-        Assert.All(shell.Home.DivisionStandings, row => Assert.Equal(84, row.GamesPlayed));
-        Assert.EndsWith("final standings", shell.Standings.Subtitle, StringComparison.Ordinal);
-        Assert.All(shell.Standings.Tables.SelectMany(table => table.Rows), row => Assert.Equal(84, row.GamesPlayed));
-        Assert.Equal(84, shell.Roster.Roster.Goalies.Sum(row => row.Season.GamesPlayed));
-        Assert.All(shell.Schedule.Matches, match => Assert.True(match.IsCompleted));
-        Assert.DoesNotContain(shell.Schedule.Matches, match => match.IsNext);
-
-        shell.Navigate(ShellPage.Roster);
-        Assert.IsType<RosterPageViewModel>(shell.CurrentPage);
-        shell.Home.LatestResults[0].OpenCommand.Execute(null);
-        Assert.NotNull(Assert.IsType<SchedulePageViewModel>(shell.CurrentPage).SelectedResult);
     }
 
     [Theory]

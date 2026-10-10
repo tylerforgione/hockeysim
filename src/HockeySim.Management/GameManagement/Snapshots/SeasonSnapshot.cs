@@ -5,10 +5,12 @@ using HockeySim.Domain;
 namespace HockeySim.Management.GameManagement.Snapshots;
 
 /// <summary>
-/// The regular season's progress: the current date, completed results, and current-season totals.
+/// The season's progress: the current date and phase, completed results, regular-season totals,
+/// and the playoffs once they start.
 /// </summary>
 public sealed class SeasonSnapshot
 {
+    private readonly ReadOnlyCollection<CompletedMatchSnapshot> _preseasonResults;
     private readonly ReadOnlyCollection<CompletedMatchSnapshot> _results;
     private readonly ReadOnlyCollection<TeamRecordSnapshot> _teamRecords;
     private readonly ReadOnlyCollection<TeamSeasonStatisticsSnapshot> _teamStatistics;
@@ -17,16 +19,24 @@ public sealed class SeasonSnapshot
 
     private SeasonSnapshot(
         DateOnly currentDate,
+        SeasonPhase phase,
+        bool isRegularSeasonComplete,
         bool isComplete,
+        IReadOnlyList<CompletedMatchSnapshot> preseasonResults,
         IReadOnlyList<CompletedMatchSnapshot> results,
         IReadOnlyList<TeamRecordSnapshot> teamRecords,
         IReadOnlyList<TeamSeasonStatisticsSnapshot> teamStatistics,
         StandingsSnapshot standings,
         IReadOnlyList<SkaterSeasonStatisticsSnapshot> skaterStatistics,
-        IReadOnlyList<GoalieSeasonStatisticsSnapshot> goalieStatistics)
+        IReadOnlyList<GoalieSeasonStatisticsSnapshot> goalieStatistics,
+        PlayoffsSnapshot? playoffs)
     {
         CurrentDate = currentDate;
+        Phase = phase;
+        IsRegularSeasonComplete = isRegularSeasonComplete;
         IsComplete = isComplete;
+        Playoffs = playoffs;
+        _preseasonResults = new ReadOnlyCollection<CompletedMatchSnapshot>(preseasonResults.ToList());
         _results = new ReadOnlyCollection<CompletedMatchSnapshot>(results.ToList());
         _teamRecords = new ReadOnlyCollection<TeamRecordSnapshot>(teamRecords.ToList());
         _teamStatistics = new ReadOnlyCollection<TeamSeasonStatisticsSnapshot>(teamStatistics.ToList());
@@ -36,44 +46,66 @@ public sealed class SeasonSnapshot
     }
 
     /// <summary>
-    /// The next league day to be played, or the day after the final scheduled match once the
-    /// season is complete.
+    /// The next league day to be played, or the day after the final playoff match once the season
+    /// is complete.
     /// </summary>
     public DateOnly CurrentDate { get; }
 
     /// <summary>
-    /// Whether every scheduled match has been played. A complete season cannot be advanced.
+    /// The phase of the current date: the preseason until opening day, the regular season until
+    /// its every match is played, then the playoffs.
+    /// </summary>
+    public SeasonPhase Phase { get; }
+
+    /// <summary>Whether every regular-season match has been played, so the standings are final.</summary>
+    public bool IsRegularSeasonComplete { get; }
+
+    /// <summary>
+    /// Whether the playoffs have crowned a champion. A complete season cannot be advanced.
     /// </summary>
     public bool IsComplete { get; }
 
-    /// <summary>Every completed match, in schedule order.</summary>
+    /// <summary>The playoffs, once the regular season is complete; <see langword="null"/> until then.</summary>
+    public PlayoffsSnapshot? Playoffs { get; }
+
+    /// <summary>
+    /// Every completed preseason match, in schedule order. They count toward no record, statistic,
+    /// or standings.
+    /// </summary>
+    public IReadOnlyList<CompletedMatchSnapshot> PreseasonResults => _preseasonResults;
+
+    /// <summary>Every completed regular-season match, in schedule order.</summary>
     public IReadOnlyList<CompletedMatchSnapshot> Results => _results;
 
-    /// <summary>Every team's record, in league team order; see <see cref="Standings"/> for rankings.</summary>
+    /// <summary>Every team's regular-season record, in league team order; see <see cref="Standings"/> for rankings.</summary>
     public IReadOnlyList<TeamRecordSnapshot> TeamRecords => _teamRecords;
 
-    /// <summary>Every team's special teams, faceoff, and shot totals, in league team order.</summary>
+    /// <summary>Every team's regular-season special teams, faceoff, and shot totals, in league team order.</summary>
     public IReadOnlyList<TeamSeasonStatisticsSnapshot> TeamStatistics => _teamStatistics;
 
     /// <summary>League, conference, and division standings from the results so far.</summary>
     public StandingsSnapshot Standings { get; }
 
-    /// <summary>Every skater who has appeared, in league team and roster order.</summary>
+    /// <summary>Regular-season totals for every skater who has appeared, in league team and roster order.</summary>
     public IReadOnlyList<SkaterSeasonStatisticsSnapshot> SkaterStatistics => _skaterStatistics;
 
-    /// <summary>Every goalie who has started, in league team and roster order.</summary>
+    /// <summary>Regular-season totals for every goalie who has started, in league team and roster order.</summary>
     public IReadOnlyList<GoalieSeasonStatisticsSnapshot> GoalieStatistics => _goalieStatistics;
 
     internal static SeasonSnapshot Create(Season season) =>
         new(
             season.CurrentDate,
+            season.Phase,
+            season.IsRegularSeasonComplete,
             season.IsComplete,
+            season.PreseasonMatches.Select(CompletedMatchSnapshot.Create).ToList(),
             season.CompletedMatches.Select(CompletedMatchSnapshot.Create).ToList(),
             season.TeamRecords.Select(TeamRecordSnapshot.Create).ToList(),
             season.TeamStatistics.Select(TeamSeasonStatisticsSnapshot.Create).ToList(),
             StandingsSnapshot.Create(season),
             season.SkaterStatistics.Select(SkaterSeasonStatisticsSnapshot.Create).ToList(),
-            season.GoalieStatistics.Select(GoalieSeasonStatisticsSnapshot.Create).ToList());
+            season.GoalieStatistics.Select(GoalieSeasonStatisticsSnapshot.Create).ToList(),
+            season.Playoffs is null ? null : PlayoffsSnapshot.Create(season.Playoffs));
 }
 
 /// <param name="Goals">The scoring summary: every goal scored by a player, in the order scored.</param>
@@ -283,7 +315,7 @@ public sealed record GoalieBoxScoreSnapshot(
 }
 
 /// <summary>
-/// A team's current-season record. Overtime and shootout losses are kept separately; both earn
+/// A team's record in the regular season or the playoffs. Overtime and shootout losses are kept separately; both earn
 /// one standings point. Goals include shootout deciding goals.
 /// </summary>
 public sealed record TeamRecordSnapshot(

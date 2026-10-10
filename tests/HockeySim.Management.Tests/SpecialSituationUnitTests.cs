@@ -14,7 +14,7 @@ public sealed class SpecialSituationUnitTests
     [Fact]
     public void EveryGeneratedTeamHasEveryUnitFilledWithItsDressedSkaters()
     {
-        var snapshot = StartGame(new GameManager());
+        var snapshot = StartAtOpeningDay(new GameManager());
 
         Assert.All(snapshot.League.Teams, team =>
         {
@@ -43,7 +43,7 @@ public sealed class SpecialSituationUnitTests
     [Fact]
     public void GeneratedPowerPlayUnitsComeFromTheTopLinesAndPairs()
     {
-        var team = ManagedTeam(StartGame(new GameManager()));
+        var team = ManagedTeam(StartAtOpeningDay(new GameManager()));
         var lineup = team.Lineup;
 
         var units = lineup.UnitsFor(SpecialSituation.PowerPlay5On4);
@@ -62,7 +62,7 @@ public sealed class SpecialSituationUnitTests
     public void SetLineupChangesUnitsAndExtraAttackersWithAnySkaterInAnySlot()
     {
         var manager = new GameManager();
-        var before = StartGame(manager);
+        var before = StartAtOpeningDay(manager);
         var team = ManagedTeam(before);
         var lineup = team.Lineup;
         var command = SetLineupCommand.From(lineup);
@@ -97,7 +97,7 @@ public sealed class SpecialSituationUnitTests
     public void ScratchingAPlayerWhoFillsUnitSlotsIsRejectedUnlessTheUnitsAreChangedToo()
     {
         var manager = new GameManager();
-        var before = StartGame(manager);
+        var before = StartAtOpeningDay(manager);
         var team = ManagedTeam(before);
         var scratchedCentreId = team.ScratchedPlayerIds.Single(
             id => team.Roster.Single(player => player.Id == id).Position == Position.Centre);
@@ -135,7 +135,7 @@ public sealed class SpecialSituationUnitTests
     public void SetLineupRejectsInvalidUnitsWithoutChangingState(string change)
     {
         var manager = new GameManager();
-        var before = StartGame(manager);
+        var before = StartAtOpeningDay(manager);
         var team = ManagedTeam(before);
         var command = SetLineupCommand.From(team.Lineup);
         var units = command.SpecialSituationUnits;
@@ -166,7 +166,7 @@ public sealed class SpecialSituationUnitTests
     public void UnitSnapshotsCannotBeMutatedOrChangedByLaterCommands()
     {
         var manager = new GameManager();
-        var team = ManagedTeam(StartGame(manager));
+        var team = ManagedTeam(StartAtOpeningDay(manager));
         var units = team.Lineup.SpecialSituationUnits;
         var description = Describe([team]);
 

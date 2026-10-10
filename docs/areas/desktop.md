@@ -18,8 +18,9 @@ view model together.
 | `Main/` | The window and top-level screen choice, with discard confirmation |
 | `Startup/`, `NewGame/`, `Saves/` | The startup menu, new-game setup, save and load screens |
 | `Game/` | `GameSession` (commands, snapshots, unsaved progress) and the in-game shell |
-| `Home/`, `Inbox/`, `Roster/`, `Lines/`, `Teams/`, `Standings/`, `Schedule/` | The shell's pages |
-| `Players/` | Player profile, season totals as displayed (`PlayerSeasonTotals`), and shared player and injury formatting (`PlayerDisplay`, `InjuryDisplay`) |
+| `Home/`, `Inbox/`, `Roster/`, `Lines/`, `Teams/`, `Standings/`, `Playoffs/`, `Schedule/` | The shell's pages |
+| `Players/` | Player profile, regular-season or playoff totals as displayed (`PlayerSeasonTotals`, chosen by `StatisticsSet`), and shared player and injury formatting (`PlayerDisplay`, `InjuryDisplay`) |
+| `Playoffs/PlayoffDisplay.cs` | Shared round, seed, and series-status formatting, and finding a team's playoff game by date |
 | `Roster/TeamStatisticsDisplay.cs`, `InjuryReportRowViewModel.cs` | The team statistics strip and injury report above each roster |
 | `Schedule/MatchDetail*`, `MatchDisplay.cs` | The box score with its summaries, and shared match and statistic formatting |
 | `Confirmation/` | The confirmation shown over every screen |
@@ -35,13 +36,14 @@ games, plus a headless Avalonia walkthrough.
 | `MainWindowViewTests.cs` | Headless walkthrough of every page, saving, loading, closing |
 | `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup, navigation, browsing teams |
 | `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings |
-| `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, a full season |
-| `StandingsAndStatisticsTests.cs` | Standings scopes, season totals |
+| `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, the preseason labels, the schedule's phases and preseason results |
+| `PlayoffDisplayTests.cs` | A shared season played through the shell: the bracket before and at each playoff stage, playoff schedule rows and box scores, switching statistic sets, the completed season and champion |
+| `StandingsAndStatisticsTests.cs` | Standings scopes including the wild card, playoff markers, season totals |
 | `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, the team strip |
 | `SaveAndLoadTests.cs` | Save and load screens, unsaved progress, confirmations |
 | `PlayerBiographyDisplayTests.cs`, `AppVersionTests.cs` | Formatting, version display |
 | `InjuryDisplayTests.cs` | Continue waiting for replacements, Lines-page injury warnings, roster markers, the injury report, the profile's health |
-| `GameTestData.cs`, `TestMatchSimulators.cs`, `TemporarySaveDirectory.cs`, `InjuredPlayerReplacement.cs` | Builders, test engines, and replacing injured players between days |
+| `GameTestData.cs`, `TestMatchSimulators.cs`, `TemporarySaveDirectory.cs`, `InjuredPlayerReplacement.cs`, `PreseasonPlay.cs` | Builders (sessions start on opening day unless a test needs the preseason), test engines, and replacing injured players between days |
 
 ## Behaviour
 
@@ -72,10 +74,30 @@ While Management's `PlayersToReplace` is not empty, Continue is disabled and a
 banner under the title bar names the injured players to replace, with a button
 to the Lines page; it clears once a saved lineup leaves them out.
 A failed day is shown as an error banner; Management applied nothing, so the
-pages still show the unplayed day. Once the season is complete, Continue is
-disabled and every page remains browsable. The schedule page lists one team's
-84 matches with results and opens a completed match's score, decision, and box
-score; these are single-match figures, kept apart from season totals. The box
+pages still show the unplayed day. The title bar names the phase and date
+(Preseason, Regular season, or Playoffs with the round under way), and Continue
+counts the day's preseason, league, or playoff matches. The home page starts
+with a season tile: preseason or regular-season matches played (the preseason
+counting toward nothing), the managed team's playoff series and its status,
+how far it went once eliminated, or that it did not qualify. Its next match is
+marked as a preseason match or by playoff round, game number, and series status,
+and its latest results list the last played day in any phase, each opening the
+box score. Once the regular season ends the standings page shows the final
+standings. Once the champion is crowned the season is complete: the title bar
+names the champion, Continue is disabled, and every page remains browsable. The
+schedule page lists one team's matches in every phase in date order (its seven
+preseason matches, its 84 regular-season matches, and its playoff games as
+they are scheduled), each labelled PRE, REG, or by playoff round and game
+("R1 G3"), with results; its subtitle counts regular-season matches played. It
+opens a completed match's score, decision, and box score; these are
+single-match figures, kept apart from season totals. The playoffs page shows the
+bracket: a column per round with each series in bracket order, each team's seed
+(division initial and finish, such as N1, or WC1 and WC2), its wins, the
+series status, and the winner in bold and the loser dimmed; a round not yet
+formed is shown as to be decided. Selecting a series lists its games, played and
+scheduled, each opening on the schedule page; the managed team's latest series
+is selected at first. Before the playoffs the page explains when they begin and
+who qualifies, and once they end a banner names the champion. The box
 score starts with the scoring summary (each goal's period and time, team,
 scorer, assists, PP/SH/PS/EN marker, and the running score, away first) and the
 penalty summary (period and time, team, player, infraction, and length). It then
@@ -87,8 +109,12 @@ saves, save percentage, xG against, goals saved above expected, time on ice), an
 each team's power play (goals of opportunities) and penalty minutes under its
 shots; the two teams are stacked, away first, because each table needs the full
 width.
-The standings page presents Management's division, conference, or league tables
-as ranked, without re-sorting them. Each roster starts with a strip of the team's
+The standings page presents Management's division, wild-card, conference, or
+league tables as ranked, without re-sorting them. The wild-card view lists each
+division's top three, then each conference's wild-card race with a line under
+the second wild card. Every table marks each team's playoff status with the
+NHL's letter (x, y, z, p, or e) before its name, with the meaning in a tooltip
+and a legend beneath the tables. Each roster starts with a strip of the team's
 season statistics: power-play, penalty-kill, and faceoff percentages and its
 five-on-five Corsi, Fenwick, shot, and xG shares, then the team's injury report:
 each injury that has not healed, players who cannot play first, with its status
@@ -96,7 +122,11 @@ and expected return. Roster tables mark an injured player OUT or INJ beside
 their name, with the details in a tooltip, and the player profile shows the
 player's health: each injury, its expected return, and either that the player
 cannot play or the rating points it costs while playing through. The exact
-recovery time, wear, and durability are never shown. Roster tables for every team
+recovery time, wear, and durability are never shown. Once the playoffs start,
+each roster switches between regular-season and playoff statistics; the choice
+changes the team strip, both tables, and the profile together, holds across
+teams and days like the column choice, and shows zeros and dashes for a team or
+player without playoff games. Roster tables for every team
 switch between ratings, basic season totals (skater GP, G, A, P, +/-, PIM, PPP,
 SHP, shots, TOI per game, FO%; goalie GP, SA, SV, GA, SV%, GAA, shutouts), and
 advanced figures (skater five-on-five on-ice Corsi and Fenwick for, against, and
