@@ -7,7 +7,27 @@
   <Border Classes="panel" Width="520" HorizontalAlignment="Left" VerticalAlignment="Top">
     <StackPanel>
       <Border Classes="panel-header">
-        <TextBlock Classes="panel-title" Text="TEAM STATISTICS" />
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+          <TextBlock Classes="panel-title" Text="TEAM STATISTICS" />
+          <StackPanel Grid.Column="1"
+                      Orientation="Horizontal"
+                      Spacing="0"
+                      VerticalAlignment="Center"
+                      IsVisible="{Binding HasPlayoffStatistics}">
+            <Button x:Name="ShowRegularSeasonButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsRegularSeason}"
+                    Content="Regular season"
+                    Command="{Binding ShowStatisticsSetCommand}"
+                    CommandParameter="{x:Static players:StatisticsSet.RegularSeason}" />
+            <Button x:Name="ShowPlayoffsButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsPlayoffs}"
+                    Content="Playoffs"
+                    Command="{Binding ShowStatisticsSetCommand}"
+                    CommandParameter="{x:Static players:StatisticsSet.Playoffs}" />
+          </StackPanel>
+        </Grid>
       </Border>
       <Border Classes="table-header">
         <Grid ColumnDefinitions="60,*,80">

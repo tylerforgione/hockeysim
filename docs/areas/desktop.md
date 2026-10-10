@@ -140,8 +140,9 @@ division's top three, then each conference's wild-card race with a line under
 the second wild card. Every table marks each team's playoff status with the
 NHL's letter (x, y, z, p, or e) before its name, with the meaning in a tooltip
 and a legend beneath the tables. The team statistics page lists the managed
-team's regular-season power-play, penalty-kill, and faceoff percentages and its
-five-on-five Corsi, Fenwick, shot, and xG shares. The injuries page is the managed team's
+team's power-play, penalty-kill, and faceoff percentages and its five-on-five
+Corsi, Fenwick, shot, and xG shares; once the playoffs start it switches between
+the regular season's and the playoffs', showing dashes if the team missed them. The injuries page is the managed team's
 injury report: each injury that has not healed, players who cannot play first,
 with its status and expected return. Other teams' figures wait for
 [team pages](https://github.com/tylerforgione/hockeysim/issues/63). Roster tables mark an injured player OUT or INJ beside

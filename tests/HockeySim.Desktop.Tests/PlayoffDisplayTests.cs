@@ -37,6 +37,10 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         Assert.False(roster.HasPlayoffStatistics);
         roster.ShowStatisticsSetCommand.Execute(StatisticsSet.Playoffs);
         Assert.True(roster.ShowsRegularSeason);
+
+        Assert.False(shell.TeamStatistics.HasPlayoffStatistics);
+        shell.TeamStatistics.ShowStatisticsSetCommand.Execute(StatisticsSet.Playoffs);
+        Assert.True(shell.TeamStatistics.ShowsRegularSeason);
     }
 
     [Fact]
@@ -189,6 +193,32 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         shell.Roster.Roster.ShowStatisticsSetCommand.Execute(StatisticsSet.Playoffs);
         shell.Roster.Refresh();
         Assert.True(shell.Roster.Roster.ShowsPlayoffs);
+    }
+
+    [Fact]
+    public void TeamStatisticsSwitchBetweenRegularSeasonAndPlayoffs()
+    {
+        var shell = new GameShellViewModel(season.Load(season.SecondRound));
+        var snapshot = shell.Session.Snapshot;
+        var page = shell.TeamStatistics;
+        string FaceoffPercentage() => page.Statistics.Single(stat => stat.Label == "FO%").Value;
+
+        Assert.True(page.HasPlayoffStatistics);
+        Assert.True(page.ShowsRegularSeason);
+        var regularSeason = snapshot.Season.TeamStatistics.Single(statistics => statistics.TeamId == snapshot.ManagedTeamId);
+        Assert.Equal(MatchDisplay.Percentage(regularSeason.FaceoffPercentage), FaceoffPercentage());
+
+        // A managed team that missed the playoffs has no playoff figures, so they show dashes.
+        page.ShowStatisticsSetCommand.Execute(StatisticsSet.Playoffs);
+        Assert.True(page.ShowsPlayoffs);
+        var playoffs = snapshot.Season.Playoffs!.TeamStatistics.SingleOrDefault(statistics => statistics.TeamId == snapshot.ManagedTeamId);
+        Assert.Equal(playoffs is null ? MatchDisplay.Undefined : MatchDisplay.Percentage(playoffs.FaceoffPercentage), FaceoffPercentage());
+
+        page.Refresh();
+        Assert.True(page.ShowsPlayoffs);
+
+        page.ShowStatisticsSetCommand.Execute(StatisticsSet.RegularSeason);
+        Assert.Equal(MatchDisplay.Percentage(regularSeason.FaceoffPercentage), FaceoffPercentage());
     }
 
     [Fact]

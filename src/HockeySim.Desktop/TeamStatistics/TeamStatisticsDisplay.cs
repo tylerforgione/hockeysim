@@ -13,6 +13,10 @@ namespace HockeySim.Desktop.TeamStatistics;
 /// </summary>
 public static class TeamStatisticsDisplay
 {
+    /// <summary>Statistics for a team that has not played, such as one that missed the playoffs.</summary>
+    public static TeamSeasonStatisticsSnapshot None(TeamId teamId) =>
+        new(teamId, 0, 0, 0, null, 0, 0, null, 0, 0, 0, null, SituationalShotTotals.None);
+
     public static IReadOnlyList<SeasonStatViewModel> Rows(TeamSeasonStatisticsSnapshot statistics)
     {
         ArgumentNullException.ThrowIfNull(statistics);
