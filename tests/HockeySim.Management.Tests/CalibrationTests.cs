@@ -51,7 +51,7 @@ public sealed class CalibrationTests(CalibrationTests.CalibratedSeason season)
             var manager = new GameManager(simulator);
             var snapshot = StartAtOpeningDay(manager, seed: 2026);
             simulator.IsRecording = true;
-            for (var advances = 0; !snapshot.Season.IsComplete && advances < MaximumAdvances; advances++)
+            for (var advances = 0; !snapshot.Season.IsRegularSeasonComplete && advances < MaximumAdvances; advances++)
             {
                 snapshot = manager.AdvanceDayReplacingInjured();
             }

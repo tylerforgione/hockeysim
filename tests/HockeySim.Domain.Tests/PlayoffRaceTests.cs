@@ -183,7 +183,7 @@ public sealed class PlayoffRaceTests
         var finalGame = Assert.Single(season.CurrentDateMatches);
         season.CompleteDay([TestResults.FromFinalScore(_league, finalGame, 0, 1, Regulation)]);
 
-        Assert.False(season.IsComplete);
+        Assert.False(season.IsRegularSeasonComplete);
         Assert.Equal(Eliminated, season.PlayoffStatuses()[team.Id]);
     }
 
@@ -206,7 +206,7 @@ public sealed class PlayoffRaceTests
         var season = Play();
         var statuses = season.PlayoffStatuses();
 
-        Assert.True(season.IsComplete);
+        Assert.True(season.IsRegularSeasonComplete);
         Assert.Equal(ClinchedBestRecord, statuses[Atlantic[0].Id]);
         Assert.Equal(ClinchedDivision, statuses[Metro[0].Id]);
         Assert.Equal(ClinchedPlayoffSpot, statuses[Atlantic[3].Id]);

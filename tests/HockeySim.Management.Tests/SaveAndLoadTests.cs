@@ -26,6 +26,8 @@ public sealed class SaveAndLoadTests
         PreseasonMatchOnOpeningDay,
         PreseasonResultSavedWithTheRegularSeason,
         InjuryInAPreseasonMatch,
+        MissingPlayoffMatches,
+        RegularSeasonResultSavedWithThePlayoffs,
         ScoreNotMatchingGoals,
         UndefinedDecision,
         BoxScoreForUnrosteredPlayer,
@@ -111,6 +113,7 @@ public sealed class SaveAndLoadTests
 
         Assert.Equal(Describe(saved), Describe(loaded));
         Assert.Equal(1344, loaded.Season.Results.Count);
+        Assert.NotNull(loaded.Season.Playoffs!.ChampionId);
         Assert.Throws<InvalidOperationException>(loadedManager.AdvanceDay);
     }
 
@@ -349,6 +352,12 @@ public sealed class SaveAndLoadTests
             {
                 PreseasonMatches = save.PreseasonMatches.Skip(1).ToList(),
                 CompletedMatches = [save.PreseasonMatches[0], .. save.CompletedMatches],
+            },
+            MissingPlayoffMatches => save with { PlayoffMatches = null! },
+            RegularSeasonResultSavedWithThePlayoffs => save with
+            {
+                CompletedMatches = save.CompletedMatches.SkipLast(1).ToList(),
+                PlayoffMatches = [save.CompletedMatches[^1]],
             },
             InjuryInAPreseasonMatch => save with
             {
