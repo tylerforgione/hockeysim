@@ -39,7 +39,7 @@ public sealed partial class StandingsPageViewModel : ShellPageViewModel
         {
             var snapshot = _session.Snapshot;
             var season = $"{PlayerDisplay.FormatSeason(snapshot.League.SeasonYear)} regular season";
-            if (snapshot.Season.IsComplete)
+            if (snapshot.Season.IsRegularSeasonComplete)
             {
                 return $"{season} · final standings";
             }

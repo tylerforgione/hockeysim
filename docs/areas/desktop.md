@@ -75,8 +75,13 @@ A failed day is shown as an error banner; Management applied nothing, so the
 pages still show the unplayed day. During the preseason the title bar says
 Preseason, Continue counts the day's preseason matches, and the home page's next
 match is marked as one; preseason results are not listed anywhere yet (#61).
-Once the season is complete, Continue is
-disabled and every page remains browsable. The schedule page lists one team's
+During the playoffs the title bar says Playoffs, Continue counts the day's
+playoff matches, the home page's next match is marked as one, and its latest
+results include playoff games, which do not open a box score yet; the standings
+page shows the final regular-season standings. The bracket, playoff box scores,
+and playoff statistics are not shown yet (#61). Once the champion is crowned the
+season is complete: the title bar says so, Continue is disabled, and every page
+remains browsable. The schedule page lists one team's
 84 matches with results and opens a completed match's score, decision, and box
 score; these are single-match figures, kept apart from season totals. The box
 score starts with the scoring summary (each goal's period and time, team,

@@ -144,8 +144,9 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     public string PhaseLabel => Session.Snapshot.Season switch
     {
-        { IsComplete: true } => "Regular season complete",
+        { IsComplete: true } => "Season complete",
         { Phase: SeasonPhase.Preseason } season => $"Preseason · {MatchDisplay.ShortDate(season.CurrentDate)}",
+        { Phase: SeasonPhase.Playoffs } season => $"Playoffs · {MatchDisplay.ShortDate(season.CurrentDate)}",
         var season => $"Regular season · {MatchDisplay.ShortDate(season.CurrentDate)}",
     };
 
@@ -161,7 +162,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             var season = Session.Snapshot.Season;
             if (season.IsComplete)
             {
-                return "The regular season is complete. Results and rosters remain available.";
+                return "The season is complete. Results and rosters remain available.";
             }
 
             var date = MatchDisplay.ShortDate(season.CurrentDate);
@@ -170,8 +171,12 @@ public sealed partial class GameShellViewModel : ObservableObject
                 return $"Replace the injured players in your lineup before playing {date}.";
             }
 
-            var isPreseason = season.Phase == SeasonPhase.Preseason;
-            var schedule = isPreseason ? Session.Snapshot.Schedule.PreseasonMatches : Session.Snapshot.Schedule.Matches;
+            var schedule = season.Phase switch
+            {
+                SeasonPhase.Preseason => Session.Snapshot.Schedule.PreseasonMatches,
+                SeasonPhase.Playoffs => Session.Snapshot.Schedule.PlayoffMatches,
+                _ => Session.Snapshot.Schedule.Matches,
+            };
             var matches = schedule.Where(match => match.Date == season.CurrentDate).ToList();
             if (matches.Count == 0)
             {
@@ -180,7 +185,12 @@ public sealed partial class GameShellViewModel : ObservableObject
 
             var managedTeamId = Session.Snapshot.ManagedTeamId;
             var managedMatch = matches.FirstOrDefault(match => match.HomeTeamId == managedTeamId || match.AwayTeamId == managedTeamId);
-            var kind = isPreseason ? "preseason" : "league";
+            var kind = season.Phase switch
+            {
+                SeasonPhase.Preseason => "preseason",
+                SeasonPhase.Playoffs => "playoff",
+                _ => "league",
+            };
             var count = matches.Count == 1 ? $"1 {kind} match" : $"{matches.Count} {kind} matches";
             return managedMatch is null
                 ? $"Play {date}: {count}. Your team does not play."

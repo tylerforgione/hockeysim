@@ -58,8 +58,30 @@ internal static class SaveTestData
 
         lines.AddRange(snapshot.Season.SkaterStatistics.Select(statistics => statistics.ToString()));
         lines.AddRange(snapshot.Season.GoalieStatistics.Select(statistics => statistics.ToString()));
+        lines.AddRange(DescribePlayoffs(snapshot));
         lines.AddRange(snapshot.Inbox.Select(message => message.ToString()));
         return lines;
+    }
+
+    /// <summary>The playoff schedule, bracket, results, and totals, if the playoffs have started.</summary>
+    private static IEnumerable<string> DescribePlayoffs(GameSnapshot snapshot)
+    {
+        var playoffs = snapshot.Season.Playoffs;
+        if (playoffs is null)
+        {
+            return ["no playoffs"];
+        }
+
+        return snapshot.Schedule.PlayoffMatches.Select(match => $"playoff {match}")
+            .Append($"round {playoffs.CurrentRound}, champion {playoffs.ChampionId}")
+            .Concat(playoffs.Series.Select(series =>
+                $"{series.Round} {series.HigherRanked} {series.HigherRankedWins}-{series.LowerRankedWins} {series.LowerRanked} "
+                + $"winner {series.WinnerId} next {series.NextGame}"))
+            .Append(SeasonAdvancementTests.Fingerprint(playoffs.Results))
+            .Concat(playoffs.TeamRecords.Select(record => record.ToString()))
+            .Concat(playoffs.TeamStatistics.Select(statistics => statistics.ToString()))
+            .Concat(playoffs.SkaterStatistics.Select(statistics => statistics.ToString()))
+            .Concat(playoffs.GoalieStatistics.Select(statistics => statistics.ToString()));
     }
 
     private static string Ranking(IEnumerable<StandingsEntrySnapshot> entries) =>

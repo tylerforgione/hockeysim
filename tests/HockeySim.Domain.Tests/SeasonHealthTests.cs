@@ -95,7 +95,7 @@ public sealed class SeasonHealthTests
 
         _season.CompleteDay([TestResults.Create(_league, _rematch, 3, 2)]);
 
-        Assert.True(_season.IsComplete);
+        Assert.True(_season.IsRegularSeasonComplete);
     }
 
     [Fact]

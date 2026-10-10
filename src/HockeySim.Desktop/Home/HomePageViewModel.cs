@@ -182,31 +182,37 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
     private void RefreshNextMatch(GameSnapshot snapshot, TeamSnapshot team)
     {
         var season = snapshot.Season;
-        var lastResult = season.Results.LastOrDefault(result => Involves(result, team.Id));
+        var lastResult = season.Results.Concat(season.Playoffs?.Results ?? []).LastOrDefault(result => Involves(result, team.Id));
         LastResultCaption = lastResult is null
             ? string.Empty
             : $"Last: {MatchDisplay.ResultFor(lastResult, team.Id)} {Opponent(lastResult.Home.TeamId, lastResult.Away.TeamId, team.Id)} · {MatchDisplay.ShortDate(lastResult.Date)}";
 
         var next = season.IsComplete
             ? null
-            : snapshot.Schedule.PreseasonMatches.Concat(snapshot.Schedule.Matches).FirstOrDefault(match =>
-                match.Date >= season.CurrentDate && (match.HomeTeamId == team.Id || match.AwayTeamId == team.Id));
+            : snapshot.Schedule.PreseasonMatches
+                .Concat(snapshot.Schedule.Matches)
+                .Concat(snapshot.Schedule.PlayoffMatches)
+                .FirstOrDefault(match =>
+                    match.Date >= season.CurrentDate && (match.HomeTeamId == team.Id || match.AwayTeamId == team.Id));
         if (next is null)
         {
-            NextMatchTitle = "Regular season complete";
-            NextMatchCaption = "No further matches are scheduled.";
+            NextMatchTitle = season.IsComplete ? "Season complete" : "No match scheduled";
+            NextMatchCaption = season.IsComplete ? "No further matches are scheduled." : "No match is scheduled yet.";
             return;
         }
 
         NextMatchTitle = Opponent(next.HomeTeamId, next.AwayTeamId, team.Id);
         var when = next.Date == season.CurrentDate ? "Today" : MatchDisplay.ShortDate(next.Date);
         var venue = next.HomeTeamId == team.Id ? "Home" : "Away";
-        NextMatchCaption = snapshot.Schedule.PreseasonMatches.Contains(next) ? $"{when} · {venue} · Preseason" : $"{when} · {venue}";
+        NextMatchCaption = snapshot.Schedule.PreseasonMatches.Contains(next) ? $"{when} · {venue} · Preseason"
+            : snapshot.Schedule.PlayoffMatches.Contains(next) ? $"{when} · {venue} · Playoffs"
+            : $"{when} · {venue}";
     }
 
     /// <summary>
     /// Shows the most recently played league day: the day before the current date. A day with no
-    /// league matches says so, rather than repeating an older day's results.
+    /// league matches says so, rather than repeating an older day's results. Playoff results are
+    /// listed but do not open, because the schedule page lists only the regular season (#61).
     /// </summary>
     private void RefreshLatestResults(GameSnapshot snapshot, TeamSnapshot team)
     {
@@ -222,7 +228,9 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
 
         var day = season.CurrentDate.AddDays(-1);
         LatestResultsTitle = $"LEAGUE RESULTS · {MatchDisplay.ShortDate(day).ToUpperInvariant()}";
+        var playoffResults = season.Playoffs?.Results ?? [];
         LatestResults = season.Results
+            .Concat(playoffResults)
             .Where(result => result.Date == day)
             .Select(result => new LeagueResultRowViewModel(
                 _session.GetTeam(result.Away.TeamId).Name,
@@ -231,7 +239,9 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
                 result.Home.Score,
                 MatchDisplay.DecisionSuffix(result.Decision),
                 Involves(result, team.Id),
-                () => _openMatch(result.Date, Involves(result, team.Id) ? team.Id : result.Home.TeamId)))
+                playoffResults.Contains(result)
+                    ? null
+                    : () => _openMatch(result.Date, Involves(result, team.Id) ? team.Id : result.Home.TeamId)))
             .ToList();
         LatestResultsCaption = LatestResults.Count == 0
             ? $"No league matches were scheduled on {MatchDisplay.LongDate(day)}."
@@ -251,8 +261,9 @@ public sealed record SummaryTileViewModel(string Label, string Value, string Cap
 
 public sealed partial class LeagueResultRowViewModel
 {
-    private readonly Action _open;
+    private readonly Action? _open;
 
+    /// <param name="open">Opens the match's box score; none when it cannot be opened yet.</param>
     public LeagueResultRowViewModel(
         string awayTeamName,
         int awayScore,
@@ -260,7 +271,7 @@ public sealed partial class LeagueResultRowViewModel
         int homeScore,
         string decisionSuffix,
         bool involvesManagedTeam,
-        Action open)
+        Action? open)
     {
         AwayTeamName = awayTeamName;
         AwayScore = awayScore;
@@ -284,10 +295,12 @@ public sealed partial class LeagueResultRowViewModel
 
     public bool InvolvesManagedTeam { get; }
 
-    [RelayCommand]
+    private bool CanOpen => _open is not null;
+
+    [RelayCommand(CanExecute = nameof(CanOpen))]
     private void Open()
     {
-        _open();
+        _open?.Invoke();
     }
 }
 

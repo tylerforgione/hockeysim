@@ -13,10 +13,10 @@ internal static class LeagueDay
 {
     /// <summary>
     /// Simulates the day's matches in schedule order on one continuous random stream, with
-    /// regular-season overtime, then hands the whole day to the season. The play-by-play stays
-    /// with the Simulation result; the completed match keeps the box score and the scoring and
-    /// penalty summaries, and the injuries and hidden wear that the season applies to the players'
-    /// health. Each match plays from the players' health on the current date; a preseason match
+    /// regular-season overtime or, in the playoffs, playoff overtime, then hands the whole day to
+    /// the season. The play-by-play stays with the Simulation result; the completed match keeps
+    /// the box score and the scoring and penalty summaries, and the injuries and hidden wear that
+    /// the season applies to the players' health. Each match plays from the players' health on the current date; a preseason match
     /// injures nobody and adds no wear. AI teams dress their <see cref="MatchDayLineup"/>; the
     /// managed team dresses its own lineup, which the caller has checked. Simulation never changes the teams, so if any match fails the season is untouched
     /// and the caller keeps its original random state.
@@ -32,6 +32,7 @@ internal static class LeagueDay
             team => team.Id,
             team => team.Id == managedTeamId ? team : DressedForToday(team, season));
         var results = new List<CompletedMatch>();
+        var overtime = season.Phase == SeasonPhase.Playoffs ? OvertimeFormat.Playoff : OvertimeFormat.RegularSeason;
 
         foreach (var scheduledMatch in season.CurrentDateMatches)
         {
@@ -39,8 +40,8 @@ internal static class LeagueDay
             var health = new MatchHealth(
                 season.CurrentDate,
                 match.Home.Roster.Concat(match.Away.Roster).Select(player => season.HealthOf(player.Id)),
-                injuriesPossible: season.Phase == SeasonPhase.RegularSeason);
-            var result = simulator.Simulate(match, OvertimeFormat.RegularSeason, health, randomState);
+                injuriesPossible: season.Phase != SeasonPhase.Preseason);
+            var result = simulator.Simulate(match, overtime, health, randomState);
             results.Add(ToCompletedMatch(scheduledMatch, result));
             randomState = result.RandomState;
         }

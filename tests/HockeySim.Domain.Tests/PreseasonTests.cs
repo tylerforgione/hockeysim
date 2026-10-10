@@ -85,7 +85,7 @@ public sealed class PreseasonTests
 
         Assert.Equal([opening], _season.CompletedMatches);
         Assert.Equal(2, _season.PreseasonMatches.Count);
-        Assert.True(_season.IsComplete);
+        Assert.True(_season.IsRegularSeasonComplete);
     }
 
     [Fact]

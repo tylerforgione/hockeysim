@@ -195,7 +195,8 @@ public sealed class GameManager
     /// The managed team plays today and its lineup dresses players who cannot play.
     /// </exception>
     /// <exception cref="InvalidOperationException">
-    /// No game has started, the season is complete, or a day is already being advanced.
+    /// No game has started, the season is complete (the playoffs have a champion), or a day is
+    /// already being advanced.
     /// </exception>
     public GameSnapshot AdvanceDay()
     {
@@ -206,7 +207,7 @@ public sealed class GameManager
             var season = GetSeason();
             if (season.IsComplete)
             {
-                throw new InvalidOperationException("The regular season is complete; no further days can be played.");
+                throw new InvalidOperationException("The season is complete; no further days can be played.");
             }
 
             var unavailable = ManagedPlayersToReplace(season);

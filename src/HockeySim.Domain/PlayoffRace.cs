@@ -15,14 +15,15 @@ namespace HockeySim.Domain;
 /// </para>
 /// <para>
 /// Counting every team that could finish ahead also ignores that those teams take points from
-/// each other when they meet; that too only delays a status. Once the season is complete there is
-/// nothing left to guarantee, and the statuses follow the final standings with every tie-breaker.
+/// each other when they meet; that too only delays a status. Once the regular season is complete
+/// there is nothing left to guarantee, and the statuses follow the final standings with every
+/// tie-breaker.
 /// </para>
 /// </remarks>
 internal static class PlayoffRace
 {
     public static Dictionary<TeamId, PlayoffStatus> Statuses(Season season) =>
-        season.IsComplete ? FinalStatuses(season) : GuaranteedStatuses(season);
+        season.IsRegularSeasonComplete ? FinalStatuses(season) : GuaranteedStatuses(season);
 
     private static Dictionary<TeamId, PlayoffStatus> FinalStatuses(Season season)
     {

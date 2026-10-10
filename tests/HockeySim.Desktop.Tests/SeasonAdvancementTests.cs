@@ -258,9 +258,10 @@ public sealed class SeasonAdvancementTests
         var session = GameTestData.StartSession();
         var shell = new GameShellViewModel(session);
 
-        // 84 rounds, every other day, finish 167 days after opening night. Injured players are
-        // replaced whenever Continue waits for it, as the user would.
-        for (var day = 0; day < 200 && !session.Snapshot.Season.IsComplete; day++)
+        // 84 rounds, every other day, finish 167 days after opening night, and the playoffs take
+        // at most about two months more. Injured players are replaced whenever Continue waits for
+        // it, as the user would.
+        for (var day = 0; day < 366 && !session.Snapshot.Season.IsComplete; day++)
         {
             if (shell.HasPlayersToReplace)
             {
@@ -272,11 +273,13 @@ public sealed class SeasonAdvancementTests
         }
 
         Assert.True(session.Snapshot.Season.IsComplete);
+        Assert.NotNull(session.Snapshot.Season.Playoffs!.ChampionId);
         Assert.False(shell.AdvanceDayCommand.CanExecute(null));
-        Assert.Equal("Regular season complete", shell.PhaseLabel);
-        Assert.StartsWith("The regular season is complete", shell.ContinueDescription, StringComparison.Ordinal);
-        Assert.Equal("Regular season complete", shell.Home.NextMatchTitle);
-        Assert.Equal(16, shell.Home.LatestResults.Count);
+        Assert.Equal("Season complete", shell.PhaseLabel);
+        Assert.StartsWith("The season is complete", shell.ContinueDescription, StringComparison.Ordinal);
+        Assert.Equal("Season complete", shell.Home.NextMatchTitle);
+        var finalGame = Assert.Single(shell.Home.LatestResults);
+        Assert.False(finalGame.OpenCommand.CanExecute(null));
         Assert.All(shell.Home.DivisionStandings, row => Assert.Equal(84, row.GamesPlayed));
         Assert.EndsWith("final standings", shell.Standings.Subtitle, StringComparison.Ordinal);
         Assert.All(shell.Standings.Tables.SelectMany(table => table.Rows), row => Assert.Equal(84, row.GamesPlayed));
@@ -298,8 +301,10 @@ public sealed class SeasonAdvancementTests
 
         shell.Navigate(ShellPage.Roster);
         Assert.IsType<RosterPageViewModel>(shell.CurrentPage);
-        shell.Home.LatestResults[0].OpenCommand.Execute(null);
-        Assert.NotNull(Assert.IsType<SchedulePageViewModel>(shell.CurrentPage).SelectedResult);
+        shell.Navigate(ShellPage.Schedule);
+        var schedule = Assert.IsType<SchedulePageViewModel>(shell.CurrentPage);
+        schedule.SelectedMatch = schedule.Matches[^1];
+        Assert.NotNull(schedule.SelectedResult);
     }
 
     [Theory]

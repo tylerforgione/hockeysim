@@ -9,8 +9,9 @@ using static HockeySim.Management.Tests.SeasonAdvancementTests;
 namespace HockeySim.Management.Tests;
 
 /// <summary>
-/// Plays one complete regular season headlessly and checks the world is complete and consistent.
-/// The season is played once and shared, because it is the slowest Management workflow.
+/// Plays one complete season, the regular season and the playoffs, headlessly and checks the world
+/// is complete and consistent. The season is played once and shared, because it is the slowest
+/// Management workflow.
 /// </summary>
 public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
     : IClassFixture<FullSeasonTests.CompletedSeason>
@@ -20,7 +21,7 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
     [Fact]
     public void EveryScheduledMatchIsPlayedExactlyOnceInScheduleOrder()
     {
-        Assert.True(Season.IsComplete);
+        Assert.True(Season.IsRegularSeasonComplete);
         Assert.Equal(1344, Season.Results.Count);
         Assert.Equal(
             completed.Snapshot.Schedule.Matches.Select(match => (match.Date, match.HomeTeamId, match.AwayTeamId)),
@@ -28,13 +29,15 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
     }
 
     [Fact]
-    public void TheSeasonTakesOneAdvancePerCalendarDayAndEndsTheDayAfterTheFinalMatch()
+    public void TheSeasonTakesOneAdvancePerCalendarDayAndEndsTheDayAfterTheFinalPlayoffMatch()
     {
         var schedule = completed.Snapshot.Schedule.Matches;
-        var lastMatchDate = schedule[^1].Date;
+        var lastMatchDate = completed.Snapshot.Schedule.PlayoffMatches[^1].Date;
 
         Assert.Equal(lastMatchDate.DayNumber - schedule[0].Date.DayNumber + 1, completed.Advances);
         Assert.Equal(lastMatchDate.AddDays(1), Season.CurrentDate);
+        Assert.Equal(schedule[^1].Date.AddDays(1), completed.RegularSeasonEnd.Season.CurrentDate);
+        Assert.Equal(SeasonPhase.Playoffs, completed.RegularSeasonEnd.Season.Phase);
     }
 
     [Fact]
@@ -375,10 +378,126 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
             }
         }
 
-        // Guarantees appear before the final day rather than only once the season is over.
+        // Guarantees appear before the final day rather than only once the regular season is over.
         var beforeTheEnd = daily[^2];
         Assert.Contains(beforeTheEnd.Values, status => status >= PlayoffStatus.ClinchedPlayoffSpot);
         Assert.Contains(beforeTheEnd.Values, status => status == PlayoffStatus.Eliminated);
+    }
+
+    [Fact]
+    public void TheFinalStandingsQualifiersPlayFifteenSeriesUntilAChampionIsCrowned()
+    {
+        var playoffs = Season.Playoffs!;
+        var series = playoffs.Series;
+
+        var qualifiers = Season.Standings.WildCard
+            .SelectMany(view => view.DivisionLeaders.SelectMany(division => division.Teams)
+                .Concat(view.WildCardRace.Take(view.WildCardCount)))
+            .Select(entry => entry.Record.TeamId);
+        Assert.Equal(
+            qualifiers.OrderBy(id => id.Value),
+            series.Where(series => series.Round == PlayoffRound.FirstRound)
+                .SelectMany(series => new[] { series.HigherRanked.TeamId, series.LowerRanked.TeamId })
+                .OrderBy(id => id.Value));
+
+        Assert.Equal([8, 4, 2, 1], Enum.GetValues<PlayoffRound>().Select(round => series.Count(series => series.Round == round)));
+        Assert.All(series, series =>
+        {
+            Assert.InRange(series.Games.Count, 4, 7);
+            Assert.Equal(4, Math.Max(series.HigherRankedWins, series.LowerRankedWins));
+            Assert.Equal(series.Games.Count, series.HigherRankedWins + series.LowerRankedWins);
+            Assert.Null(series.NextGame);
+            Assert.Equal(series.HigherRankedWins == 4 ? series.HigherRanked.TeamId : series.LowerRanked.TeamId, series.WinnerId);
+        });
+
+        // Each later series is between winners of the round before.
+        foreach (var round in Enum.GetValues<PlayoffRound>().Skip(1))
+        {
+            var winners = series.Where(series => series.Round == round - 1).Select(series => series.WinnerId!.Value).ToHashSet();
+            Assert.All(series.Where(series => series.Round == round), series =>
+                Assert.True(winners.Contains(series.HigherRanked.TeamId) && winners.Contains(series.LowerRanked.TeamId)));
+        }
+
+        Assert.True(Season.IsComplete);
+        Assert.Equal(series[^1].WinnerId, playoffs.ChampionId);
+        Assert.Equal(PlayoffRound.Final, playoffs.CurrentRound);
+    }
+
+    [Fact]
+    public void EverySeriesFollowsTheHomeIcePatternEveryOtherDayAndRoundsFollowTwoDaysApart()
+    {
+        var playoffs = Season.Playoffs!;
+        var regularSeasonEnd = completed.Snapshot.Schedule.Matches[^1].Date;
+
+        Assert.All(playoffs.Series, series =>
+        {
+            var hosts = string.Concat(series.Games.Select(game => game.Home.TeamId == series.HigherRanked.TeamId ? 'H' : 'L'));
+            Assert.StartsWith(hosts, "HHLLHLH", StringComparison.Ordinal);
+            Assert.All(series.Games.Zip(series.Games.Skip(1)), pair => Assert.Equal(pair.First.Date.AddDays(2), pair.Second.Date));
+        });
+
+        var roundStarts = Enum.GetValues<PlayoffRound>()
+            .Select(round => playoffs.Series.Where(series => series.Round == round).ToList())
+            .Select(round => (Start: round.Min(series => series.Games[0].Date), End: round.Max(series => series.Games[^1].Date)))
+            .ToList();
+        Assert.Equal(regularSeasonEnd.AddDays(2), roundStarts[0].Start);
+        Assert.All(roundStarts.Zip(roundStarts.Skip(1)), pair => Assert.Equal(pair.First.End.AddDays(2), pair.Second.Start));
+        Assert.All(playoffs.Series, series => Assert.Equal(
+            roundStarts[(int)series.Round].Start,
+            series.Games[0].Date));
+    }
+
+    [Fact]
+    public void PlayoffMatchesAreDecidedWithoutAShootoutAndOvertimeGoalsEndThem()
+    {
+        var results = Season.Playoffs!.Results;
+
+        Assert.Equal(
+            completed.Snapshot.Schedule.PlayoffMatches.Select(match => (match.Date, match.HomeTeamId, match.AwayTeamId)),
+            results.Select(result => (result.Date, result.Home.TeamId, result.Away.TeamId)));
+        Assert.DoesNotContain(results, result => result.Decision == MatchDecision.Shootout);
+        Assert.All(results.Where(result => result.Decision == MatchDecision.Overtime), result =>
+        {
+            var winningGoal = result.Goals[^1];
+            Assert.True(winningGoal.Period >= 4);
+            Assert.Equal(result.WinnerId, winningGoal.TeamId);
+            Assert.Equal(1, Math.Abs(result.Home.Score - result.Away.Score));
+        });
+    }
+
+    [Fact]
+    public void PlayoffRecordsAndStatisticsReconcileWithPlayoffResultsAndLeaveTheRegularSeasonAlone()
+    {
+        var playoffs = Season.Playoffs!;
+        var regularSeason = completed.RegularSeasonEnd.Season;
+
+        Assert.Equal(regularSeason.TeamRecords, Season.TeamRecords);
+        Assert.Equal(regularSeason.SkaterStatistics, Season.SkaterStatistics);
+        Assert.Equal(regularSeason.GoalieStatistics, Season.GoalieStatistics);
+        Assert.Equal(regularSeason.Standings.League, Season.Standings.League);
+
+        Assert.Equal(16, playoffs.TeamRecords.Count);
+        Assert.All(playoffs.TeamRecords, record =>
+        {
+            var games = playoffs.Results.Where(result => result.Home.TeamId == record.TeamId || result.Away.TeamId == record.TeamId).ToList();
+            Assert.Equal(games.Count, record.GamesPlayed);
+            Assert.Equal(games.Count(game => game.WinnerId == record.TeamId), record.Wins);
+            Assert.Equal(0, record.ShootoutWins + record.ShootoutLosses);
+            Assert.Equal(games.Sum(game => Side(game, record.TeamId).Score), record.GoalsFor);
+        });
+
+        var boxScores = playoffs.Results.SelectMany(result => result.Home.Skaters.Concat(result.Away.Skaters)).ToList();
+        Assert.All(playoffs.SkaterStatistics, skater =>
+        {
+            var games = boxScores.Where(boxScore => boxScore.PlayerId == skater.PlayerId).ToList();
+            Assert.Equal(games.Count, skater.GamesPlayed);
+            Assert.Equal(games.Sum(game => game.Goals), skater.Goals);
+            Assert.Equal(games.Sum(game => game.Assists), skater.Assists);
+        });
+        Assert.Equal(boxScores.Select(boxScore => boxScore.PlayerId).Distinct().Count(), playoffs.SkaterStatistics.Count);
+        Assert.Equal(
+            playoffs.Results.Sum(result => result.Home.Goalie.ShotsAgainst + result.Away.Goalie.ShotsAgainst),
+            playoffs.GoalieStatistics.Sum(goalie => goalie.ShotsAgainst));
     }
 
     public sealed class CompletedSeason
@@ -394,10 +513,15 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
             var snapshot = StartAtOpeningDay(Manager, seed: 2026);
             while (!snapshot.Season.IsComplete && Advances < MaximumAdvances)
             {
+                var regularSeasonDay = !snapshot.Season.IsRegularSeasonComplete;
                 snapshot = Manager.AdvanceDayReplacingInjured();
                 Advances++;
-                _dailyPlayoffStatuses.Add(snapshot.Season.Standings.League
-                    .ToDictionary(entry => entry.Record.TeamId, entry => entry.PlayoffStatus));
+                if (regularSeasonDay)
+                {
+                    _dailyPlayoffStatuses.Add(snapshot.Season.Standings.League
+                        .ToDictionary(entry => entry.Record.TeamId, entry => entry.PlayoffStatus));
+                    RegularSeasonEnd = snapshot;
+                }
             }
 
             Snapshot = snapshot;
@@ -405,11 +529,17 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
 
         public GameManager Manager { get; }
 
+        /// <summary>The game once the champion is crowned.</summary>
         public GameSnapshot Snapshot { get; }
+
+        /// <summary>The game after the final regular-season day, before any playoff game.</summary>
+        public GameSnapshot RegularSeasonEnd { get; } = null!;
 
         public int Advances { get; }
 
-        /// <summary>Every team's playoff status after each advance, the last being the final one.</summary>
+        /// <summary>
+        /// Every team's playoff status after each regular-season day, the last being the final one.
+        /// </summary>
         public IReadOnlyList<IReadOnlyDictionary<TeamId, PlayoffStatus>> DailyPlayoffStatuses => _dailyPlayoffStatuses;
     }
 }
