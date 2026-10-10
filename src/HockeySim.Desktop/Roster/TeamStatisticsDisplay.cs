@@ -2,6 +2,7 @@ using System.Globalization;
 
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Schedule;
+using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
 namespace HockeySim.Desktop.Roster;
@@ -12,6 +13,10 @@ namespace HockeySim.Desktop.Roster;
 /// </summary>
 public static class TeamStatisticsDisplay
 {
+    /// <summary>Statistics for a team that has not played, such as one that missed the playoffs.</summary>
+    public static TeamSeasonStatisticsSnapshot None(TeamId teamId) =>
+        new(teamId, 0, 0, 0, null, 0, 0, null, 0, 0, 0, null, SituationalShotTotals.None);
+
     public static IReadOnlyList<SeasonStatViewModel> Strip(TeamSeasonStatisticsSnapshot statistics)
     {
         ArgumentNullException.ThrowIfNull(statistics);

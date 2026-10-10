@@ -6,7 +6,7 @@ using HockeySim.Domain;
 namespace HockeySim.Desktop.Roster;
 
 /// <summary>
-/// The managed team's roster with player profiles and current-season totals.
+/// The managed team's roster with player profiles and regular-season or playoff totals.
 /// </summary>
 public sealed partial class RosterPageViewModel : ShellPageViewModel
 {
@@ -41,7 +41,7 @@ public sealed partial class RosterPageViewModel : ShellPageViewModel
 
     public override void Refresh()
     {
-        Roster = new TeamRosterViewModel(_session, _session.ManagedTeam.Id, Roster.SelectedPlayer?.Id, Roster.Columns);
+        Roster = new TeamRosterViewModel(_session, _session.ManagedTeam.Id, Roster.SelectedPlayer?.Id, Roster.Columns, Roster.Statistics);
         OnPropertyChanged(nameof(Subtitle));
     }
 }

@@ -4,6 +4,7 @@
              xmlns:home="using:HockeySim.Desktop.Home"
              xmlns:inbox="using:HockeySim.Desktop.Inbox"
              xmlns:lines="using:HockeySim.Desktop.Lines"
+             xmlns:playoffs="using:HockeySim.Desktop.Playoffs"
              xmlns:roster="using:HockeySim.Desktop.Roster"
              xmlns:saves="using:HockeySim.Desktop.Saves"
              xmlns:schedule="using:HockeySim.Desktop.Schedule"
@@ -30,6 +31,9 @@
     </DataTemplate>
     <DataTemplate x:DataType="standings:StandingsPageViewModel">
       <standings:StandingsPageView />
+    </DataTemplate>
+    <DataTemplate x:DataType="playoffs:PlayoffsPageViewModel">
+      <playoffs:PlayoffsPageView />
     </DataTemplate>
     <DataTemplate x:DataType="schedule:SchedulePageViewModel">
       <schedule:SchedulePageView />

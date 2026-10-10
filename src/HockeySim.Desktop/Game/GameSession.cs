@@ -33,6 +33,8 @@ public sealed partial class GameSession : ObservableObject
 
     private IReadOnlyDictionary<PlayerId, PlayerSeasonTotals> _seasonTotals;
 
+    private IReadOnlyDictionary<PlayerId, PlayerSeasonTotals> _playoffTotals;
+
     /// <param name="isSaved">
     /// Whether the game Management holds is already saved as it stands, as it is just after a load.
     /// A new game is not saved until the user saves it.
@@ -45,7 +47,8 @@ public sealed partial class GameSession : ObservableObject
         _gameManager = gameManager;
         _snapshot = gameManager.GetSnapshot();
         _playersById = IndexPlayers(_snapshot);
-        _seasonTotals = PlayerSeasonTotals.Index(_snapshot.Season);
+        _seasonTotals = PlayerSeasonTotals.Index(_snapshot.Season, StatisticsSet.RegularSeason);
+        _playoffTotals = PlayerSeasonTotals.Index(_snapshot.Season, StatisticsSet.Playoffs);
         _gameName = gameName;
         _hasUnsavedChanges = !isSaved;
     }
@@ -78,11 +81,11 @@ public sealed partial class GameSession : ObservableObject
     public IReadOnlyDictionary<PlayerId, PlayerSnapshot> PlayersById => _playersById;
 
     /// <summary>
-    /// Gets a player's current-season totals, or <see cref="PlayerSeasonTotals.None"/> before
-    /// their first appearance.
+    /// Gets a player's regular-season or playoff totals, or <see cref="PlayerSeasonTotals.None"/>
+    /// before their first appearance in that part of the season.
     /// </summary>
-    public PlayerSeasonTotals GetSeasonTotals(PlayerId playerId) =>
-        _seasonTotals.GetValueOrDefault(playerId, PlayerSeasonTotals.None);
+    public PlayerSeasonTotals GetSeasonTotals(PlayerId playerId, StatisticsSet statistics = StatisticsSet.RegularSeason) =>
+        (statistics == StatisticsSet.Playoffs ? _playoffTotals : _seasonTotals).GetValueOrDefault(playerId, PlayerSeasonTotals.None);
 
     public TeamSnapshot GetTeam(TeamId teamId) => Snapshot.League.Teams.Single(team => team.Id == teamId);
 
@@ -170,7 +173,8 @@ public sealed partial class GameSession : ObservableObject
     partial void OnSnapshotChanged(GameSnapshot value)
     {
         _playersById = IndexPlayers(value);
-        _seasonTotals = PlayerSeasonTotals.Index(value.Season);
+        _seasonTotals = PlayerSeasonTotals.Index(value.Season, StatisticsSet.RegularSeason);
+        _playoffTotals = PlayerSeasonTotals.Index(value.Season, StatisticsSet.Playoffs);
     }
 
     private static Dictionary<PlayerId, PlayerSnapshot> IndexPlayers(GameSnapshot snapshot) =>
