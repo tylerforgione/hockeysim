@@ -1,6 +1,7 @@
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.GameManagement.Snapshots;
+using HockeySim.Management.Inbox;
 
 using Xunit;
 
@@ -421,6 +422,24 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
         Assert.True(Season.IsComplete);
         Assert.Equal(series[^1].WinnerId, playoffs.ChampionId);
         Assert.Equal(PlayoffRound.Final, playoffs.CurrentRound);
+    }
+
+    [Fact]
+    public void TheChampionIsAnnouncedInTheInboxOnceTheFinalIsDecided()
+    {
+        var final = Season.Playoffs!.Series[^1];
+        var championId = final.WinnerId!.Value;
+        var runnerUpId = final.HigherRanked.TeamId == championId ? final.LowerRanked.TeamId : final.HigherRanked.TeamId;
+        string Name(TeamId teamId) => completed.Snapshot.League.Teams.Single(team => team.Id == teamId).Name;
+
+        var announcement = Assert.Single(completed.Snapshot.Inbox, message => message.Subject.StartsWith("Champions:", StringComparison.Ordinal));
+        Assert.Same(completed.Snapshot.Inbox[0], announcement);
+        Assert.Equal($"Champions: the {Name(championId)}", announcement.Subject);
+        Assert.Contains($"beat the {Name(runnerUpId)} 4–{final.Games.Count - 4}", announcement.Body, StringComparison.Ordinal);
+        Assert.Equal(
+            championId == completed.Snapshot.ManagedTeamId ? InboxSenderRole.Owner : InboxSenderRole.AssistantGeneralManager,
+            announcement.SenderRole);
+        Assert.DoesNotContain(completed.RegularSeasonEnd.Inbox, message => message.Subject.StartsWith("Champions:", StringComparison.Ordinal));
     }
 
     [Fact]

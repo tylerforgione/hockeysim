@@ -4,6 +4,7 @@ using System.Text;
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Main;
 using HockeySim.Desktop.Saves;
+using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.GameManagement.Snapshots;
 using HockeySim.Management.NewGame;
@@ -446,7 +447,7 @@ public sealed class SaveAndLoadTests : IDisposable
         Assert.Equal(managedName, shell.TeamName);
         Assert.Equal(expected.Season.Results.Count, session.Snapshot.Season.Results.Count);
         Assert.Contains(shell.Standings.Tables.SelectMany(table => table.Rows), row => row.TeamName == managedName && row.GamesPlayed == played);
-        Assert.Equal(played, shell.Schedule.Matches.Count(match => match.IsCompleted));
+        Assert.Equal(played, shell.Schedule.Matches.Count(match => match.Phase == SeasonPhase.RegularSeason && match.IsCompleted));
         Assert.Equal(expected.League.Teams.Single(team => team.Id == expected.ManagedTeamId).Roster.Count, shell.Roster.Roster.Skaters.Count + shell.Roster.Roster.Goalies.Count);
         Assert.All(shell.Lines.Lineup.ForwardLines.SelectMany(line => new[] { line.LeftWing, line.Centre, line.RightWing }), slot =>
             Assert.Contains(slot.SelectedPlayer!.Id, expected.League.Teams.Single(team => team.Id == expected.ManagedTeamId).Lineup.DressedPlayerIds));
