@@ -14,7 +14,7 @@ is in [match engine](match-engine.md).
 | `Domain/PlayerHealth.cs`, `Injury.cs`, `InjuryCatalogue.cs`, `InjuryDefinition.cs`, `InjuryType.cs`, `BodyPart.cs`, `InjuryCap.cs`, `ExpectedReturn.cs` | Injuries, healing by date, the staff's expected return, hidden wear, and the injury cap |
 | `Domain/MatchHealthChanges.cs`, `MatchInjury.cs`, `InjuryCause.cs`, `WearGain.cs` | A completed match's injuries (with their causes) and wear |
 | `Domain/SeasonSchedule.cs`, `ScheduledMatch.cs`, `Match.cs` | The schedule and its invariants |
-| `Domain/CompletedMatch.cs`, `CompletedMatchTeam.cs`, `SkaterBoxScore.cs`, `GoalieBoxScore.cs`, `ExpectedGoalTotals.cs`, `MatchTime.cs` | A completed match's box score and its reconciliation rules |
+| `Domain/CompletedMatch.cs`, `CompletedMatchTeam.cs`, `SkaterBoxScore.cs`, `GoalieBoxScore.cs`, `PeriodTotals.cs`, `ExpectedGoalTotals.cs`, `MatchTime.cs` | A completed match's box score, each team's period totals, and their reconciliation rules |
 | `Domain/MatchGoal.cs`, `MatchPenalty.cs`, `MatchClock.cs`, `GoalSituation.cs`, `Infraction.cs`, `PenaltyKind.cs` | The scoring and penalty summaries |
 | `Domain/ShotTotals.cs`, `SituationalShotTotals.cs`, `StrengthSituation.cs` | Shot totals for and against by strength situation, and their shares (Corsi, Fenwick, xG) |
 | `Domain/MatchDecision.cs` | Regulation, overtime, or shootout |
@@ -26,7 +26,8 @@ is in [match engine](match-engine.md).
 | `Management/SeasonPlay/LeagueDay.cs` | Plays a day's matches and converts results |
 | `Management/SeasonPlay/SimulationTarget.cs`, `SimulationStop.cs`, `SimulationResult.cs`, `SimulationRun.cs` | Simulating ahead: the targets each phase offers, why a run stops, and the per-day stop checks |
 | `Management/GameManagement/GameManager.cs` | `AdvanceDay`, `SimulateAhead`, command serialization |
-| `Management/GameManagement/Snapshots/SeasonSnapshot.cs`, `ScheduleSnapshot.cs`, `StandingsSnapshot.cs`, `PlayoffsSnapshot.cs` | Read-only season views |
+| `Management/Matches/ThreeStars.cs` | Game scores, the game-winning goal, and a completed match's three stars |
+| `Management/GameManagement/Snapshots/SeasonSnapshot.cs`, `ScheduleSnapshot.cs`, `StandingsSnapshot.cs`, `PlayoffsSnapshot.cs` | Read-only season views, including each result's records and three stars |
 
 Domain paths are under `src/HockeySim.Domain/`, Management paths under
 `src/HockeySim.Management/`.
@@ -40,6 +41,7 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | `Domain.Tests/InjuryTests.cs`, `SeasonHealthTests.cs` | The injury catalogue, healing, expected returns, playing through, wear, the cap, and applying a day's health changes |
 | `Domain.Tests/BoxScoreTests.cs` | Completed-match reconciliation rules |
 | `Domain.Tests/MatchSummaryTests.cs` | Summaries agreeing with the box scores, shot totals across teams and skaters |
+| `Domain.Tests/PeriodTotalsTests.cs` | Period totals: covering each period played, adding up to the match, overtime only after regulation, goals within each period's shots |
 | `Domain.Tests/ShotTotalsTests.cs` | Shot totals, their shares, reversing, and adding |
 | `Domain.Tests/SeasonStatisticsTests.cs` | Accumulating every statistic and each derived rate and percentage, undefined values |
 | `Domain.Tests/StandingsTests.cs` | Each tie-breaker, head-to-head cases, odd-game exclusion |
@@ -51,7 +53,8 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | `Management.Tests/SeasonAdvancementTests.cs` | Advancing days, failures leaving nothing applied, threading |
 | `Management.Tests/SimulateAheadTests.cs` | Each target's stopping day in every phase, each early stop, matching day-by-day play, progress, cancellation, a failure part-way |
 | `Management.Tests/StandingsTests.cs` | Standings and wild-card tables and snapshot isolation |
-| `Management.Tests/FullSeasonTests.cs` | A shared fixture plays a full 1,344-match season and its playoffs and reconciles them: every season total and summary, every playoff status held to the end, the bracket, home ice and dates, playoff totals, and the champion's announcement |
+| `Management.Tests/FullSeasonTests.cs` | A shared fixture plays a full 1,344-match season and its playoffs and reconciles them: every season total and summary, period totals, each result's records and three stars, every playoff status held to the end, the bracket, home ice and dates, playoff totals, and the champion's announcement |
+| `Management.Tests/ThreeStarsTests.cs` | Each game-score weight, the game-winning goal by decision, the shutout, the winning-team replacement, each tie-break |
 | `Management.Tests/PlayoffsTests.cs` | Overtime format by phase, saving and loading mid-series, continuing a loaded game to the same champion |
 | `Domain.Tests/TestLeague.cs`, `TestResults.cs`, `Management.Tests/PreseasonPlay.cs` | Builders; most Management tests start on opening day after playing the preseason |
 
@@ -167,14 +170,53 @@ side of the return date, kept within the injury's catalogue range. The range is
 worked out from the injury alone, so it uses no randomness. The exact recovery
 time and wear are hidden and never reach a snapshot.
 
-A completed match keeps the box score and, from the play-by-play, a scoring
-summary (each player goal's period, time, team, scorer, assists, situation, and
-whether the net was empty) and a penalty summary (each penalty's period, time,
-team, player, infraction, and kind). The rest of the play-by-play is not kept;
-see [future features](../future-features.md#play-by-play-retention). The
-completed match rejects summaries out of time order, or that do not credit
-exactly each skater's goals, assists, power-play, shorthanded, and empty-net
-goals and assists, and penalty minutes.
+A completed match keeps the box score, each team's period totals (shots, xG,
+and power-play opportunities in each period played; see
+[match engine](match-engine.md#play-by-play-and-match-statistics)), and, from
+the play-by-play, a scoring summary (each player goal's period, time, team,
+scorer, assists, situation, and whether the net was empty) and a penalty summary
+(each penalty's period, time, team, player, infraction, and kind). The rest of
+the play-by-play is not kept; see
+[future features](../future-features.md#play-by-play-retention). The completed
+match rejects summaries out of time order, or that do not credit exactly each
+skater's goals, assists, power-play, shorthanded, and empty-net goals and
+assists, and penalty minutes.
+
+### Three stars
+
+Management's `ThreeStars` chooses a completed match's three stars from what the
+match keeps, so they are worked out whenever the box score is read and never
+saved. Every appearing skater and both starting goalies get a game score:
+
+| Skater | Weight | Goalie | Weight |
+| --- | --- | --- | --- |
+| Goal, not into an empty net | 1.0 | Goals saved above expected | 1.0 |
+| Empty-net goal | 0.5 | Save | 0.025 |
+| Primary assist | 0.7 | Shutout: the opponent scored no goal | 0.75 |
+| Secondary assist | 0.4 | | |
+| Game-winning goal (on top of the goal) | 0.5 | | |
+| Shot on goal, blocked shot | 0.1 each | | |
+| Hit, takeaway | 0.05 each | | |
+| Giveaway | −0.05 | | |
+| On-ice xG for less against, all situations | 0.75 | | |
+
+The game-winning goal is the winner's goal that put it one ahead of the loser's
+final score, in regulation or overtime; a shootout decides a match without one,
+and shootout goals count for nobody. The goalie's shutout differs from the
+season statistic: an empty-net goal against prevents it. The stars are the top
+three by game score, except that when none of them plays for the winner, the
+winner's best player replaces the third star. Ties go to more points, then more
+goals, then the winner's player, then the lower player identity; scores are
+compared to six decimal places so equal contributions tie. Over a generated
+regular season (seed 2026) goalies take about a third of first stars and a fifth
+of all stars, and the replacement is needed in under 1% of matches. Penalties
+drawn will join the skater score once they are recorded; see
+[future features](../future-features.md#penalties-drawn).
+
+Each result in the season, preseason, and playoff snapshots carries its phase,
+its three stars, and each side's period totals and record once the match was
+played: wins, losses, and overtime and shootout losses in that phase, or in the
+playoffs the team's series record.
 
 Domain's `Season.RankStandings` ranks any group of league teams by the
 [NHL tie-breaking procedure](https://www.nhl.com/info/standings-info/tie-breaking-procedure):

@@ -23,9 +23,9 @@ view model together.
 | `Standings/TeamForm.cs`, `Standings/PlayoffStatusDisplay.cs` | A team's last ten games and streak (also on the banner), and the playoff-status letters and legend |
 | `Playoffs/PlayoffDisplay.cs` | Shared round, seed, and series-status formatting, and finding a team's playoff game by date |
 | `TeamStatistics/TeamStatisticsDisplay.cs`, `Injuries/InjuryReportRowViewModel.cs` | Team statistic and injury report formatting |
-| `Schedule/MatchDetail*`, `MatchDisplay.cs` | The box score with its summaries, and shared match and statistic formatting |
+| `Schedule/MatchDetail*`, `MatchSummaryTables.cs`, `MatchDisplay.cs` | The box score: its banner, Summary and Players tabs, the summary's tables, and shared match and statistic formatting |
 | `Confirmation/` | The confirmation shown over every screen |
-| `Theme/` | Palette, control styles (including the menu bar, banner, tabs, and status bar), menu-bar icons, the bundled PT Sans fonts and their licence (`Fonts/`), `TeamPalette`, which colours the window with the managed team, and `ColourBrushConverter`, which paints a team's swatch |
+| `Theme/` | Palette, control styles (including the menu bar, banner, tabs, and status bar), menu-bar icons, the bundled PT Sans fonts and their licence (`Fonts/`), `TeamPalette`, which colours the window with the managed team, `ColourBrushConverter`, which paints a team's colour, and `ReadableTextBrushConverter`, which picks text that reads on it |
 
 ## Tests
 
@@ -38,6 +38,7 @@ games, plus a headless Avalonia walkthrough.
 | `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup; sections, tabs, planned pages, the banner, and the status bar; browsing teams |
 | `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings |
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, the preseason labels, the schedule's phases and preseason results |
+| `MatchDetailViewModelTests.cs` | The box score for regulation, overtime, and shootout matches: periods, totals, records, the comparison, stars, goalies, and tabs |
 | `SimulateAheadTests.cs` | Continue's menu by phase, one refresh per run, the run summary, Stop, a failure part-way, an early stop |
 | `PlayoffDisplayTests.cs` | A shared season played through the shell: the bracket before and at each playoff stage, playoff schedule rows and box scores, switching statistic sets, the completed season and champion |
 | `StandingsAndStatisticsTests.cs` | Standings scopes including the wild card, conference columns, recent form, team links, playoff markers, season totals |
@@ -136,17 +137,26 @@ formed is shown as to be decided. Selecting a series lists its games, played and
 scheduled, each opening on the schedule page; the managed team's latest series
 is selected at first. Before the playoffs the page explains when they begin and
 who qualifies, and once they end a banner names the champion. The box
-score starts with the scoring summary (each goal's period and time, team,
-scorer, assists, PP/SH/PS/EN marker, and the running score, away first) and the
-penalty summary (period and time, team, player, infraction, and length). It then
-lists each team's skaters (goals, assists, points, plus/minus, time on ice,
-shots, shot attempts, xG, hits, blocks, faceoffs won and lost, takeaways,
-giveaways, penalty minutes, power-play and shorthanded goals, and five-on-five
-on-ice Corsi and xG percentages) and starting goalie (shots and goals against,
-saves, save percentage, xG against, goals saved above expected, time on ice), and
-each team's power play (goals of opportunities) and penalty minutes under its
-shots; the two teams are stacked, away first, because each table needs the full
-width.
+score opens with a banner split diagonally between the two teams' primary
+colours, away on the left: each team's crest, name, and record once the match
+was played (wins, losses, and overtime losses, or its series record in the
+playoffs), and between them the final score and decision. Under it are the
+Summary and Players tabs, with the date and the home team's arena on the right.
+The Summary shows goals (with a shootout column after a shootout), shots, xG, and
+the power play (goals of opportunities) by period and in total; the scoring
+summary (each goal's period and time, team, scorer, assists, PP/SH/PS/EN marker,
+and the running score, away first); the penalty summary (period and time, team,
+player, infraction, and length); the teams compared, each figure with a bar in
+the two teams' colours (shots, shot attempts, xG, five-on-five xG share,
+faceoffs won, hits, blocked shots, giveaways, and penalty minutes); the three
+stars, each with its line and game score; and both goalies. Players lists each
+team's skaters (goals, assists, points, plus/minus, time on ice, shots, shot
+attempts, xG, hits, blocks, faceoffs won and lost, takeaways, giveaways, penalty
+minutes, power-play and shorthanded goals, and five-on-five on-ice Corsi and xG
+percentages) and starting goalie (shots and goals against, saves, save
+percentage, xG against, goals saved above expected, time on ice), stacked away
+first because each table needs the full width. A shot chart and play-by-play
+wait for [play-by-play retention](../future-features.md#play-by-play-retention).
 The standings page presents Management's division, wild-card, conference, or
 league tables as ranked, without re-sorting them, chosen with a segmented
 control. The division, wild-card, and conference views put the two conferences

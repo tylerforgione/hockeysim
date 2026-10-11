@@ -18,7 +18,7 @@ commands).
 | `Domain/SkaterFit.cs`, `PositionFit.cs`, `SkaterSide.cs` | Out-of-position and off-hand rules for any-role lineups |
 | `Domain/SpecialSituation*.cs`, `SkaterRole.cs`, `DefaultSpecialSituationUnits.cs` | Special-situation units and their defaults |
 | `Management/NewGame/LeagueGenerator.cs` | Builds the league |
-| `Management/NewGame/PlayerRatingGenerator.cs`, `PlayerBiographyGenerator.cs`, `PlayerOriginData.cs`, `FictionalLeagueData.cs` | Generated players, names, and teams with their colours |
+| `Management/NewGame/PlayerRatingGenerator.cs`, `PlayerBiographyGenerator.cs`, `PlayerOriginData.cs`, `FictionalLeagueData.cs` | Generated players, names, and teams with their arenas and colours |
 | `Management/Lineups/` | `SetLineupCommand` and its selections; `MatchDayLineup` (players who cannot play, AI teams' replacements) and `UnavailablePlayersException` |
 | `Management/Inbox/`, `Snapshots/InboxMessageSnapshot.cs` | Inbox messages: the new-game messages, and the head trainer's `InjuryMessages` and their phrasings (`InjuryWording`), and the champion's announcement (`ChampionMessages`) |
 | `Management/GameManagement/GameManager.cs` | Commands: new game, select team, set lineup, read message |
@@ -35,7 +35,7 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | `Domain.Tests/LineupTests.cs`, `SpecialSituationUnitTests.cs` | Lineup and unit invariants, defaults |
 | `Domain.Tests/SkaterFitTests.cs` | Position fit, off-hand sides, unit slot sides |
 | `Domain.Tests/TeamColoursTests.cs` | Reading and writing colours, distinct team colours |
-| `Management.Tests/NewGameTests.cs` | Generated-world invariants, team colours, team selection, reproducibility |
+| `Management.Tests/NewGameTests.cs` | Generated-world invariants, team colours and arenas, team selection, reproducibility |
 | `Management.Tests/PlayerRatingGenerationTests.cs`, `PlayerBiographyGenerationTests.cs` | Generated distributions over several seeds |
 | `Management.Tests/LineupTests.cs`, `SpecialSituationUnitTests.cs` | Lineup commands, rejected changes, snapshot isolation |
 | `Management.Tests/InboxTests.cs` | Inbox messages |
@@ -49,10 +49,12 @@ Domain, Simulation, Management, Infrastructure, and Desktop exist today. Domain
 protects generated-world invariants through validated construction and
 read-only collections. Management owns a headless new-game workflow,
 controlled random state, managed-team selection, and read-only snapshots. Fictional names are kept separate from the
-league and roster rules that use them. Each fictional team has fixed primary
+league and roster rules that use them. Each fictional team has a fixed
+fictional home arena, distinct across the league, and fixed primary
 and secondary colours, distinct across the league and at least 4.5:1 apart in
 contrast, because Desktop writes primary-coloured text on the secondary colour.
-Team snapshots carry the colours.
+Arenas and colours come from fixed data rather than the random stream, so they
+change no seeded world. Team snapshots carry the arena and colours.
 
 Management also delivers inbox messages to the user. New-game messages are
 derived from the generated managed team, so they never describe state the game
