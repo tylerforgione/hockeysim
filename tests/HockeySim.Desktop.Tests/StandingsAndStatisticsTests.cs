@@ -6,6 +6,7 @@ using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Schedule;
 using HockeySim.Desktop.Standings;
 using HockeySim.Domain;
+using HockeySim.Management.GameManagement;
 using HockeySim.Management.GameManagement.Snapshots;
 
 using Xunit;
@@ -100,6 +101,89 @@ public sealed class StandingsAndStatisticsTests
         });
     }
 
+    [Fact]
+    public void ConferenceViewsShowBothConferencesSideBySideAndTheLeagueViewOneColumn()
+    {
+        var shell = new GameShellViewModel(GameTestData.StartSession());
+        var page = shell.Standings;
+        var conferences = shell.Session.Snapshot.Season.Standings.Conferences.Select(conference => conference.Name).ToList();
+
+        // Division: each conference's divisions stacked in its own column.
+        Assert.Equal(2, page.Columns.Count);
+        Assert.All(page.Columns.Zip(conferences), pair =>
+            Assert.Equal([pair.Second, pair.Second], pair.First.Tables.Select(table => table.Caption)));
+
+        page.SelectScopeCommand.Execute(StandingsScope.WildCard);
+        Assert.Equal(
+            conferences.Select(conference => $"{conference.ToUpperInvariant()} WILD CARD"),
+            page.Columns.Select(column => column.Tables[^1].Title));
+        Assert.All(page.Columns, column => Assert.Equal(3, column.Tables.Count));
+
+        page.SelectScopeCommand.Execute(StandingsScope.Conference);
+        Assert.Equal(
+            conferences.Select(conference => conference.ToUpperInvariant()),
+            page.Columns.Select(column => Assert.Single(column.Tables).Title));
+
+        page.SelectScopeCommand.Execute(StandingsScope.League);
+        Assert.Equal(32, Assert.Single(Assert.Single(page.Columns).Tables).Rows.Count);
+    }
+
+    [Fact]
+    public void RowsShowEachTeamsColourAndRecentForm()
+    {
+        var gameManager = new GameManager();
+        GameTestData.StartPreseasonSession(gameManager);
+        gameManager.PlayPreseason();
+        for (var day = 0; day < 28; day++)
+        {
+            gameManager.AdvanceDayReplacingInjured();
+        }
+
+        var session = new GameSession(gameManager, "Test Career");
+        var page = new GameShellViewModel(session).Standings;
+        page.SelectScopeCommand.Execute(StandingsScope.League);
+
+        var rows = Assert.Single(page.Tables).Rows;
+        Assert.Contains(rows, row => row.GamesPlayed > 10);
+        Assert.All(rows, row =>
+        {
+            var team = session.GetTeam(row.TeamId);
+            Assert.Equal(team.Colours.Primary, row.TeamColour);
+
+            var kinds = session.Snapshot.Season.Results
+                .Where(result => result.Home.TeamId == row.TeamId || result.Away.TeamId == row.TeamId)
+                .Select(result => result.WinnerId == row.TeamId ? 'W' : result.Decision == MatchDecision.Regulation ? 'L' : 'O')
+                .ToList();
+            var lastTen = kinds.TakeLast(10).ToList();
+            Assert.Equal($"{lastTen.Count(kind => kind == 'W')}-{lastTen.Count(kind => kind == 'L')}-{lastTen.Count(kind => kind == 'O')}", row.LastTen);
+
+            var streak = kinds.AsEnumerable().Reverse().TakeWhile(kind => kind == kinds[^1]).Count();
+            Assert.Equal((kinds[^1] == 'O' ? "OT" : kinds[^1].ToString()) + streak.ToString(CultureInfo.CurrentCulture), row.Streak);
+        });
+    }
+
+    [Fact]
+    public void RecentFormIsADashBeforeAnyMatch()
+    {
+        var page = new GameShellViewModel(GameTestData.StartSession()).Standings;
+
+        Assert.All(page.Tables.SelectMany(table => table.Rows), row => Assert.Equal(("—", "—"), (row.LastTen, row.Streak)));
+    }
+
+    [Fact]
+    public void ATeamsNameOpensItOnTheTeamsPage()
+    {
+        var shell = new GameShellViewModel(GameTestData.StartSession());
+        shell.Navigate(ShellPage.Standings);
+        var row = shell.Standings.Tables.SelectMany(table => table.Rows).First(row => !row.IsManaged);
+
+        Assert.NotNull(row.OpenTeamCommand);
+        row.OpenTeamCommand.Execute(null);
+
+        Assert.Equal(ShellPage.Teams, shell.CurrentPageKind);
+        Assert.Equal(row.TeamId, shell.Teams.SelectedTeam.Id);
+    }
+
     [Theory]
     [InlineData(PlayoffStatus.Undecided, "", null)]
     [InlineData(PlayoffStatus.Eliminated, "e", "Eliminated from playoff contention")]
@@ -109,9 +193,10 @@ public sealed class StandingsAndStatisticsTests
     [InlineData(PlayoffStatus.ClinchedBestRecord, "p", "Clinched the best record in the league")]
     public void EachPlayoffStatusShowsTheNhlLetterWithItsMeaning(PlayoffStatus status, string marker, string? meaning)
     {
-        var entry = new StandingsEntrySnapshot(1, new TeamRecordSnapshot(new TeamId(Guid.NewGuid()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), status);
+        var team = GameTestData.StartPreseasonSession().ManagedTeam;
+        var entry = new StandingsEntrySnapshot(1, new TeamRecordSnapshot(team.Id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), status);
 
-        var row = StandingsRowViewModel.Create(entry, "Team", isManaged: false);
+        var row = StandingsRowViewModel.Create(entry, team, isManaged: false, results: []);
 
         Assert.Equal((marker, meaning), (row.PlayoffMarker, row.PlayoffStatus));
         if (meaning is not null)

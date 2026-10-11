@@ -93,7 +93,7 @@ public sealed partial class GameShellViewModel : ObservableObject
         TeamStatistics = new TeamStatisticsPageViewModel(session);
         Injuries = new InjuriesPageViewModel(session);
         Teams = new TeamsPageViewModel(session);
-        Standings = new StandingsPageViewModel(session);
+        Standings = new StandingsPageViewModel(session, OpenTeam);
         Playoffs = new PlayoffsPageViewModel(session, OpenMatch);
         _pages = new Dictionary<ShellPage, ShellPageViewModel>
         {
@@ -404,6 +404,16 @@ public sealed partial class GameShellViewModel : ObservableObject
     {
         Navigate(ShellPage.Roster);
         Roster.SelectPlayer(playerId);
+    }
+
+    /// <summary>
+    /// Shows a team on the Teams page, until <see href="https://github.com/tylerforgione/hockeysim/issues/63">team pages</see>
+    /// give each team its own.
+    /// </summary>
+    public void OpenTeam(TeamId teamId)
+    {
+        Navigate(ShellPage.Teams);
+        Teams.SelectTeam(teamId);
     }
 
     /// <summary>

@@ -49,7 +49,7 @@ public static class TeamPalette
     public static Color ReadableTextOn(Color background) =>
         ContrastRatio(background, LightText) >= ContrastRatio(background, DarkText) ? LightText : DarkText;
 
-    private static Color ToColor(Colour colour) => Color.FromRgb(colour.Red, colour.Green, colour.Blue);
+    public static Color ToColor(Colour colour) => Color.FromRgb(colour.Red, colour.Green, colour.Blue);
 
     private static double ContrastRatio(Color first, Color second)
     {

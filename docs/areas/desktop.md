@@ -20,11 +20,12 @@ view model together.
 | `Game/` | `GameSession` (commands, snapshots, unsaved progress, runs of days) and the in-game shell: menu bar, Continue and its menu (`SimulateAheadOptionViewModel`), sections and page tabs (`ShellPage`, `NavigationItemViewModel`), the team banner (`TeamBannerViewModel`), and the status bar |
 | `Home/`, `Inbox/`, `Roster/`, `Lines/`, `TeamStatistics/`, `Injuries/`, `Teams/`, `Standings/`, `Playoffs/`, `Schedule/` | The shell's pages |
 | `Players/` | Player profile, regular-season or playoff totals as displayed (`PlayerSeasonTotals`, chosen by `StatisticsSet`), and shared player and injury formatting (`PlayerDisplay`, `InjuryDisplay`) |
+| `Standings/TeamForm.cs`, `Standings/PlayoffStatusDisplay.cs` | A team's last ten games and streak (also on the banner), and the playoff-status letters and legend |
 | `Playoffs/PlayoffDisplay.cs` | Shared round, seed, and series-status formatting, and finding a team's playoff game by date |
 | `TeamStatistics/TeamStatisticsDisplay.cs`, `Injuries/InjuryReportRowViewModel.cs` | Team statistic and injury report formatting |
 | `Schedule/MatchDetail*`, `MatchDisplay.cs` | The box score with its summaries, and shared match and statistic formatting |
 | `Confirmation/` | The confirmation shown over every screen |
-| `Theme/` | Palette, control styles (including the menu bar, banner, tabs, and status bar), menu-bar icons, the bundled PT Sans fonts and their licence (`Fonts/`), and `TeamPalette`, which colours the window with the managed team |
+| `Theme/` | Palette, control styles (including the menu bar, banner, tabs, and status bar), menu-bar icons, the bundled PT Sans fonts and their licence (`Fonts/`), `TeamPalette`, which colours the window with the managed team, and `ColourBrushConverter`, which paints a team's swatch |
 
 ## Tests
 
@@ -39,7 +40,7 @@ games, plus a headless Avalonia walkthrough.
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, the preseason labels, the schedule's phases and preseason results |
 | `SimulateAheadTests.cs` | Continue's menu by phase, one refresh per run, the run summary, Stop, a failure part-way, an early stop |
 | `PlayoffDisplayTests.cs` | A shared season played through the shell: the bracket before and at each playoff stage, playoff schedule rows and box scores, switching statistic sets, the completed season and champion |
-| `StandingsAndStatisticsTests.cs` | Standings scopes including the wild card, playoff markers, season totals |
+| `StandingsAndStatisticsTests.cs` | Standings scopes including the wild card, conference columns, recent form, team links, playoff markers, season totals |
 | `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, team statistics |
 | `SaveAndLoadTests.cs` | Save and load screens, unsaved progress, confirmations |
 | `PlayerBiographyDisplayTests.cs`, `AppVersionTests.cs` | Formatting, version display |
@@ -147,11 +148,19 @@ each team's power play (goals of opportunities) and penalty minutes under its
 shots; the two teams are stacked, away first, because each table needs the full
 width.
 The standings page presents Management's division, wild-card, conference, or
-league tables as ranked, without re-sorting them. The wild-card view lists each
-division's top three, then each conference's wild-card race with a line under
-the second wild card. Every table marks each team's playoff status with the
-NHL's letter (x, y, z, p, or e) before its name, with the meaning in a tooltip
-and a legend beneath the tables. The team statistics page lists the managed
+league tables as ranked, without re-sorting them, chosen with a segmented
+control. The division, wild-card, and conference views put the two conferences
+side by side, a column each; the league view is one table. The wild-card view
+lists each division's top three, then each conference's wild-card race with a
+rule in the managed team's secondary colour under the second wild card. Each row
+shows rank, the team's colour swatch and name, GP, W, L, OTL, PTS, P%, ROW, DIFF
+(goals for and against in its tooltip), the last ten games (wins-losses-overtime
+losses), and the current streak, both from regular-season results. The managed
+team's row is highlighted. A team's name opens it on the Teams page until
+[team pages](https://github.com/tylerforgione/hockeysim/issues/63) exist. Every
+table marks each team's playoff status with the NHL's letter (x, y, z, p, or e)
+before its name, with the meaning in a tooltip and a one-line legend beneath the
+tables. The team statistics page lists the managed
 team's power-play, penalty-kill, and faceoff percentages and its five-on-five
 Corsi, Fenwick, shot, and xG shares; once the playoffs start it switches between
 the regular season's and the playoffs', showing dashes if the team missed them. The injuries page is the managed team's

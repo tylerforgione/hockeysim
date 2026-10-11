@@ -133,7 +133,13 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
         DivisionStandings = snapshot.Season.Standings.Conferences
             .Single(standings => standings.Name == conference.Name).Divisions
             .Single(standings => standings.Name == division.Name).Teams
-            .Select(entry => StandingsRowViewModel.Create(entry, _session.GetTeam(entry.Record.TeamId).Name, entry.Record.TeamId == team.Id))
+            .Select(entry => StandingsRowViewModel.Create(
+                entry,
+                _session.GetTeam(entry.Record.TeamId),
+                entry.Record.TeamId == team.Id,
+                snapshot.Season.Results
+                    .Where(result => result.Home.TeamId == entry.Record.TeamId || result.Away.TeamId == entry.Record.TeamId)
+                    .ToList()))
             .ToList();
 
         RefreshNextMatch(snapshot, team);
