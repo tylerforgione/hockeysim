@@ -10,7 +10,9 @@ namespace HockeySim.Domain;
 /// one team's faceoff wins are the other's losses, a team scores shorthanded only when the
 /// opponent had a power play, and each team's shot totals are the other's seen from the opposite
 /// side. The scoring and penalty summaries account for exactly the goals, assists, and penalty
-/// minutes in the box scores. Injuries and wear (the match's health changes) belong to appearing
+/// minutes in the box scores. Both teams have totals for the same periods: the three of
+/// regulation, and overtime only when the match went past regulation, and each team shot at least
+/// as often in a period as it scored. Injuries and wear (the match's health changes) belong to appearing
 /// players of their team.
 /// </summary>
 public sealed class CompletedMatch
@@ -101,6 +103,7 @@ public sealed class CompletedMatch
         var goalList = goals.ToList();
         var penaltyList = penalties.ToList();
         ThrowIfSummaryDiffers(goalList, penaltyList, home, away);
+        ThrowIfPeriodsDiffer(decision, goalList, penaltyList, home, away);
 
         health ??= MatchHealthChanges.None;
         ThrowIfHealthChangesAreNotForAppearingPlayers(health, home, away);
@@ -201,6 +204,40 @@ public sealed class CompletedMatch
                 || penalties.Where(penalty => penalty.PlayerId == skater.PlayerId).Sum(penalty => penalty.Minutes) != skater.PenaltyMinutes)
             {
                 throw new ArgumentException("The scoring and penalty summaries must match every skater's box score.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Both teams played the same periods, overtime only after a tied regulation, and nothing in
+    /// the summaries happened in a period that was not played. A goal is a shot on goal, so a team
+    /// scored no more in a period than it shot.
+    /// </summary>
+    private static void ThrowIfPeriodsDiffer(
+        MatchDecision decision,
+        List<MatchGoal> goals,
+        List<MatchPenalty> penalties,
+        CompletedMatchTeam home,
+        CompletedMatchTeam away)
+    {
+        var periodsPlayed = home.Periods.Count;
+        if (away.Periods.Count != periodsPlayed
+            || (decision == MatchDecision.Regulation) != (periodsPlayed == CompletedMatchTeam.RegulationPeriods))
+        {
+            throw new ArgumentException(
+                "Both teams must have totals for the same periods, with overtime only in a match decided after regulation.");
+        }
+
+        if (goals.Any(goal => goal.Period > periodsPlayed) || penalties.Any(penalty => penalty.Period > periodsPlayed))
+        {
+            throw new ArgumentException("The summaries cannot include a period that was not played.");
+        }
+
+        foreach (var side in new[] { home, away })
+        {
+            if (side.Periods.Any(period => goals.Count(goal => goal.TeamId == side.TeamId && goal.Period == period.Period) > period.Shots))
+            {
+                throw new ArgumentException("A team cannot score more goals in a period than it had shots on goal.");
             }
         }
     }

@@ -111,7 +111,7 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
         var result = value is null ? null : FindResult(value.Date, value.HomeTeamId);
         SelectedResult = result is null
             ? null
-            : new MatchDetailViewModel(result, _session.PlayersById, teamId => _session.GetTeam(teamId).Name);
+            : new MatchDetailViewModel(result, _session.PlayersById, _session.GetTeam);
     }
 
     /// <summary>

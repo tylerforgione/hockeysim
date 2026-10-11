@@ -44,6 +44,7 @@ public sealed record SavedDivision(string Name, IReadOnlyList<SavedTeam> Teams);
 public sealed record SavedTeam(
     TeamId Id,
     string Name,
+    string Arena,
     string PrimaryColour,
     string SecondaryColour,
     IReadOnlyList<SavedPlayer> Roster,
@@ -140,6 +141,7 @@ public sealed record SavedInjury(
 public sealed record SavedWearGain(PlayerId PlayerId, BodyPart BodyPart, int Points);
 
 /// <param name="ShotTotals">Both teams' shot totals by strength situation, from this side.</param>
+/// <param name="Periods">The side's shots, expected goals, and power-play opportunities in each period played.</param>
 public sealed record SavedMatchSide(
     TeamId TeamId,
     int Score,
@@ -147,7 +149,10 @@ public sealed record SavedMatchSide(
     int PowerPlayOpportunities,
     IReadOnlyList<SavedSkaterBoxScore> Skaters,
     SavedGoalieBoxScore Goalie,
-    SavedSituationalShotTotals ShotTotals);
+    SavedSituationalShotTotals ShotTotals,
+    IReadOnlyList<SavedPeriodTotals> Periods);
+
+public sealed record SavedPeriodTotals(int Period, int Shots, double ExpectedGoals, int PowerPlayOpportunities);
 
 public sealed record SavedSituationalShotTotals(
     SavedShotTotals FiveOnFive,

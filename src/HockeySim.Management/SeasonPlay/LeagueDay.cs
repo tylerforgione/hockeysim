@@ -57,7 +57,7 @@ internal static class LeagueDay
     private static Team DressedForToday(Team team, Season season)
     {
         var lineup = MatchDayLineup.ForAiTeam(team, season);
-        return ReferenceEquals(lineup, team.Lineup) ? team : new Team(team.Id, team.Name, team.Colours, team.Roster, lineup);
+        return ReferenceEquals(lineup, team.Lineup) ? team : new Team(team.Id, team.Name, team.Arena, team.Colours, team.Roster, lineup);
     }
 
     private static CompletedMatch ToCompletedMatch(ScheduledMatch scheduledMatch, MatchResult result) =>
@@ -106,7 +106,8 @@ internal static class LeagueDay
                 side.Goalie.GoalsAgainst,
                 side.Goalie.ExpectedGoalsAgainst,
                 side.Goalie.TimeOnIce),
-            side.ShotTotals);
+            side.ShotTotals,
+            side.Periods);
 
     private static SkaterBoxScore ToBoxScore(SkaterMatchStatistics skater) =>
         new(

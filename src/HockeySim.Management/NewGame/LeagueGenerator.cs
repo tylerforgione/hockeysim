@@ -82,7 +82,7 @@ internal static class LeagueGenerator
             .ToList();
         var lineup = Lineup.CreateWithDefaultUnits(forwardLines, defencePairs, goalies[0], goalies[1]);
 
-        return new Team(new TeamId(random.NextGuid()), definition.Name, definition.Colours, players, lineup);
+        return new Team(new TeamId(random.NextGuid()), definition.Name, definition.Arena, definition.Colours, players, lineup);
     }
 
     /// <summary>

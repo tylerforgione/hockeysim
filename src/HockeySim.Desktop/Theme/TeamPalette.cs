@@ -16,8 +16,17 @@ public static class TeamPalette
     public const string SecondaryKey = "TeamSecondaryBrush";
     public const string OnSecondaryKey = "OnTeamSecondaryBrush";
 
+    // Below this contrast with the surface, a team colour is too dark to pick out.
+    private const double MinimumSurfaceContrast = 1.3;
+
+    // Colours nearer than this, as a distance in red, green, and blue, look alike side by side.
+    private const int LookAlikeDistance = 100;
+
     private static readonly Color LightText = Colors.White;
     private static readonly Color DarkText = Color.Parse("#0D1014");
+
+    // Palette.axaml's SurfaceBrush, which panels and tables sit on.
+    private static readonly Color Surface = Color.Parse("#20262D");
 
     /// <summary>
     /// Sets <paramref name="resources"/> to <paramref name="colours"/>, or clears them back to the
@@ -49,7 +58,41 @@ public static class TeamPalette
     public static Color ReadableTextOn(Color background) =>
         ContrastRatio(background, LightText) >= ContrastRatio(background, DarkText) ? LightText : DarkText;
 
+    /// <summary>
+    /// Two teams' colours for a chart on the app's dark panels, such as a box score's comparison
+    /// bars. Each team shows its primary, or its secondary when the primary is too dark to see
+    /// there; the home team switches to its other colour if the two would look alike.
+    /// </summary>
+    public static (Colour Away, Colour Home) ChartColours(TeamColours away, TeamColours home)
+    {
+        ArgumentNullException.ThrowIfNull(away);
+        ArgumentNullException.ThrowIfNull(home);
+
+        var awayColour = VisibleColours(away).First();
+        var homeColours = VisibleColours(home).ToList();
+        return (awayColour, homeColours.FirstOrDefault(colour => !LookAlike(colour, awayColour), homeColours[0]));
+    }
+
     public static Color ToColor(Colour colour) => Color.FromRgb(colour.Red, colour.Green, colour.Blue);
+
+    /// <summary>
+    /// The team's colours that can be seen on the dark panels, primary first; the secondary alone
+    /// when neither stands out, since secondaries are the lighter accents.
+    /// </summary>
+    private static IEnumerable<Colour> VisibleColours(TeamColours colours)
+    {
+        var visible = new[] { colours.Primary, colours.Secondary }
+            .Where(colour => ContrastRatio(ToColor(colour), Surface) >= MinimumSurfaceContrast)
+            .ToList();
+        return visible.Count > 0 ? visible : [colours.Secondary];
+    }
+
+    /// <summary>Colours close enough in red, green, and blue to be mistaken for each other in a chart.</summary>
+    private static bool LookAlike(Colour first, Colour second)
+    {
+        var (red, green, blue) = (first.Red - second.Red, first.Green - second.Green, first.Blue - second.Blue);
+        return (red * red) + (green * green) + (blue * blue) < LookAlikeDistance * LookAlikeDistance;
+    }
 
     private static double ContrastRatio(Color first, Color second)
     {

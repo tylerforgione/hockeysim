@@ -8,7 +8,11 @@ namespace HockeySim.Domain;
 /// </summary>
 public sealed class CompletedMatchTeam
 {
+    /// <summary>The periods of regulation, all of which every completed match plays.</summary>
+    public const int RegulationPeriods = 3;
+
     private readonly ReadOnlyCollection<SkaterBoxScore> _skaters;
+    private readonly ReadOnlyCollection<PeriodTotals> _periods;
 
     /// <param name="score">
     /// The decisive final score. A shootout winner's score includes the one deciding goal that no
@@ -25,6 +29,10 @@ public sealed class CompletedMatchTeam
     /// Both teams' shot attempts, shots, goals, and expected goals by strength situation from this
     /// team's side, excluding penalty shots.
     /// </param>
+    /// <param name="periods">
+    /// The team's shots, expected goals, and power-play opportunities in each period played, in
+    /// order from the first. They add up to the team's totals.
+    /// </param>
     public CompletedMatchTeam(
         TeamId teamId,
         int score,
@@ -32,7 +40,8 @@ public sealed class CompletedMatchTeam
         int powerPlayOpportunities,
         IEnumerable<SkaterBoxScore> skaters,
         GoalieBoxScore goalie,
-        SituationalShotTotals shotTotals)
+        SituationalShotTotals shotTotals,
+        IEnumerable<PeriodTotals> periods)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(score);
         ArgumentOutOfRangeException.ThrowIfNegative(shots);
@@ -40,6 +49,7 @@ public sealed class CompletedMatchTeam
         ArgumentNullException.ThrowIfNull(skaters);
         ArgumentNullException.ThrowIfNull(goalie);
         ArgumentNullException.ThrowIfNull(shotTotals);
+        ArgumentNullException.ThrowIfNull(periods);
 
         var skaterList = skaters.ToList();
         if (skaterList.Any(skater => skater is null))
@@ -89,6 +99,9 @@ public sealed class CompletedMatchTeam
             throw new ArgumentException("A skater's on-ice shot totals cannot exceed the team's in any situation.", nameof(skaters));
         }
 
+        var periodList = periods.ToList();
+        ThrowIfPeriodsDiffer(periodList, shots, skaterList.Sum(skater => skater.ExpectedGoals), powerPlayOpportunities);
+
         TeamId = teamId;
         Score = score;
         Shots = shots;
@@ -96,6 +109,7 @@ public sealed class CompletedMatchTeam
         _skaters = skaterList.AsReadOnly();
         Goalie = goalie;
         ShotTotals = shotTotals;
+        _periods = periodList.AsReadOnly();
     }
 
     public TeamId TeamId { get; }
@@ -124,6 +138,12 @@ public sealed class CompletedMatchTeam
     /// </summary>
     public SituationalShotTotals ShotTotals { get; }
 
+    /// <summary>
+    /// The team's shots, expected goals, and power-play opportunities in each period played, from
+    /// the first: three in regulation, then each overtime period.
+    /// </summary>
+    public IReadOnlyList<PeriodTotals> Periods => _periods;
+
     public int FaceoffsWon => _skaters.Sum(skater => skater.FaceoffsWon);
 
     public int FaceoffsLost => _skaters.Sum(skater => skater.FaceoffsLost);
@@ -136,4 +156,34 @@ public sealed class CompletedMatchTeam
 
     /// <summary>The summed expected-goal value of the team's unblocked attempts.</summary>
     public double ExpectedGoals => _skaters.Sum(skater => skater.ExpectedGoals);
+
+    /// <summary>
+    /// Every regulation period is played, the periods are numbered in order from the first, and
+    /// they account for exactly the match's shots, expected goals, and power-play opportunities.
+    /// </summary>
+    private static void ThrowIfPeriodsDiffer(
+        List<PeriodTotals> periods,
+        int shots,
+        double expectedGoals,
+        int powerPlayOpportunities)
+    {
+        if (periods.Any(period => period is null))
+        {
+            throw new ArgumentException("A completed match cannot contain missing period totals.", nameof(periods));
+        }
+
+        if (periods.Count < RegulationPeriods || periods.Where((period, index) => period.Period != index + 1).Any())
+        {
+            throw new ArgumentException("Period totals must cover every period played, in order from the first.", nameof(periods));
+        }
+
+        if (periods.Sum(period => period.Shots) != shots
+            || !ExpectedGoalTotals.AreEqual(periods.Sum(period => period.ExpectedGoals), expectedGoals)
+            || periods.Sum(period => period.PowerPlayOpportunities) != powerPlayOpportunities)
+        {
+            throw new ArgumentException(
+                "Period totals must add up to the team's shots, expected goals, and power-play opportunities.",
+                nameof(periods));
+        }
+    }
 }

@@ -160,6 +160,7 @@ public sealed class TeamSnapshot
     private TeamSnapshot(
         TeamId id,
         string name,
+        string arena,
         TeamColours colours,
         IReadOnlyList<PlayerSnapshot> roster,
         IReadOnlyList<PlayerId> scratchedPlayerIds,
@@ -167,6 +168,7 @@ public sealed class TeamSnapshot
     {
         Id = id;
         Name = name;
+        Arena = arena;
         Colours = colours;
         _roster = new ReadOnlyCollection<PlayerSnapshot>(roster.ToList());
         Lineup = lineup;
@@ -178,6 +180,9 @@ public sealed class TeamSnapshot
     public TeamId Id { get; }
 
     public string Name { get; }
+
+    /// <summary>The team's home arena, where it hosts every home match.</summary>
+    public string Arena { get; }
 
     public TeamColours Colours { get; }
 
@@ -206,6 +211,7 @@ public sealed class TeamSnapshot
         return new(
             team.Id,
             team.Name,
+            team.Arena,
             team.Colours,
             team.Roster.Select(player => PlayerSnapshot.Create(player, season)).ToList(),
             scratchedPlayerIds,

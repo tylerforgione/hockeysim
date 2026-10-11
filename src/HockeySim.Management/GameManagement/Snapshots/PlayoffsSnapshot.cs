@@ -69,7 +69,7 @@ public sealed class PlayoffsSnapshot
             playoffs.CurrentRound,
             playoffs.Champion?.TeamId,
             playoffs.Series.Select(PlayoffSeriesSnapshot.Create).ToList(),
-            playoffs.CompletedMatches.Select(CompletedMatchSnapshot.Create).ToList(),
+            CompletedMatchSnapshot.CreateAll(playoffs.CompletedMatches, SeasonPhase.Playoffs),
             playoffs.TeamRecords.Select(TeamRecordSnapshot.Create).ToList(),
             playoffs.TeamStatistics.Select(TeamSeasonStatisticsSnapshot.Create).ToList(),
             playoffs.SkaterStatistics.Select(SkaterSeasonStatisticsSnapshot.Create).ToList(),
@@ -100,7 +100,7 @@ public sealed record PlayoffSeriesSnapshot(
             series.HigherRankedWins,
             series.LowerRankedWins,
             series.Winner?.TeamId,
-            series.Games.Select(CompletedMatchSnapshot.Create).ToList().AsReadOnly(),
+            CompletedMatchSnapshot.CreateAll(series.Games, SeasonPhase.Playoffs).AsReadOnly(),
             series.NextGame is null ? null : ScheduledMatchSnapshot.Create(series.NextGame));
 }
 

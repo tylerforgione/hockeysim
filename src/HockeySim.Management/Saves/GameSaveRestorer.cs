@@ -76,6 +76,7 @@ internal static class GameSaveRestorer
         return new Team(
             saved.Id,
             saved.Name,
+            Required(saved.Arena, "arena"),
             new TeamColours(
                 Colour.FromHex(Required(saved.PrimaryColour, "primary team colour")),
                 Colour.FromHex(Required(saved.SecondaryColour, "secondary team colour"))),
@@ -225,7 +226,9 @@ internal static class GameSaveRestorer
                 goalie.GoalsAgainst,
                 goalie.ExpectedGoalsAgainst,
                 TimeSpan.FromSeconds(goalie.TimeOnIceSeconds)),
-            RestoreShotTotals(saved.ShotTotals));
+            RestoreShotTotals(saved.ShotTotals),
+            Items(saved.Periods, "period totals").Select(period => new PeriodTotals(
+                period.Period, period.Shots, period.ExpectedGoals, period.PowerPlayOpportunities)));
     }
 
     private static SkaterBoxScore RestoreSkater(SavedSkaterBoxScore skater) =>

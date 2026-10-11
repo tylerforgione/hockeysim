@@ -112,7 +112,7 @@ internal sealed class PenaltyAssessment(MatchState state)
             if (!penalty.CountedAsPowerPlay)
             {
                 penalty.CountedAsPowerPlay = true;
-                side.AddPowerPlayOpportunity();
+                side.AddPowerPlayOpportunity(state.Period);
             }
         }
     }
