@@ -235,22 +235,32 @@ public sealed class MainWindowViewTests
             detailViewModel.PenaltySummary.Count,
             matchDetail.GetVisualDescendants().OfType<Grid>().Count(grid => grid.DataContext is PenaltySummaryRowViewModel));
 
-        // Standings: four division tables by default with the marker legend, then the wild-card
-        // view's four division leader tables and two races, then the single league table.
+        // Standings: the conferences side by side, four division tables by default with the marker
+        // legend, then the wild-card view's four division leader tables and two races, then the
+        // single league table in one column.
         AssertNavigationRenders<StandingsPageView>(window, ShellPage.Standings);
         var standingsView = Single<StandingsPageView>(window);
+        var standingsColumns = Assert.IsType<ItemsControl>(standingsView.FindControl<ItemsControl>("StandingsColumns"));
         Assert.Equal(32, CountStandingsRows(standingsView));
-        Assert.Equal(4, standingsView.FindControl<ItemsControl>("StandingsTables")?.ItemCount);
+        Assert.Equal(2, standingsColumns.ItemCount);
+        Assert.Equal(4, CountStandingsTables(standingsView));
         Assert.True(standingsView.FindControl<TextBlock>("PlayoffStatusLegend")?.IsEffectivelyVisible);
         Click(Assert.IsType<Button>(standingsView.FindControl<Button>("WildCardScopeButton")));
-        Assert.Equal(6, standingsView.FindControl<ItemsControl>("StandingsTables")?.ItemCount);
+        Assert.Equal(2, standingsColumns.ItemCount);
+        Assert.Equal(6, CountStandingsTables(standingsView));
         Assert.Equal(32, CountStandingsRows(standingsView));
         Click(Assert.IsType<Button>(standingsView.FindControl<Button>("LeagueScopeButton")));
-        Assert.Equal(1, standingsView.FindControl<ItemsControl>("StandingsTables")?.ItemCount);
+        Assert.Equal(1, standingsColumns.ItemCount);
+        Assert.Equal(1, CountStandingsTables(standingsView));
         Assert.Equal(32, CountStandingsRows(standingsView));
         Assert.All(
             standingsView.GetVisualDescendants().OfType<Border>().Select(border => border.DataContext).OfType<StandingsRowViewModel>(),
             row => Assert.Equal(1, row.GamesPlayed));
+        var teamLink = standingsView.GetVisualDescendants().OfType<Button>().First(button => button.Classes.Contains("cell-link"));
+        var linkedTeam = Assert.IsType<StandingsRowViewModel>(teamLink.DataContext).TeamId;
+        Click(teamLink);
+        Single<TeamsPageView>(window);
+        Assert.Equal(linkedTeam, viewModel.Game!.Teams.SelectedTeam.Id);
 
         // Roster: the tables switched to basic and advanced statistics; the detail panel always
         // shows the full line.
@@ -346,8 +356,11 @@ public sealed class MainWindowViewTests
         Assert.False(confirmationOverlay.IsVisible);
     }
 
+    private static int CountStandingsTables(Visual view) =>
+        view.GetVisualDescendants().OfType<Border>().Count(border => border.DataContext is StandingsTableViewModel && border.Classes.Contains("panel"));
+
     private static int CountStandingsRows(Visual view) =>
-        view.GetVisualDescendants().OfType<Border>().Count(border => border.DataContext is StandingsRowViewModel);
+        view.GetVisualDescendants().OfType<Border>().Count(border => border.DataContext is StandingsRowViewModel && border.Classes.Contains("standing-row"));
 
     private static void ClickAndWait(Button button, Func<bool> isDone)
     {

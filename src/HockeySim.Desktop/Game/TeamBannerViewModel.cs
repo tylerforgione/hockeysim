@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Schedule;
+using HockeySim.Desktop.Standings;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
@@ -58,7 +59,7 @@ public sealed partial class TeamBannerViewModel : ObservableObject
         [
             new("NEXT", NextMatch(snapshot, team.Id)),
             new("LAST", results.Count == 0 ? None : LastResult(results[^1], team.Id)),
-            new("STREAK", Streak(results, team.Id)),
+            new("STREAK", TeamForm.Streak(results, team.Id)),
         ];
     }
 
@@ -85,30 +86,6 @@ public sealed partial class TeamBannerViewModel : ObservableObject
         homeTeamId == teamId
             ? $"vs {PlayerDisplay.TeamInitials(_session.GetTeam(awayTeamId).Name)}"
             : $"@ {PlayerDisplay.TeamInitials(_session.GetTeam(homeTeamId).Name)}";
-
-    /// <summary>
-    /// The run of like results ending with the latest: wins (W), regulation losses (L), or overtime
-    /// and shootout losses (OT), as standings count them.
-    /// </summary>
-    private static string Streak(List<CompletedMatchSnapshot> results, TeamId teamId)
-    {
-        if (results.Count == 0)
-        {
-            return None;
-        }
-
-        var kind = StreakKind(results[^1], teamId);
-        var length = 0;
-        for (var index = results.Count - 1; index >= 0 && StreakKind(results[index], teamId) == kind; index--)
-        {
-            length++;
-        }
-
-        return string.Create(CultureInfo.CurrentCulture, $"{kind}{length}");
-    }
-
-    private static string StreakKind(CompletedMatchSnapshot result, TeamId teamId) =>
-        result.WinnerId == teamId ? "W" : result.Decision == MatchDecision.Regulation ? "L" : "OT";
 
     private static bool Involves(CompletedMatchSnapshot result, TeamId teamId) =>
         result.Home.TeamId == teamId || result.Away.TeamId == teamId;

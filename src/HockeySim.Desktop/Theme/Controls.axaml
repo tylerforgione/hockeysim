@@ -625,11 +625,39 @@
   </Style>
   <!-- The playoff line under a table's last qualifier; a managed row keeps its left accent. -->
   <Style Selector="Border.standing-row.last-qualifier">
-    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
     <Setter Property="BorderThickness" Value="0,0,0,2" />
   </Style>
   <Style Selector="Border.standing-row.managed.last-qualifier">
     <Setter Property="BorderThickness" Value="2,0,0,2" />
+  </Style>
+
+  <!-- A team's colour beside its name in a table. -->
+  <Style Selector="Border.team-swatch">
+    <Setter Property="Width" Value="10" />
+    <Setter Property="Height" Value="10" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <!-- A name in a table cell that opens what it names; it reads as text until hovered. -->
+  <Style Selector="Button.cell-link">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.cell-link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource TeamSecondaryBrush}" />
+  </Style>
+  <Style Selector="Button.cell-link:pointerover TextBlock">
+    <Setter Property="TextDecorations" Value="Underline" />
   </Style>
 
   <!-- Inputs. -->
