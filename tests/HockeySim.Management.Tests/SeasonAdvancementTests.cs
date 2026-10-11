@@ -297,13 +297,15 @@ public sealed class SeasonAdvancementTests
         string.Join(
             Environment.NewLine,
             results.Select(result =>
-                $"{result.Date:yyyy-MM-dd} {result.Decision} {Side(result.Home)} @ {Side(result.Away)} "
-                + $"goals [{string.Join(",", result.Goals)}] penalties [{string.Join(",", result.Penalties)}]"));
+                $"{result.Date:yyyy-MM-dd} {result.Phase} {result.Decision} {Side(result.Home)} @ {Side(result.Away)} "
+                + $"goals [{string.Join(",", result.Goals)}] penalties [{string.Join(",", result.Penalties)}] "
+                + $"stars [{string.Join(",", result.ThreeStars)}]"));
 
     // Box-score and summary records print every statistic, and doubles print exactly, so equal
     // fingerprints mean every box-score and summary value matches.
     private static string Side(CompletedMatchTeamSnapshot side) =>
         $"{side.TeamId}:{side.Score}/{side.Shots}/{side.PowerPlayOpportunities} {side.ShotTotals} "
+        + $"periods [{string.Join(",", side.Periods)}] record {side.RecordAfter} "
         + $"[{string.Join(",", side.Skaters)}] "
         + $"G {side.Goalie}";
 

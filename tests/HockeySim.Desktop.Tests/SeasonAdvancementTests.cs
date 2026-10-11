@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Schedule;
@@ -142,7 +144,6 @@ public sealed class SeasonAdvancementTests
         foreach (var (side, snapshot) in new[] { (detail.Home, result.Home), (detail.Away, result.Away) })
         {
             Assert.Equal(snapshot.Score, side.Score);
-            Assert.Equal(snapshot.Shots, side.Shots);
             Assert.Equal(snapshot.Skaters.Select(line => (line.Goals, line.Assists)), side.Skaters.Select(skater => (skater.Goals, skater.Assists)));
             Assert.Equal(
                 snapshot.Skaters.Select(line => (
@@ -173,8 +174,6 @@ public sealed class SeasonAdvancementTests
                     skater.PenaltyMinutes,
                     skater.PowerPlayGoals,
                     skater.ShorthandedGoals)));
-            Assert.Equal(MatchDisplay.PowerPlay(snapshot.PowerPlayGoals, snapshot.PowerPlayOpportunities), side.PowerPlay);
-            Assert.Equal(snapshot.Skaters.Sum(line => line.PenaltyMinutes), side.PenaltyMinutes);
             Assert.Equal(MatchDisplay.ExpectedGoals(snapshot.Goalie.ExpectedGoalsAgainst), side.Goalie.ExpectedGoalsAgainst);
             Assert.Equal(MatchDisplay.TimeOnIce(snapshot.Goalie.TimeOnIce), side.Goalie.TimeOnIce);
             Assert.All(side.Skaters, skater => Assert.Equal(skater.Goals + skater.Assists, skater.Points));
@@ -184,6 +183,26 @@ public sealed class SeasonAdvancementTests
             Assert.Equal(MatchDisplay.SavePercentage(side.Goalie.Saves, side.Goalie.ShotsAgainst), side.Goalie.SavePercentage);
         }
 
+        // The summary's totals are the match's, away first as on the scoreboard.
+        var byPeriod = detail.PeriodTables.ToDictionary(table => table.Title);
+        Assert.Equal(
+            [result.Away.Score.ToString(CultureInfo.CurrentCulture), result.Home.Score.ToString(CultureInfo.CurrentCulture)],
+            byPeriod["GOALS"].Rows.Select(row => row.Total));
+        Assert.Equal(
+            [result.Away.Shots.ToString(CultureInfo.CurrentCulture), result.Home.Shots.ToString(CultureInfo.CurrentCulture)],
+            byPeriod["SHOTS"].Rows.Select(row => row.Total));
+        Assert.Equal(
+            [
+                MatchDisplay.PowerPlay(result.Away.PowerPlayGoals, result.Away.PowerPlayOpportunities),
+                MatchDisplay.PowerPlay(result.Home.PowerPlayGoals, result.Home.PowerPlayOpportunities),
+            ],
+            byPeriod["POWER PLAY"].Rows.Select(row => row.Total));
+        var penaltyMinutes = detail.Comparison.Single(row => row.Label == "Penalty minutes");
+        Assert.Equal(
+            (result.Away.PenaltyMinutes.ToString(CultureInfo.CurrentCulture), result.Home.PenaltyMinutes.ToString(CultureInfo.CurrentCulture)),
+            (penaltyMinutes.AwayValue, penaltyMinutes.HomeValue));
+        Assert.Equal(3, detail.ThreeStars.Count);
+        Assert.Equal(session.GetTeam(result.Home.TeamId).Arena, detail.Arena);
     }
 
     [Fact]

@@ -67,6 +67,67 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
     }
 
     [Fact]
+    public void EveryResultCarriesEachTeamsRecordOnceItWasPlayed()
+    {
+        Assert.All(Season.TeamRecords, record =>
+        {
+            var last = Side(
+                Season.Results.Last(result => result.Home.TeamId == record.TeamId || result.Away.TeamId == record.TeamId),
+                record.TeamId);
+            Assert.Equal(
+                new MatchRecordSnapshot(record.Wins, record.RegulationLosses, record.OvertimeLosses + record.ShootoutLosses),
+                last.RecordAfter);
+        });
+        Assert.All(Season.Playoffs!.Series, series =>
+        {
+            var last = series.Games[^1];
+            Assert.Equal(
+                new MatchRecordSnapshot(series.HigherRankedWins, series.LowerRankedWins, 0),
+                Side(last, series.HigherRanked.TeamId).RecordAfter);
+            Assert.Equal(
+                new MatchRecordSnapshot(series.LowerRankedWins, series.HigherRankedWins, 0),
+                Side(last, series.LowerRanked.TeamId).RecordAfter);
+        });
+    }
+
+    [Fact]
+    public void EveryResultHasPeriodTotalsForEachPeriodPlayed()
+    {
+        Assert.All(Season.Results.Concat(Season.Playoffs!.Results), result =>
+        {
+            var lastGoalPeriod = result.Goals.Count == 0 ? 0 : result.Goals[^1].Period;
+            var periodsPlayed = result.Decision switch
+            {
+                MatchDecision.Regulation => 3,
+                MatchDecision.Overtime => Math.Max(4, lastGoalPeriod),
+                _ => 4,
+            };
+            foreach (var side in new[] { result.Home, result.Away })
+            {
+                Assert.Equal(Enumerable.Range(1, periodsPlayed), side.Periods.Select(period => period.Period));
+                Assert.Equal(side.Shots, side.Periods.Sum(period => period.Shots));
+                Assert.Equal(side.PowerPlayOpportunities, side.Periods.Sum(period => period.PowerPlayOpportunities));
+                Assert.Equal(side.Skaters.Sum(skater => skater.ExpectedGoals), side.Periods.Sum(period => period.ExpectedGoals), precision: 6);
+            }
+        });
+    }
+
+    [Fact]
+    public void EveryResultsThreeStarsAreDifferentPlayersWhoAppearedIncludingAWinner()
+    {
+        Assert.All(Season.Results.Concat(Season.Playoffs!.Results), result =>
+        {
+            var appeared = new[] { result.Home, result.Away }
+                .SelectMany(side => side.Skaters.Select(skater => skater.PlayerId).Append(side.Goalie.PlayerId))
+                .ToHashSet();
+
+            Assert.Equal(3, result.ThreeStars.Select(star => star.PlayerId).Distinct().Count());
+            Assert.All(result.ThreeStars, star => Assert.Contains(star.PlayerId, appeared));
+            Assert.Contains(result.ThreeStars, star => star.TeamId == result.WinnerId);
+        });
+    }
+
+    [Fact]
     public void EveryBoxScoreAccountsForTheTimePlayed()
     {
         // Each team has three to five skaters a side, and six while its goalie is pulled for an

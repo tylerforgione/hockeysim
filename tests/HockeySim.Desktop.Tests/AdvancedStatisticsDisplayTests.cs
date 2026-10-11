@@ -81,11 +81,10 @@ public sealed class AdvancedStatisticsDisplayTests
     public async Task BoxScoresListEveryGoalAndPenaltyWithTheRunningScore()
     {
         var session = await PlayDays(3);
-        var teamNames = session.Snapshot.League.Teams.ToDictionary(team => team.Id, team => team.Name);
 
         Assert.All(session.Snapshot.Season.Results, result =>
         {
-            var detail = new MatchDetailViewModel(result, session.PlayersById, id => teamNames[id]);
+            var detail = new MatchDetailViewModel(result, session.PlayersById, session.GetTeam);
 
             Assert.Equal(result.Goals.Count, detail.ScoringSummary.Count);
             Assert.Equal(result.Goals.Count == 0, detail.HasNoGoals);
@@ -117,7 +116,7 @@ public sealed class AdvancedStatisticsDisplayTests
     {
         var session = await PlayDays(1);
         var result = session.Snapshot.Season.Results[0];
-        var detail = new MatchDetailViewModel(result, session.PlayersById, _ => "Team");
+        var detail = new MatchDetailViewModel(result, session.PlayersById, session.GetTeam);
 
         foreach (var (side, snapshot) in new[] { (detail.Home, result.Home), (detail.Away, result.Away) })
         {

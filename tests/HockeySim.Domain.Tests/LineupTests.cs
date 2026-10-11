@@ -160,6 +160,7 @@ public sealed class LineupTests
         Assert.Throws<ArgumentException>(() => new Team(
             new TeamId(Guid.Parse("10000000-0000-0000-0000-000000000001")),
             "Test Team",
+            "Test Arena",
             TestLeague.Colours,
             roster,
             foreignLineup));
@@ -173,6 +174,7 @@ public sealed class LineupTests
         var team = new Team(
             new TeamId(Guid.Parse("10000000-0000-0000-0000-000000000001")),
             "Test Team",
+            "Test Arena",
             TestLeague.Colours,
             roster,
             originalLineup);

@@ -76,6 +76,37 @@ internal static class TestResults
         TimeSpan? timeOnIce = null) =>
         new(playerId, shotsAgainst, goalsAgainst, expectedGoalsAgainst, timeOnIce ?? MatchLength);
 
+    /// <summary>
+    /// Period totals for a match of <paramref name="count"/> periods: the shots spread evenly over
+    /// regulation, any remainder in the first period, so a goal in any regulation period has a
+    /// shot; the expected goals and power-play opportunities all in the first period; and none in
+    /// overtime.
+    /// </summary>
+    public static IReadOnlyList<PeriodTotals> Periods(
+        int shots,
+        double expectedGoals = 0,
+        int powerPlayOpportunities = 0,
+        int count = CompletedMatchTeam.RegulationPeriods)
+    {
+        var perPeriod = shots / CompletedMatchTeam.RegulationPeriods;
+        var first = shots - (perPeriod * (CompletedMatchTeam.RegulationPeriods - 1));
+        return Enumerable.Range(1, count)
+            .Select(period => period switch
+            {
+                1 => new PeriodTotals(period, first, expectedGoals, powerPlayOpportunities),
+                <= CompletedMatchTeam.RegulationPeriods => new PeriodTotals(period, perPeriod, 0, 0),
+                _ => new PeriodTotals(period, 0, 0, 0),
+            })
+            .ToList();
+    }
+
+    /// <summary>Regulation period totals with the skaters' shots and expected goals all in the first period.</summary>
+    public static IReadOnlyList<PeriodTotals> Periods(IEnumerable<SkaterBoxScore> skaters, int powerPlayOpportunities = 0)
+    {
+        var list = skaters.ToList();
+        return Periods(list.Sum(skater => skater.Shots), list.Sum(skater => skater.ExpectedGoals), powerPlayOpportunities);
+    }
+
     /// <summary>Shot totals with every unnamed count zero.</summary>
     public static ShotTotals Shots(
         int attemptsFor = 0,
@@ -144,13 +175,14 @@ internal static class TestResults
         var homeBonus = decision == MatchDecision.Shootout && shootoutWinnerIsHome ? 1 : 0;
         var awayBonus = decision == MatchDecision.Shootout && !shootoutWinnerIsHome ? 1 : 0;
 
+        var periods = decision == MatchDecision.Regulation ? CompletedMatchTeam.RegulationPeriods : CompletedMatchTeam.RegulationPeriods + 1;
         return Match(
             scheduled,
-            Side(home, homeGoals + homeBonus, homeGoals, opponentGoals: awayGoals),
-            Side(away, awayGoals + awayBonus, awayGoals, opponentGoals: homeGoals),
+            Side(home, homeGoals + homeBonus, homeGoals, opponentGoals: awayGoals, periods),
+            Side(away, awayGoals + awayBonus, awayGoals, opponentGoals: homeGoals, periods),
             decision);
 
-        static CompletedMatchTeam Side(Team team, int score, int playerGoals, int opponentGoals)
+        static CompletedMatchTeam Side(Team team, int score, int playerGoals, int opponentGoals, int periods)
         {
             var skaters = team.Lineup.ForwardLines.SelectMany(line => line.Players)
                 .Concat(team.Lineup.DefencePairs.SelectMany(pair => pair.Players))
@@ -158,7 +190,15 @@ internal static class TestResults
                     ? Skater(player.Id, playerGoals, shots: TeamShots, expectedGoals: TeamExpectedGoals)
                     : Skater(player.Id));
             var goalie = Goalie(team.Lineup.StartingGoalie.Id, TeamShots, opponentGoals, TeamExpectedGoals);
-            return new CompletedMatchTeam(team.Id, score, TeamShots, powerPlayOpportunities: 0, skaters, goalie, SituationalShotTotals.None);
+            return new CompletedMatchTeam(
+                team.Id,
+                score,
+                TeamShots,
+                powerPlayOpportunities: 0,
+                skaters,
+                goalie,
+                SituationalShotTotals.None,
+                Periods(TeamShots, TeamExpectedGoals, count: periods));
         }
     }
 

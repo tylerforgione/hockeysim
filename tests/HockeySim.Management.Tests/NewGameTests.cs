@@ -71,6 +71,16 @@ public sealed class NewGameTests
     }
 
     [Fact]
+    public void EveryTeamHasItsOwnArena()
+    {
+        var teams = StartGame(12345).League.Teams;
+
+        Assert.All(teams, team => Assert.False(string.IsNullOrWhiteSpace(team.Arena)));
+        Assert.Equal(32, teams.Select(team => team.Arena).Distinct().Count());
+        Assert.Equal("Harbour Lights Arena", teams.Single(team => team.Name == InitialManagedTeam).Arena);
+    }
+
+    [Fact]
     public void EquivalentInputsCreateEquivalentWorldsAndRandomState()
     {
         var first = StartGame(987654321);

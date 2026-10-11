@@ -135,7 +135,8 @@ public sealed class SeasonHealthTests
             firstSide.PowerPlayOpportunities,
             firstSide.Skaters,
             new GoalieBoxScore(backup, firstSide.Goalie.ShotsAgainst, firstSide.Goalie.GoalsAgainst, firstSide.Goalie.ExpectedGoalsAgainst, firstSide.Goalie.TimeOnIce),
-            firstSide.ShotTotals);
+            firstSide.ShotTotals,
+            firstSide.Periods);
         var rematch = TestResults.Match(_rematch, backupStarts.Home, withBackup);
 
         Assert.Throws<ArgumentException>(() => _season.CompleteDay([WithHealth(

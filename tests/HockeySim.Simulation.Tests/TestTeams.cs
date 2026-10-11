@@ -72,6 +72,7 @@ internal static class TestTeams
         return new Team(
             new TeamId(NextGuid()),
             name,
+            $"{name} Arena",
             new TeamColours(new Colour(0, 0, 0), new Colour(255, 255, 255)),
             roster,
             lineup);
