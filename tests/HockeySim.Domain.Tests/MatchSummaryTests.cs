@@ -222,7 +222,8 @@ public sealed class MatchSummaryTests
             powerPlayOpportunities,
             skaters,
             goalie ?? Goalie(team.Lineup.StartingGoalie.Id, 0, 0),
-            shotTotals);
+            shotTotals,
+            TestResults.Periods(skaters, powerPlayOpportunities));
 
     private static MatchGoal Goal(
         int period,

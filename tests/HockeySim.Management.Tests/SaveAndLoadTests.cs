@@ -44,10 +44,13 @@ public sealed class SaveAndLoadTests
         MissingSummary,
         ShotTotalsNotMatchingOpponent,
         MissingOnIceShotTotals,
+        MissingPeriodTotals,
+        PeriodTotalsNotMatchingShots,
         DressedPlayerNotOnRoster,
         SkaterDressedInGoal,
         MalformedTeamColour,
         MissingTeamColour,
+        MissingArena,
         MatchingTeamColours,
         DuplicateRosterPlayer,
         RatingOutOfRange,
@@ -484,6 +487,14 @@ public sealed class SaveAndLoadTests
                     },
                 },
             }),
+            MissingPeriodTotals => WithFirstResult(save, firstResult with { Home = firstResult.Home with { Periods = null! } }),
+            PeriodTotalsNotMatchingShots => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    Periods = [firstResult.Home.Periods[0] with { Shots = firstResult.Home.Periods[0].Shots + 1 }, .. firstResult.Home.Periods.Skip(1)],
+                },
+            }),
             MissingOnIceShotTotals => WithFirstResult(save, firstResult with
             {
                 Home = firstResult.Home with
@@ -501,6 +512,7 @@ public sealed class SaveAndLoadTests
             }),
             MalformedTeamColour => WithFirstTeam(save, firstTeam with { PrimaryColour = "navy" }),
             MissingTeamColour => WithFirstTeam(save, firstTeam with { SecondaryColour = null! }),
+            MissingArena => WithFirstTeam(save, firstTeam with { Arena = null! }),
             MatchingTeamColours => WithFirstTeam(save, firstTeam with { SecondaryColour = firstTeam.PrimaryColour }),
             DuplicateRosterPlayer => WithFirstTeam(save, firstTeam with
             {

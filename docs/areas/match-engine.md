@@ -343,7 +343,9 @@ penalty minutes, power-play and shorthanded goals and assists, and empty-net
 goals (scored while the opponent's goalie was pulled). A team
 records its power-play opportunities: each opponent penalty counts once, the
 first time the team has more skaters while it is served, so a 5-on-3 is two and
-coincidental penalties are none. The starting goalie plays the whole match,
+coincidental penalties are none. A team also records its period totals: its
+shots on goal and xG in each period played, and each power-play opportunity in
+the period in which it began. The starting goalie plays the whole match,
 apart from any time pulled for an extra attacker, and records shots and goals
 against, xG against, and time on ice. As in NHL scoring, an empty-net goal is a
 shot and a goal for the scoring team but neither a shot nor a goal against the
@@ -374,7 +376,12 @@ a team scores on the power play only with a power-play opportunity, and it
 scores shorthanded only if the opponent had one. Each team's shot totals must be
 the other's seen from the opposite side (for and against swapped, power play and
 penalty kill exchanged), cannot exceed its skaters' attempts, shots, goals, and
-xG, and bound every one of its skaters' on-ice totals. Time on ice is kept in
+xG, and bound every one of its skaters' on-ice totals. Each team's period totals
+must cover the same periods as the other's (the three of regulation, then
+overtime only in a match decided after regulation), number them in order, add
+up to its shots, xG, and power-play opportunities, and hold at least as many
+shots in each period as the team scored goals in it; no goal or penalty in the
+summaries can fall in a period that was not played. Time on ice is kept in
 whole seconds and xG totals are compared within a rounding tolerance. Management
 also keeps the goals and penalties from the play-by-play as the completed match's
 scoring and penalty summaries; see [season](season.md).

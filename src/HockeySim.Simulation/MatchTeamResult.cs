@@ -13,6 +13,7 @@ namespace HockeySim.Simulation;
 public sealed class MatchTeamResult
 {
     private readonly ReadOnlyCollection<SkaterMatchStatistics> _skaters;
+    private readonly ReadOnlyCollection<PeriodTotals> _periods;
 
     internal MatchTeamResult(
         TeamId teamId,
@@ -21,7 +22,8 @@ public sealed class MatchTeamResult
         int powerPlayOpportunities,
         IEnumerable<SkaterMatchStatistics> skaters,
         GoalieMatchStatistics goalie,
-        SituationalShotTotals shotTotals)
+        SituationalShotTotals shotTotals,
+        IEnumerable<PeriodTotals> periods)
     {
         TeamId = teamId;
         Score = score;
@@ -30,6 +32,7 @@ public sealed class MatchTeamResult
         _skaters = skaters.ToList().AsReadOnly();
         Goalie = goalie;
         ShotTotals = shotTotals;
+        _periods = periods.ToList().AsReadOnly();
     }
 
     public TeamId TeamId { get; }
@@ -66,4 +69,10 @@ public sealed class MatchTeamResult
     /// team's side; penalty shots are not counted.
     /// </summary>
     public SituationalShotTotals ShotTotals { get; }
+
+    /// <summary>
+    /// The team's shots, expected goals, and power-play opportunities in each period played, from
+    /// the first: three in regulation, then each overtime period. The shootout is not a period.
+    /// </summary>
+    public IReadOnlyList<PeriodTotals> Periods => _periods;
 }

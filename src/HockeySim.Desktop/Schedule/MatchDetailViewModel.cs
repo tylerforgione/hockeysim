@@ -1,37 +1,53 @@
+using System.Globalization;
+
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+
 using HockeySim.Desktop.Players;
+using HockeySim.Desktop.Theme;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
 namespace HockeySim.Desktop.Schedule;
 
 /// <summary>
-/// One completed match: the final score, how it was decided, the scoring and penalty summaries,
-/// and each side's box score. These are single-match figures only; season totals are presented
-/// separately.
+/// One completed match: a banner with the final score, then a summary (the game by period, the
+/// scoring and penalty summaries, the teams compared, the three stars, and the goalies) or the full
+/// player tables. These are single-match figures only; season totals are presented separately. The
+/// shot chart and play-by-play wait for the play-by-play to be kept.
 /// </summary>
-public sealed class MatchDetailViewModel
+public sealed partial class MatchDetailViewModel : ObservableObject
 {
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSummaryTab), nameof(IsPlayersTab))]
+    private MatchDetailTab _tab = MatchDetailTab.Summary;
+
     public MatchDetailViewModel(
         CompletedMatchSnapshot result,
         IReadOnlyDictionary<PlayerId, PlayerSnapshot> players,
-        Func<TeamId, string> teamName)
+        Func<TeamId, TeamSnapshot> team)
     {
         ArgumentNullException.ThrowIfNull(result);
         ArgumentNullException.ThrowIfNull(players);
-        ArgumentNullException.ThrowIfNull(teamName);
+        ArgumentNullException.ThrowIfNull(team);
 
+        var homeTeam = team(result.Home.TeamId);
+        var awayTeam = team(result.Away.TeamId);
         Date = result.Date;
         HomeTeamId = result.Home.TeamId;
         DateLabel = MatchDisplay.LongDate(result.Date);
+        Arena = homeTeam.Arena;
         FinalLabel = MatchDisplay.FinalLabel(result.Decision);
-        Away = new MatchSideViewModel(result.Away, players, teamName(result.Away.TeamId), result.WinnerId == result.Away.TeamId);
-        Home = new MatchSideViewModel(result.Home, players, teamName(result.Home.TeamId), result.WinnerId == result.Home.TeamId);
+        var (awayChartColour, homeChartColour) = TeamPalette.ChartColours(awayTeam.Colours, homeTeam.Colours);
+        Away = new MatchSideViewModel(result.Away, players, awayTeam, awayChartColour, result.Phase, result.WinnerId == result.Away.TeamId);
+        Home = new MatchSideViewModel(result.Home, players, homeTeam, homeChartColour, result.Phase, result.WinnerId == result.Home.TeamId);
 
         var initials = new Dictionary<TeamId, string>
         {
             [result.Away.TeamId] = Away.TeamInitials,
             [result.Home.TeamId] = Home.TeamInitials,
         };
+        PeriodTables = MatchSummaryTables.ByPeriod(result, Away.TeamInitials, Home.TeamInitials);
         ScoringSummary = ScoringRows(result, players, initials);
         PenaltySummary = result.Penalties
             .Select(penalty => new PenaltySummaryRowViewModel(
@@ -41,6 +57,15 @@ public sealed class MatchDetailViewModel
                 MatchDisplay.InfractionName(penalty.Infraction),
                 MatchDisplay.PenaltyDescription(penalty.Kind, penalty.Minutes)))
             .ToList();
+        Comparison = MatchSummaryTables.Comparison(result);
+        ThreeStars = result.ThreeStars
+            .Select((star, index) => MatchSummaryTables.Star(index + 1, star, result, players[star.PlayerId], initials[star.TeamId]))
+            .ToList();
+        Goalies =
+        [
+            new GoalieSummaryRowViewModel(Away.TeamInitials, Away.Goalie),
+            new GoalieSummaryRowViewModel(Home.TeamInitials, Home.Goalie),
+        ];
     }
 
     public DateOnly Date { get; }
@@ -49,11 +74,21 @@ public sealed class MatchDetailViewModel
 
     public string DateLabel { get; }
 
+    /// <summary>The home team's arena, where the match was played.</summary>
+    public string Arena { get; }
+
     public string FinalLabel { get; }
 
     public MatchSideViewModel Away { get; }
 
     public MatchSideViewModel Home { get; }
+
+    public bool IsSummaryTab => Tab == MatchDetailTab.Summary;
+
+    public bool IsPlayersTab => Tab == MatchDetailTab.Players;
+
+    /// <summary>Goals, shots, expected goals, and the power play by period, each a small table.</summary>
+    public IReadOnlyList<PeriodTableViewModel> PeriodTables { get; }
 
     /// <summary>Every goal scored by a player, in order, with the running score.</summary>
     public IReadOnlyList<GoalSummaryRowViewModel> ScoringSummary { get; }
@@ -64,6 +99,18 @@ public sealed class MatchDetailViewModel
     public IReadOnlyList<PenaltySummaryRowViewModel> PenaltySummary { get; }
 
     public bool HasNoPenalties => PenaltySummary.Count == 0;
+
+    /// <summary>The two teams side by side, away on the left, each figure with its share.</summary>
+    public IReadOnlyList<ComparisonRowViewModel> Comparison { get; }
+
+    /// <summary>The match's three stars, first star first.</summary>
+    public IReadOnlyList<StarRowViewModel> ThreeStars { get; }
+
+    /// <summary>Both starting goalies, away first.</summary>
+    public IReadOnlyList<GoalieSummaryRowViewModel> Goalies { get; }
+
+    [RelayCommand]
+    private void SelectTab(MatchDetailTab tab) => Tab = tab;
 
     private static List<GoalSummaryRowViewModel> ScoringRows(
         CompletedMatchSnapshot result,
@@ -100,19 +147,31 @@ public sealed class MatchDetailViewModel
     }
 }
 
+public enum MatchDetailTab
+{
+    Summary,
+    Players,
+}
+
 public sealed class MatchSideViewModel
 {
     public MatchSideViewModel(
         CompletedMatchTeamSnapshot side,
         IReadOnlyDictionary<PlayerId, PlayerSnapshot> players,
-        string teamName,
+        TeamSnapshot team,
+        Colour chartColour,
+        SeasonPhase phase,
         bool isWinner)
     {
-        TeamName = teamName;
+        ArgumentNullException.ThrowIfNull(side);
+        ArgumentNullException.ThrowIfNull(players);
+        ArgumentNullException.ThrowIfNull(team);
+
+        TeamName = team.Name;
+        Colours = team.Colours;
+        ChartColour = chartColour;
         Score = side.Score;
-        Shots = side.Shots;
-        PowerPlay = MatchDisplay.PowerPlay(side.PowerPlayGoals, side.PowerPlayOpportunities);
-        PenaltyMinutes = side.PenaltyMinutes;
+        Record = RecordLabel(side.RecordAfter, phase);
         IsWinner = isWinner;
         Skaters = side.Skaters
             .Select(line =>
@@ -158,14 +217,22 @@ public sealed class MatchSideViewModel
 
     public string TeamInitials => PlayerDisplay.TeamInitials(TeamName);
 
+    /// <summary>The team's colours, which paint its half of the banner and its comparison bars.</summary>
+    public TeamColours Colours { get; }
+
+    /// <summary>
+    /// The team's colour in the comparison bars: one that shows on the dark panels and differs
+    /// from the other team's (see <see cref="TeamPalette.ChartColours"/>).
+    /// </summary>
+    public Colour ChartColour { get; }
+
     public int Score { get; }
 
-    public int Shots { get; }
-
-    /// <summary>Power-play goals of opportunities, such as "1/3".</summary>
-    public string PowerPlay { get; }
-
-    public int PenaltyMinutes { get; }
+    /// <summary>
+    /// The team's record once the match was played: wins, losses, and overtime losses in the
+    /// preseason or regular season ("12-5-2"), or its series record in the playoffs.
+    /// </summary>
+    public string Record { get; }
 
     public bool IsWinner { get; }
 
@@ -174,6 +241,11 @@ public sealed class MatchSideViewModel
 
     /// <summary>The starting goalie, who played the whole match.</summary>
     public GoalieBoxScoreRowViewModel Goalie { get; }
+
+    private static string RecordLabel(MatchRecordSnapshot record, SeasonPhase phase) =>
+        phase == SeasonPhase.Playoffs
+            ? string.Create(CultureInfo.CurrentCulture, $"Series {record.Wins}–{record.Losses}")
+            : string.Create(CultureInfo.CurrentCulture, $"{record.Wins}-{record.Losses}-{record.OvertimeLosses}");
 }
 
 /// <param name="Shots">Shots on goal.</param>
@@ -215,6 +287,9 @@ public sealed record GoalieBoxScoreRowViewModel(
     string ExpectedGoalsAgainst,
     string GoalsSavedAboveExpected,
     string TimeOnIce);
+
+/// <summary>A starting goalie on the summary, with the team's initials.</summary>
+public sealed record GoalieSummaryRowViewModel(string Team, GoalieBoxScoreRowViewModel Goalie);
 
 /// <param name="Time">The period and clock, such as "2nd 14:05".</param>
 /// <param name="Team">The scoring team's initials.</param>

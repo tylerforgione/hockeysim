@@ -42,14 +42,14 @@ Management saves and loads games through its own contracts in `Saves/`: the
 world, lineups (with their units and extra attackers; AI teams' preferred lineups, since their match-day
 lineups are worked out from health), preseason and regular-season schedules,
 current date, completed preseason, regular-season, and playoff matches (with
-their full box scores, on-ice and team shot totals by situation, scoring and
-penalty summaries, injuries, and hidden wear, times in whole seconds), inbox, and random state into a
+their full box scores, on-ice and team shot totals by situation, period totals,
+scoring and penalty summaries, injuries, and hidden wear, times in whole seconds), inbox, and random state into a
 detached save, then hands it to the store. The rest of the play-by-play is not
 saved. Save format version 4 added the event engine's box-score statistics,
 version 5 penalty minutes, power-play and shorthanded goals and assists, and
 power-play opportunities, version 6 empty-net goals, version 7 the shot
 totals and summaries, version 8 injuries and wear, version 9 each injury's cause, version 10 the
-preseason schedule and results, version 11 the playoff results, and version 12 team colours. The playoff
+preseason schedule and results, version 11 the playoff results, version 12 team colours, and version 13 arenas and period totals. The playoff
 bracket and its dates are not saved: the season derives them from the results
 (see [ADR 0011](../adr/0011-playoffs-derived-in-the-season.md)). The head trainer's sender role (#57) needed no new
 version: sender roles are saved by name, so older version 8 saves still load. The shot totals roughly triple a save's size: a complete

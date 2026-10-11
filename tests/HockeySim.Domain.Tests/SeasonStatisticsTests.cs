@@ -240,5 +240,6 @@ public sealed class SeasonStatisticsTests
             powerPlayOpportunities,
             skaters,
             goalie,
-            shotTotals);
+            shotTotals,
+            TestResults.Periods(skaters, powerPlayOpportunities));
 }

@@ -21,6 +21,7 @@ internal sealed class MatchSide
     private readonly IReadOnlyList<SkaterState> _extraAttackers;
     private readonly Rotation[] _evenStrength;
     private readonly Dictionary<SpecialSituation, Rotation[]> _specialSituations;
+    private readonly List<int> _powerPlayOpportunityPeriods = [];
     private Rotation[] _active;
     private SpecialSituation? _situation;
     private OnIceSkater[]? _onIce;
@@ -143,7 +144,10 @@ internal sealed class MatchSide
     public int GoalieTimeOnIceSeconds { get; private set; }
 
     /// <inheritdoc cref="MatchTeamResult.PowerPlayOpportunities"/>
-    public int PowerPlayOpportunities { get; private set; }
+    public int PowerPlayOpportunities => _powerPlayOpportunityPeriods.Count;
+
+    /// <summary>The period in which each power-play opportunity began, in order.</summary>
+    public IReadOnlyList<int> PowerPlayOpportunityPeriods => _powerPlayOpportunityPeriods;
 
     /// <summary>Skaters who could go on the ice: neither serving a penalty nor ejected.</summary>
     public int AvailableSkaterCount => _availableSkaterCount ??= Skaters.Count(IsAvailable);
@@ -197,7 +201,7 @@ internal sealed class MatchSide
         _onIce = null;
     }
 
-    public void AddPowerPlayOpportunity() => PowerPlayOpportunities++;
+    public void AddPowerPlayOpportunity(int period) => _powerPlayOpportunityPeriods.Add(period);
 
     /// <summary>Changes every group that is due. Returns whether anyone changed.</summary>
     public bool ChangeOnTheFly() => Change(rotation => rotation.IsDue);

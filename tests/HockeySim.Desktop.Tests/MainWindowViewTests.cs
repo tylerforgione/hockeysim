@@ -2,6 +2,7 @@ using System.Globalization;
 
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Headless;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
@@ -218,22 +219,29 @@ public sealed class MainWindowViewTests
         Assert.Equal(16, resultButtons.Count);
         Click(resultButtons[0]);
 
+        // The box score opens on its summary; the player tables are on their own tab.
         var matchDetail = Single<MatchDetailView>(window);
         Assert.True(matchDetail.Bounds.Width > 300);
         Assert.StartsWith("Final", matchDetail.FindControl<TextBlock>("FinalLabel")?.Text, StringComparison.Ordinal);
-        var skaterRows = matchDetail.GetVisualDescendants()
-            .OfType<Grid>()
-            .Count(grid => grid.DataContext is SkaterBoxScoreRowViewModel);
-        Assert.Equal(36, skaterRows);
+        Assert.True(matchDetail.FindControl<Grid>("MatchBanner")?.IsEffectivelyVisible);
         var detailViewModel = Assert.IsType<MatchDetailViewModel>(matchDetail.DataContext);
-        var goalRows = matchDetail.GetVisualDescendants()
-            .OfType<Grid>()
-            .Count(grid => grid.DataContext is GoalSummaryRowViewModel);
+        Assert.EndsWith(
+            detailViewModel.Arena,
+            string.Concat(Named<TextBlock>(matchDetail, "MatchWhereAndWhen").Inlines!.OfType<Run>().Select(run => run.Text)),
+            StringComparison.Ordinal);
+        Assert.Equal(0, CountRows<SkaterBoxScoreRowViewModel>(matchDetail));
+        Assert.Equal(8, CountRows<PeriodRowViewModel>(matchDetail));
         Assert.True(matchDetail.FindControl<StackPanel>("ScoringSummary")?.IsEffectivelyVisible);
-        Assert.Equal(detailViewModel.ScoringSummary.Count, goalRows);
-        Assert.Equal(
-            detailViewModel.PenaltySummary.Count,
-            matchDetail.GetVisualDescendants().OfType<Grid>().Count(grid => grid.DataContext is PenaltySummaryRowViewModel));
+        Assert.Equal(detailViewModel.ScoringSummary.Count, CountRows<GoalSummaryRowViewModel>(matchDetail));
+        Assert.Equal(detailViewModel.PenaltySummary.Count, CountRows<PenaltySummaryRowViewModel>(matchDetail));
+        Assert.Equal(9, CountRows<ComparisonRowViewModel>(matchDetail));
+        Assert.Equal(3, CountRows<StarRowViewModel>(matchDetail));
+        Assert.Equal(2, CountRows<GoalieSummaryRowViewModel>(matchDetail));
+        Click(Named<Button>(matchDetail, "PlayersTabButton"));
+        Assert.False(matchDetail.FindControl<ScrollViewer>("SummaryTab")?.IsVisible);
+        Assert.Equal(36, CountRows<SkaterBoxScoreRowViewModel>(matchDetail));
+        Click(Named<Button>(matchDetail, "SummaryTabButton"));
+        Assert.True(matchDetail.FindControl<ScrollViewer>("SummaryTab")?.IsVisible);
 
         // Standings: the conferences side by side, four division tables by default with the marker
         // legend, then the wild-card view's four division leader tables and two races, then the
@@ -355,6 +363,10 @@ public sealed class MainWindowViewTests
         Assert.True(window.IsVisible);
         Assert.False(confirmationOverlay.IsVisible);
     }
+
+    /// <summary>Counts the rows showing on screen whose data is a <typeparamref name="TRow"/>.</summary>
+    private static int CountRows<TRow>(Visual view) =>
+        view.GetVisualDescendants().OfType<Grid>().Count(grid => grid.DataContext is TRow && grid.IsEffectivelyVisible);
 
     private static int CountStandingsTables(Visual view) =>
         view.GetVisualDescendants().OfType<Border>().Count(border => border.DataContext is StandingsTableViewModel && border.Classes.Contains("panel"));

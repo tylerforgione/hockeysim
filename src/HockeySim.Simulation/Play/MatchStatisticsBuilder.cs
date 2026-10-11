@@ -51,7 +51,8 @@ internal sealed class MatchStatisticsBuilder
     }
 
     /// <param name="score">The final score, including a shootout deciding goal.</param>
-    public MatchTeamResult TeamResult(MatchSide side, MatchSide opponent, int score)
+    /// <param name="periodsPlayed">Regulation's three periods and any overtime periods.</param>
+    public MatchTeamResult TeamResult(MatchSide side, MatchSide opponent, int score, int periodsPlayed)
     {
         var team = Team(side.TeamId);
         var against = Team(opponent.TeamId);
@@ -90,8 +91,16 @@ internal sealed class MatchStatisticsBuilder
             ExpectedGoalsAgainst: against.ExpectedGoals,
             TimeOnIce: TimeSpan.FromSeconds(side.GoalieTimeOnIceSeconds));
 
+        var periods = Enumerable.Range(1, periodsPlayed)
+            .Select(period => new PeriodTotals(
+                period,
+                team.ShotsIn(period),
+                team.ExpectedGoalsIn(period),
+                side.PowerPlayOpportunityPeriods.Count(opportunity => opportunity == period)))
+            .ToList();
+
         return new MatchTeamResult(
-            side.TeamId, score, team.Shots, side.PowerPlayOpportunities, skaters, goalie, team.ShotTotals.ToTotals());
+            side.TeamId, score, team.Shots, side.PowerPlayOpportunities, skaters, goalie, team.ShotTotals.ToTotals(), periods);
     }
 
     private void AddGoal(GoalEvent goal)
@@ -134,8 +143,8 @@ internal sealed class MatchStatisticsBuilder
 
         var team = Team(goal.TeamId);
         team.Goals++;
-        team.Shots++;
-        team.ExpectedGoals += goal.ExpectedGoals ?? 0;
+        team.AddShot(goal.Period);
+        team.AddExpectedGoals(goal.Period, goal.ExpectedGoals ?? 0);
         if (goal.IsEmptyNet)
         {
             team.EmptyNetGoals++;
@@ -185,13 +194,13 @@ internal sealed class MatchStatisticsBuilder
         if (attempt.IsOnGoal)
         {
             shooter.Shots++;
-            team.Shots++;
+            team.AddShot(attempt.Period);
         }
 
         if (attempt.ExpectedGoals is { } expectedGoals)
         {
             shooter.ExpectedGoals += expectedGoals;
-            team.ExpectedGoals += expectedGoals;
+            team.AddExpectedGoals(attempt.Period, expectedGoals);
         }
 
         if (attempt.BlockerId is { } blockerId)
@@ -325,15 +334,34 @@ internal sealed class MatchStatisticsBuilder
 
     private sealed class TeamTally
     {
+        private readonly Dictionary<int, int> _shotsByPeriod = [];
+        private readonly Dictionary<int, double> _expectedGoalsByPeriod = [];
+
         public int Goals { get; set; }
 
-        public int Shots { get; set; }
+        public int Shots { get; private set; }
 
-        public double ExpectedGoals { get; set; }
+        public double ExpectedGoals { get; private set; }
 
         public int EmptyNetGoals { get; set; }
 
         public SituationalShotTally ShotTotals { get; } = new();
+
+        public void AddShot(int period)
+        {
+            Shots++;
+            _shotsByPeriod[period] = ShotsIn(period) + 1;
+        }
+
+        public void AddExpectedGoals(int period, double expectedGoals)
+        {
+            ExpectedGoals += expectedGoals;
+            _expectedGoalsByPeriod[period] = ExpectedGoalsIn(period) + expectedGoals;
+        }
+
+        public int ShotsIn(int period) => _shotsByPeriod.GetValueOrDefault(period);
+
+        public double ExpectedGoalsIn(int period) => _expectedGoalsByPeriod.GetValueOrDefault(period);
     }
 
     /// <summary>One shot attempt, as it counts toward attempts, unblocked attempts, shots, and goals.</summary>

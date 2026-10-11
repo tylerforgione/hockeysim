@@ -47,6 +47,7 @@ internal static class TestLeague
         return new Team(
             new TeamId(Guid.Parse($"00000000-0000-0000-{teamNumber:D4}-000000000000")),
             $"Team {teamNumber}",
+            $"Arena {teamNumber}",
             Colours,
             roster,
             lineup);

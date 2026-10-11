@@ -39,6 +39,7 @@ internal static class GameSaveCapture
         new(
             team.Id,
             team.Name,
+            team.Arena,
             team.Colours.Primary.ToString(),
             team.Colours.Secondary.ToString(),
             team.Roster.Select(CapturePlayer).ToList(),
@@ -133,7 +134,11 @@ internal static class GameSaveCapture
                 side.Goalie.GoalsAgainst,
                 side.Goalie.ExpectedGoalsAgainst,
                 WholeSeconds(side.Goalie.TimeOnIce)),
-            CaptureShotTotals(side.ShotTotals));
+            CaptureShotTotals(side.ShotTotals),
+            side.Periods
+                .Select(period => new SavedPeriodTotals(
+                    period.Period, period.Shots, period.ExpectedGoals, period.PowerPlayOpportunities))
+                .ToList());
 
     private static SavedSkaterBoxScore CaptureSkater(SkaterBoxScore skater) =>
         new(

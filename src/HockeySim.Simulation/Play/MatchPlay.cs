@@ -197,8 +197,8 @@ internal sealed class MatchPlay
         var statistics = new MatchStatisticsBuilder(_state.Events, home.TeamId, away.TeamId);
 
         return new MatchResult(
-            statistics.TeamResult(home, away, _state.HomeGoals + homeBonus),
-            statistics.TeamResult(away, home, _state.AwayGoals + awayBonus),
+            statistics.TeamResult(home, away, _state.HomeGoals + homeBonus, _state.Period),
+            statistics.TeamResult(away, home, _state.AwayGoals + awayBonus, _state.Period),
             decision,
             _state.Events,
             playingTime,

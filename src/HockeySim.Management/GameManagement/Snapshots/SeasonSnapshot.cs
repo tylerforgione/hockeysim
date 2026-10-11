@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 
 using HockeySim.Domain;
+using HockeySim.Management.Matches;
 
 namespace HockeySim.Management.GameManagement.Snapshots;
 
@@ -98,8 +99,8 @@ public sealed class SeasonSnapshot
             season.Phase,
             season.IsRegularSeasonComplete,
             season.IsComplete,
-            season.PreseasonMatches.Select(CompletedMatchSnapshot.Create).ToList(),
-            season.CompletedMatches.Select(CompletedMatchSnapshot.Create).ToList(),
+            CompletedMatchSnapshot.CreateAll(season.PreseasonMatches, SeasonPhase.Preseason),
+            CompletedMatchSnapshot.CreateAll(season.CompletedMatches, SeasonPhase.RegularSeason),
             season.TeamRecords.Select(TeamRecordSnapshot.Create).ToList(),
             season.TeamStatistics.Select(TeamSeasonStatisticsSnapshot.Create).ToList(),
             StandingsSnapshot.Create(season),
@@ -110,24 +111,67 @@ public sealed class SeasonSnapshot
 
 /// <param name="Goals">The scoring summary: every goal scored by a player, in the order scored.</param>
 /// <param name="Penalties">The penalty summary: every penalty assessed, in the order called.</param>
+/// <param name="Phase">The part of the season the match belongs to.</param>
+/// <param name="ThreeStars">The match's three stars, first star first (see <see cref="Matches.ThreeStars"/>).</param>
 public sealed record CompletedMatchSnapshot(
     DateOnly Date,
+    SeasonPhase Phase,
     MatchDecision Decision,
     CompletedMatchTeamSnapshot Home,
     CompletedMatchTeamSnapshot Away,
     IReadOnlyList<GoalSnapshot> Goals,
-    IReadOnlyList<PenaltySnapshot> Penalties)
+    IReadOnlyList<PenaltySnapshot> Penalties,
+    IReadOnlyList<PlayerGameScore> ThreeStars)
 {
     public TeamId WinnerId => Home.Score > Away.Score ? Home.TeamId : Away.TeamId;
 
-    internal static CompletedMatchSnapshot Create(CompletedMatch match) =>
-        new(
-            match.Date,
-            match.Decision,
-            CompletedMatchTeamSnapshot.Create(match.Home),
-            CompletedMatchTeamSnapshot.Create(match.Away),
-            match.Goals.Select(GoalSnapshot.Create).ToList().AsReadOnly(),
-            match.Penalties.Select(PenaltySnapshot.Create).ToList().AsReadOnly());
+    /// <summary>
+    /// Snapshots of one phase's matches in the order played, each side with its record in that
+    /// phase once the match was played. In the playoffs a team's record is its series record, since
+    /// two teams meet in at most one series.
+    /// </summary>
+    internal static List<CompletedMatchSnapshot> CreateAll(IEnumerable<CompletedMatch> matches, SeasonPhase phase)
+    {
+        var isPlayoffs = phase == SeasonPhase.Playoffs;
+        var records = new Dictionary<(TeamId Team, TeamId? Opponent), MatchRecordSnapshot>();
+        var snapshots = new List<CompletedMatchSnapshot>();
+        foreach (var match in matches)
+        {
+            snapshots.Add(new(
+                match.Date,
+                phase,
+                match.Decision,
+                CompletedMatchTeamSnapshot.Create(match.Home, RecordAfter(match, match.Home, match.Away)),
+                CompletedMatchTeamSnapshot.Create(match.Away, RecordAfter(match, match.Away, match.Home)),
+                match.Goals.Select(GoalSnapshot.Create).ToList().AsReadOnly(),
+                match.Penalties.Select(PenaltySnapshot.Create).ToList().AsReadOnly(),
+                Matches.ThreeStars.Choose(match)));
+        }
+
+        return snapshots;
+
+        MatchRecordSnapshot RecordAfter(CompletedMatch match, CompletedMatchTeam side, CompletedMatchTeam opponent)
+        {
+            var key = (side.TeamId, isPlayoffs ? opponent.TeamId : (TeamId?)null);
+            var record = records.GetValueOrDefault(key, MatchRecordSnapshot.None).After(match, side.TeamId, isPlayoffs);
+            records[key] = record;
+            return record;
+        }
+    }
+}
+
+/// <summary>
+/// A team's wins and losses in one phase up to and including a match. Outside the playoffs,
+/// overtime and shootout losses are counted apart; in the playoffs every loss is a loss.
+/// </summary>
+public sealed record MatchRecordSnapshot(int Wins, int Losses, int OvertimeLosses)
+{
+    internal static MatchRecordSnapshot None { get; } = new(0, 0, 0);
+
+    internal MatchRecordSnapshot After(CompletedMatch match, TeamId teamId, bool isPlayoffs) =>
+        match.Winner.TeamId == teamId ? this with { Wins = Wins + 1 }
+        : match.Decision == MatchDecision.Regulation || isPlayoffs ? this with { Losses = Losses + 1 }
+        : this with { OvertimeLosses = OvertimeLosses + 1 };
 }
 
 /// <param name="Period">One to three for regulation, then overtime.</param>
@@ -174,6 +218,7 @@ public sealed record PenaltySnapshot(
 public sealed class CompletedMatchTeamSnapshot
 {
     private readonly ReadOnlyCollection<SkaterBoxScoreSnapshot> _skaters;
+    private readonly ReadOnlyCollection<PeriodTotals> _periods;
 
     private CompletedMatchTeamSnapshot(
         TeamId teamId,
@@ -182,7 +227,9 @@ public sealed class CompletedMatchTeamSnapshot
         int powerPlayOpportunities,
         IReadOnlyList<SkaterBoxScoreSnapshot> skaters,
         GoalieBoxScoreSnapshot goalie,
-        SituationalShotTotals shotTotals)
+        SituationalShotTotals shotTotals,
+        IReadOnlyList<PeriodTotals> periods,
+        MatchRecordSnapshot recordAfter)
     {
         TeamId = teamId;
         Score = score;
@@ -191,6 +238,8 @@ public sealed class CompletedMatchTeamSnapshot
         _skaters = new ReadOnlyCollection<SkaterBoxScoreSnapshot>(skaters.ToList());
         Goalie = goalie;
         ShotTotals = shotTotals;
+        _periods = new ReadOnlyCollection<PeriodTotals>(periods.ToList());
+        RecordAfter = recordAfter;
     }
 
     public TeamId TeamId { get; }
@@ -217,7 +266,19 @@ public sealed class CompletedMatchTeamSnapshot
     /// </summary>
     public SituationalShotTotals ShotTotals { get; }
 
-    internal static CompletedMatchTeamSnapshot Create(CompletedMatchTeam team) =>
+    /// <summary>
+    /// Shots, expected goals, and power-play opportunities in each period played, from the first.
+    /// Goals by period are in the scoring summary.
+    /// </summary>
+    public IReadOnlyList<PeriodTotals> Periods => _periods;
+
+    /// <summary>
+    /// The team's record in the match's phase once the match was played; in the playoffs, its
+    /// series record.
+    /// </summary>
+    public MatchRecordSnapshot RecordAfter { get; }
+
+    internal static CompletedMatchTeamSnapshot Create(CompletedMatchTeam team, MatchRecordSnapshot recordAfter) =>
         new(
             team.TeamId,
             team.Score,
@@ -225,7 +286,9 @@ public sealed class CompletedMatchTeamSnapshot
             team.PowerPlayOpportunities,
             team.Skaters.Select(SkaterBoxScoreSnapshot.Create).ToList(),
             GoalieBoxScoreSnapshot.Create(team.Goalie),
-            team.ShotTotals);
+            team.ShotTotals,
+            team.Periods,
+            recordAfter);
 }
 
 /// <param name="PlusMinus">

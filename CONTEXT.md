@@ -49,6 +49,10 @@ The hand a skater shoots or a goalie catches with: left or right.
 **Team**:
 A group of hockey players competing together, with a roster and lineup.
 
+**Arena**:
+A team's home rink, where it hosts every home match. Each fictional team has a
+fixed fictional arena.
+
 **Team colours**:
 A team's primary and secondary identity colours. Desktop wears the managed
 team's colours: panel headers and the team banner in the primary, selected
@@ -349,9 +353,16 @@ _Avoid_: Fast-forward, sim to date.
 **Completed match**:
 The canonical record of a scheduled match after it is played: the scheduled
 date and teams, how it was decided, each side's score, shots, and shot totals,
-the box score of every appearing player, the scoring and penalty summaries, and
-the injuries and hidden wear the match caused.
+each side's period totals, the box score of every appearing player, the scoring
+and penalty summaries, and the injuries and hidden wear the match caused.
 A scheduled match is completed at most once.
+
+**Period totals**:
+A team's shots on goal, xG, and power-play opportunities in one period of a
+completed match: the three of regulation, then each overtime period played. An
+opportunity counts in the period in which the penalty first gave the team the
+advantage. Goals by period come from the scoring summary; the shootout is not a
+period.
 
 **Scoring summary**:
 Every goal scored by a player in a completed match, in order: period, time,
@@ -364,6 +375,24 @@ infraction, and kind.
 
 **Box score**:
 An appearing player's match statistics as recorded in a completed match.
+
+**Game score**:
+One number for a player's contribution to a completed match, read from the box
+score and scoring summary. A skater's weighs goals (an empty-net goal half),
+primary and secondary assists, the game-winning goal, shots, blocks, hits,
+takeaways, giveaways, and on-ice xG for less against; a goalie's weighs goals
+saved above expected, saves, and a shutout of the opposing team.
+
+**Game-winning goal**:
+The winning team's goal that put it one ahead of the loser's final score,
+counting regulation and overtime only. A match decided by a shootout has none.
+
+**Three stars**:
+A completed match's three best players by game score, first star first, from
+every appearing skater and both starting goalies. If none of the three plays for
+the winner, the winner's best player replaces the third star. Ties go to more
+points, more goals, the winning team, then the lower player identity. The stars
+are worked out when the box score is read, not saved.
 
 **Team record**:
 A team's wins and losses in the regular season, each kept by how the match was
