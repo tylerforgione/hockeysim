@@ -295,6 +295,26 @@ Direction:
   [play-by-play retention](#play-by-play-retention) keeps shifts.
 - Decide how deep it goes (pairs and lines first; arbitrary groups later).
 
+## Penalties drawn
+
+A penalty records only the penalized player, so a skater's penalty minutes are
+counted but not the penalties they drew, and neither is a skater's or team's
+penalty differential. Later, record which opponent drew each penalty and
+total penalties drawn for skaters and teams. Show them in the box score,
+roster tables, and profile, and count them toward the box score's three stars
+(#94).
+
+Direction:
+
+- Decide who draws each kind of penalty: the player fouled in the run of play
+  (usually the puck carrier), the player hit by an illegal hit, and nobody for
+  coincidental penalties such as a fight.
+- If the drawer comes from who was already involved, seeded results stay the
+  same. Choosing them at random changes the random stream, so it is an engine
+  version change.
+- The new statistic is in the box score and season totals, so it is a save
+  format version change.
+
 ## Custom charts
 
 Let the user add charts to a page and keep them there, as Football Manager
