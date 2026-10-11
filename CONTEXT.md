@@ -335,6 +335,17 @@ One calendar date of the season. Advancing a league day plays every match
 scheduled on the current date, which may be none, and moves to the next date.
 A day's results are applied together or not at all.
 
+**Simulating ahead**:
+Playing several league days in one request, toward a target the current season
+phase offers: the next day, the managed team's next match day (left unplayed),
+a week, a month, or the end of the preseason, regular season, playoff round, or
+playoffs. Each day is applied completely or not at all. A run stops early, after
+the day that caused it, when the user must act or would want to know: a
+managed player is injured badly enough to miss matches, the managed team plays
+with dressed players who cannot play, or the phase changes. The user can stop a
+run between days.
+_Avoid_: Fast-forward, sim to date.
+
 **Completed match**:
 The canonical record of a scheduled match after it is played: the scheduled
 date and teams, how it was decided, each side's score, shots, and shot totals,

@@ -24,7 +24,8 @@ is in [match engine](match-engine.md).
 | `Domain/Playoffs.cs`, `PlayoffSeries.cs`, `PlayoffSeed.cs`, `PlayoffRound.cs` | Seeding the bracket, best-of-seven series and home ice, the playoff calendar, playoff totals, the champion |
 | `Management/Scheduling/` | `ScheduleGenerator`: `MeetingPlanner` then `RoundCalendar`; `PreseasonGenerator`; `RoundRobin` rounds shared by both |
 | `Management/SeasonPlay/LeagueDay.cs` | Plays a day's matches and converts results |
-| `Management/GameManagement/GameManager.cs` | `AdvanceDay`, command serialization |
+| `Management/SeasonPlay/SimulationTarget.cs`, `SimulationStop.cs`, `SimulationResult.cs`, `SimulationRun.cs` | Simulating ahead: the targets each phase offers, why a run stops, and the per-day stop checks |
+| `Management/GameManagement/GameManager.cs` | `AdvanceDay`, `SimulateAhead`, command serialization |
 | `Management/GameManagement/Snapshots/SeasonSnapshot.cs`, `ScheduleSnapshot.cs`, `StandingsSnapshot.cs`, `PlayoffsSnapshot.cs` | Read-only season views |
 
 Domain paths are under `src/HockeySim.Domain/`, Management paths under
@@ -48,6 +49,7 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | `Management.Tests/ScheduleTests.cs` | Opponent matrix, home/away balance, dates, over several seeds |
 | `Management.Tests/PreseasonTests.cs` | The preseason schedule (opponents, dates, home balance), exclusion from every total, the move to opening day, determinism, saving mid-preseason |
 | `Management.Tests/SeasonAdvancementTests.cs` | Advancing days, failures leaving nothing applied, threading |
+| `Management.Tests/SimulateAheadTests.cs` | Each target's stopping day in every phase, each early stop, matching day-by-day play, progress, cancellation, a failure part-way |
 | `Management.Tests/StandingsTests.cs` | Standings and wild-card tables and snapshot isolation |
 | `Management.Tests/FullSeasonTests.cs` | A shared fixture plays a full 1,344-match season and its playoffs and reconciles them: every season total and summary, every playoff status held to the end, the bracket, home ice and dates, playoff totals, and the champion's announcement |
 | `Management.Tests/PlayoffsTests.cs` | Overtime format by phase, saving and loading mid-series, continuing a loaded game to the same champion |
@@ -116,6 +118,33 @@ crown a champion. The engine is injected
 through Simulation's `IMatchSimulator`; `MatchDecision`, `GoalSituation`,
 `Infraction`, and `PenaltyKind` live in Domain because both the engine and the
 history use them.
+
+### Simulating ahead
+
+`GameManager.SimulateAhead` plays league days toward a `SimulationTarget`, each
+day through the same path as `AdvanceDay`, so each applies completely or not at
+all and a run plays exactly what the same days played one at a time would.
+`SimulationTargets.AvailableIn` lists each phase's targets: next day and the
+managed team's next match in every phase; one week, one month (to the same day
+of the next month), and the end of the regular season in the regular season;
+the end of the preseason; and the end of the current playoff round and of the
+playoffs. The next match stops on its day, unplayed, so the lineup can be
+checked; the phase ends stop on the day after the phase's last match (opening
+day, the day the playoffs are seeded, the day after a round's or the final's
+deciding game). Playoff games are scheduled one at a time, so `SimulationRun`
+checks every target against the season after each day rather than computing a
+stopping date in advance.
+
+A run also stops early, after the day that caused it, when a managed-team
+player is injured badly enough to miss matches (knocks played through do not
+count), when the managed team plays the new day with dressed players who cannot
+play, when the phase changes, or when the season is complete. A day that
+reaches the target reports the target. Commands are serialized per day, not per
+run: the lock is released between days, cancellation is checked before each
+day, and a progress callback hears each new date. A run is rejected if the game
+is replaced or the managed team changes part-way. A failing day is rethrown; the
+days before it stay played. The `SimulationResult` gives the stop, the days
+played, and the snapshot after the last day.
 
 ### Player health
 
