@@ -7,6 +7,7 @@ using HockeySim.Management.GameManagement.Snapshots;
 using HockeySim.Management.Inbox;
 using HockeySim.Management.Lineups;
 using HockeySim.Management.Saves;
+using HockeySim.Management.SeasonPlay;
 
 namespace HockeySim.Desktop.Game;
 
@@ -28,6 +29,8 @@ public sealed partial class GameSession : ObservableObject
     private string _gameName;
 
     private bool _hasUnsavedChanges;
+
+    private DateOnly? _simulatedDate;
 
     private IReadOnlyDictionary<PlayerId, PlayerSnapshot> _playersById;
 
@@ -130,27 +133,65 @@ public sealed partial class GameSession : ObservableObject
     /// failure leaves the published state unchanged and is rethrown for the caller to report.
     /// </summary>
     /// <exception cref="InvalidOperationException">A day is already being advanced.</exception>
-    public async Task AdvanceDayAsync()
+    public Task AdvanceDayAsync() => PlayAsync(_ => _gameManager.AdvanceDay());
+
+    /// <summary>
+    /// Plays league days toward <paramref name="target"/> off the UI thread, reporting each new
+    /// date through <see cref="SimulatedDate"/>, and publishes the resulting state once, when the
+    /// run ends. A failure part-way keeps the days already played and is rethrown.
+    /// </summary>
+    /// <param name="cancellationToken">Stops the run before its next day.</param>
+    /// <exception cref="InvalidOperationException">A day is already being advanced.</exception>
+    public Task<SimulationResult> SimulateAheadAsync(SimulationTarget target, CancellationToken cancellationToken = default) =>
+        PlayAsync(progress => _gameManager.SimulateAhead(target, progress, cancellationToken));
+
+    /// <summary>
+    /// Gets the date a run of days has reached so far, or <see langword="null"/> when no run is
+    /// under way or it has not finished its first day.
+    /// </summary>
+    public DateOnly? SimulatedDate
+    {
+        get => _simulatedDate;
+        private set => SetProperty(ref _simulatedDate, value);
+    }
+
+    private async Task<T> PlayAsync<T>(Func<IProgress<DateOnly>, T> play)
     {
         if (IsAdvancing)
         {
             throw new InvalidOperationException("A league day is already being advanced.");
         }
 
+        var startDate = Snapshot.Season.CurrentDate;
+
+        // Progress reports are posted to the UI thread, so one can arrive after the run has ended.
+        var progress = new Progress<DateOnly>(date =>
+        {
+            if (IsAdvancing)
+            {
+                SimulatedDate = date;
+            }
+        });
         IsAdvancing = true;
         try
         {
-            await Task.Run(_gameManager.AdvanceDay);
-            HasUnsavedChanges = true;
+            return await Task.Run(() => play(progress));
         }
         finally
         {
             IsAdvancing = false;
+            SimulatedDate = null;
 
             // Management serializes commands, so one issued while the day played (such as a
             // lineup change) waited for it and may have published newer state than the day's own
             // snapshot. Reading the latest snapshot keeps the published state from going back.
             Snapshot = _gameManager.GetSnapshot();
+
+            // A run that fails part-way keeps the days it played, which are unsaved progress too.
+            if (Snapshot.Season.CurrentDate != startDate)
+            {
+                HasUnsavedChanges = true;
+            }
         }
     }
 

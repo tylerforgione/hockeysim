@@ -57,3 +57,17 @@ internal sealed class GatedMatchSimulator : IMatchSimulator, IDisposable
 
     public void Dispose() => _release.Dispose();
 }
+/// <summary>
+/// Plays the given number of matches with the real engine, then fails every match after them, so
+/// a run of days fails part-way.
+/// </summary>
+internal sealed class FailingAfterMatchSimulator(int matchesBeforeFailing) : IMatchSimulator
+{
+    private readonly MatchSimulator _engine = new();
+    private int _calls;
+
+    public MatchResult Simulate(Match match, OvertimeFormat overtime, MatchHealth health, RandomState randomState) =>
+        ++_calls > matchesBeforeFailing
+            ? throw new InvalidOperationException(FailingMatchSimulator.FailureMessage)
+            : _engine.Simulate(match, overtime, health, randomState);
+}

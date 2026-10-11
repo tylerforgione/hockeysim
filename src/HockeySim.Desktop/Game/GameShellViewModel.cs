@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 
@@ -20,6 +21,7 @@ using HockeySim.Desktop.TeamStatistics;
 using HockeySim.Domain;
 using HockeySim.Management.Inbox;
 using HockeySim.Management.Saves;
+using HockeySim.Management.SeasonPlay;
 
 namespace HockeySim.Desktop.Game;
 
@@ -47,10 +49,18 @@ public sealed partial class GameShellViewModel : ObservableObject
     private string? _advanceError;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSimulationSummary))]
+    private string? _simulationSummary;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSaveDialogOpen))]
     private SaveGameViewModel? _saveDialog;
 
     private ShellPage _currentPageKind = ShellPage.Home;
+
+    private SeasonPhase? _simulateAheadPhase;
+
+    private CancellationTokenSource? _simulation;
 
     /// <param name="showMainMenu">Leaves the game for the main menu.</param>
     /// <param name="saves">Where the game can be saved; without it, saving is unavailable.</param>
@@ -125,6 +135,7 @@ public sealed partial class GameShellViewModel : ObservableObject
         _currentPage = Home;
         _currentSection = Sections[0];
         UpdateNavigationState();
+        UpdateSimulateAheadOptions();
         session.PropertyChanged += OnSessionChanged;
     }
 
@@ -204,7 +215,38 @@ public sealed partial class GameShellViewModel : ObservableObject
         }
     }
 
-    public string ContinueLabel => Session.IsAdvancing ? "Playing…" : "Continue";
+    /// <summary>Gets Continue's text: what it does, or how far a day or run being played has got.</summary>
+    public string ContinueLabel
+    {
+        get
+        {
+            if (!Session.IsAdvancing)
+            {
+                return "Continue";
+            }
+
+            if (!IsSimulatingAhead)
+            {
+                return "Playing…";
+            }
+
+            return Session.SimulatedDate is { } date ? $"Simulating… {MatchDisplay.ShortDate(date)}" : "Simulating…";
+        }
+    }
+
+    /// <summary>Gets whether a run of several days is under way, which Stop can cancel.</summary>
+    public bool IsSimulatingAhead => _simulation is not null;
+
+    public bool HasSimulationSummary => SimulationSummary is not null;
+
+    /// <summary>
+    /// Gets Continue's menu: the current phase's runs. The collection is updated in place, because
+    /// the menu keeps the collection it was first given and would not see a replacement.
+    /// </summary>
+    public ObservableCollection<SimulateAheadOptionViewModel> SimulateAheadOptions { get; } = [];
+
+    /// <summary>Gets whether Continue's menu can be opened: whenever a day could be played.</summary>
+    public bool CanOpenSimulateAhead => CanAdvanceDay();
 
     /// <summary>
     /// Describes what continuing will do: which day is played, or why it cannot be.
@@ -405,6 +447,101 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     private bool CanAdvanceDay() => !Session.IsAdvancing && !Session.Snapshot.Season.IsComplete && !HasPlayersToReplace;
 
+    /// <summary>
+    /// Plays days toward <paramref name="target"/> until it is reached, Stop is pressed, or
+    /// something needs the user, then says how the run ended. Each day applies completely or not
+    /// at all, so a failure part-way keeps the days before it.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanSimulateAhead))]
+    private async Task SimulateAheadAsync(SimulationTarget target)
+    {
+        var startDate = Session.Snapshot.Season.CurrentDate;
+        AdvanceError = null;
+        SimulationSummary = null;
+        using var simulation = new CancellationTokenSource();
+        _simulation = simulation;
+        OnPropertyChanged(nameof(IsSimulatingAhead));
+        OnPropertyChanged(nameof(ContinueLabel));
+        StopSimulatingCommand.NotifyCanExecuteChanged();
+        try
+        {
+            var result = await Session.SimulateAheadAsync(target, simulation.Token);
+            SimulationSummary = DescribeSimulation(result);
+        }
+        catch (Exception exception)
+        {
+            // As for a single day, the engine and season validation may fail with any exception
+            // type. Only the failed day is unplayed.
+            var failedDate = Session.Snapshot.Season.CurrentDate;
+            var played = DaysBetween(startDate, failedDate);
+            var prefix = played == 0 ? string.Empty : $"Simulated {DayCount(played)}; ";
+            AdvanceError = $"{prefix}{MatchDisplay.ShortDate(failedDate)} could not be played, and no results from it were applied. {exception.Message}";
+        }
+        finally
+        {
+            _simulation = null;
+            OnPropertyChanged(nameof(IsSimulatingAhead));
+            OnPropertyChanged(nameof(ContinueLabel));
+            StopSimulatingCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    private bool CanSimulateAhead(SimulationTarget target) =>
+        CanAdvanceDay() && SimulationTargets.AvailableIn(Session.Snapshot.Season.Phase).Contains(target);
+
+    /// <summary>Stops a run before its next day.</summary>
+    [RelayCommand(CanExecute = nameof(IsSimulatingAhead))]
+    private void StopSimulating()
+    {
+        _simulation?.Cancel();
+    }
+
+    [RelayCommand]
+    private void DismissSimulationSummary()
+    {
+        SimulationSummary = null;
+    }
+
+    private string DescribeSimulation(SimulationResult result)
+    {
+        var season = result.Snapshot.Season;
+        var days = $"Simulated {DayCount(result.DaysPlayed)}";
+        return result.Stop switch
+        {
+            SimulationStop.Cancelled when result.DaysPlayed == 0 => "Stopped before any day was played.",
+            SimulationStop.Cancelled => $"{days}; stopped on {MatchDisplay.ShortDate(season.CurrentDate)}.",
+            SimulationStop.ManagedPlayerInjured => $"{days}; stopped because one of your players was injured.",
+            SimulationStop.PlayersToReplace => $"{days}; stopped to replace injured players before today's match.",
+            SimulationStop.PhaseChanged when season.Phase == SeasonPhase.Playoffs => $"{days}; stopped because the regular season is over.",
+            SimulationStop.PhaseChanged => $"{days}; stopped because the regular season starts today.",
+            SimulationStop.SeasonComplete => $"{days}; stopped because the season is complete.",
+            _ => $"{days}, to {MatchDisplay.ShortDate(season.CurrentDate)}.",
+        };
+    }
+
+    private static int DaysBetween(DateOnly from, DateOnly to) => to.DayNumber - from.DayNumber;
+
+    private static string DayCount(int days) =>
+        days == 1 ? "1 day" : string.Create(CultureInfo.CurrentCulture, $"{days} days");
+
+    /// <summary>Offers the current phase's targets, rebuilding the menu only when the phase changes.</summary>
+    private void UpdateSimulateAheadOptions()
+    {
+        var phase = Session.Snapshot.Season.Phase;
+        if (phase != _simulateAheadPhase)
+        {
+            _simulateAheadPhase = phase;
+            SimulateAheadOptions.Clear();
+            foreach (var target in SimulationTargets.AvailableIn(phase))
+            {
+                SimulateAheadOptions.Add(new SimulateAheadOptionViewModel(target, SimulateAheadOptionViewModel.LabelFor(target), SimulateAheadCommand));
+            }
+        }
+
+        SimulateAheadCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanOpenSimulateAhead));
+    }
+
     [RelayCommand]
     private void OpenLines()
     {
@@ -481,10 +618,18 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     private void OnSessionChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(GameSession.SimulatedDate))
+        {
+            OnPropertyChanged(nameof(ContinueLabel));
+            return;
+        }
+
         if (e.PropertyName == nameof(GameSession.IsAdvancing))
         {
             OnPropertyChanged(nameof(ContinueLabel));
             AdvanceDayCommand.NotifyCanExecuteChanged();
+            SimulateAheadCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(nameof(CanOpenSimulateAhead));
             SaveGameCommand.NotifyCanExecuteChanged();
             LoadGameCommand.NotifyCanExecuteChanged();
             ShowMainMenuCommand.NotifyCanExecuteChanged();
@@ -528,6 +673,7 @@ public sealed partial class GameShellViewModel : ObservableObject
         OnPropertyChanged(nameof(IsLineupValid));
         OnPropertyChanged(nameof(LineupStatus));
         AdvanceDayCommand.NotifyCanExecuteChanged();
+        UpdateSimulateAheadOptions();
     }
 
     private void UpdateNavigationState()

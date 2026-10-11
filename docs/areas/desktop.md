@@ -17,7 +17,7 @@ view model together.
 | `Program.cs`, `App.axaml*`, `AppVersion.cs` | Startup and composition |
 | `Main/` | The window and top-level screen choice, with discard confirmation |
 | `Startup/`, `NewGame/`, `Saves/` | The startup menu, new-game setup, save and load screens |
-| `Game/` | `GameSession` (commands, snapshots, unsaved progress) and the in-game shell: menu bar, sections and page tabs (`ShellPage`, `NavigationItemViewModel`), the team banner (`TeamBannerViewModel`), and the status bar |
+| `Game/` | `GameSession` (commands, snapshots, unsaved progress, runs of days) and the in-game shell: menu bar, Continue and its menu (`SimulateAheadOptionViewModel`), sections and page tabs (`ShellPage`, `NavigationItemViewModel`), the team banner (`TeamBannerViewModel`), and the status bar |
 | `Home/`, `Inbox/`, `Roster/`, `Lines/`, `TeamStatistics/`, `Injuries/`, `Teams/`, `Standings/`, `Playoffs/`, `Schedule/` | The shell's pages |
 | `Players/` | Player profile, regular-season or playoff totals as displayed (`PlayerSeasonTotals`, chosen by `StatisticsSet`), and shared player and injury formatting (`PlayerDisplay`, `InjuryDisplay`) |
 | `Playoffs/PlayoffDisplay.cs` | Shared round, seed, and series-status formatting, and finding a team's playoff game by date |
@@ -33,10 +33,11 @@ games, plus a headless Avalonia walkthrough.
 
 | File | Covers |
 | --- | --- |
-| `MainWindowViewTests.cs` | Headless walkthrough of the menu bar and every page, team colours, saving, loading, closing |
+| `MainWindowViewTests.cs` | Headless walkthrough of the menu bar, Continue's menu, and every page, team colours, saving, loading, closing |
 | `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup; sections, tabs, planned pages, the banner, and the status bar; browsing teams |
 | `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings |
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, the preseason labels, the schedule's phases and preseason results |
+| `SimulateAheadTests.cs` | Continue's menu by phase, one refresh per run, the run summary, Stop, a failure part-way, an early stop |
 | `PlayoffDisplayTests.cs` | A shared season played through the shell: the bracket before and at each playoff stage, playoff schedule rows and box scores, switching statistic sets, the completed season and champion |
 | `StandingsAndStatisticsTests.cs` | Standings scopes including the wild card, playoff markers, season totals |
 | `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, team statistics |
@@ -65,8 +66,8 @@ opens the saved games, whose back button returns to the game. On the right
 are the date, the days to the managed team's next match in any phase, then the
 days to opening day in the preseason, to the end of the regular season, or the
 playoff round under way (once the champion is crowned, the champion instead of
-both), and Continue, a split button whose arrow stays disabled until
-[simulating ahead](https://github.com/tylerforgione/hockeysim/issues/85). Under
+both), and Continue, a split button: Continue plays one day, and its arrow opens
+a menu of runs for the current phase (see below). Under
 the menu bar is the managed team's banner in its colours: crest, name, record,
 points, division and conference rank, and the next match, last result, and
 streak. A page may show its own banner instead; none does yet. Below the banner,
@@ -101,7 +102,18 @@ banner under the page tabs names the injured players to replace, with a button
 to the Lines page; it clears once a saved lineup leaves them out.
 A failed day is shown as an error banner; Management applied nothing, so the
 pages still show the unplayed day. Continue's tooltip counts the day's
-preseason, league, or playoff matches. The home page starts
+preseason, league, or playoff matches. Continue's menu simulates ahead through
+Management's `SimulateAhead` (see [season](season.md#simulating-ahead)): next day
+and to the next match in every phase, then one week, one month, and to the
+playoffs in the regular season, to the end of the preseason, or to the end of
+the round and of the playoffs. A run plays off the UI thread like a single day;
+Continue then reads "Simulating…" with the date reached, the arrow gives way to
+Stop, which ends the run after the day being played, and saving, loading, and
+leaving for the menu wait as they do for a day. The session publishes one
+snapshot when the run ends, so pages refresh once, and a banner says how many
+days were played and why the run stopped. A failure part-way keeps the days
+before it: the error banner says how many were simulated and names the day that
+could not be played. A run that played any day is unsaved progress. The home page starts
 with a season tile: preseason or regular-season matches played (the preseason
 counting toward nothing), the managed team's playoff series and its status,
 how far it went once eliminated, or that it did not qualify. Its next match is

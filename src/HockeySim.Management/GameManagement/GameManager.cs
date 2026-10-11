@@ -203,39 +203,76 @@ public sealed class GameManager
         lock (_gate)
         {
             EnsureNotAdvancing();
-
-            var season = GetSeason();
-            if (season.IsComplete)
-            {
-                throw new InvalidOperationException("The season is complete; no further days can be played.");
-            }
-
-            var unavailable = ManagedPlayersToReplace(season);
-            if (unavailable.Count > 0)
-            {
-                throw new UnavailablePlayersException(unavailable);
-            }
-
-            var playedDate = season.CurrentDate;
-            _isAdvancing = true;
-            try
-            {
-                _randomState = LeagueDay.Play(season, _managedTeamId, _matchSimulator, _randomState);
-            }
-            finally
-            {
-                _isAdvancing = false;
-            }
-
-            InjuryMessages.Deliver(_inbox, season, _managedTeamId, playedDate);
-
-            // Advancing a complete season is rejected above, so a season complete now was won today.
-            if (season.IsComplete)
-            {
-                ChampionMessages.Deliver(_inbox, season, _managedTeamId);
-            }
-
+            PlayDay(GetSeason());
             return CreateSnapshot();
+        }
+    }
+
+    /// <summary>
+    /// Plays league days, each as <see cref="AdvanceDay"/> does, until <paramref name="target"/> is
+    /// reached or something stops the run earlier: a managed-team player injured badly enough to
+    /// miss matches, dressed players to replace before today's match, a change of season phase, or
+    /// the season's end. See <see cref="SimulationStop"/>.
+    /// </summary>
+    /// <remarks>
+    /// Each day applies completely or not at all. The lock is released between days, so other
+    /// commands, such as a lineup change, may run between them, and cancellation is checked before
+    /// each day. If a day fails, the days before it stay played and the exception is rethrown.
+    /// </remarks>
+    /// <param name="progress">Told the new current date after each day but the last.</param>
+    /// <exception cref="ArgumentException">The current phase does not offer <paramref name="target"/>.</exception>
+    /// <exception cref="UnavailablePlayersException">
+    /// The managed team plays today and its lineup dresses players who cannot play.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// No game has started, the season is complete, a day is already being advanced on this thread,
+    /// or the game was replaced or its managed team changed during the run.
+    /// </exception>
+    public SimulationResult SimulateAhead(
+        SimulationTarget target,
+        IProgress<DateOnly>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        Season season;
+        TeamId managedTeamId;
+        SimulationRun run;
+        lock (_gate)
+        {
+            EnsureNotAdvancing();
+            season = GetSeason();
+            EnsureSeasonNotComplete(season);
+            managedTeamId = _managedTeamId;
+            run = new SimulationRun(target, season, managedTeamId);
+        }
+
+        var daysPlayed = 0;
+        while (true)
+        {
+            DateOnly currentDate;
+            lock (_gate)
+            {
+                EnsureNotAdvancing();
+                if (!ReferenceEquals(_season, season) || _managedTeamId != managedTeamId)
+                {
+                    throw new InvalidOperationException("The game changed while simulating ahead.");
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return new SimulationResult(SimulationStop.Cancelled, daysPlayed, CreateSnapshot());
+                }
+
+                var playedDate = PlayDay(season);
+                daysPlayed++;
+                if (run.StopAfter(season, playedDate, ManagedPlayersToReplace(season).Count > 0) is { } stop)
+                {
+                    return new SimulationResult(stop, daysPlayed, CreateSnapshot());
+                }
+
+                currentDate = season.CurrentDate;
+            }
+
+            progress?.Report(currentDate);
         }
     }
 
@@ -299,6 +336,50 @@ public sealed class GameManager
         if (_isAdvancing)
         {
             throw new InvalidOperationException("A league day is already being advanced.");
+        }
+    }
+
+    /// <summary>
+    /// Plays the current league day and delivers its messages. The caller holds the lock.
+    /// </summary>
+    /// <returns>The date played; the season has moved on to the next day.</returns>
+    private DateOnly PlayDay(Season season)
+    {
+        EnsureSeasonNotComplete(season);
+
+        var unavailable = ManagedPlayersToReplace(season);
+        if (unavailable.Count > 0)
+        {
+            throw new UnavailablePlayersException(unavailable);
+        }
+
+        var playedDate = season.CurrentDate;
+        _isAdvancing = true;
+        try
+        {
+            _randomState = LeagueDay.Play(season, _managedTeamId, _matchSimulator, _randomState);
+        }
+        finally
+        {
+            _isAdvancing = false;
+        }
+
+        InjuryMessages.Deliver(_inbox, season, _managedTeamId, playedDate);
+
+        // Playing a complete season is rejected above, so a season complete now was won today.
+        if (season.IsComplete)
+        {
+            ChampionMessages.Deliver(_inbox, season, _managedTeamId);
+        }
+
+        return playedDate;
+    }
+
+    private static void EnsureSeasonNotComplete(Season season)
+    {
+        if (season.IsComplete)
+        {
+            throw new InvalidOperationException("The season is complete; no further days can be played.");
         }
     }
 

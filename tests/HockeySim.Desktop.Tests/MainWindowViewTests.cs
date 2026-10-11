@@ -90,7 +90,8 @@ public sealed class MainWindowViewTests
         Assert.Equal($"HockeySim {AppVersion.Current}", shellView.FindControl<TextBlock>("VersionText")?.Text);
         Assert.False(shellView.FindControl<Button>("BackButton")?.IsEffectivelyEnabled);
         Assert.False(shellView.FindControl<Button>("ForwardButton")?.IsEffectivelyEnabled);
-        Assert.False(shellView.FindControl<Button>("SimulateAheadButton")?.IsEffectivelyEnabled);
+        Assert.True(shellView.FindControl<Button>("SimulateAheadButton")?.IsEffectivelyEnabled);
+        Assert.False(shellView.FindControl<Button>("StopSimulatingButton")?.IsVisible);
 
         // Every menu and item has an access key, so the keyboard reaches each one.
         var menuItems = shellView.GetLogicalDescendants().OfType<MenuItem>().ToList();
@@ -163,15 +164,40 @@ public sealed class MainWindowViewTests
         Dispatcher.UIThread.RunJobs();
         Assert.True(saveButton.IsEffectivelyVisible);
 
-        // Play the preseason and opening night from the menu bar, then open a result from the
-        // home page.
+        // Simulate the preseason from Continue's menu and play opening night with Continue, then
+        // open a result from the home page.
         AssertNavigationRenders<HomePageView>(window, ShellPage.Home);
         Assert.Contains(" · Regular season starts ", shellView.FindControl<TextBlock>("CalendarLabel")?.Text, StringComparison.Ordinal);
-        while (gameManager.GetSnapshot().Season.Phase == SeasonPhase.Preseason)
+        var simulateAhead = Named<Button>(shellView, "SimulateAheadButton");
+        var simulateAheadMenu = Assert.IsType<MenuFlyout>(simulateAhead.Flyout);
+        simulateAheadMenu.ShowAt(simulateAhead);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(simulateAheadMenu.IsOpen);
+        var options = window.GetVisualDescendants().OfType<MenuFlyoutPresenter>().Single().GetVisualDescendants().OfType<MenuItem>().ToList();
+        Assert.Equal(["Next day", "To the next match", "To the end of the preseason"], options.Select(item => item.Header));
+        var toOpeningDay = options.Single(item => Equals(item.Header, "To the end of the preseason"));
+        Click(toOpeningDay);
+        simulateAheadMenu.Hide();
+        var deadline = DateTime.UtcNow.AddSeconds(60);
+        while (viewModel.Game!.Session.IsAdvancing)
         {
-            ClickAndWait(continueButton, () => !viewModel.Game!.Session.IsAdvancing);
+            Assert.True(DateTime.UtcNow < deadline, "The run did not finish.");
+            Thread.Sleep(5);
+            Dispatcher.UIThread.RunJobs();
         }
 
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(SeasonPhase.RegularSeason, gameManager.GetSnapshot().Season.Phase);
+        Assert.True(shellView.FindControl<Border>("SimulationSummaryBanner")?.IsVisible);
+
+        // The menu now offers the regular season's runs.
+        simulateAheadMenu.ShowAt(simulateAhead);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(
+            ["Next day", "To the next match", "One week", "One month", "To the playoffs"],
+            window.GetVisualDescendants().OfType<MenuFlyoutPresenter>().Single().GetVisualDescendants().OfType<MenuItem>().Select(item => item.Header));
+        simulateAheadMenu.Hide();
+        Dispatcher.UIThread.RunJobs();
         Assert.Equal(112, gameManager.GetSnapshot().Season.PreseasonResults.Count);
         Assert.Empty(gameManager.GetSnapshot().Season.Results);
         ClickAndWait(continueButton, () => !viewModel.Game!.Session.IsAdvancing);
