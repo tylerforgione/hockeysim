@@ -181,7 +181,7 @@
                      VerticalAlignment="Center"
                      Text="{Binding CalendarLabel}" />
 
-          <!-- Continue plays a day; the arrow will offer simulating ahead (#85). -->
+          <!-- Continue plays a day; the arrow offers simulating ahead, and Stop ends a run between days. -->
           <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
             <Button x:Name="ContinueButton"
                     Classes="continue"
@@ -197,10 +197,31 @@
             </Button>
             <Button x:Name="SimulateAheadButton"
                     Classes="continue continue-arrow"
-                    IsEnabled="False"
-                    AutomationProperties.Name="Simulate ahead">
+                    IsVisible="{Binding !IsSimulatingAhead}"
+                    IsEnabled="{Binding CanOpenSimulateAhead}"
+                    AutomationProperties.Name="Simulate ahead"
+                    ToolTip.Tip="Simulate ahead">
               <Path Data="{x:Static theme:Icons.Expand}" />
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedRight" ItemsSource="{Binding SimulateAheadOptions}">
+                  <MenuFlyout.ItemContainerTheme>
+                    <ControlTheme x:DataType="game:SimulateAheadOptionViewModel"
+                                  TargetType="MenuItem"
+                                  BasedOn="{StaticResource {x:Type MenuItem}}">
+                      <Setter Property="Header" Value="{Binding Label}" />
+                      <Setter Property="Command" Value="{Binding Command}" />
+                      <Setter Property="CommandParameter" Value="{Binding Target}" />
+                    </ControlTheme>
+                  </MenuFlyout.ItemContainerTheme>
+                </MenuFlyout>
+              </Button.Flyout>
             </Button>
+            <Button x:Name="StopSimulatingButton"
+                    Classes="continue continue-stop"
+                    IsVisible="{Binding IsSimulatingAhead}"
+                    Command="{Binding StopSimulatingCommand}"
+                    Content="Stop"
+                    ToolTip.Tip="Stop after the day being played" />
           </StackPanel>
         </Grid>
       </Border>
@@ -251,6 +272,26 @@
                   Classes="flat"
                   Content="Dismiss"
                   Command="{Binding DismissAdvanceErrorCommand}" />
+        </Grid>
+      </Border>
+
+      <!-- How the last run of simulated days ended. -->
+      <Border x:Name="SimulationSummaryBanner"
+              DockPanel.Dock="Top"
+              Background="{DynamicResource SurfaceRaisedBrush}"
+              BorderBrush="{DynamicResource TeamSecondaryBrush}"
+              BorderThickness="0,0,0,2"
+              Padding="12,6"
+              IsVisible="{Binding HasSimulationSummary}">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+          <TextBlock x:Name="SimulationSummaryText"
+                     TextWrapping="Wrap"
+                     VerticalAlignment="Center"
+                     Text="{Binding SimulationSummary}" />
+          <Button Grid.Column="1"
+                  Classes="flat"
+                  Content="Dismiss"
+                  Command="{Binding DismissSimulationSummaryCommand}" />
         </Grid>
       </Border>
 
