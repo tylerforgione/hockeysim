@@ -275,20 +275,20 @@ public sealed class MainWindowViewTests
         // shows the full line.
         AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
         var rosterView = Single<TeamRosterView>(window);
-        var ratingsTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkatersTable"));
-        var basicTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkaterBasicTable"));
-        var advancedTable = Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("SkaterAdvancedTable"));
+        var ratingsTable = Named<ListBox>(rosterView, "SkatersTable");
+        var basicTable = Named<ListBox>(rosterView, "SkaterBasicTable");
+        var advancedTable = Named<ListBox>(rosterView, "SkaterAdvancedTable");
         Assert.True(ratingsTable.IsEffectivelyVisible);
         Assert.False(basicTable.IsEffectivelyVisible);
         Click(Assert.IsType<Button>(rosterView.FindControl<Button>("ShowBasicButton")));
         Assert.False(ratingsTable.IsEffectivelyVisible);
         Assert.True(basicTable.IsEffectivelyVisible);
         Assert.True(basicTable.Bounds.Height > 200);
-        Assert.True(Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("GoalieBasicTable")).IsEffectivelyVisible);
+        Assert.True(Named<ListBox>(rosterView, "GoalieBasicTable").IsEffectivelyVisible);
         Click(Assert.IsType<Button>(rosterView.FindControl<Button>("ShowAdvancedButton")));
         Assert.False(basicTable.IsEffectivelyVisible);
         Assert.True(advancedTable.IsEffectivelyVisible);
-        Assert.True(Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("GoalieAdvancedTable")).IsEffectivelyVisible);
+        Assert.True(Named<ListBox>(rosterView, "GoalieAdvancedTable").IsEffectivelyVisible);
 
         // A header sorts its table and shows the direction beside its label.
         var corsiHeader = rosterView.GetVisualDescendants().OfType<SortHeader>().Single(header => header.Column == "corsi-percentage");
@@ -303,6 +303,71 @@ public sealed class MainWindowViewTests
             rosterModel.Skaters.Select(row => row.Season.CorsiPercentageValue).Where(value => value is not null));
         Click(corsiHeader);
         Assert.Equal("▲", corsiHeader.Indicator);
+
+        // Each column view shows its columns in both tables, and the situation selector is
+        // advanced-only, disabled, and five on five alone.
+        var skaterTable = Named<SkaterTableView>(rosterView, "SkaterTable");
+        var goalieTable = Named<GoalieTableView>(rosterView, "GoalieTable");
+        var situation = Named<ComboBox>(rosterView, "SituationSelector");
+        Assert.True(situation.IsEffectivelyVisible);
+        Assert.False(situation.IsEnabled);
+        Assert.Equal(["5 on 5"], situation.Items.OfType<ComboBoxItem>().Select(item => item.Content));
+        (string Button, RosterColumns Columns, string[] Skaters, string[] Goalies)[] columnViews =
+        [
+            ("ShowBasicButton", RosterColumns.Basic,
+                ["#", "NAME", "POS", "LINEUP", "AGE", "OVR", "GP", "G", "A", "P", "+/-", "PIM", "PPP", "SHP", "S", "TOI/GP", "FO%"],
+                ["#", "NAME", "LINEUP", "AGE", "OVR", "GP", "SA", "SV", "GA", "SV%", "GAA", "SO"]),
+            ("ShowAdvancedButton", RosterColumns.Advanced,
+                ["#", "NAME", "POS", "LINEUP", "GP", "CF", "CA", "CF%", "FF", "FA", "FF%", "xGF", "xGA", "xGF%", "ixG"],
+                ["#", "NAME", "LINEUP", "GP", "TOI", "SA", "GA", "xGA", "GSAx", "SV%", "xSV%"]),
+            ("ShowRatingsButton", RosterColumns.Ratings,
+                ["#", "NAME", "POS", "LINEUP", "OVR", "SKA", "SHP", "SHA", "PUC", "PAS", "OFF", "DEF", "CHK", "BLK", "STK"],
+                ["#", "NAME", "LINEUP", "OVR", "REF", "POS", "REB"]),
+            ("ShowBioButton", RosterColumns.Bio,
+                ["#", "NAME", "POS", "LINEUP", "AGE", "SH", "HT", "WT", "BORN", "BIRTHPLACE", "NAT"],
+                ["#", "NAME", "LINEUP", "AGE", "CA", "HT", "WT", "BORN", "BIRTHPLACE", "NAT"]),
+        ];
+        foreach (var (button, columns, skaterLabels, goalieLabels) in columnViews)
+        {
+            Click(Named<Button>(rosterView, button));
+            Assert.Equal(columns == RosterColumns.Advanced, situation.IsEffectivelyVisible);
+            var skaterHeaders = skaterTable.GetVisualDescendants().OfType<SortHeader>().Where(header => header.IsEffectivelyVisible).ToList();
+            var goalieHeaders = goalieTable.GetVisualDescendants().OfType<SortHeader>().Where(header => header.IsEffectivelyVisible).ToList();
+            Assert.Equal(skaterLabels, skaterHeaders.Select(header => header.Label));
+            Assert.Equal(goalieLabels, goalieHeaders.Select(header => header.Label));
+            Assert.Equal(RosterTableColumns.Skaters(columns).Select(column => column.Key), skaterHeaders.Select(header => header.Column));
+            Assert.Equal(RosterTableColumns.Goalies(columns).Select(column => column.Key), goalieHeaders.Select(header => header.Column));
+        }
+
+        // Player groups show or hide the tables; the forwards group offers its position filter.
+        var positionFilter = Named<ComboBox>(rosterView, "PositionFilter");
+        Assert.True(skaterTable.IsEffectivelyVisible);
+        Assert.True(goalieTable.IsEffectivelyVisible);
+        Assert.False(positionFilter.IsEffectivelyVisible);
+        Click(Named<Button>(rosterView, "ShowForwardsButton"));
+        Assert.True(positionFilter.IsEffectivelyVisible);
+        Assert.False(goalieTable.IsEffectivelyVisible);
+        positionFilter.SelectedIndex = 1;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(ForwardFilter.Centres, rosterModel.ForwardPosition);
+        Assert.All(rosterModel.Skaters, row => Assert.Equal(Position.Centre, row.Player.Position));
+        Click(Named<Button>(rosterView, "ShowGoaliesButton"));
+        Assert.False(skaterTable.IsEffectivelyVisible);
+        Assert.True(goalieTable.IsEffectivelyVisible);
+        Assert.False(positionFilter.IsEffectivelyVisible);
+
+        // The strip under the tables shows the selected player; Lines opens, the rest wait for later pages.
+        var strip = Named<PlayerStripView>(rosterView, "PlayerStripPanel");
+        Assert.True(strip.IsEffectivelyVisible);
+        Assert.Equal(rosterModel.SelectedStrip!.Name, Named<TextBlock>(strip, "StripNameText").Text);
+        Assert.Equal("Goalie", Named<TextBlock>(strip, "StripPositionText").Text);
+        Assert.False(Named<Button>(strip, "StripProfileLink").IsEffectivelyEnabled);
+        Assert.False(Named<Button>(strip, "StripGameLogLink").IsEffectivelyEnabled);
+        Assert.True(Named<Button>(strip, "StripLinesLink").IsEffectivelyEnabled);
+        Click(Named<Button>(rosterView, "ShowAllPlayersButton"));
+        Click(Named<Button>(rosterView, "ShowAdvancedButton"));
+        rosterModel.SelectPlayer(rosterModel.Skaters[0].Player.Id);
+        Dispatcher.UIThread.RunJobs();
 
         var playerDetail = Single<PlayerDetailView>(rosterView);
         var overallText = playerDetail.FindControl<TextBlock>("PlayerOverallText");

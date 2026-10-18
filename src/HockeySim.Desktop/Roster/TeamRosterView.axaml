@@ -2,417 +2,163 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:players="using:HockeySim.Desktop.Players"
              xmlns:roster="using:HockeySim.Desktop.Roster"
-             xmlns:tables="using:HockeySim.Desktop.Tables"
              x:Class="HockeySim.Desktop.Roster.TeamRosterView"
              x:DataType="roster:TeamRosterViewModel">
-  <!-- Header and row templates share each table's ColumnDefinitions so columns align. -->
+  <UserControl.Styles>
+    <!--
+      The goalies sit above the strip, or at the top when there is no skater table. Both docks are
+      styles because a local DockPanel.Dock would override the style.
+    -->
+    <Style Selector="Border.goalies-panel">
+      <Setter Property="DockPanel.Dock" Value="Bottom" />
+    </Style>
+    <Style Selector="Border.goalies-panel.alone">
+      <Setter Property="DockPanel.Dock" Value="Top" />
+    </Style>
+  </UserControl.Styles>
   <Grid ColumnDefinitions="*,280" ColumnSpacing="6">
-    <Grid RowDefinitions="*,Auto" RowSpacing="6">
-      <Border Classes="panel">
-        <DockPanel>
-          <Border DockPanel.Dock="Top" Classes="panel-header">
-            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
-              <TextBlock Classes="panel-title" Text="SKATERS" />
-              <!-- Switches both tables and the profile between the two sets of totals. -->
-              <StackPanel Grid.Column="1"
-                          Orientation="Horizontal"
-                          Spacing="0"
-                          VerticalAlignment="Center"
-                          IsVisible="{Binding HasPlayoffStatistics}">
-                <Button x:Name="ShowRegularSeasonButton"
-                        Classes="tab"
-                        Classes.selected="{Binding ShowsRegularSeason}"
-                        Content="Regular season"
-                        Command="{Binding ShowStatisticsSetCommand}"
-                        CommandParameter="{x:Static players:StatisticsSet.RegularSeason}" />
-                <Button x:Name="ShowPlayoffsButton"
-                        Classes="tab"
-                        Classes.selected="{Binding ShowsPlayoffs}"
-                        Content="Playoffs"
-                        Command="{Binding ShowStatisticsSetCommand}"
-                        CommandParameter="{x:Static players:StatisticsSet.Playoffs}" />
-              </StackPanel>
-              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
-                <Button x:Name="ShowRatingsButton"
-                        Classes="tab"
-                        Classes.selected="{Binding ShowsRatings}"
-                        Content="Ratings"
-                        Command="{Binding ShowColumnsCommand}"
-                        CommandParameter="{x:Static roster:RosterColumns.Ratings}" />
-                <Button x:Name="ShowBasicButton"
-                        Classes="tab"
-                        Classes.selected="{Binding ShowsBasic}"
-                        Content="Basic"
-                        Command="{Binding ShowColumnsCommand}"
-                        CommandParameter="{x:Static roster:RosterColumns.Basic}" />
-                <Button x:Name="ShowAdvancedButton"
-                        Classes="tab"
-                        Classes.selected="{Binding ShowsAdvanced}"
-                        Content="Advanced"
-                        Command="{Binding ShowColumnsCommand}"
-                        CommandParameter="{x:Static roster:RosterColumns.Advanced}" />
-              </StackPanel>
-              <TextBlock Grid.Column="3" Classes="caption" VerticalAlignment="Center" Text="{Binding Skaters.Count, StringFormat='{}{0} players'}" />
-            </Grid>
-          </Border>
-          <Panel>
-            <DockPanel IsVisible="{Binding ShowsRatings}">
-              <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,36,32,36,30,58,30,30,30,30,30,30,30,30,30,30,30">
-                  <tables:SortHeader Column="number" Label="#" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
-                  <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
-                  <tables:SortHeader Grid.Column="2" Column="position" Label="POS" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="3" Column="age" Label="AGE" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="4" Column="nationality" Label="NAT" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
-                  <tables:SortHeader Grid.Column="5" Column="shoots" Label="SH" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shoots" />
-                  <tables:SortHeader Grid.Column="6" Column="lineup" Label="LINEUP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
-                  <tables:SortHeader Grid.Column="7" Column="overall" Label="OVR" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="8" Column="skating" Label="SKA" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Skating" />
-                  <tables:SortHeader Grid.Column="9" Column="shot-power" Label="SHP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shot power" />
-                  <tables:SortHeader Grid.Column="10" Column="shot-accuracy" Label="SHA" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shot accuracy" />
-                  <tables:SortHeader Grid.Column="11" Column="puck-control" Label="PUC" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Puck control" />
-                  <tables:SortHeader Grid.Column="12" Column="passing" Label="PAS" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Passing" />
-                  <tables:SortHeader Grid.Column="13" Column="offensive-awareness" Label="OFF" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Offensive awareness" />
-                  <tables:SortHeader Grid.Column="14" Column="defensive-awareness" Label="DEF" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Defensive awareness" />
-                  <tables:SortHeader Grid.Column="15" Column="checking" Label="CHK" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Checking" />
-                  <tables:SortHeader Grid.Column="16" Column="shot-blocking" Label="BLK" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shot blocking" />
-                  <tables:SortHeader Grid.Column="17" Column="stick-checking" Label="STK" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Stick checking" />
-                </Grid>
-              </Border>
-              <ListBox x:Name="SkatersTable"
-                       Classes="table"
-                       ItemsSource="{Binding Skaters}"
-                       SelectedItem="{Binding SelectedSkater}">
-                <ListBox.ItemTemplate>
-                  <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,36,32,36,30,58,30,30,30,30,30,30,30,30,30,30,30">
-                      <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
-                        <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
-                        <Border Grid.Column="1"
-                                Classes="pill"
-                                Classes.injury-out="{Binding IsOut}"
-                                Classes.injury-playing="{Binding IsPlayingHurt}"
-                                IsVisible="{Binding HasInjury}"
-                                ToolTip.Tip="{Binding InjurySummary}">
-                          <TextBlock Text="{Binding InjuryMarker}" />
-                        </Border>
-                      </Grid>
-                      <Border Grid.Column="2" Classes="position"><TextBlock Text="{Binding Position}" /></Border>
-                      <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Age}" />
-                      <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
-                      <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding Handedness}" />
-                      <TextBlock Grid.Column="6" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
-                      <TextBlock Grid.Column="7" Classes="rating" FontWeight="Bold" Text="{Binding Overall}" Foreground="{Binding Overall, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="8" Classes="rating" Text="{Binding Skating}" Foreground="{Binding Skating, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="9" Classes="rating" Text="{Binding ShotPower}" Foreground="{Binding ShotPower, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="10" Classes="rating" Text="{Binding ShotAccuracy}" Foreground="{Binding ShotAccuracy, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="11" Classes="rating" Text="{Binding PuckControl}" Foreground="{Binding PuckControl, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="12" Classes="rating" Text="{Binding Passing}" Foreground="{Binding Passing, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="13" Classes="rating" Text="{Binding OffensiveAwareness}" Foreground="{Binding OffensiveAwareness, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="14" Classes="rating" Text="{Binding DefensiveAwareness}" Foreground="{Binding DefensiveAwareness, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="15" Classes="rating" Text="{Binding Checking}" Foreground="{Binding Checking, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="16" Classes="rating" Text="{Binding ShotBlocking}" Foreground="{Binding ShotBlocking, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="17" Classes="rating" Text="{Binding StickChecking}" Foreground="{Binding StickChecking, Converter={StaticResource RatingBrush}}" />
-                    </Grid>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-            </DockPanel>
-            <DockPanel IsVisible="{Binding ShowsBasic}">
-              <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,36,32,36,30,58,34,34,34,34,34,34,34,34,34,50,42">
-                  <tables:SortHeader Column="number" Label="#" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
-                  <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
-                  <tables:SortHeader Grid.Column="2" Column="position" Label="POS" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="3" Column="age" Label="AGE" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="4" Column="nationality" Label="NAT" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
-                  <tables:SortHeader Grid.Column="5" Column="shoots" Label="SH" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shoots" />
-                  <tables:SortHeader Grid.Column="6" Column="lineup" Label="LINEUP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
-                  <tables:SortHeader Grid.Column="7" Column="games-played" Label="GP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="8" Column="goals" Label="G" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals" />
-                  <tables:SortHeader Grid.Column="9" Column="assists" Label="A" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Assists" />
-                  <tables:SortHeader Grid.Column="10" Column="points" Label="P" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Points" />
-                  <tables:SortHeader Grid.Column="11" Column="plus-minus" Label="+/-" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Plus/minus" />
-                  <tables:SortHeader Grid.Column="12" Column="penalty-minutes" Label="PIM" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Penalty minutes" />
-                  <tables:SortHeader Grid.Column="13" Column="power-play-points" Label="PPP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Power-play points" />
-                  <tables:SortHeader Grid.Column="14" Column="shorthanded-points" Label="SHP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shorthanded points" />
-                  <tables:SortHeader Grid.Column="15" Column="shots" Label="S" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shots on goal" />
-                  <tables:SortHeader Grid.Column="16" Column="time-on-ice-per-game" Label="TOI/GP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Average time on ice per game" />
-                  <tables:SortHeader Grid.Column="17" Column="faceoff-percentage" Label="FO%" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Faceoff percentage" />
-                </Grid>
-              </Border>
-              <ListBox x:Name="SkaterBasicTable"
-                       Classes="table"
-                       ItemsSource="{Binding Skaters}"
-                       SelectedItem="{Binding SelectedSkater}">
-                <ListBox.ItemTemplate>
-                  <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,36,32,36,30,58,34,34,34,34,34,34,34,34,34,50,42">
-                      <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
-                        <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
-                        <Border Grid.Column="1"
-                                Classes="pill"
-                                Classes.injury-out="{Binding IsOut}"
-                                Classes.injury-playing="{Binding IsPlayingHurt}"
-                                IsVisible="{Binding HasInjury}"
-                                ToolTip.Tip="{Binding InjurySummary}">
-                          <TextBlock Text="{Binding InjuryMarker}" />
-                        </Border>
-                      </Grid>
-                      <Border Grid.Column="2" Classes="position"><TextBlock Text="{Binding Position}" /></Border>
-                      <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Age}" />
-                      <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
-                      <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding Handedness}" />
-                      <TextBlock Grid.Column="6" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
-                      <TextBlock Grid.Column="7" Classes="cell-center" Text="{Binding Season.GamesPlayed}" />
-                      <TextBlock Grid.Column="8" Classes="cell-center" Text="{Binding Season.Goals}" />
-                      <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding Season.Assists}" />
-                      <TextBlock Grid.Column="10" Classes="cell-center strong" Text="{Binding Season.Points}" />
-                      <TextBlock Grid.Column="11" Classes="cell-center" Text="{Binding Season.PlusMinus}" />
-                      <TextBlock Grid.Column="12" Classes="cell-center" Text="{Binding Season.PenaltyMinutes}" />
-                      <TextBlock Grid.Column="13" Classes="cell-center" Text="{Binding Season.PowerPlayPoints}" />
-                      <TextBlock Grid.Column="14" Classes="cell-center" Text="{Binding Season.ShorthandedPoints}" />
-                      <TextBlock Grid.Column="15" Classes="cell-center" Text="{Binding Season.Shots}" />
-                      <TextBlock Grid.Column="16" Classes="cell-center" Text="{Binding Season.TimeOnIcePerGame}" />
-                      <TextBlock Grid.Column="17" Classes="cell-center" Text="{Binding Season.FaceoffPercentage}" />
-                    </Grid>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-            </DockPanel>
-            <DockPanel IsVisible="{Binding ShowsAdvanced}">
-              <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,36,32,36,30,58,36,36,36,44,36,36,44,44,44,48,40">
-                  <tables:SortHeader Column="number" Label="#" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
-                  <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
-                  <tables:SortHeader Grid.Column="2" Column="position" Label="POS" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="3" Column="age" Label="AGE" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="4" Column="nationality" Label="NAT" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
-                  <tables:SortHeader Grid.Column="5" Column="shoots" Label="SH" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shoots" />
-                  <tables:SortHeader Grid.Column="6" Column="lineup" Label="LINEUP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
-                  <tables:SortHeader Grid.Column="7" Column="games-played" Label="GP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="8" Column="corsi-for" Label="CF" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 Corsi for: team shot attempts while on the ice" />
-                  <tables:SortHeader Grid.Column="9" Column="corsi-against" Label="CA" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 Corsi against: opponent shot attempts while on the ice" />
-                  <tables:SortHeader Grid.Column="10" Column="corsi-percentage" Label="CF%" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 Corsi percentage: share of shot attempts" />
-                  <tables:SortHeader Grid.Column="11" Column="fenwick-for" Label="FF" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 Fenwick for: unblocked team attempts while on the ice" />
-                  <tables:SortHeader Grid.Column="12" Column="fenwick-against" Label="FA" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 Fenwick against: unblocked opponent attempts while on the ice" />
-                  <tables:SortHeader Grid.Column="13" Column="fenwick-percentage" Label="FF%" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 Fenwick percentage: share of unblocked attempts" />
-                  <tables:SortHeader Grid.Column="14" Column="expected-goals-for" Label="xGF" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 team expected goals while on the ice" />
-                  <tables:SortHeader Grid.Column="15" Column="expected-goals-against" Label="xGA" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 opponent expected goals while on the ice" />
-                  <tables:SortHeader Grid.Column="16" Column="expected-goals-percentage" Label="xGF%" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 share of expected goals" />
-                  <tables:SortHeader Grid.Column="17" Column="individual-expected-goals" Label="ixG" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Individual expected goals" />
-                </Grid>
-              </Border>
-              <ListBox x:Name="SkaterAdvancedTable"
-                       Classes="table"
-                       ItemsSource="{Binding Skaters}"
-                       SelectedItem="{Binding SelectedSkater}">
-                <ListBox.ItemTemplate>
-                  <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,36,32,36,30,58,36,36,36,44,36,36,44,44,44,48,40">
-                      <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
-                        <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
-                        <Border Grid.Column="1"
-                                Classes="pill"
-                                Classes.injury-out="{Binding IsOut}"
-                                Classes.injury-playing="{Binding IsPlayingHurt}"
-                                IsVisible="{Binding HasInjury}"
-                                ToolTip.Tip="{Binding InjurySummary}">
-                          <TextBlock Text="{Binding InjuryMarker}" />
-                        </Border>
-                      </Grid>
-                      <Border Grid.Column="2" Classes="position"><TextBlock Text="{Binding Position}" /></Border>
-                      <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Age}" />
-                      <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
-                      <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding Handedness}" />
-                      <TextBlock Grid.Column="6" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
-                      <TextBlock Grid.Column="7" Classes="cell-center" Text="{Binding Season.GamesPlayed}" />
-                      <TextBlock Grid.Column="8" Classes="cell-center" Text="{Binding Season.CorsiFor}" />
-                      <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding Season.CorsiAgainst}" />
-                      <TextBlock Grid.Column="10" Classes="cell-center strong" Text="{Binding Season.CorsiPercentage}" />
-                      <TextBlock Grid.Column="11" Classes="cell-center" Text="{Binding Season.FenwickFor}" />
-                      <TextBlock Grid.Column="12" Classes="cell-center" Text="{Binding Season.FenwickAgainst}" />
-                      <TextBlock Grid.Column="13" Classes="cell-center" Text="{Binding Season.FenwickPercentage}" />
-                      <TextBlock Grid.Column="14" Classes="cell-center" Text="{Binding Season.OnIceExpectedGoalsFor}" />
-                      <TextBlock Grid.Column="15" Classes="cell-center" Text="{Binding Season.OnIceExpectedGoalsAgainst}" />
-                      <TextBlock Grid.Column="16" Classes="cell-center strong" Text="{Binding Season.OnIceExpectedGoalsPercentage}" />
-                      <TextBlock Grid.Column="17" Classes="cell-center" Text="{Binding Season.IndividualExpectedGoals}" />
-                    </Grid>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-            </DockPanel>
-          </Panel>
-        </DockPanel>
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Classes="panel">
+        <Border Classes="panel-header" Height="NaN" Padding="10,3">
+          <WrapPanel ItemSpacing="12" LineSpacing="4" VerticalAlignment="Center">
+            <!-- Which players the tables list. -->
+            <StackPanel x:Name="GroupButtons" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+              <Button x:Name="ShowAllPlayersButton"
+                      Classes="tab"
+                      Classes.selected="{Binding ShowsAllPlayers}"
+                      Content="All players"
+                      Command="{Binding ShowGroupCommand}"
+                      CommandParameter="{x:Static roster:RosterGroup.AllPlayers}" />
+              <Button x:Name="ShowSkatersButton"
+                      Classes="tab"
+                      Classes.selected="{Binding ShowsSkatersGroup}"
+                      Content="Skaters"
+                      Command="{Binding ShowGroupCommand}"
+                      CommandParameter="{x:Static roster:RosterGroup.Skaters}" />
+              <Button x:Name="ShowForwardsButton"
+                      Classes="tab"
+                      Classes.selected="{Binding ShowsForwardsGroup}"
+                      Content="Forwards"
+                      Command="{Binding ShowGroupCommand}"
+                      CommandParameter="{x:Static roster:RosterGroup.Forwards}" />
+              <Button x:Name="ShowDefenceButton"
+                      Classes="tab"
+                      Classes.selected="{Binding ShowsDefenceGroup}"
+                      Content="Defence"
+                      Command="{Binding ShowGroupCommand}"
+                      CommandParameter="{x:Static roster:RosterGroup.Defence}" />
+              <Button x:Name="ShowGoaliesButton"
+                      Classes="tab"
+                      Classes.selected="{Binding ShowsGoaliesGroup}"
+                      Content="Goalies"
+                      Command="{Binding ShowGroupCommand}"
+                      CommandParameter="{x:Static roster:RosterGroup.Goalies}" />
+            </StackPanel>
+            <ComboBox x:Name="PositionFilter"
+                      Width="120"
+                      VerticalAlignment="Center"
+                      AutomationProperties.Name="Forwards"
+                      IsVisible="{Binding ShowsForwardsGroup}"
+                      SelectedIndex="{Binding ForwardFilterIndex, Mode=TwoWay}">
+              <ComboBoxItem Content="All forwards" />
+              <ComboBoxItem Content="Centres" />
+              <ComboBoxItem Content="Wingers" />
+            </ComboBox>
+            <!-- Which columns the tables show. -->
+            <StackPanel x:Name="ColumnButtons" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+              <Button x:Name="ShowBasicButton"
+                      Classes="tab"
+                      Classes.selected="{Binding ShowsBasic}"
+                      Content="Basic"
+                      Command="{Binding ShowColumnsCommand}"
+                      CommandParameter="{x:Static roster:RosterColumns.Basic}" />
+              <Button x:Name="ShowAdvancedButton"
+                      Classes="tab"
+                      Classes.selected="{Binding ShowsAdvanced}"
+                      Content="Advanced"
+                      Command="{Binding ShowColumnsCommand}"
+                      CommandParameter="{x:Static roster:RosterColumns.Advanced}" />
+              <Button x:Name="ShowRatingsButton"
+                      Classes="tab"
+                      Classes.selected="{Binding ShowsRatings}"
+                      Content="Ratings"
+                      Command="{Binding ShowColumnsCommand}"
+                      CommandParameter="{x:Static roster:RosterColumns.Ratings}" />
+              <Button x:Name="ShowBioButton"
+                      Classes="tab"
+                      Classes.selected="{Binding ShowsBio}"
+                      Content="Bio"
+                      Command="{Binding ShowColumnsCommand}"
+                      CommandParameter="{x:Static roster:RosterColumns.Bio}" />
+            </StackPanel>
+            <!-- Switches both tables and the profile between the two sets of totals. -->
+            <StackPanel Orientation="Horizontal"
+                        Spacing="0"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding HasPlayoffStatistics}">
+              <Button x:Name="ShowRegularSeasonButton"
+                      Classes="tab"
+                      Classes.selected="{Binding ShowsRegularSeason}"
+                      Content="Regular season"
+                      Command="{Binding ShowStatisticsSetCommand}"
+                      CommandParameter="{x:Static players:StatisticsSet.RegularSeason}" />
+              <Button x:Name="ShowPlayoffsButton"
+                      Classes="tab"
+                      Classes.selected="{Binding ShowsPlayoffs}"
+                      Content="Playoffs"
+                      Command="{Binding ShowStatisticsSetCommand}"
+                      CommandParameter="{x:Static players:StatisticsSet.Playoffs}" />
+            </StackPanel>
+            <!-- Advanced figures are five-on-five only for now. -->
+            <StackPanel x:Name="SituationPanel"
+                        Orientation="Horizontal"
+                        Spacing="6"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding ShowsAdvanced}">
+              <TextBlock Classes="caption" VerticalAlignment="Center" Text="Situation" />
+              <ComboBox x:Name="SituationSelector"
+                        Width="90"
+                        IsEnabled="False"
+                        SelectedIndex="0"
+                        AutomationProperties.Name="Situation">
+                <ComboBoxItem Content="5 on 5" />
+              </ComboBox>
+            </StackPanel>
+            <TextBlock x:Name="PlayerCountText"
+                       Classes="caption"
+                       VerticalAlignment="Center"
+                       Text="{Binding PlayerCount, StringFormat='{}{0} players'}" />
+          </WrapPanel>
+        </Border>
       </Border>
 
-      <Border Grid.Row="1" Classes="panel">
+      <roster:PlayerStripView x:Name="PlayerStripPanel" DockPanel.Dock="Bottom" Margin="0,6,0,0" />
+
+      <Border x:Name="GoaliesPanel"
+              Classes="panel goalies-panel"
+              Classes.alone="{Binding ShowsGoaliesGroup}"
+              Margin="0,6,0,0"
+              IsVisible="{Binding ShowsGoalieTable}">
         <DockPanel>
           <Border DockPanel.Dock="Top" Classes="panel-header">
             <TextBlock Classes="panel-title" Text="GOALIES" />
           </Border>
-          <Panel>
-            <DockPanel IsVisible="{Binding ShowsRatings}">
-              <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,32,36,30,58,32,32,32,32">
-                  <tables:SortHeader Column="number" Label="#" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
-                  <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
-                  <tables:SortHeader Grid.Column="2" Column="age" Label="AGE" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="3" Column="nationality" Label="NAT" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
-                  <tables:SortHeader Grid.Column="4" Column="catches" Label="CA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Catches" />
-                  <tables:SortHeader Grid.Column="5" Column="lineup" Label="LINEUP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
-                  <tables:SortHeader Grid.Column="6" Column="overall" Label="OVR" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="7" Column="reflex" Label="REF" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Reflexes" />
-                  <tables:SortHeader Grid.Column="8" Column="positioning" Label="POS" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Positioning" />
-                  <tables:SortHeader Grid.Column="9" Column="rebound-control" Label="REB" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Rebound control" />
-                </Grid>
-              </Border>
-              <ListBox x:Name="GoaliesTable"
-                       Classes="table"
-                       ItemsSource="{Binding Goalies}"
-                       SelectedItem="{Binding SelectedGoalie}"
-                       ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                <ListBox.ItemTemplate>
-                  <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,32,36,30,58,32,32,32,32">
-                      <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
-                        <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
-                        <Border Grid.Column="1"
-                                Classes="pill"
-                                Classes.injury-out="{Binding IsOut}"
-                                Classes.injury-playing="{Binding IsPlayingHurt}"
-                                IsVisible="{Binding HasInjury}"
-                                ToolTip.Tip="{Binding InjurySummary}">
-                          <TextBlock Text="{Binding InjuryMarker}" />
-                        </Border>
-                      </Grid>
-                      <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Age}" />
-                      <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
-                      <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Handedness}" />
-                      <TextBlock Grid.Column="5" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
-                      <TextBlock Grid.Column="6" Classes="rating" FontWeight="Bold" Text="{Binding Overall}" Foreground="{Binding Overall, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="7" Classes="rating" Text="{Binding GoalieReflex}" Foreground="{Binding GoalieReflex, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="8" Classes="rating" Text="{Binding GoaliePositioning}" Foreground="{Binding GoaliePositioning, Converter={StaticResource RatingBrush}}" />
-                      <TextBlock Grid.Column="9" Classes="rating" Text="{Binding GoalieReboundControl}" Foreground="{Binding GoalieReboundControl, Converter={StaticResource RatingBrush}}" />
-                    </Grid>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-            </DockPanel>
-            <DockPanel IsVisible="{Binding ShowsBasic}">
-              <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,32,36,30,58,36,44,44,44,50,48,36">
-                  <tables:SortHeader Column="number" Label="#" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
-                  <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
-                  <tables:SortHeader Grid.Column="2" Column="age" Label="AGE" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="3" Column="nationality" Label="NAT" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
-                  <tables:SortHeader Grid.Column="4" Column="catches" Label="CA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Catches" />
-                  <tables:SortHeader Grid.Column="5" Column="lineup" Label="LINEUP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
-                  <tables:SortHeader Grid.Column="6" Column="games-played" Label="GP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Games played (starts)" />
-                  <tables:SortHeader Grid.Column="7" Column="shots-against" Label="SA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shots against" />
-                  <tables:SortHeader Grid.Column="8" Column="saves" Label="SV" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Saves" />
-                  <tables:SortHeader Grid.Column="9" Column="goals-against" Label="GA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals against" />
-                  <tables:SortHeader Grid.Column="10" Column="save-percentage" Label="SV%" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Save percentage" />
-                  <tables:SortHeader Grid.Column="11" Column="goals-against-average" Label="GAA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals-against average" />
-                  <tables:SortHeader Grid.Column="12" Column="shutouts" Label="SO" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shutouts" />
-                </Grid>
-              </Border>
-              <ListBox x:Name="GoalieBasicTable"
-                       Classes="table"
-                       ItemsSource="{Binding Goalies}"
-                       SelectedItem="{Binding SelectedGoalie}"
-                       ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                <ListBox.ItemTemplate>
-                  <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,32,36,30,58,36,44,44,44,50,48,36">
-                      <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
-                        <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
-                        <Border Grid.Column="1"
-                                Classes="pill"
-                                Classes.injury-out="{Binding IsOut}"
-                                Classes.injury-playing="{Binding IsPlayingHurt}"
-                                IsVisible="{Binding HasInjury}"
-                                ToolTip.Tip="{Binding InjurySummary}">
-                          <TextBlock Text="{Binding InjuryMarker}" />
-                        </Border>
-                      </Grid>
-                      <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Age}" />
-                      <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
-                      <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Handedness}" />
-                      <TextBlock Grid.Column="5" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
-                      <TextBlock Grid.Column="6" Classes="cell-center" Text="{Binding Season.GamesPlayed}" />
-                      <TextBlock Grid.Column="7" Classes="cell-center" Text="{Binding Season.ShotsAgainst}" />
-                      <TextBlock Grid.Column="8" Classes="cell-center" Text="{Binding Season.Saves}" />
-                      <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding Season.GoalsAgainst}" />
-                      <TextBlock Grid.Column="10" Classes="cell-center strong" Text="{Binding Season.SavePercentage}" />
-                      <TextBlock Grid.Column="11" Classes="cell-center" Text="{Binding Season.GoalsAgainstAverage}" />
-                      <TextBlock Grid.Column="12" Classes="cell-center" Text="{Binding Season.Shutouts}" />
-                    </Grid>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-            </DockPanel>
-            <DockPanel IsVisible="{Binding ShowsAdvanced}">
-              <Border DockPanel.Dock="Top" Classes="table-header">
-                <Grid ColumnDefinitions="36,*,32,36,30,58,36,58,48,44,54,50">
-                  <tables:SortHeader Column="number" Label="#" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
-                  <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
-                  <tables:SortHeader Grid.Column="2" Column="age" Label="AGE" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" />
-                  <tables:SortHeader Grid.Column="3" Column="nationality" Label="NAT" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
-                  <tables:SortHeader Grid.Column="4" Column="catches" Label="CA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Catches" />
-                  <tables:SortHeader Grid.Column="5" Column="lineup" Label="LINEUP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
-                  <tables:SortHeader Grid.Column="6" Column="games-played" Label="GP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Games played (starts)" />
-                  <tables:SortHeader Grid.Column="7" Column="time-in-net" Label="TOI" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Total time in net" />
-                  <tables:SortHeader Grid.Column="8" Column="expected-goals-against" Label="xGA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Expected goals against" />
-                  <tables:SortHeader Grid.Column="9" Column="goals-against" Label="GA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals against" />
-                  <tables:SortHeader Grid.Column="10" Column="goals-saved-above-expected" Label="GSAx" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals saved above expected" />
-                  <tables:SortHeader Grid.Column="11" Column="time-on-ice-per-game" Label="TOI/GP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Average time in net per start" />
-                </Grid>
-              </Border>
-              <ListBox x:Name="GoalieAdvancedTable"
-                       Classes="table"
-                       ItemsSource="{Binding Goalies}"
-                       SelectedItem="{Binding SelectedGoalie}"
-                       ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                <ListBox.ItemTemplate>
-                  <DataTemplate x:DataType="roster:PlayerRowViewModel">
-                    <Grid ColumnDefinitions="36,*,32,36,30,58,36,58,48,44,54,50">
-                      <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
-                        <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
-                        <Border Grid.Column="1"
-                                Classes="pill"
-                                Classes.injury-out="{Binding IsOut}"
-                                Classes.injury-playing="{Binding IsPlayingHurt}"
-                                IsVisible="{Binding HasInjury}"
-                                ToolTip.Tip="{Binding InjurySummary}">
-                          <TextBlock Text="{Binding InjuryMarker}" />
-                        </Border>
-                      </Grid>
-                      <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Age}" />
-                      <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
-                      <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Handedness}" />
-                      <TextBlock Grid.Column="5" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
-                      <TextBlock Grid.Column="6" Classes="cell-center" Text="{Binding Season.GamesPlayed}" />
-                      <TextBlock Grid.Column="7" Classes="cell-center" Text="{Binding Season.TimeInNet}" />
-                      <TextBlock Grid.Column="8" Classes="cell-center" Text="{Binding Season.ExpectedGoalsAgainst}" />
-                      <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding Season.GoalsAgainst}" />
-                      <TextBlock Grid.Column="10" Classes="cell-center strong" Text="{Binding Season.GoalsSavedAboveExpected}" />
-                      <TextBlock Grid.Column="11" Classes="cell-center" Text="{Binding Season.TimeOnIcePerGame}" />
-                    </Grid>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-            </DockPanel>
-          </Panel>
+          <roster:GoalieTableView x:Name="GoalieTable" />
         </DockPanel>
       </Border>
-    </Grid>
+
+      <Border x:Name="SkatersPanel"
+              Classes="panel"
+              Margin="0,6,0,0"
+              IsVisible="{Binding ShowsSkaterTable}">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Classes="panel-header">
+            <TextBlock Classes="panel-title" Text="SKATERS" />
+          </Border>
+          <roster:SkaterTableView x:Name="SkaterTable" />
+        </DockPanel>
+      </Border>
+    </DockPanel>
 
     <Border Grid.Column="1" Classes="panel">
       <players:PlayerDetailView x:Name="PlayerDetail"

@@ -11,16 +11,19 @@ namespace HockeySim.Desktop.Roster;
 public sealed partial class RosterPageViewModel : ShellPageViewModel
 {
     private readonly GameSession _session;
+    private readonly Action<TeamId>? _openLines;
 
     [ObservableProperty]
     private TeamRosterViewModel _roster;
 
-    public RosterPageViewModel(GameSession session)
+    /// <param name="openLines">Opens the Lines page on the roster's team; the roster's Lines link is disabled without it.</param>
+    public RosterPageViewModel(GameSession session, Action<TeamId>? openLines = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
-        _roster = new TeamRosterViewModel(session, session.ManagedTeam.Id);
+        _openLines = openLines;
+        _roster = new TeamRosterViewModel(session, session.ManagedTeam.Id, openLines: openLines);
     }
 
     public override string Subtitle
@@ -39,7 +42,7 @@ public sealed partial class RosterPageViewModel : ShellPageViewModel
 
     public override void Refresh()
     {
-        Roster = new TeamRosterViewModel(_session, _session.ManagedTeam.Id, Roster.SelectedPlayer?.Id, Roster.Columns, Roster.Statistics, Roster.Sorts);
+        Roster = new TeamRosterViewModel(_session, _session.ManagedTeam.Id, Roster.SelectedPlayer?.Id, Roster.Columns, Roster.Statistics, Roster.Sorts, Roster.Group, Roster.ForwardPosition, _openLines);
         OnPropertyChanged(nameof(Subtitle));
     }
 }

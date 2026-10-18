@@ -1,0 +1,71 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:roster="using:HockeySim.Desktop.Roster"
+             x:Class="HockeySim.Desktop.Roster.PlayerStripView"
+             x:DataType="roster:TeamRosterViewModel">
+  <!-- The selected player under the roster tables; the data context is the roster. -->
+  <Border x:Name="PlayerStrip"
+          Classes="panel"
+          Padding="12,8"
+          IsVisible="{Binding SelectedStrip, Converter={x:Static ObjectConverters.IsNotNull}}">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+      <StackPanel Spacing="6">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock x:Name="StripNumberText" Classes="caption" VerticalAlignment="Center" Text="{Binding SelectedStrip.Number}" />
+          <TextBlock x:Name="StripNameText" FontSize="15" FontWeight="SemiBold" Text="{Binding SelectedStrip.Name}" />
+          <Border x:Name="StripInjuryMarker"
+                  Classes="pill"
+                  Classes.injury-out="{Binding SelectedStrip.IsOut}"
+                  Classes.injury-playing="{Binding SelectedStrip.IsPlayingHurt}"
+                  IsVisible="{Binding SelectedStrip.HasInjury}"
+                  ToolTip.Tip="{Binding SelectedStrip.InjurySummary}">
+            <TextBlock Text="{Binding SelectedStrip.InjuryMarker}" />
+          </Border>
+          <TextBlock x:Name="StripPositionText" Classes="caption" VerticalAlignment="Center" Text="{Binding SelectedStrip.Position}" />
+        </StackPanel>
+        <ItemsControl x:Name="StripFacts" ItemsSource="{Binding SelectedStrip.Facts}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel ItemSpacing="18" LineSpacing="4" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="roster:StripFactViewModel">
+              <StackPanel Spacing="1">
+                <TextBlock Classes="label" Text="{Binding Label}" />
+                <TextBlock FontWeight="SemiBold" Text="{Binding Value}" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock x:Name="StripInjurySummary"
+                   Classes="caption"
+                   IsVisible="{Binding SelectedStrip.HasInjury}"
+                   Text="{Binding SelectedStrip.InjurySummary}" />
+      </StackPanel>
+
+      <StackPanel Grid.Column="1" Spacing="6" HorizontalAlignment="Right">
+        <StackPanel Orientation="Horizontal" Spacing="0" HorizontalAlignment="Right">
+          <Button x:Name="StripProfileLink" Classes="link" Content="Profile" IsEnabled="False" />
+          <Button x:Name="StripGameLogLink" Classes="link" Content="Game log" IsEnabled="False" />
+          <Button x:Name="StripLinesLink" Classes="link" Content="Lines" Command="{Binding OpenLinesCommand}" />
+        </StackPanel>
+        <ItemsControl x:Name="StripRatings" ItemsSource="{Binding SelectedStrip.Ratings}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="8" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="roster:StripRatingViewModel">
+              <StackPanel Spacing="1" ToolTip.Tip="{Binding Name}">
+                <TextBlock Classes="label" HorizontalAlignment="Center" Text="{Binding Label}" />
+                <TextBlock Classes="rating" Text="{Binding Value}" Foreground="{Binding Value, Converter={StaticResource RatingBrush}}" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

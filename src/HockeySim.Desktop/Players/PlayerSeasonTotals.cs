@@ -113,6 +113,16 @@ public sealed class PlayerSeasonTotals
 
     public double ExpectedGoalsAgainstValue => _goalie?.ExpectedGoalsAgainst ?? 0;
 
+    /// <summary>
+    /// The save percentage an average goalie would have had on the shots faced (one minus expected
+    /// goals against over shots against), formatted like <see cref="SavePercentage"/>.
+    /// </summary>
+    public string ExpectedSavePercentage => MatchDisplay.SavePercentage(ExpectedSavePercentageValue);
+
+    /// <summary>Null before the goalie has faced a shot, shown as a dash.</summary>
+    public double? ExpectedSavePercentageValue =>
+        _goalie is { ShotsAgainst: > 0 } goalie ? 1 - goalie.ExpectedGoalsAgainst / goalie.ShotsAgainst : null;
+
     public string GoalsSavedAboveExpected => MatchDisplay.GoalsSavedAboveExpected(GoalsSavedAboveExpectedValue);
 
     public double GoalsSavedAboveExpectedValue => _goalie?.GoalsSavedAboveExpected ?? 0;

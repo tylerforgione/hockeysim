@@ -123,6 +123,7 @@ public sealed class TableSortingTests
         roster.SortSkatersCommand.Execute("position");
         Assert.Equal(roster.Skaters.Select(row => row.Player.Position).Order(), roster.Skaters.Select(row => row.Player.Position));
 
+        roster.ShowColumnsCommand.Execute(RosterColumns.Bio);
         roster.SortSkatersCommand.Execute("nationality");
         Assert.Equal(roster.Skaters.Select(row => row.Nationality).Order(StringComparer.Ordinal), roster.Skaters.Select(row => row.Nationality));
 
@@ -162,6 +163,7 @@ public sealed class TableSortingTests
     {
         var (_, shell) = await PlayDays(1);
         var roster = shell.Roster.Roster;
+        roster.ShowColumnsCommand.Execute(RosterColumns.Basic);
         var defaultOrder = roster.Skaters.Select(row => row.Player.Id).ToList();
 
         roster.SortSkatersCommand.Execute("age");
@@ -194,25 +196,47 @@ public sealed class TableSortingTests
     }
 
     [Fact]
-    public async Task EachColumnViewKeepsItsOwnSort()
+    public async Task OneSortHoldsAcrossColumnViewsWhereTheColumnExists()
     {
         var (_, shell) = await PlayDays(1);
         var roster = shell.Roster.Roster;
 
         roster.SortSkatersCommand.Execute("overall");
+        roster.SortGoaliesCommand.Execute("overall");
         roster.ShowColumnsCommand.Execute(RosterColumns.Basic);
+        Assert.Equal(new TableSort("overall", SortDirection.Descending), roster.SkaterSort);
+        Assert.Equal(new TableSort("overall", SortDirection.Descending), roster.GoalieSort);
+        Assert.Equal(roster.Skaters.Select(row => row.Overall).OrderDescending(), roster.Skaters.Select(row => row.Overall));
+
+        // Advanced has no OVR: the default order and no arrow, but the sort is still remembered.
+        roster.ShowColumnsCommand.Execute(RosterColumns.Advanced);
         Assert.Null(roster.SkaterSort);
-        roster.SortSkatersCommand.Execute("goals");
-        roster.SortGoaliesCommand.Execute("saves");
+        Assert.Null(roster.GoalieSort);
+        Assert.Equal(new TableSort("overall", SortDirection.Descending), roster.Sorts.Skaters);
+        Assert.Equal(
+            roster.Skaters.OrderBy(row => row.Player.Position).ThenBy(row => row.Player.LastName, StringComparer.Ordinal).Select(row => row.Player.Id),
+            roster.Skaters.Select(row => row.Player.Id));
 
         roster.ShowColumnsCommand.Execute(RosterColumns.Ratings);
         Assert.Equal(new TableSort("overall", SortDirection.Descending), roster.SkaterSort);
-        Assert.Null(roster.GoalieSort);
         Assert.Equal(roster.Skaters.Select(row => row.Overall).OrderDescending(), roster.Skaters.Select(row => row.Overall));
+    }
 
-        roster.ShowColumnsCommand.Execute(RosterColumns.Basic);
-        Assert.Equal(new TableSort("goals", SortDirection.Descending), roster.SkaterSort);
-        Assert.Equal(new TableSort("saves", SortDirection.Descending), roster.GoalieSort);
+    [Fact]
+    public async Task AHeaderClickInAViewWithoutTheRememberedColumnStartsANewSort()
+    {
+        var (_, shell) = await PlayDays(1);
+        var roster = shell.Roster.Roster;
+        roster.SortSkatersCommand.Execute("overall");
+        roster.ShowColumnsCommand.Execute(RosterColumns.Advanced);
+
+        roster.SortSkatersCommand.Execute("corsi-for");
+
+        Assert.Equal(new TableSort("corsi-for", SortDirection.Descending), roster.SkaterSort);
+        roster.ShowColumnsCommand.Execute(RosterColumns.Ratings);
+        Assert.Null(roster.SkaterSort);
+        roster.ShowColumnsCommand.Execute(RosterColumns.Advanced);
+        Assert.Equal(new TableSort("corsi-for", SortDirection.Descending), roster.SkaterSort);
     }
 
     [Fact]
