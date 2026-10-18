@@ -55,6 +55,26 @@ Features and game-design decisions intentionally left out of v1 live in
 [future features](docs/future-features.md). Check its headings before proposing
 new scope, and add an entry there instead of implementing out-of-scope work.
 
+## Delegation
+
+Delegate to the agents in `.claude/agents/` so the main session keeps its
+context for planning, decisions, and review:
+
+- Run builds, format checks, and tests through `test-runner`, and act on its
+  summary instead of re-running the commands.
+- Use `Explore` for searches that span more than one area.
+- Once a plan is agreed, give each slice to an `implementer` with the plan
+  excerpt, the area document, and the acceptance criteria. Split a change that
+  crosses areas into one slice per area and run them in order. Run slices in
+  parallel only when they touch different files.
+- Keep design decisions and area-document prose in the main session, and review
+  each implementer's diff before handoff. Its report is not validation.
+- A subagent reads what its definition and brief name, not the reading list
+  above, so put the context it needs in the brief.
+
+`/repo-audit [categories] [areas]` audits the code for the maintainer to choose
+what to fix; see `.claude/skills/repo-audit/`.
+
 ## Subagents
 
 When delegating work to a subagent:

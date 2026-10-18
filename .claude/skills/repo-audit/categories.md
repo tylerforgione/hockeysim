@@ -1,0 +1,12 @@
+# Audit categories
+
+Each category has a key used in `/repo-audit` arguments and in findings.
+
+| Key | Look for | Not a finding |
+| --- | --- | --- |
+| `dry` | The same rule, calculation, or mapping written in more than one place, so a change must be made twice to stay consistent: duplicated stat formulas, parallel switch statements over the same enum, snapshot and view-model code rebuilding the same projection. | Similar-looking code that encodes different rules; small, readable repetition whose extraction would hide intent; test arrange code that keeps each test self-explanatory. |
+| `redundant-tests` | Tests that assert nothing the test name promises, duplicate another test's behaviour and inputs, test implementation details instead of behaviour (see `docs/conventions.md`), or can never fail. Also behaviour in the area's test map that no test actually covers. | Many-seed invariant, determinism, and statistical-band simulation tests (see `docs/testing.md`), even when they overlap with a focused test. |
+| `performance` | The in-memory equivalent of N+1 queries: a lookup or scan repeated inside a loop over players, teams, matches, or days (`First`/`Where`/`Contains` on a list inside a loop); snapshots or derived totals rebuilt per item instead of once; quadratic work in season advancement, simulating ahead, or the match engine's per-event loop. | Work done once per user action on small collections, where the cost cannot be noticed. Say how often the code runs when reporting. |
+| `layering` | Breaks of the dependency direction and ownership rules in `docs/architecture.md`: Desktop calling the engine, storage, or Domain mutation methods; snapshots exposing mutable references; Simulation changing the game world; framework or storage types in core interfaces. | Startup composition in Desktop, which the architecture allows. |
+| `determinism` | Outcome-affecting randomness or time outside `ControlledRandom` and explicit inputs: `System.Random`, `Guid.NewGuid`, `DateTime.Now`, unordered iteration (`HashSet`, `Dictionary`) that decides an outcome, or random state not carried through saves. | Randomness or time that only affects presentation. |
+| `dead-code` | Types, members, parameters, or branches with no callers or no reachable path; obsolete code kept alongside its replacement. Confirm with `grep` across `src/` and `tests/` before reporting. | Members used only through XAML bindings or serialization; check views and the save model first. |
