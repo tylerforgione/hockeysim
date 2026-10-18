@@ -9,6 +9,9 @@ updates:
       interval: weekly
     commit-message:
       prefix: chore
+    groups:
+      avalonia:
+        patterns: ["Avalonia*"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
