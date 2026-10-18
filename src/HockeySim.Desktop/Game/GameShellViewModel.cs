@@ -87,12 +87,12 @@ public sealed partial class GameShellViewModel : ObservableObject
         TeamBanner = new TeamBannerViewModel(session);
         Home = new HomePageViewModel(session, Navigate, OpenInboxMessage, OpenPlayer, OpenMatch);
         Inbox = new InboxPageViewModel(session);
-        Roster = new RosterPageViewModel(session);
+        Roster = new RosterPageViewModel(session, OpenTeamLines);
         Lines = new LinesPageViewModel(session);
         Schedule = new SchedulePageViewModel(session);
         TeamStatistics = new TeamStatisticsPageViewModel(session);
         Injuries = new InjuriesPageViewModel(session);
-        Teams = new TeamsPageViewModel(session);
+        Teams = new TeamsPageViewModel(session, OpenTeamLines);
         Standings = new StandingsPageViewModel(session, OpenTeam);
         Playoffs = new PlayoffsPageViewModel(session, OpenMatch);
         _pages = new Dictionary<ShellPage, ShellPageViewModel>
@@ -412,6 +412,13 @@ public sealed partial class GameShellViewModel : ObservableObject
     {
         Navigate(ShellPage.Teams);
         Teams.SelectTeam(teamId);
+    }
+
+    /// <summary>Shows a team's lineup on the Lines page.</summary>
+    public void OpenTeamLines(TeamId teamId)
+    {
+        Navigate(ShellPage.Lines);
+        Lines.SelectTeam(teamId);
     }
 
     /// <summary>

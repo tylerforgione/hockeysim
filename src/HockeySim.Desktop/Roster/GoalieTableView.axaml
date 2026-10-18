@@ -1,0 +1,202 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:roster="using:HockeySim.Desktop.Roster"
+             xmlns:tables="using:HockeySim.Desktop.Tables"
+             x:Class="HockeySim.Desktop.Roster.GoalieTableView"
+             x:DataType="roster:TeamRosterViewModel">
+  <!-- Header and row templates share each view's ColumnDefinitions so columns align. -->
+  <Panel>
+    <DockPanel IsVisible="{Binding ShowsRatings}">
+      <Border DockPanel.Dock="Top" Classes="table-header">
+        <Grid ColumnDefinitions="36,*,58,32,32,32,32">
+          <tables:SortHeader Column="number" Label="#" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="2" Column="lineup" Label="LINEUP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="3" Column="overall" Label="OVR" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" />
+          <tables:SortHeader Grid.Column="4" Column="reflex" Label="REF" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Reflexes" />
+          <tables:SortHeader Grid.Column="5" Column="positioning" Label="POS" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Positioning" />
+          <tables:SortHeader Grid.Column="6" Column="rebound-control" Label="REB" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Rebound control" />
+        </Grid>
+      </Border>
+      <ListBox x:Name="GoaliesTable"
+               Classes="table"
+               ItemsSource="{Binding Goalies}"
+               SelectedItem="{Binding SelectedGoalie}"
+               ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="roster:PlayerRowViewModel">
+            <Grid ColumnDefinitions="36,*,58,32,32,32,32">
+              <TextBlock Classes="cell muted" Text="{Binding Number}" />
+              <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
+                <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                <Border Grid.Column="1"
+                        Classes="pill"
+                        Classes.injury-out="{Binding IsOut}"
+                        Classes.injury-playing="{Binding IsPlayingHurt}"
+                        IsVisible="{Binding HasInjury}"
+                        ToolTip.Tip="{Binding InjurySummary}">
+                  <TextBlock Text="{Binding InjuryMarker}" />
+                </Border>
+              </Grid>
+              <TextBlock Grid.Column="2" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
+              <TextBlock Grid.Column="3" Classes="rating" FontWeight="Bold" Text="{Binding Overall}" Foreground="{Binding Overall, Converter={StaticResource RatingBrush}}" />
+              <TextBlock Grid.Column="4" Classes="rating" Text="{Binding GoalieReflex}" Foreground="{Binding GoalieReflex, Converter={StaticResource RatingBrush}}" />
+              <TextBlock Grid.Column="5" Classes="rating" Text="{Binding GoaliePositioning}" Foreground="{Binding GoaliePositioning, Converter={StaticResource RatingBrush}}" />
+              <TextBlock Grid.Column="6" Classes="rating" Text="{Binding GoalieReboundControl}" Foreground="{Binding GoalieReboundControl, Converter={StaticResource RatingBrush}}" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+    <DockPanel IsVisible="{Binding ShowsBasic}">
+      <Border DockPanel.Dock="Top" Classes="table-header">
+        <Grid ColumnDefinitions="36,*,58,32,34,36,44,44,44,50,48,36">
+          <tables:SortHeader Column="number" Label="#" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="2" Column="lineup" Label="LINEUP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="3" Column="age" Label="AGE" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" />
+          <tables:SortHeader Grid.Column="4" Column="overall" Label="OVR" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" />
+          <tables:SortHeader Grid.Column="5" Column="games-played" Label="GP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Games played (starts)" />
+          <tables:SortHeader Grid.Column="6" Column="shots-against" Label="SA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shots against" />
+          <tables:SortHeader Grid.Column="7" Column="saves" Label="SV" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Saves" />
+          <tables:SortHeader Grid.Column="8" Column="goals-against" Label="GA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals against" />
+          <tables:SortHeader Grid.Column="9" Column="save-percentage" Label="SV%" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Save percentage" />
+          <tables:SortHeader Grid.Column="10" Column="goals-against-average" Label="GAA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals-against average" />
+          <tables:SortHeader Grid.Column="11" Column="shutouts" Label="SO" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shutouts" />
+        </Grid>
+      </Border>
+      <ListBox x:Name="GoalieBasicTable"
+               Classes="table"
+               ItemsSource="{Binding Goalies}"
+               SelectedItem="{Binding SelectedGoalie}"
+               ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="roster:PlayerRowViewModel">
+            <Grid ColumnDefinitions="36,*,58,32,34,36,44,44,44,50,48,36">
+              <TextBlock Classes="cell muted" Text="{Binding Number}" />
+              <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
+                <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                <Border Grid.Column="1"
+                        Classes="pill"
+                        Classes.injury-out="{Binding IsOut}"
+                        Classes.injury-playing="{Binding IsPlayingHurt}"
+                        IsVisible="{Binding HasInjury}"
+                        ToolTip.Tip="{Binding InjurySummary}">
+                  <TextBlock Text="{Binding InjuryMarker}" />
+                </Border>
+              </Grid>
+              <TextBlock Grid.Column="2" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
+              <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Age}" />
+              <TextBlock Grid.Column="4" Classes="rating" FontWeight="Bold" Text="{Binding Overall}" Foreground="{Binding Overall, Converter={StaticResource RatingBrush}}" />
+              <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding Season.GamesPlayed}" />
+              <TextBlock Grid.Column="6" Classes="cell-center" Text="{Binding Season.ShotsAgainst}" />
+              <TextBlock Grid.Column="7" Classes="cell-center" Text="{Binding Season.Saves}" />
+              <TextBlock Grid.Column="8" Classes="cell-center" Text="{Binding Season.GoalsAgainst}" />
+              <TextBlock Grid.Column="9" Classes="cell-center strong" Text="{Binding Season.SavePercentage}" />
+              <TextBlock Grid.Column="10" Classes="cell-center" Text="{Binding Season.GoalsAgainstAverage}" />
+              <TextBlock Grid.Column="11" Classes="cell-center" Text="{Binding Season.Shutouts}" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+    <DockPanel IsVisible="{Binding ShowsAdvanced}">
+      <Border DockPanel.Dock="Top" Classes="table-header">
+        <Grid ColumnDefinitions="36,*,58,36,58,44,40,48,54,50,54">
+          <tables:SortHeader Column="number" Label="#" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="2" Column="lineup" Label="LINEUP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="3" Column="games-played" Label="GP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Games played (starts)" />
+          <tables:SortHeader Grid.Column="4" Column="time-in-net" Label="TOI" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Total time in net" />
+          <tables:SortHeader Grid.Column="5" Column="shots-against" Label="SA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shots against" />
+          <tables:SortHeader Grid.Column="6" Column="goals-against" Label="GA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals against" />
+          <tables:SortHeader Grid.Column="7" Column="expected-goals-against" Label="xGA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Expected goals against" />
+          <tables:SortHeader Grid.Column="8" Column="goals-saved-above-expected" Label="GSAx" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals saved above expected" />
+          <tables:SortHeader Grid.Column="9" Column="save-percentage" Label="SV%" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Save percentage" />
+          <tables:SortHeader Grid.Column="10" Column="expected-save-percentage" Label="xSV%" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Expected save percentage: what an average goalie would save on the shots faced" />
+        </Grid>
+      </Border>
+      <ListBox x:Name="GoalieAdvancedTable"
+               Classes="table"
+               ItemsSource="{Binding Goalies}"
+               SelectedItem="{Binding SelectedGoalie}"
+               ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="roster:PlayerRowViewModel">
+            <Grid ColumnDefinitions="36,*,58,36,58,44,40,48,54,50,54">
+              <TextBlock Classes="cell muted" Text="{Binding Number}" />
+              <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
+                <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                <Border Grid.Column="1"
+                        Classes="pill"
+                        Classes.injury-out="{Binding IsOut}"
+                        Classes.injury-playing="{Binding IsPlayingHurt}"
+                        IsVisible="{Binding HasInjury}"
+                        ToolTip.Tip="{Binding InjurySummary}">
+                  <TextBlock Text="{Binding InjuryMarker}" />
+                </Border>
+              </Grid>
+              <TextBlock Grid.Column="2" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
+              <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Season.GamesPlayed}" />
+              <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Season.TimeInNet}" />
+              <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding Season.ShotsAgainst}" />
+              <TextBlock Grid.Column="6" Classes="cell-center" Text="{Binding Season.GoalsAgainst}" />
+              <TextBlock Grid.Column="7" Classes="cell-center" Text="{Binding Season.ExpectedGoalsAgainst}" />
+              <TextBlock Grid.Column="8" Classes="cell-center strong" Text="{Binding Season.GoalsSavedAboveExpected}" />
+              <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding Season.SavePercentage}" />
+              <TextBlock Grid.Column="10" Classes="cell-center" Text="{Binding Season.ExpectedSavePercentage}" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+    <DockPanel IsVisible="{Binding ShowsBio}">
+      <Border DockPanel.Dock="Top" Classes="table-header">
+        <Grid ColumnDefinitions="36,*,58,32,30,44,56,90,220,42">
+          <tables:SortHeader Column="number" Label="#" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="2" Column="lineup" Label="LINEUP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="3" Column="age" Label="AGE" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" />
+          <tables:SortHeader Grid.Column="4" Column="catches" Label="CA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Catches" />
+          <tables:SortHeader Grid.Column="5" Column="height" Label="HT" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Height" />
+          <tables:SortHeader Grid.Column="6" Column="weight" Label="WT" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Weight" />
+          <tables:SortHeader Grid.Column="7" Column="born" Label="BORN" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Date of birth" />
+          <tables:SortHeader Grid.Column="8" Column="birthplace" Label="BIRTHPLACE" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+          <tables:SortHeader Grid.Column="9" Column="nationality" Label="NAT" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
+        </Grid>
+      </Border>
+      <ListBox x:Name="GoalieBioTable"
+               Classes="table"
+               ItemsSource="{Binding Goalies}"
+               SelectedItem="{Binding SelectedGoalie}"
+               ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="roster:PlayerRowViewModel">
+            <Grid ColumnDefinitions="36,*,58,32,30,44,56,90,220,42">
+              <TextBlock Classes="cell muted" Text="{Binding Number}" />
+              <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
+                <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                <Border Grid.Column="1"
+                        Classes="pill"
+                        Classes.injury-out="{Binding IsOut}"
+                        Classes.injury-playing="{Binding IsPlayingHurt}"
+                        IsVisible="{Binding HasInjury}"
+                        ToolTip.Tip="{Binding InjurySummary}">
+                  <TextBlock Text="{Binding InjuryMarker}" />
+                </Border>
+              </Grid>
+              <TextBlock Grid.Column="2" Classes="cell" Classes.muted="{Binding IsScratched}" Text="{Binding LineupRole}" />
+              <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Age}" />
+              <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Handedness}" />
+              <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding Height}" />
+              <TextBlock Grid.Column="6" Classes="cell-center" Text="{Binding Weight}" />
+              <TextBlock Grid.Column="7" Classes="cell-center" Text="{Binding BirthDate}" />
+              <TextBlock Grid.Column="8" Classes="cell" TextTrimming="CharacterEllipsis" Text="{Binding Birthplace}" ToolTip.Tip="{Binding Birthplace}" Margin="0,0,6,0" />
+              <TextBlock Grid.Column="9" Classes="cell-center" Text="{Binding Nationality}" ToolTip.Tip="{Binding NationalityName}" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+  </Panel>
+</UserControl>

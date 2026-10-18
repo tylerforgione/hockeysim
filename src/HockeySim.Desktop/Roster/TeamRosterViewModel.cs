@@ -10,21 +10,25 @@ using HockeySim.Management.GameManagement.Snapshots;
 namespace HockeySim.Desktop.Roster;
 
 /// <summary>
-/// A read-only roster split into skaters and goalies, with the selected player's profile. The
-/// tables show ratings, basic season totals, or advanced five-on-five figures; they do not fit side
-/// by side. Once the playoffs start, the totals and the profile switch together between the regular
+/// A read-only roster shown by player group (all players, skaters, forwards, defence, or goalies)
+/// and column view, with the selected player's profile and summary strip. The tables show ratings,
+/// basic season totals, advanced five-on-five figures, or biographies; they do not fit side by
+/// side. Once the playoffs start, the totals and the profile switch together between the regular
 /// season and the playoffs.
 /// </summary>
 public sealed partial class TeamRosterViewModel : ObservableObject
 {
     private readonly TeamSnapshot _team;
     private readonly GameSession _session;
+    private readonly Action<TeamId>? _openLines;
     private List<PlayerRowViewModel> _rows = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PlayerCount))]
     private IReadOnlyList<PlayerRowViewModel> _skaters = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PlayerCount))]
     private IReadOnlyList<PlayerRowViewModel> _goalies = [];
 
     [ObservableProperty]
@@ -36,15 +40,38 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     [ObservableProperty]
     private PlayerDetailViewModel? _selectedPlayer;
 
+    /// <summary>The summary strip of <see cref="SelectedPlayer"/>.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsRatings), nameof(ShowsBasic), nameof(ShowsAdvanced))]
+    private PlayerStripViewModel? _selectedStrip;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsRatings), nameof(ShowsBasic), nameof(ShowsAdvanced), nameof(ShowsBio))]
     private RosterColumns _columns;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(
+        nameof(ShowsAllPlayers),
+        nameof(ShowsSkatersGroup),
+        nameof(ShowsForwardsGroup),
+        nameof(ShowsDefenceGroup),
+        nameof(ShowsGoaliesGroup),
+        nameof(ShowsSkaterTable),
+        nameof(ShowsGoalieTable))]
+    private RosterGroup _group;
+
+    /// <summary>Which forwards the Forwards group lists.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ForwardFilterIndex))]
+    private ForwardFilter _forwardPosition;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowsRegularSeason), nameof(ShowsPlayoffs))]
     private StatisticsSet _statistics;
 
-    /// <summary>The skaters table's sort in the chosen column view, or none for the default order.</summary>
+    /// <summary>
+    /// The sort the skaters table shows, or none for the default order, which is also the case
+    /// while the remembered sort's column is not in the chosen column view.
+    /// </summary>
     [ObservableProperty]
     private TableSort? _skaterSort;
 
@@ -55,29 +82,46 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     /// The totals to show; the regular season's until the playoffs start, whatever is asked.
     /// </param>
     /// <param name="sorts">The sorts to keep, from the roster this one replaces; none sorted by default.</param>
+    /// <param name="group">The player group to show, kept from the roster this one replaces.</param>
+    /// <param name="forwardPosition">Which forwards the Forwards group lists.</param>
+    /// <param name="openLines">Opens the Lines page on this roster's team; the Lines link is disabled without it.</param>
     public TeamRosterViewModel(
         GameSession session,
         TeamId teamId,
         PlayerId? initiallySelectedPlayerId = null,
         RosterColumns columns = RosterColumns.Ratings,
         StatisticsSet statistics = StatisticsSet.RegularSeason,
-        RosterSorts? sorts = null)
+        RosterSorts? sorts = null,
+        RosterGroup group = RosterGroup.AllPlayers,
+        ForwardFilter forwardPosition = ForwardFilter.AllForwards,
+        Action<TeamId>? openLines = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
         _team = session.GetTeam(teamId);
+        _openLines = openLines;
         _columns = columns;
+        _group = group;
+        _forwardPosition = forwardPosition;
         Sorts = sorts ?? RosterSorts.None;
         _statistics = HasPlayoffStatistics ? statistics : StatisticsSet.RegularSeason;
 
         ShowStatistics();
-        SelectPlayer(initiallySelectedPlayerId is { } id && _team.Roster.Any(player => player.Id == id)
-            ? id
-            : Skaters.Concat(Goalies).First().Player.Id);
+        if (initiallySelectedPlayerId is { } id && _team.Roster.Any(player => player.Id == id))
+        {
+            SelectPlayer(id);
+        }
+        else
+        {
+            SelectVisiblePlayer(null);
+        }
     }
 
-    /// <summary>The sorts chosen so far in every column view, to hand to the next roster.</summary>
+    /// <summary>
+    /// The sorts chosen so far, to hand to the next roster. A sort is kept even when the chosen
+    /// column view has no such column.
+    /// </summary>
     public RosterSorts Sorts { get; private set; }
 
     /// <summary>Whether the playoffs have started, so there are playoff statistics to switch to.</summary>
@@ -93,17 +137,52 @@ public sealed partial class TeamRosterViewModel : ObservableObject
 
     public bool ShowsAdvanced => Columns == RosterColumns.Advanced;
 
+    public bool ShowsBio => Columns == RosterColumns.Bio;
+
+    public bool ShowsAllPlayers => Group == RosterGroup.AllPlayers;
+
+    public bool ShowsSkatersGroup => Group == RosterGroup.Skaters;
+
+    public bool ShowsForwardsGroup => Group == RosterGroup.Forwards;
+
+    public bool ShowsDefenceGroup => Group == RosterGroup.Defence;
+
+    public bool ShowsGoaliesGroup => Group == RosterGroup.Goalies;
+
+    /// <summary>Whether the group lists skaters, so the skater table is shown.</summary>
+    public bool ShowsSkaterTable => Group != RosterGroup.Goalies;
+
+    /// <summary>Whether the group lists goalies, so the goalie table is shown.</summary>
+    public bool ShowsGoalieTable => Group is RosterGroup.AllPlayers or RosterGroup.Goalies;
+
+    /// <summary>The number of players the tables list.</summary>
+    public int PlayerCount => Skaters.Count + Goalies.Count;
+
+    /// <summary><see cref="ForwardPosition"/> as a position in the filter's list of choices.</summary>
+    public int ForwardFilterIndex
+    {
+        get => (int)ForwardPosition;
+        set
+        {
+            if (Enum.IsDefined((ForwardFilter)value))
+            {
+                ForwardPosition = (ForwardFilter)value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Selects a player. A player the group or filter hides is shown by switching to all players.
+    /// </summary>
     public void SelectPlayer(PlayerId playerId)
     {
-        var row = Skaters.Concat(Goalies).Single(row => row.Player.Id == playerId);
-        if (row.Player.Position == Position.Goalie)
+        var row = _rows.Single(row => row.Player.Id == playerId);
+        if (!IsVisible(row))
         {
-            SelectedGoalie = row;
+            Group = RosterGroup.AllPlayers;
         }
-        else
-        {
-            SelectedSkater = row;
-        }
+
+        SelectRow(row);
     }
 
     [RelayCommand]
@@ -112,24 +191,46 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         Columns = columns;
     }
 
+    [RelayCommand]
+    private void ShowGroup(RosterGroup group)
+    {
+        Group = group;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanOpenLines))]
+    private void OpenLines()
+    {
+        _openLines!(_team.Id);
+    }
+
+    private bool CanOpenLines() => _openLines is not null;
+
     /// <summary>Sorts the skaters table by a column, or reverses the sort when it is already sorted by it.</summary>
     [RelayCommand]
     private void SortSkaters(string column)
     {
-        var columns = RosterTableColumns.Skaters(Columns);
-        Sorts = Sorts.With(Columns, false, TableSorting.Click(columns, Sorts.Get(Columns, false), column));
+        Sorts = Sorts with { Skaters = TableSorting.Click(RosterTableColumns.Skaters(Columns), SkaterSort, column) };
         ShowSortedRows();
     }
 
     [RelayCommand]
     private void SortGoalies(string column)
     {
-        var columns = RosterTableColumns.Goalies(Columns);
-        Sorts = Sorts.With(Columns, true, TableSorting.Click(columns, Sorts.Get(Columns, true), column));
+        Sorts = Sorts with { Goalies = TableSorting.Click(RosterTableColumns.Goalies(Columns), GoalieSort, column) };
         ShowSortedRows();
     }
 
     partial void OnColumnsChanged(RosterColumns value)
+    {
+        ShowSortedRows();
+    }
+
+    partial void OnGroupChanged(RosterGroup value)
+    {
+        ShowSortedRows();
+    }
+
+    partial void OnForwardPositionChanged(ForwardFilter value)
     {
         ShowSortedRows();
     }
@@ -144,10 +245,7 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     {
         var selectedPlayerId = SelectedPlayer?.Id;
         ShowStatistics();
-        if (selectedPlayerId is { } id)
-        {
-            SelectPlayer(id);
-        }
+        SelectVisiblePlayer(selectedPlayerId);
     }
 
     /// <summary>Rebuilds the tables from the chosen totals.</summary>
@@ -160,36 +258,87 @@ public sealed partial class TeamRosterViewModel : ObservableObject
             .ToList();
         SelectedSkater = null;
         SelectedGoalie = null;
-        ApplySorts();
-    }
-
-    /// <summary>Re-orders the tables by the sorts of the chosen column view, keeping the selected player.</summary>
-    private void ShowSortedRows()
-    {
-        var selectedPlayerId = SelectedPlayer?.Id;
-        ApplySorts();
-        if (selectedPlayerId is { } id)
-        {
-            SelectPlayer(id);
-        }
+        ApplyRows();
     }
 
     /// <summary>
-    /// Orders the default-ordered rows (position, then last name) by the column view's sorts; rows
-    /// that tie keep that order.
+    /// Re-lists and re-orders the tables for the chosen group, filter, column view, and sorts,
+    /// keeping the selected player when still listed, otherwise selecting the first listed player.
     /// </summary>
-    private void ApplySorts()
+    private void ShowSortedRows()
     {
-        SkaterSort = Sorts.Get(Columns, false);
-        GoalieSort = Sorts.Get(Columns, true);
+        var selectedPlayerId = SelectedPlayer?.Id;
+        ApplyRows();
+        SelectVisiblePlayer(selectedPlayerId);
+    }
+
+    /// <summary>
+    /// Lists the group's default-ordered rows (position, then last name) in the remembered sorts;
+    /// rows that tie keep that order. A sort whose column the column view lacks is not applied.
+    /// </summary>
+    private void ApplyRows()
+    {
+        var skaterColumns = RosterTableColumns.Skaters(Columns);
+        var goalieColumns = RosterTableColumns.Goalies(Columns);
+        SkaterSort = Present(skaterColumns, Sorts.Skaters);
+        GoalieSort = Present(goalieColumns, Sorts.Goalies);
         Skaters = TableSorting.Apply(
-            _rows.Where(row => row.Player.Position != Position.Goalie),
-            RosterTableColumns.Skaters(Columns),
+            _rows.Where(row => row.Player.Position != Position.Goalie && IsVisible(row)),
+            skaterColumns,
             SkaterSort);
         Goalies = TableSorting.Apply(
-            _rows.Where(row => row.Player.Position == Position.Goalie),
-            RosterTableColumns.Goalies(Columns),
+            _rows.Where(row => row.Player.Position == Position.Goalie && IsVisible(row)),
+            goalieColumns,
             GoalieSort);
+    }
+
+    private static TableSort? Present(IReadOnlyList<TableColumn<PlayerRowViewModel>> columns, TableSort? sort) =>
+        sort is { } chosen && columns.Any(column => column.Key == chosen.Column) ? sort : null;
+
+    /// <summary>Whether the chosen group, and for forwards the position filter, lists the player.</summary>
+    private bool IsVisible(PlayerRowViewModel row) => (Group, row.Player.Position) switch
+    {
+        (RosterGroup.AllPlayers, _) => true,
+        (RosterGroup.Goalies, var position) => position == Position.Goalie,
+        (_, Position.Goalie) => false,
+        (RosterGroup.Skaters, _) => true,
+        (RosterGroup.Defence, var position) => position == Position.Defence,
+        (RosterGroup.Forwards, var position) => position switch
+        {
+            Position.Centre => ForwardPosition != ForwardFilter.Wingers,
+            Position.Wing => ForwardPosition != ForwardFilter.Centres,
+            _ => false,
+        },
+        _ => false,
+    };
+
+    /// <summary>Selects the player when listed, otherwise the first listed player: skaters, then goalies.</summary>
+    private void SelectVisiblePlayer(PlayerId? playerId)
+    {
+        var listed = Skaters.Concat(Goalies).ToList();
+        var row = listed.FirstOrDefault(row => row.Player.Id == playerId) ?? listed.FirstOrDefault();
+        if (row is null)
+        {
+            SelectedSkater = null;
+            SelectedGoalie = null;
+            SelectedPlayer = null;
+            SelectedStrip = null;
+            return;
+        }
+
+        SelectRow(row);
+    }
+
+    private void SelectRow(PlayerRowViewModel row)
+    {
+        if (row.Player.Position == Position.Goalie)
+        {
+            SelectedGoalie = row;
+        }
+        else
+        {
+            SelectedSkater = row;
+        }
     }
 
     partial void OnSelectedSkaterChanged(PlayerRowViewModel? value)
@@ -200,7 +349,7 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         }
 
         SelectedGoalie = null;
-        SelectedPlayer = CreateDetail(value);
+        ShowPlayer(value);
     }
 
     partial void OnSelectedGoalieChanged(PlayerRowViewModel? value)
@@ -211,11 +360,14 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         }
 
         SelectedSkater = null;
-        SelectedPlayer = CreateDetail(value);
+        ShowPlayer(value);
     }
 
-    private PlayerDetailViewModel CreateDetail(PlayerRowViewModel row) =>
-        new(row.Player, _team, row.Season, _session.Snapshot.League.SeasonYear, Statistics);
+    private void ShowPlayer(PlayerRowViewModel row)
+    {
+        SelectedPlayer = new PlayerDetailViewModel(row.Player, _team, row.Season, _session.Snapshot.League.SeasonYear, Statistics);
+        SelectedStrip = new PlayerStripViewModel(row);
+    }
 }
 
 /// <summary>
@@ -230,4 +382,31 @@ public enum RosterColumns
 
     /// <summary>Five-on-five on-ice shares and expected goals; goalie expected goals.</summary>
     Advanced,
+
+    /// <summary>Age, handedness, height, weight, birth date and place, and nationality.</summary>
+    Bio,
+}
+
+/// <summary>Which players the roster tables list.</summary>
+public enum RosterGroup
+{
+    /// <summary>Skaters and goalies, each in its own table.</summary>
+    AllPlayers,
+
+    Skaters,
+
+    /// <summary>Centres and wingers, narrowed by <see cref="ForwardFilter"/>.</summary>
+    Forwards,
+
+    Defence,
+
+    Goalies,
+}
+
+/// <summary>Which forwards the Forwards group lists. The order is the filter's order of choices.</summary>
+public enum ForwardFilter
+{
+    AllForwards,
+    Centres,
+    Wingers,
 }

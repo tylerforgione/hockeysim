@@ -15,6 +15,7 @@ namespace HockeySim.Desktop.Teams;
 public sealed partial class TeamsPageViewModel : ShellPageViewModel
 {
     private readonly GameSession _session;
+    private readonly Action<TeamId>? _openLines;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Subtitle))]
@@ -23,11 +24,13 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
     [ObservableProperty]
     private TeamRosterViewModel _roster;
 
-    public TeamsPageViewModel(GameSession session)
+    /// <param name="openLines">Opens the Lines page on the shown team; the roster's Lines link is disabled without it.</param>
+    public TeamsPageViewModel(GameSession session, Action<TeamId>? openLines = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
+        _openLines = openLines;
         Teams = session.Snapshot.League.Conferences
             .SelectMany(conference => conference.Divisions.Select(division => (conference, division)))
             .SelectMany(pair => pair.division.Teams.Select(team => new TeamEntryViewModel(
@@ -37,7 +40,7 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
                 team.Id == session.Snapshot.ManagedTeamId)))
             .ToList();
         _selectedTeam = Teams.Single(team => team.IsManaged);
-        _roster = new TeamRosterViewModel(session, _selectedTeam.Id);
+        _roster = new TeamRosterViewModel(session, _selectedTeam.Id, openLines: openLines);
     }
 
     public override string Subtitle => $"{SelectedTeam.Name} · {SelectedTeam.Division}";
@@ -86,11 +89,11 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
     }
 
     /// <summary>
-    /// Rebuilds the roster from the latest snapshot, keeping the chosen columns, statistics, and sorts so
-    /// browsing from team to team compares like with like.
+    /// Rebuilds the roster from the latest snapshot, keeping the chosen group, columns, statistics, and
+    /// sorts so browsing from team to team compares like with like.
     /// </summary>
     private TeamRosterViewModel CreateRoster(TeamId teamId, PlayerId? selectedPlayerId) =>
-        new(_session, teamId, selectedPlayerId, Roster.Columns, Roster.Statistics, Roster.Sorts);
+        new(_session, teamId, selectedPlayerId, Roster.Columns, Roster.Statistics, Roster.Sorts, Roster.Group, Roster.ForwardPosition, _openLines);
 }
 
 public sealed record TeamEntryViewModel(TeamId Id, string Name, string Division, bool IsManaged);

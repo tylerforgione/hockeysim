@@ -24,6 +24,13 @@ public sealed class PlayerRowViewModel
         Nationality = PlayerDisplay.CountryCode(player.Biography.Nationality);
         NationalityName = PlayerDisplay.CountryName(player.Biography.Nationality);
         Handedness = PlayerDisplay.HandednessAbbreviation(player.Biography.Handedness);
+        Height = PlayerDisplay.FormatHeight(player.Biography.Height);
+        HeightInches = player.Biography.Height.Inches;
+        Weight = PlayerDisplay.FormatWeight(player.Biography.Weight);
+        WeightPounds = player.Biography.Weight.Pounds;
+        BirthDate = PlayerDisplay.FormatBirthDate(player.Biography.BirthDate);
+        BirthDateValue = player.Biography.BirthDate;
+        Birthplace = PlayerDisplay.FormatBirthplace(player.Biography.Birthplace);
         LineupRole = PlayerDisplay.LineupRole(player.Id, lineup);
         LineupOrder = PlayerDisplay.LineupOrder(player.Id, lineup);
         IsScratched = LineupRole == "Scratch";
@@ -64,6 +71,21 @@ public sealed class PlayerRowViewModel
 
     /// <summary>L or R: the hand a skater shoots or a goalie catches with.</summary>
     public string Handedness { get; }
+
+    public string Height { get; }
+
+    public int HeightInches { get; }
+
+    public string Weight { get; }
+
+    public int WeightPounds { get; }
+
+    public string BirthDate { get; }
+
+    public DateOnly BirthDateValue { get; }
+
+    /// <summary>City, state or province where the country has them, and country.</summary>
+    public string Birthplace { get; }
 
     public string LineupRole { get; }
 

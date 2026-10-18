@@ -3,7 +3,7 @@ using HockeySim.Desktop.Tables;
 namespace HockeySim.Desktop.Roster;
 
 /// <summary>
-/// The sortable columns of each roster table, keyed as the headers in <c>TeamRosterView</c> key
+/// The sortable columns of each roster table, keyed as the headers in <c>SkaterTableView</c> and <c>GoalieTableView</c> key
 /// them. Sort keys are the raw figures, not the displayed text; a dash is a null key.
 /// </summary>
 public static class RosterTableColumns
@@ -15,9 +15,6 @@ public static class RosterTableColumns
             new("number", row => row.Number, AscendingFirst: true),
             Name,
             new("position", row => row.Player.Position, AscendingFirst: true),
-            Age,
-            Nationality,
-            new("shoots", row => row.Handedness, AscendingFirst: true),
             Lineup,
         ];
         return [.. identity, .. columns switch
@@ -25,6 +22,7 @@ public static class RosterTableColumns
             RosterColumns.Ratings => SkaterRatings,
             RosterColumns.Basic => SkaterBasic,
             RosterColumns.Advanced => SkaterAdvanced,
+            RosterColumns.Bio => Bio("shoots"),
             _ => throw new ArgumentOutOfRangeException(nameof(columns), columns, "Unknown columns."),
         }];
     }
@@ -35,9 +33,6 @@ public static class RosterTableColumns
         [
             new("number", row => row.Number, AscendingFirst: true),
             Name,
-            Age,
-            Nationality,
-            new("catches", row => row.Handedness, AscendingFirst: true),
             Lineup,
         ];
         return [.. identity, .. columns switch
@@ -45,6 +40,7 @@ public static class RosterTableColumns
             RosterColumns.Ratings => GoalieRatings,
             RosterColumns.Basic => GoalieBasic,
             RosterColumns.Advanced => GoalieAdvanced,
+            RosterColumns.Bio => Bio("catches"),
             _ => throw new ArgumentOutOfRangeException(nameof(columns), columns, "Unknown columns."),
         }];
     }
@@ -55,15 +51,26 @@ public static class RosterTableColumns
 
     private static TableColumn<PlayerRowViewModel> Age { get; } = new("age", row => row.Age);
 
-    private static TableColumn<PlayerRowViewModel> Nationality { get; } =
-        new("nationality", row => row.Nationality, AscendingFirst: true);
+    private static TableColumn<PlayerRowViewModel> Overall { get; } = new("overall", row => row.Overall);
 
     private static TableColumn<PlayerRowViewModel> Lineup { get; } =
         new("lineup", row => row.LineupOrder, AscendingFirst: true);
 
+    // Height by inches, weight by pounds, and born by date (oldest first), not by their text.
+    private static List<TableColumn<PlayerRowViewModel>> Bio(string handednessKey) =>
+    [
+        Age,
+        new(handednessKey, row => row.Handedness, AscendingFirst: true),
+        new("height", row => row.HeightInches),
+        new("weight", row => row.WeightPounds),
+        new("born", row => row.BirthDateValue, AscendingFirst: true),
+        new("birthplace", row => row.Birthplace, AscendingFirst: true),
+        new("nationality", row => row.Nationality, AscendingFirst: true),
+    ];
+
     private static List<TableColumn<PlayerRowViewModel>> SkaterRatings =>
     [
-        new("overall", row => row.Overall),
+        Overall,
         new("skating", row => row.Skating),
         new("shot-power", row => row.ShotPower),
         new("shot-accuracy", row => row.ShotAccuracy),
@@ -78,6 +85,8 @@ public static class RosterTableColumns
 
     private static List<TableColumn<PlayerRowViewModel>> SkaterBasic =>
     [
+        Age,
+        Overall,
         new("games-played", row => row.Season.GamesPlayed),
         new("goals", row => row.Season.Goals),
         new("assists", row => row.Season.Assists),
@@ -108,7 +117,7 @@ public static class RosterTableColumns
 
     private static List<TableColumn<PlayerRowViewModel>> GoalieRatings =>
     [
-        new("overall", row => row.Overall),
+        Overall,
         new("reflex", row => row.GoalieReflex),
         new("positioning", row => row.GoaliePositioning),
         new("rebound-control", row => row.GoalieReboundControl),
@@ -116,6 +125,8 @@ public static class RosterTableColumns
 
     private static List<TableColumn<PlayerRowViewModel>> GoalieBasic =>
     [
+        Age,
+        Overall,
         new("games-played", row => row.Season.GamesPlayed),
         new("shots-against", row => row.Season.ShotsAgainst),
         new("saves", row => row.Season.Saves),
@@ -129,9 +140,11 @@ public static class RosterTableColumns
     [
         new("games-played", row => row.Season.GamesPlayed),
         new("time-in-net", row => row.Season.TimeInNetValue),
-        new("expected-goals-against", row => row.Season.ExpectedGoalsAgainstValue),
+        new("shots-against", row => row.Season.ShotsAgainst),
         new("goals-against", row => row.Season.GoalsAgainst),
+        new("expected-goals-against", row => row.Season.ExpectedGoalsAgainstValue),
         new("goals-saved-above-expected", row => row.Season.GoalsSavedAboveExpectedValue),
-        new("time-on-ice-per-game", row => row.Season.TimeOnIcePerGameValue),
+        new("save-percentage", row => row.Season.SavePercentageValue),
+        new("expected-save-percentage", row => row.Season.ExpectedSavePercentageValue),
     ];
 }
