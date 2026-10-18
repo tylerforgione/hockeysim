@@ -24,6 +24,7 @@ using HockeySim.Desktop.Saves;
 using HockeySim.Desktop.Schedule;
 using HockeySim.Desktop.Standings;
 using HockeySim.Desktop.Startup;
+using HockeySim.Desktop.Tables;
 using HockeySim.Desktop.Teams;
 using HockeySim.Desktop.TeamStatistics;
 using HockeySim.Desktop.Theme;
@@ -288,6 +289,21 @@ public sealed class MainWindowViewTests
         Assert.False(basicTable.IsEffectivelyVisible);
         Assert.True(advancedTable.IsEffectivelyVisible);
         Assert.True(Assert.IsType<ListBox>(rosterView.FindControl<ListBox>("GoalieAdvancedTable")).IsEffectivelyVisible);
+
+        // A header sorts its table and shows the direction beside its label.
+        var corsiHeader = rosterView.GetVisualDescendants().OfType<SortHeader>().Single(header => header.Column == "corsi-percentage");
+        var rosterModel = Assert.IsType<TeamRosterViewModel>(rosterView.DataContext);
+        Assert.Equal(string.Empty, corsiHeader.Indicator);
+        Click(corsiHeader);
+        Assert.Equal("▼", corsiHeader.Indicator);
+        Assert.Contains(corsiHeader.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "▼");
+        Assert.Equal(rosterModel.Skaters.Select(row => row.Player.Id), advancedTable.Items.OfType<PlayerRowViewModel>().Select(row => row.Player.Id));
+        Assert.Equal(
+            rosterModel.Skaters.Select(row => row.Season.CorsiPercentageValue).Where(value => value is not null).OrderDescending(),
+            rosterModel.Skaters.Select(row => row.Season.CorsiPercentageValue).Where(value => value is not null));
+        Click(corsiHeader);
+        Assert.Equal("▲", corsiHeader.Indicator);
+
         var playerDetail = Single<PlayerDetailView>(rosterView);
         var overallText = playerDetail.FindControl<TextBlock>("PlayerOverallText");
         Assert.True(overallText?.IsEffectivelyVisible);
