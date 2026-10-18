@@ -197,9 +197,7 @@ public sealed partial class GameShellViewModel : ObservableObject
             }
 
             var parts = new List<string> { date };
-            var managedTeamId = snapshot.ManagedTeamId;
-            var nextMatch = schedule.PreseasonMatches.Concat(schedule.Matches).Concat(schedule.PlayoffMatches).FirstOrDefault(match =>
-                match.Date >= season.CurrentDate && (match.HomeTeamId == managedTeamId || match.AwayTeamId == managedTeamId));
+            var nextMatch = MatchDisplay.NextMatch(snapshot, snapshot.ManagedTeamId);
             if (nextMatch is not null)
             {
                 parts.Add($"Next match {DaysUntil(nextMatch.Date)}");

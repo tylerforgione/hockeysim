@@ -73,8 +73,9 @@ playoff round under way (once the champion is crowned, the champion instead of
 both), and Continue, a split button: Continue plays one day, and its arrow opens
 a menu of runs for the current phase (see below). Under
 the menu bar is the managed team's banner in its colours: crest, name, record,
-points, division and conference rank, and the next match, last result, and
-streak. A page may show its own banner instead; none does yet. Below the banner,
+points, division and conference rank, and the next match and last result,
+which cover the preseason, regular season, and playoffs, and the streak, which
+counts regular-season results only. A page may show its own banner instead; none does yet. Below the banner,
 the current section's pages are tabs, with the page's subtitle on the right.
 Home, Team, League, and Inbox are sections; the team and league schedules are
 one page, and opening it from Team shows the managed team. The status bar shows

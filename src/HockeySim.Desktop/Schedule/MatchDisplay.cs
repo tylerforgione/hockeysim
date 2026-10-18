@@ -18,6 +18,24 @@ public static class MatchDisplay
     public static string LongDate(DateOnly date) => date.ToString("dddd, MMMM d, yyyy", CultureInfo.CurrentCulture);
 
     /// <summary>
+    /// The team's next match from the current date on, across the preseason, regular season, and
+    /// playoffs in that order; null once the season is complete or when none is scheduled.
+    /// </summary>
+    public static ScheduledMatchSnapshot? NextMatch(GameSnapshot snapshot, TeamId teamId)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        var season = snapshot.Season;
+        return season.IsComplete
+            ? null
+            : snapshot.Schedule.PreseasonMatches
+                .Concat(snapshot.Schedule.Matches)
+                .Concat(snapshot.Schedule.PlayoffMatches)
+                .FirstOrDefault(match =>
+                    match.Date >= season.CurrentDate && (match.HomeTeamId == teamId || match.AwayTeamId == teamId));
+    }
+
+    /// <summary>
     /// The suffix that follows a final score, such as "OT"; empty for a regulation result.
     /// </summary>
     public static string DecisionSuffix(MatchDecision decision) => decision switch

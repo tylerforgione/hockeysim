@@ -1,7 +1,10 @@
+using System.Globalization;
+
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Home;
 using HockeySim.Desktop.Inbox;
 using HockeySim.Desktop.Injuries;
+using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Schedule;
 
@@ -29,7 +32,7 @@ public sealed class GameShellViewModelTests
         Assert.Equal("0-0-0 · 0 pts · 1st in Northern Division · 1st in Eastern Conference", banner.Summary);
         Assert.Equal(["NEXT", "LAST", "STREAK"], banner.Figures.Select(figure => figure.Label));
         Assert.EndsWith(" · Today", banner.Figures[0].Value, StringComparison.Ordinal);
-        Assert.Equal("—", banner.Figures[1].Value);
+        Assert.Matches("^[WL] ", banner.Figures[1].Value);
         Assert.Equal("—", banner.Figures[2].Value);
 
         Assert.Equal(4, shell.UnreadCount);
@@ -141,6 +144,56 @@ public sealed class GameShellViewModelTests
             StringComparison.Ordinal);
         Assert.StartsWith(MatchDisplay.ResultFor(result, session.ManagedTeam.Id), figures["LAST"], StringComparison.Ordinal);
         Assert.Equal(won ? "W1" : record.RegulationLosses == 1 ? "L1" : "OT1", figures["STREAK"]);
+    }
+
+    [Fact]
+    public void InThePreseasonBeforeAnyMatchTheBannerShowsTheFirstPreseasonMatchAndNoResult()
+    {
+        var session = GameTestData.StartPreseasonSession();
+        var shell = new GameShellViewModel(session);
+        var teamId = session.ManagedTeam.Id;
+        var first = session.Snapshot.Schedule.PreseasonMatches.First(match => match.HomeTeamId == teamId || match.AwayTeamId == teamId);
+
+        var figures = shell.TeamBanner.Figures.ToDictionary(figure => figure.Label, figure => figure.Value);
+
+        var opponent = PlayerDisplay.TeamInitials(session.GetTeam(first.HomeTeamId == teamId ? first.AwayTeamId : first.HomeTeamId).Name);
+        Assert.Contains(opponent, figures["NEXT"], StringComparison.Ordinal);
+        Assert.EndsWith(first.Date == session.Snapshot.Season.CurrentDate ? "Today" : first.Date.ToString("ddd", CultureInfo.CurrentCulture), figures["NEXT"], StringComparison.Ordinal);
+        Assert.Equal("—", figures["LAST"]);
+        Assert.Equal("—", figures["STREAK"]);
+    }
+
+    [Fact]
+    public async Task AfterAPreseasonDayTheBannerShowsThePreseasonResultButNoStreak()
+    {
+        var session = GameTestData.StartPreseasonSession();
+        var shell = new GameShellViewModel(session);
+        var teamId = session.ManagedTeam.Id;
+
+        while (session.Snapshot.Season.PreseasonResults.All(result => result.Home.TeamId != teamId && result.Away.TeamId != teamId))
+        {
+            await shell.AdvanceDayCommand.ExecuteAsync(null);
+        }
+
+        var result = session.Snapshot.Season.PreseasonResults.Last(result => result.Home.TeamId == teamId || result.Away.TeamId == teamId);
+        var figures = shell.TeamBanner.Figures.ToDictionary(figure => figure.Label, figure => figure.Value);
+        Assert.StartsWith(MatchDisplay.ResultFor(result, teamId), figures["LAST"], StringComparison.Ordinal);
+        Assert.Equal("—", figures["STREAK"]);
+    }
+
+    [Fact]
+    public void OnOpeningDayTheBannerShowsTheLastPreseasonResultAndNoStreak()
+    {
+        var session = GameTestData.StartSession();
+        var shell = new GameShellViewModel(session);
+        var teamId = session.ManagedTeam.Id;
+        var last = session.Snapshot.Season.PreseasonResults.Last(result => result.Home.TeamId == teamId || result.Away.TeamId == teamId);
+
+        var figures = shell.TeamBanner.Figures.ToDictionary(figure => figure.Label, figure => figure.Value);
+
+        Assert.EndsWith(" · Today", figures["NEXT"], StringComparison.Ordinal);
+        Assert.StartsWith(MatchDisplay.ResultFor(last, teamId), figures["LAST"], StringComparison.Ordinal);
+        Assert.Equal("—", figures["STREAK"]);
     }
 
     [Fact]

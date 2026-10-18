@@ -1,6 +1,7 @@
 using HockeySim.Desktop.Main;
 using HockeySim.Desktop.NewGame;
 using HockeySim.Management.GameManagement;
+using HockeySim.Management.Saves;
 
 using Xunit;
 
@@ -68,7 +69,7 @@ public sealed class NewGameViewModelTests
     }
 
     [Theory]
-    [InlineData("", "Enter a name")]
+    [InlineData("", "Enter a name for the save")]
     [InlineData("Named game", "Select the team")]
     public void MissingRequiredChoiceShowsAnActionableError(string gameName, string expectedMessage)
     {
@@ -85,6 +86,44 @@ public sealed class NewGameViewModelTests
         Assert.True(viewModel.HasError);
         Assert.Contains(expectedMessage, viewModel.ErrorMessage);
         Assert.Throws<InvalidOperationException>(gameManager.GetSnapshot);
+    }
+
+    [Theory]
+    [InlineData("Leafs 2026/27")]
+    [InlineData("A very long game name that goes well past the sixty characters a save allows")]
+    public void AGameNameThatCannotBeSavedIsRejectedAndNoGameIsCreated(string gameName)
+    {
+        var gameManager = new GameManager();
+        var gameWasCreated = false;
+        var viewModel = new NewGameViewModel(gameManager, gameCreated: _ => gameWasCreated = true)
+        {
+            GameName = gameName,
+        };
+        GetTeams(viewModel).First().SelectCommand.Execute(null);
+
+        viewModel.CreateGameCommand.Execute(null);
+
+        SaveName.TryParse(gameName, out _, out var expectedError);
+        Assert.False(gameWasCreated);
+        Assert.Equal(expectedError, viewModel.ErrorMessage);
+        Assert.Throws<InvalidOperationException>(gameManager.GetSnapshot);
+    }
+
+    [Fact]
+    public void TheNameOfANewGameIsAValidSaveName()
+    {
+        var gameManager = new GameManager();
+        string? createdGameName = null;
+        var viewModel = new NewGameViewModel(gameManager, gameCreated: name => createdGameName = name)
+        {
+            GameName = new string('a', SaveName.MaximumLength),
+        };
+        GetTeams(viewModel).First().SelectCommand.Execute(null);
+
+        viewModel.CreateGameCommand.Execute(null);
+
+        Assert.True(SaveName.TryParse(createdGameName, out var name, out _));
+        Assert.Equal(createdGameName, name.Value);
     }
 
     [Fact]
