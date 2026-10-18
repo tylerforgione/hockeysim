@@ -14,8 +14,10 @@ Arguments: $ARGUMENTS
 Category keys and their definitions are in [categories.md](categories.md). Area
 keys are the area documents in `docs/areas/`: `match-engine`, `season`,
 `players-and-lineups`, `saves`, `desktop`. Take any category and area keys from
-the arguments; when none of a kind are given, use all of that kind. If an
-argument matches neither, ask what it means before starting.
+the arguments; when none of a kind are given, use all of that kind, except
+`dead-code`, which runs only when named: the game is incomplete, so code
+without callers may still be wanted by planned features. If an argument
+matches neither, ask what it means before starting.
 
 ## 2. Fan out
 
