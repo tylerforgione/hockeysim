@@ -7,7 +7,9 @@ using HockeySim.Desktop.Standings;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.GameManagement.Snapshots;
+using HockeySim.Management.NewGame;
 using HockeySim.Management.Saves;
+using HockeySim.Simulation.Randomness;
 
 using Xunit;
 
@@ -133,6 +135,25 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         // The selection survives a refresh.
         page.Refresh();
         Assert.Equal(decided.Title, page.SelectedSeries!.Title);
+    }
+
+    [Fact]
+    public void MidPlayoffsTheBannerShowsTheManagedTeamsPlayoffGamesAndTheRegularSeasonStreak()
+    {
+        var session = season.Load(season.QualifierInPlayoffs);
+        var teamId = session.Snapshot.ManagedTeamId;
+        var playoffs = session.Snapshot.Season.Playoffs!;
+        Assert.Contains(playoffs.Results, result => result.Home.TeamId == teamId || result.Away.TeamId == teamId);
+
+        var figures = new TeamBannerViewModel(session).Figures.ToDictionary(figure => figure.Label, figure => figure.Value);
+
+        var lastPlayoff = playoffs.Results.Last(result => result.Home.TeamId == teamId || result.Away.TeamId == teamId);
+        var next = MatchDisplay.NextMatch(session.Snapshot, teamId);
+        Assert.Contains(next, session.Snapshot.Schedule.PlayoffMatches);
+        Assert.StartsWith(MatchDisplay.ResultFor(lastPlayoff, teamId), figures["LAST"], StringComparison.Ordinal);
+        Assert.Equal(
+            TeamForm.Streak(session.Snapshot.Season.Results.Where(result => result.Home.TeamId == teamId || result.Away.TeamId == teamId).ToList(), teamId),
+            figures["STREAK"]);
     }
 
     [Fact]
@@ -293,6 +314,12 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         /// <summary>The game once the first round is decided and a second-round game is played.</summary>
         public MemorySaveStore SecondRound { get; } = new();
 
+        /// <summary>
+        /// The game after the managed team's first playoff game, in a season managed by a team that
+        /// qualified, for tests that need the managed team still in the playoffs.
+        /// </summary>
+        public MemorySaveStore QualifierInPlayoffs { get; } = new();
+
         public GameSession Load(MemorySaveStore store)
         {
             var manager = new GameManager();
@@ -328,6 +355,36 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
             }
 
             Assert.True(session.Snapshot.Season.IsComplete);
+
+            // Ottawa misses the playoffs above, so manage the champion's club in a fresh league. The
+            // seed generates a different world, so qualifying is not guaranteed; this seed is known
+            // to qualify. Stop once the team has played a playoff game and has another to come.
+            var champion = session.GetTeam(session.Snapshot.Season.Playoffs!.ChampionId!.Value);
+            var qualifierManager = new GameManager();
+            qualifierManager.StartNewGame(new NewGameCommand(2026, new RandomState(13579), champion.Name));
+            qualifierManager.PlayPreseason();
+            var qualifierSession = new GameSession(qualifierManager, "Test Career");
+            var qualifierShell = new GameShellViewModel(qualifierSession);
+            for (var day = 0; day < MaximumDays && QualifierInPlayoffs.Save is null && !qualifierSession.Snapshot.Season.IsComplete; day++)
+            {
+                if (qualifierShell.HasPlayersToReplace)
+                {
+                    qualifierSession.SetLineup(InjuredPlayerReplacement.ReplacingInjured(qualifierSession.Snapshot));
+                }
+
+                await qualifierShell.AdvanceDayCommand.ExecuteAsync(null);
+                Assert.Null(qualifierShell.AdvanceError);
+
+                var teamId = qualifierSession.ManagedTeam.Id;
+                if (qualifierSession.Snapshot.Season.Playoffs is { } playoffs
+                    && playoffs.Results.Any(result => result.Home.TeamId == teamId || result.Away.TeamId == teamId)
+                    && MatchDisplay.NextMatch(qualifierSession.Snapshot, teamId) is not null)
+                {
+                    qualifierSession.SaveGame(QualifierInPlayoffs, SaveName.Parse("Qualifier in playoffs"));
+                }
+            }
+
+            Assert.NotNull(QualifierInPlayoffs.Save);
         }
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;

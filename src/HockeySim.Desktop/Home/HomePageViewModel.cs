@@ -193,13 +193,7 @@ public sealed partial class HomePageViewModel : ShellPageViewModel
             ? string.Empty
             : $"Last: {MatchDisplay.ResultFor(lastResult, team.Id)} {Opponent(lastResult.Home.TeamId, lastResult.Away.TeamId, team.Id)} · {MatchDisplay.ShortDate(lastResult.Date)}";
 
-        var next = season.IsComplete
-            ? null
-            : snapshot.Schedule.PreseasonMatches
-                .Concat(snapshot.Schedule.Matches)
-                .Concat(snapshot.Schedule.PlayoffMatches)
-                .FirstOrDefault(match =>
-                    match.Date >= season.CurrentDate && (match.HomeTeamId == team.Id || match.AwayTeamId == team.Id));
+        var next = MatchDisplay.NextMatch(snapshot, team.Id);
         if (next is null)
         {
             NextMatchTitle = season.IsComplete ? "Season complete" : "No match scheduled";

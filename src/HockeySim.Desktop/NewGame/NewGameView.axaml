@@ -57,7 +57,7 @@
               <TextBlock Classes="label" Text="GAME NAME" />
               <TextBox x:Name="GameNameTextBox"
                        Text="{Binding GameName}"
-                       MaxLength="80"
+                       MaxLength="{Binding MaximumNameLength}"
                        PlaceholderText="e.g. Halifax Dynasty" />
             </StackPanel>
 

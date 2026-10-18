@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using HockeySim.Desktop.Players;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.NewGame;
+using HockeySim.Management.Saves;
 using HockeySim.Simulation.Randomness;
 
 namespace HockeySim.Desktop.NewGame;
@@ -14,7 +15,6 @@ namespace HockeySim.Desktop.NewGame;
 public sealed partial class NewGameViewModel : ObservableObject
 {
     private const int InitialSeasonYear = 2026;
-    private const int MaximumGameNameLength = 80;
     private readonly GameManager _gameManager;
     private readonly Action<string> _gameCreated;
     private readonly Action _showStartup;
@@ -57,6 +57,8 @@ public sealed partial class NewGameViewModel : ObservableObject
     }
 
     public IReadOnlyList<ConferenceOptionViewModel> Conferences { get; }
+
+    public int MaximumNameLength => SaveName.MaximumLength;
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
@@ -101,16 +103,10 @@ public sealed partial class NewGameViewModel : ObservableObject
     {
         ErrorMessage = null;
 
-        var normalizedGameName = GameName.Trim();
-        if (normalizedGameName.Length == 0)
+        // The name is the save dialog's first suggestion, so it must already be a valid save name.
+        if (!SaveName.TryParse(GameName, out var name, out var error))
         {
-            ErrorMessage = "Enter a name for this game.";
-            return;
-        }
-
-        if (normalizedGameName.Length > MaximumGameNameLength)
-        {
-            ErrorMessage = $"Game names cannot be longer than {MaximumGameNameLength} characters.";
+            ErrorMessage = error;
             return;
         }
 
@@ -134,8 +130,8 @@ public sealed partial class NewGameViewModel : ObservableObject
             return;
         }
 
-        GameName = normalizedGameName;
-        _gameCreated(normalizedGameName);
+        GameName = name.Value;
+        _gameCreated(name.Value);
     }
 
     private void SelectTeam(string teamName)

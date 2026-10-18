@@ -54,28 +54,30 @@ public sealed partial class TeamBannerViewModel : ObservableObject
             CultureInfo.CurrentCulture,
             $"{record.Wins}-{record.RegulationLosses}-{record.OvertimeLosses + record.ShootoutLosses} · {record.Points} pts · {Ordinal(divisionEntry.Rank)} in {division.Name} · {Ordinal(conferenceEntry.Rank)} in {conference.Name}");
 
-        var results = snapshot.Season.Results.Where(result => Involves(result, team.Id)).ToList();
+        // The streak counts regular-season games only; the last result covers every phase.
+        var season = snapshot.Season;
+        var lastResult = season.PreseasonResults
+            .Concat(season.Results)
+            .Concat(season.Playoffs?.Results ?? [])
+            .LastOrDefault(result => Involves(result, team.Id));
+        var regularSeasonResults = season.Results.Where(result => Involves(result, team.Id)).ToList();
         Figures =
         [
             new("NEXT", NextMatch(snapshot, team.Id)),
-            new("LAST", results.Count == 0 ? None : LastResult(results[^1], team.Id)),
-            new("STREAK", TeamForm.Streak(results, team.Id)),
+            new("LAST", lastResult is null ? None : LastResult(lastResult, team.Id)),
+            new("STREAK", TeamForm.Streak(regularSeasonResults, team.Id)),
         ];
     }
 
     private string NextMatch(GameSnapshot snapshot, TeamId teamId)
     {
-        var season = snapshot.Season;
-        var next = season.IsComplete
-            ? null
-            : snapshot.Schedule.Matches.FirstOrDefault(match =>
-                match.Date >= season.CurrentDate && (match.HomeTeamId == teamId || match.AwayTeamId == teamId));
+        var next = MatchDisplay.NextMatch(snapshot, teamId);
         if (next is null)
         {
             return None;
         }
 
-        var when = next.Date == season.CurrentDate ? "Today" : next.Date.ToString("ddd", CultureInfo.CurrentCulture);
+        var when = next.Date == snapshot.Season.CurrentDate ? "Today" : next.Date.ToString("ddd", CultureInfo.CurrentCulture);
         return $"{Opponent(next.HomeTeamId, next.AwayTeamId, teamId)} · {when}";
     }
 
