@@ -24,6 +24,7 @@ view model together.
 | `Playoffs/PlayoffDisplay.cs` | Shared round, seed, and series-status formatting, and finding a team's playoff game by date |
 | `TeamStatistics/TeamStatisticsDisplay.cs`, `Injuries/InjuryReportRowViewModel.cs` | Team statistic and injury report formatting |
 | `Schedule/MatchDetail*`, `MatchSummaryTables.cs`, `MatchDisplay.cs` | The box score: its banner, Summary and Players tabs, the summary's tables, and shared match and statistic formatting |
+| `Tables/` | Sortable tables: `TableSort` (column key and direction), `TableColumn` (a column's raw sort key and first direction), `TableSorting` (click and ordering, ties keep default order, dashes last), and the `SortHeader` header button. Per-table column sets: `Roster/RosterTableColumns.cs` (with `RosterSorts`, a roster's remembered sorts), `Schedule/ScheduleTableColumns.cs`, `Schedule/BoxScoreTableColumns.cs` |
 | `Confirmation/` | The confirmation shown over every screen |
 | `Theme/` | Palette, control styles (including the menu bar, banner, tabs, and status bar), menu-bar icons, the bundled PT Sans fonts and their licence (`Fonts/`), `TeamPalette`, which colours the window with the managed team, `ColourBrushConverter`, which paints a team's colour, and `ReadableTextBrushConverter`, which picks text that reads on it |
 
@@ -43,6 +44,7 @@ games, plus a headless Avalonia walkthrough.
 | `PlayoffDisplayTests.cs` | A shared season played through the shell: the bracket before and at each playoff stage, playoff schedule rows and box scores, switching statistic sets, the completed season and champion |
 | `StandingsAndStatisticsTests.cs` | Standings scopes including the wild card, conference columns, recent form, team links, playoff markers, season totals |
 | `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, team statistics |
+| `TableSortingTests.cs` | Sorting roster, schedule, and box-score tables: first-click direction, reversal, dashes last, ties, selection, and the sort held across teams, refreshes, and column views |
 | `SaveAndLoadTests.cs` | Save and load screens, unsaved progress, confirmations |
 | `PlayerBiographyDisplayTests.cs`, `AppVersionTests.cs` | Formatting, version display |
 | `TeamPaletteTests.cs` | Readable text on team colours |
@@ -194,6 +196,20 @@ always shows the full statistic line in groups, scrolling with the ratings. A
 player who has not appeared shows zeros, and every percentage, average, and rate
 is a dash until it is defined. Advanced figures are five-on-five only; views by
 situation are a [future feature](../future-features.md#situational-statistics-views).
+The roster tables, the schedule, and the box score's skater tables sort by any
+column: clicking a header sorts by it, an arrow marks the sorted column and
+direction, and clicking again reverses it. Figures start with the highest; names
+(by last name), position, nationality, handedness, lineup (in lineup order, scratches last), venue, and
+opponent start at the top. Values shown as a dash, and unplayed matches, sort
+last either way, and ties keep the table's default order (position then name,
+date, or box-score order). The schedule's phase and date sort by date and its
+result by goal differential; the box score's faceoffs sort by faceoffs won.
+Each roster column view keeps its own sort for skaters and for goalies, across
+teams, days, and statistic sets; the schedule keeps its sort across teams and
+days; one box-score sort applies to both teams and carries to the next box score
+opened. Sorts are not saved, so a started or loaded game opens unsorted. The
+selected player or match stays selected. Standings, the team statistics page,
+and the box score's goalies do not sort.
 Pages rebuild from whichever snapshot the session last published.
 The look is a dense "front office": square panels with 1 px dark borders and
 6 px gutters on a slate palette, PT Sans for body text (its digits are

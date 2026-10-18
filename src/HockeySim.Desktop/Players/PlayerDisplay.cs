@@ -92,6 +92,36 @@ public static class PlayerDisplay
         return playerId == lineup.BackupGoalieId ? "Backup" : "Scratch";
     }
 
+    /// <summary>
+    /// Where a player's <see cref="LineupRole"/> falls in lineup order, for sorting: forward lines
+    /// (left wing, centre, right wing), then defence pairs, then the starter and backup goalies,
+    /// then scratches.
+    /// </summary>
+    public static int LineupOrder(PlayerId playerId, LineupSnapshot lineup)
+    {
+        for (var index = 0; index < lineup.ForwardLines.Count; index++)
+        {
+            var line = lineup.ForwardLines[index];
+            if (playerId == line.LeftWingId || playerId == line.CentreId || playerId == line.RightWingId)
+            {
+                return index * 3 + (playerId == line.LeftWingId ? 0 : playerId == line.CentreId ? 1 : 2);
+            }
+        }
+
+        for (var index = 0; index < lineup.DefencePairs.Count; index++)
+        {
+            var pair = lineup.DefencePairs[index];
+            if (playerId == pair.LeftDefenceId || playerId == pair.RightDefenceId)
+            {
+                return 1000 + index * 2 + (playerId == pair.LeftDefenceId ? 0 : 1);
+            }
+        }
+
+        return playerId == lineup.StartingGoalieId ? 2000
+            : playerId == lineup.BackupGoalieId ? 2001
+            : 3000;
+    }
+
     public static string TeamInitials(string teamName)
     {
         var words = teamName.Split(' ', StringSplitOptions.RemoveEmptyEntries);

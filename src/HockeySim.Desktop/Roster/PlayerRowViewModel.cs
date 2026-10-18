@@ -25,6 +25,7 @@ public sealed class PlayerRowViewModel
         NationalityName = PlayerDisplay.CountryName(player.Biography.Nationality);
         Handedness = PlayerDisplay.HandednessAbbreviation(player.Biography.Handedness);
         LineupRole = PlayerDisplay.LineupRole(player.Id, lineup);
+        LineupOrder = PlayerDisplay.LineupOrder(player.Id, lineup);
         IsScratched = LineupRole == "Scratch";
         InjuryMarker = InjuryDisplay.StatusMarker(player);
         InjurySummary = InjuryDisplay.Summary(player);
@@ -65,6 +66,9 @@ public sealed class PlayerRowViewModel
     public string Handedness { get; }
 
     public string LineupRole { get; }
+
+    /// <summary>Where the lineup role falls in lineup order; see <see cref="PlayerDisplay.LineupOrder"/>.</summary>
+    public int LineupOrder { get; }
 
     public bool IsScratched { get; }
 

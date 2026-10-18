@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Players;
+using HockeySim.Desktop.Tables;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
@@ -18,6 +19,7 @@ public sealed partial class TeamRosterViewModel : ObservableObject
 {
     private readonly TeamSnapshot _team;
     private readonly GameSession _session;
+    private List<PlayerRowViewModel> _rows = [];
 
     [ObservableProperty]
     private IReadOnlyList<PlayerRowViewModel> _skaters = [];
@@ -42,21 +44,31 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ShowsRegularSeason), nameof(ShowsPlayoffs))]
     private StatisticsSet _statistics;
 
+    /// <summary>The skaters table's sort in the chosen column view, or none for the default order.</summary>
+    [ObservableProperty]
+    private TableSort? _skaterSort;
+
+    [ObservableProperty]
+    private TableSort? _goalieSort;
+
     /// <param name="statistics">
     /// The totals to show; the regular season's until the playoffs start, whatever is asked.
     /// </param>
+    /// <param name="sorts">The sorts to keep, from the roster this one replaces; none sorted by default.</param>
     public TeamRosterViewModel(
         GameSession session,
         TeamId teamId,
         PlayerId? initiallySelectedPlayerId = null,
         RosterColumns columns = RosterColumns.Ratings,
-        StatisticsSet statistics = StatisticsSet.RegularSeason)
+        StatisticsSet statistics = StatisticsSet.RegularSeason,
+        RosterSorts? sorts = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
         _team = session.GetTeam(teamId);
         _columns = columns;
+        Sorts = sorts ?? RosterSorts.None;
         _statistics = HasPlayoffStatistics ? statistics : StatisticsSet.RegularSeason;
 
         ShowStatistics();
@@ -64,6 +76,9 @@ public sealed partial class TeamRosterViewModel : ObservableObject
             ? id
             : Skaters.Concat(Goalies).First().Player.Id);
     }
+
+    /// <summary>The sorts chosen so far in every column view, to hand to the next roster.</summary>
+    public RosterSorts Sorts { get; private set; }
 
     /// <summary>Whether the playoffs have started, so there are playoff statistics to switch to.</summary>
     public bool HasPlayoffStatistics => _session.Snapshot.Season.Playoffs is not null;
@@ -97,6 +112,28 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         Columns = columns;
     }
 
+    /// <summary>Sorts the skaters table by a column, or reverses the sort when it is already sorted by it.</summary>
+    [RelayCommand]
+    private void SortSkaters(string column)
+    {
+        var columns = RosterTableColumns.Skaters(Columns);
+        Sorts = Sorts.With(Columns, false, TableSorting.Click(columns, Sorts.Get(Columns, false), column));
+        ShowSortedRows();
+    }
+
+    [RelayCommand]
+    private void SortGoalies(string column)
+    {
+        var columns = RosterTableColumns.Goalies(Columns);
+        Sorts = Sorts.With(Columns, true, TableSorting.Click(columns, Sorts.Get(Columns, true), column));
+        ShowSortedRows();
+    }
+
+    partial void OnColumnsChanged(RosterColumns value)
+    {
+        ShowSortedRows();
+    }
+
     [RelayCommand]
     private void ShowStatisticsSet(StatisticsSet statistics)
     {
@@ -116,15 +153,43 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     /// <summary>Rebuilds the tables from the chosen totals.</summary>
     private void ShowStatistics()
     {
-        var rows = _team.Roster
+        _rows = _team.Roster
             .OrderBy(player => player.Position)
             .ThenBy(player => player.LastName, StringComparer.Ordinal)
             .Select(player => new PlayerRowViewModel(player, _team.Lineup, _session.GetSeasonTotals(player.Id, Statistics)))
             .ToList();
         SelectedSkater = null;
         SelectedGoalie = null;
-        Skaters = rows.Where(row => row.Player.Position != Position.Goalie).ToList();
-        Goalies = rows.Where(row => row.Player.Position == Position.Goalie).ToList();
+        ApplySorts();
+    }
+
+    /// <summary>Re-orders the tables by the sorts of the chosen column view, keeping the selected player.</summary>
+    private void ShowSortedRows()
+    {
+        var selectedPlayerId = SelectedPlayer?.Id;
+        ApplySorts();
+        if (selectedPlayerId is { } id)
+        {
+            SelectPlayer(id);
+        }
+    }
+
+    /// <summary>
+    /// Orders the default-ordered rows (position, then last name) by the column view's sorts; rows
+    /// that tie keep that order.
+    /// </summary>
+    private void ApplySorts()
+    {
+        SkaterSort = Sorts.Get(Columns, false);
+        GoalieSort = Sorts.Get(Columns, true);
+        Skaters = TableSorting.Apply(
+            _rows.Where(row => row.Player.Position != Position.Goalie),
+            RosterTableColumns.Skaters(Columns),
+            SkaterSort);
+        Goalies = TableSorting.Apply(
+            _rows.Where(row => row.Player.Position == Position.Goalie),
+            RosterTableColumns.Goalies(Columns),
+            GoalieSort);
     }
 
     partial void OnSelectedSkaterChanged(PlayerRowViewModel? value)

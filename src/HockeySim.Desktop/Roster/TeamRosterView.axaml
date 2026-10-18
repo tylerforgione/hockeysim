@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:players="using:HockeySim.Desktop.Players"
              xmlns:roster="using:HockeySim.Desktop.Roster"
+             xmlns:tables="using:HockeySim.Desktop.Tables"
              x:Class="HockeySim.Desktop.Roster.TeamRosterView"
              x:DataType="roster:TeamRosterViewModel">
   <!-- Header and row templates share each table's ColumnDefinitions so columns align. -->
@@ -58,24 +59,24 @@
             <DockPanel IsVisible="{Binding ShowsRatings}">
               <Border DockPanel.Dock="Top" Classes="table-header">
                 <Grid ColumnDefinitions="36,*,36,32,36,30,58,30,30,30,30,30,30,30,30,30,30,30">
-                  <TextBlock Text="#" />
-                  <TextBlock Grid.Column="1" Text="NAME" />
-                  <TextBlock Grid.Column="2" Text="POS" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="AGE" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="4" Text="NAT" HorizontalAlignment="Center" ToolTip.Tip="Nationality" />
-                  <TextBlock Grid.Column="5" Text="SH" HorizontalAlignment="Center" ToolTip.Tip="Shoots" />
-                  <TextBlock Grid.Column="6" Text="LINEUP" />
-                  <TextBlock Grid.Column="7" Text="OVR" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="8" Text="SKA" HorizontalAlignment="Center" ToolTip.Tip="Skating" />
-                  <TextBlock Grid.Column="9" Text="SHP" HorizontalAlignment="Center" ToolTip.Tip="Shot power" />
-                  <TextBlock Grid.Column="10" Text="SHA" HorizontalAlignment="Center" ToolTip.Tip="Shot accuracy" />
-                  <TextBlock Grid.Column="11" Text="PUC" HorizontalAlignment="Center" ToolTip.Tip="Puck control" />
-                  <TextBlock Grid.Column="12" Text="PAS" HorizontalAlignment="Center" ToolTip.Tip="Passing" />
-                  <TextBlock Grid.Column="13" Text="OFF" HorizontalAlignment="Center" ToolTip.Tip="Offensive awareness" />
-                  <TextBlock Grid.Column="14" Text="DEF" HorizontalAlignment="Center" ToolTip.Tip="Defensive awareness" />
-                  <TextBlock Grid.Column="15" Text="CHK" HorizontalAlignment="Center" ToolTip.Tip="Checking" />
-                  <TextBlock Grid.Column="16" Text="BLK" HorizontalAlignment="Center" ToolTip.Tip="Shot blocking" />
-                  <TextBlock Grid.Column="17" Text="STK" HorizontalAlignment="Center" ToolTip.Tip="Stick checking" />
+                  <tables:SortHeader Column="number" Label="#" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
+                  <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
+                  <tables:SortHeader Grid.Column="2" Column="position" Label="POS" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="3" Column="age" Label="AGE" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="4" Column="nationality" Label="NAT" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
+                  <tables:SortHeader Grid.Column="5" Column="shoots" Label="SH" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shoots" />
+                  <tables:SortHeader Grid.Column="6" Column="lineup" Label="LINEUP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
+                  <tables:SortHeader Grid.Column="7" Column="overall" Label="OVR" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="8" Column="skating" Label="SKA" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Skating" />
+                  <tables:SortHeader Grid.Column="9" Column="shot-power" Label="SHP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shot power" />
+                  <tables:SortHeader Grid.Column="10" Column="shot-accuracy" Label="SHA" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shot accuracy" />
+                  <tables:SortHeader Grid.Column="11" Column="puck-control" Label="PUC" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Puck control" />
+                  <tables:SortHeader Grid.Column="12" Column="passing" Label="PAS" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Passing" />
+                  <tables:SortHeader Grid.Column="13" Column="offensive-awareness" Label="OFF" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Offensive awareness" />
+                  <tables:SortHeader Grid.Column="14" Column="defensive-awareness" Label="DEF" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Defensive awareness" />
+                  <tables:SortHeader Grid.Column="15" Column="checking" Label="CHK" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Checking" />
+                  <tables:SortHeader Grid.Column="16" Column="shot-blocking" Label="BLK" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shot blocking" />
+                  <tables:SortHeader Grid.Column="17" Column="stick-checking" Label="STK" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Stick checking" />
                 </Grid>
               </Border>
               <ListBox x:Name="SkatersTable"
@@ -121,24 +122,24 @@
             <DockPanel IsVisible="{Binding ShowsBasic}">
               <Border DockPanel.Dock="Top" Classes="table-header">
                 <Grid ColumnDefinitions="36,*,36,32,36,30,58,34,34,34,34,34,34,34,34,34,50,42">
-                  <TextBlock Text="#" />
-                  <TextBlock Grid.Column="1" Text="NAME" />
-                  <TextBlock Grid.Column="2" Text="POS" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="AGE" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="4" Text="NAT" HorizontalAlignment="Center" ToolTip.Tip="Nationality" />
-                  <TextBlock Grid.Column="5" Text="SH" HorizontalAlignment="Center" ToolTip.Tip="Shoots" />
-                  <TextBlock Grid.Column="6" Text="LINEUP" />
-                  <TextBlock Grid.Column="7" Text="GP" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="8" Text="G" HorizontalAlignment="Center" ToolTip.Tip="Goals" />
-                  <TextBlock Grid.Column="9" Text="A" HorizontalAlignment="Center" ToolTip.Tip="Assists" />
-                  <TextBlock Grid.Column="10" Text="P" HorizontalAlignment="Center" ToolTip.Tip="Points" />
-                  <TextBlock Grid.Column="11" Text="+/-" HorizontalAlignment="Center" ToolTip.Tip="Plus/minus" />
-                  <TextBlock Grid.Column="12" Text="PIM" HorizontalAlignment="Center" ToolTip.Tip="Penalty minutes" />
-                  <TextBlock Grid.Column="13" Text="PPP" HorizontalAlignment="Center" ToolTip.Tip="Power-play points" />
-                  <TextBlock Grid.Column="14" Text="SHP" HorizontalAlignment="Center" ToolTip.Tip="Shorthanded points" />
-                  <TextBlock Grid.Column="15" Text="S" HorizontalAlignment="Center" ToolTip.Tip="Shots on goal" />
-                  <TextBlock Grid.Column="16" Text="TOI/GP" HorizontalAlignment="Center" ToolTip.Tip="Average time on ice per game" />
-                  <TextBlock Grid.Column="17" Text="FO%" HorizontalAlignment="Center" ToolTip.Tip="Faceoff percentage" />
+                  <tables:SortHeader Column="number" Label="#" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
+                  <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
+                  <tables:SortHeader Grid.Column="2" Column="position" Label="POS" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="3" Column="age" Label="AGE" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="4" Column="nationality" Label="NAT" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
+                  <tables:SortHeader Grid.Column="5" Column="shoots" Label="SH" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shoots" />
+                  <tables:SortHeader Grid.Column="6" Column="lineup" Label="LINEUP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
+                  <tables:SortHeader Grid.Column="7" Column="games-played" Label="GP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="8" Column="goals" Label="G" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals" />
+                  <tables:SortHeader Grid.Column="9" Column="assists" Label="A" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Assists" />
+                  <tables:SortHeader Grid.Column="10" Column="points" Label="P" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Points" />
+                  <tables:SortHeader Grid.Column="11" Column="plus-minus" Label="+/-" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Plus/minus" />
+                  <tables:SortHeader Grid.Column="12" Column="penalty-minutes" Label="PIM" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Penalty minutes" />
+                  <tables:SortHeader Grid.Column="13" Column="power-play-points" Label="PPP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Power-play points" />
+                  <tables:SortHeader Grid.Column="14" Column="shorthanded-points" Label="SHP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shorthanded points" />
+                  <tables:SortHeader Grid.Column="15" Column="shots" Label="S" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shots on goal" />
+                  <tables:SortHeader Grid.Column="16" Column="time-on-ice-per-game" Label="TOI/GP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Average time on ice per game" />
+                  <tables:SortHeader Grid.Column="17" Column="faceoff-percentage" Label="FO%" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Faceoff percentage" />
                 </Grid>
               </Border>
               <ListBox x:Name="SkaterBasicTable"
@@ -184,24 +185,24 @@
             <DockPanel IsVisible="{Binding ShowsAdvanced}">
               <Border DockPanel.Dock="Top" Classes="table-header">
                 <Grid ColumnDefinitions="36,*,36,32,36,30,58,36,36,36,44,36,36,44,44,44,48,40">
-                  <TextBlock Text="#" />
-                  <TextBlock Grid.Column="1" Text="NAME" />
-                  <TextBlock Grid.Column="2" Text="POS" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="AGE" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="4" Text="NAT" HorizontalAlignment="Center" ToolTip.Tip="Nationality" />
-                  <TextBlock Grid.Column="5" Text="SH" HorizontalAlignment="Center" ToolTip.Tip="Shoots" />
-                  <TextBlock Grid.Column="6" Text="LINEUP" />
-                  <TextBlock Grid.Column="7" Text="GP" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="8" Text="CF" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 Corsi for: team shot attempts while on the ice" />
-                  <TextBlock Grid.Column="9" Text="CA" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 Corsi against: opponent shot attempts while on the ice" />
-                  <TextBlock Grid.Column="10" Text="CF%" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 Corsi percentage: share of shot attempts" />
-                  <TextBlock Grid.Column="11" Text="FF" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 Fenwick for: unblocked team attempts while on the ice" />
-                  <TextBlock Grid.Column="12" Text="FA" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 Fenwick against: unblocked opponent attempts while on the ice" />
-                  <TextBlock Grid.Column="13" Text="FF%" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 Fenwick percentage: share of unblocked attempts" />
-                  <TextBlock Grid.Column="14" Text="xGF" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 team expected goals while on the ice" />
-                  <TextBlock Grid.Column="15" Text="xGA" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 opponent expected goals while on the ice" />
-                  <TextBlock Grid.Column="16" Text="xGF%" HorizontalAlignment="Center" ToolTip.Tip="5-on-5 share of expected goals" />
-                  <TextBlock Grid.Column="17" Text="ixG" HorizontalAlignment="Center" ToolTip.Tip="Individual expected goals" />
+                  <tables:SortHeader Column="number" Label="#" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
+                  <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
+                  <tables:SortHeader Grid.Column="2" Column="position" Label="POS" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="3" Column="age" Label="AGE" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="4" Column="nationality" Label="NAT" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
+                  <tables:SortHeader Grid.Column="5" Column="shoots" Label="SH" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shoots" />
+                  <tables:SortHeader Grid.Column="6" Column="lineup" Label="LINEUP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" />
+                  <tables:SortHeader Grid.Column="7" Column="games-played" Label="GP" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="8" Column="corsi-for" Label="CF" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 Corsi for: team shot attempts while on the ice" />
+                  <tables:SortHeader Grid.Column="9" Column="corsi-against" Label="CA" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 Corsi against: opponent shot attempts while on the ice" />
+                  <tables:SortHeader Grid.Column="10" Column="corsi-percentage" Label="CF%" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 Corsi percentage: share of shot attempts" />
+                  <tables:SortHeader Grid.Column="11" Column="fenwick-for" Label="FF" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 Fenwick for: unblocked team attempts while on the ice" />
+                  <tables:SortHeader Grid.Column="12" Column="fenwick-against" Label="FA" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 Fenwick against: unblocked opponent attempts while on the ice" />
+                  <tables:SortHeader Grid.Column="13" Column="fenwick-percentage" Label="FF%" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 Fenwick percentage: share of unblocked attempts" />
+                  <tables:SortHeader Grid.Column="14" Column="expected-goals-for" Label="xGF" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 team expected goals while on the ice" />
+                  <tables:SortHeader Grid.Column="15" Column="expected-goals-against" Label="xGA" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 opponent expected goals while on the ice" />
+                  <tables:SortHeader Grid.Column="16" Column="expected-goals-percentage" Label="xGF%" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="5-on-5 share of expected goals" />
+                  <tables:SortHeader Grid.Column="17" Column="individual-expected-goals" Label="ixG" Sort="{Binding SkaterSort}" Command="{Binding SortSkatersCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Individual expected goals" />
                 </Grid>
               </Border>
               <ListBox x:Name="SkaterAdvancedTable"
@@ -257,16 +258,16 @@
             <DockPanel IsVisible="{Binding ShowsRatings}">
               <Border DockPanel.Dock="Top" Classes="table-header">
                 <Grid ColumnDefinitions="36,*,32,36,30,58,32,32,32,32">
-                  <TextBlock Text="#" />
-                  <TextBlock Grid.Column="1" Text="NAME" />
-                  <TextBlock Grid.Column="2" Text="AGE" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="NAT" HorizontalAlignment="Center" ToolTip.Tip="Nationality" />
-                  <TextBlock Grid.Column="4" Text="CA" HorizontalAlignment="Center" ToolTip.Tip="Catches" />
-                  <TextBlock Grid.Column="5" Text="LINEUP" />
-                  <TextBlock Grid.Column="6" Text="OVR" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="7" Text="REF" HorizontalAlignment="Center" ToolTip.Tip="Reflexes" />
-                  <TextBlock Grid.Column="8" Text="POS" HorizontalAlignment="Center" ToolTip.Tip="Positioning" />
-                  <TextBlock Grid.Column="9" Text="REB" HorizontalAlignment="Center" ToolTip.Tip="Rebound control" />
+                  <tables:SortHeader Column="number" Label="#" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+                  <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+                  <tables:SortHeader Grid.Column="2" Column="age" Label="AGE" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="3" Column="nationality" Label="NAT" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
+                  <tables:SortHeader Grid.Column="4" Column="catches" Label="CA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Catches" />
+                  <tables:SortHeader Grid.Column="5" Column="lineup" Label="LINEUP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+                  <tables:SortHeader Grid.Column="6" Column="overall" Label="OVR" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="7" Column="reflex" Label="REF" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Reflexes" />
+                  <tables:SortHeader Grid.Column="8" Column="positioning" Label="POS" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Positioning" />
+                  <tables:SortHeader Grid.Column="9" Column="rebound-control" Label="REB" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Rebound control" />
                 </Grid>
               </Border>
               <ListBox x:Name="GoaliesTable"
@@ -305,19 +306,19 @@
             <DockPanel IsVisible="{Binding ShowsBasic}">
               <Border DockPanel.Dock="Top" Classes="table-header">
                 <Grid ColumnDefinitions="36,*,32,36,30,58,36,44,44,44,50,48,36">
-                  <TextBlock Text="#" />
-                  <TextBlock Grid.Column="1" Text="NAME" />
-                  <TextBlock Grid.Column="2" Text="AGE" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="NAT" HorizontalAlignment="Center" ToolTip.Tip="Nationality" />
-                  <TextBlock Grid.Column="4" Text="CA" HorizontalAlignment="Center" ToolTip.Tip="Catches" />
-                  <TextBlock Grid.Column="5" Text="LINEUP" />
-                  <TextBlock Grid.Column="6" Text="GP" HorizontalAlignment="Center" ToolTip.Tip="Games played (starts)" />
-                  <TextBlock Grid.Column="7" Text="SA" HorizontalAlignment="Center" ToolTip.Tip="Shots against" />
-                  <TextBlock Grid.Column="8" Text="SV" HorizontalAlignment="Center" ToolTip.Tip="Saves" />
-                  <TextBlock Grid.Column="9" Text="GA" HorizontalAlignment="Center" ToolTip.Tip="Goals against" />
-                  <TextBlock Grid.Column="10" Text="SV%" HorizontalAlignment="Center" ToolTip.Tip="Save percentage" />
-                  <TextBlock Grid.Column="11" Text="GAA" HorizontalAlignment="Center" ToolTip.Tip="Goals-against average" />
-                  <TextBlock Grid.Column="12" Text="SO" HorizontalAlignment="Center" ToolTip.Tip="Shutouts" />
+                  <tables:SortHeader Column="number" Label="#" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+                  <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+                  <tables:SortHeader Grid.Column="2" Column="age" Label="AGE" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="3" Column="nationality" Label="NAT" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
+                  <tables:SortHeader Grid.Column="4" Column="catches" Label="CA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Catches" />
+                  <tables:SortHeader Grid.Column="5" Column="lineup" Label="LINEUP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+                  <tables:SortHeader Grid.Column="6" Column="games-played" Label="GP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Games played (starts)" />
+                  <tables:SortHeader Grid.Column="7" Column="shots-against" Label="SA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shots against" />
+                  <tables:SortHeader Grid.Column="8" Column="saves" Label="SV" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Saves" />
+                  <tables:SortHeader Grid.Column="9" Column="goals-against" Label="GA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals against" />
+                  <tables:SortHeader Grid.Column="10" Column="save-percentage" Label="SV%" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Save percentage" />
+                  <tables:SortHeader Grid.Column="11" Column="goals-against-average" Label="GAA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals-against average" />
+                  <tables:SortHeader Grid.Column="12" Column="shutouts" Label="SO" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Shutouts" />
                 </Grid>
               </Border>
               <ListBox x:Name="GoalieBasicTable"
@@ -359,18 +360,18 @@
             <DockPanel IsVisible="{Binding ShowsAdvanced}">
               <Border DockPanel.Dock="Top" Classes="table-header">
                 <Grid ColumnDefinitions="36,*,32,36,30,58,36,58,48,44,54,50">
-                  <TextBlock Text="#" />
-                  <TextBlock Grid.Column="1" Text="NAME" />
-                  <TextBlock Grid.Column="2" Text="AGE" HorizontalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="NAT" HorizontalAlignment="Center" ToolTip.Tip="Nationality" />
-                  <TextBlock Grid.Column="4" Text="CA" HorizontalAlignment="Center" ToolTip.Tip="Catches" />
-                  <TextBlock Grid.Column="5" Text="LINEUP" />
-                  <TextBlock Grid.Column="6" Text="GP" HorizontalAlignment="Center" ToolTip.Tip="Games played (starts)" />
-                  <TextBlock Grid.Column="7" Text="TOI" HorizontalAlignment="Center" ToolTip.Tip="Total time in net" />
-                  <TextBlock Grid.Column="8" Text="xGA" HorizontalAlignment="Center" ToolTip.Tip="Expected goals against" />
-                  <TextBlock Grid.Column="9" Text="GA" HorizontalAlignment="Center" ToolTip.Tip="Goals against" />
-                  <TextBlock Grid.Column="10" Text="GSAx" HorizontalAlignment="Center" ToolTip.Tip="Goals saved above expected" />
-                  <TextBlock Grid.Column="11" Text="TOI/GP" HorizontalAlignment="Center" ToolTip.Tip="Average time in net per start" />
+                  <tables:SortHeader Column="number" Label="#" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+                  <tables:SortHeader Grid.Column="1" Column="name" Label="NAME" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+                  <tables:SortHeader Grid.Column="2" Column="age" Label="AGE" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" />
+                  <tables:SortHeader Grid.Column="3" Column="nationality" Label="NAT" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Nationality" />
+                  <tables:SortHeader Grid.Column="4" Column="catches" Label="CA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Catches" />
+                  <tables:SortHeader Grid.Column="5" Column="lineup" Label="LINEUP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" />
+                  <tables:SortHeader Grid.Column="6" Column="games-played" Label="GP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Games played (starts)" />
+                  <tables:SortHeader Grid.Column="7" Column="time-in-net" Label="TOI" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Total time in net" />
+                  <tables:SortHeader Grid.Column="8" Column="expected-goals-against" Label="xGA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Expected goals against" />
+                  <tables:SortHeader Grid.Column="9" Column="goals-against" Label="GA" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals against" />
+                  <tables:SortHeader Grid.Column="10" Column="goals-saved-above-expected" Label="GSAx" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Goals saved above expected" />
+                  <tables:SortHeader Grid.Column="11" Column="time-on-ice-per-game" Label="TOI/GP" Sort="{Binding GoalieSort}" Command="{Binding SortGoaliesCommand}" HorizontalContentAlignment="Center" ToolTip.Tip="Average time in net per start" />
                 </Grid>
               </Border>
               <ListBox x:Name="GoalieAdvancedTable"

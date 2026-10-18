@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using HockeySim.Desktop.Players;
+using HockeySim.Desktop.Tables;
 using HockeySim.Desktop.Theme;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
@@ -22,10 +23,16 @@ public sealed partial class MatchDetailViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsSummaryTab), nameof(IsPlayersTab))]
     private MatchDetailTab _tab = MatchDetailTab.Summary;
 
+    /// <summary>The sort of both teams' skater tables on the Players tab, or none for box-score order.</summary>
+    [ObservableProperty]
+    private TableSort? _skaterSort;
+
+    /// <param name="skaterSort">The sort to open the Players tab with, to carry one box score's choice to the next.</param>
     public MatchDetailViewModel(
         CompletedMatchSnapshot result,
         IReadOnlyDictionary<PlayerId, PlayerSnapshot> players,
-        Func<TeamId, TeamSnapshot> team)
+        Func<TeamId, TeamSnapshot> team,
+        TableSort? skaterSort = null)
     {
         ArgumentNullException.ThrowIfNull(result);
         ArgumentNullException.ThrowIfNull(players);
@@ -39,8 +46,11 @@ public sealed partial class MatchDetailViewModel : ObservableObject
         Arena = homeTeam.Arena;
         FinalLabel = MatchDisplay.FinalLabel(result.Decision);
         var (awayChartColour, homeChartColour) = TeamPalette.ChartColours(awayTeam.Colours, homeTeam.Colours);
-        Away = new MatchSideViewModel(result.Away, players, awayTeam, awayChartColour, result.Phase, result.WinnerId == result.Away.TeamId);
-        Home = new MatchSideViewModel(result.Home, players, homeTeam, homeChartColour, result.Phase, result.WinnerId == result.Home.TeamId);
+        Away = new MatchSideViewModel(result.Away, players, awayTeam, awayChartColour, result.Phase, result.WinnerId == result.Away.TeamId, skaterSort);
+        Home = new MatchSideViewModel(result.Home, players, homeTeam, homeChartColour, result.Phase, result.WinnerId == result.Home.TeamId, skaterSort);
+        _skaterSort = skaterSort;
+        Away.SortRequested += SortSkaters;
+        Home.SortRequested += SortSkaters;
 
         var initials = new Dictionary<TeamId, string>
         {
@@ -112,6 +122,14 @@ public sealed partial class MatchDetailViewModel : ObservableObject
     [RelayCommand]
     private void SelectTab(MatchDetailTab tab) => Tab = tab;
 
+    /// <summary>One sort applies to both teams' tables, whichever header was clicked.</summary>
+    private void SortSkaters(object? sender, TableSort sort)
+    {
+        var other = sender == Away ? Home : Away;
+        other.ApplySort(sort);
+        SkaterSort = sort;
+    }
+
     private static List<GoalSummaryRowViewModel> ScoringRows(
         CompletedMatchSnapshot result,
         IReadOnlyDictionary<PlayerId, PlayerSnapshot> players,
@@ -153,15 +171,18 @@ public enum MatchDetailTab
     Players,
 }
 
-public sealed class MatchSideViewModel
+public sealed partial class MatchSideViewModel : ObservableObject
 {
+    private readonly List<SkaterBoxScoreRowViewModel> _boxScoreOrder;
+
     public MatchSideViewModel(
         CompletedMatchTeamSnapshot side,
         IReadOnlyDictionary<PlayerId, PlayerSnapshot> players,
         TeamSnapshot team,
         Colour chartColour,
         SeasonPhase phase,
-        bool isWinner)
+        bool isWinner,
+        TableSort? skaterSort = null)
     {
         ArgumentNullException.ThrowIfNull(side);
         ArgumentNullException.ThrowIfNull(players);
@@ -173,7 +194,7 @@ public sealed class MatchSideViewModel
         Score = side.Score;
         Record = RecordLabel(side.RecordAfter, phase);
         IsWinner = isWinner;
-        Skaters = side.Skaters
+        _boxScoreOrder = side.Skaters
             .Select(line =>
             {
                 var player = players[line.PlayerId];
@@ -197,9 +218,20 @@ public sealed class MatchSideViewModel
                     line.PowerPlayGoals,
                     line.ShorthandedGoals,
                     MatchDisplay.Percentage(line.OnIce.FiveOnFive.CorsiPercentage),
-                    MatchDisplay.Percentage(line.OnIce.FiveOnFive.ExpectedGoalsPercentage));
+                    MatchDisplay.Percentage(line.OnIce.FiveOnFive.ExpectedGoalsPercentage),
+                    new SkaterBoxScoreValues(
+                        $"{player.LastName}\0{player.FirstName}",
+                        player.Position,
+                        line.PlusMinus,
+                        line.TimeOnIce,
+                        line.ExpectedGoals,
+                        line.FaceoffsWon + line.FaceoffsLost == 0 ? null : line.FaceoffsWon * 100_000L - line.FaceoffsLost,
+                        line.OnIce.FiveOnFive.CorsiPercentage,
+                        line.OnIce.FiveOnFive.ExpectedGoalsPercentage));
             })
             .ToList();
+        _sort = skaterSort;
+        _skaters = TableSorting.Apply(_boxScoreOrder, BoxScoreTableColumns.Skaters, skaterSort);
 
         var goalie = players[side.Goalie.PlayerId];
         Goalie = new GoalieBoxScoreRowViewModel(
@@ -236,11 +268,34 @@ public sealed class MatchSideViewModel
 
     public bool IsWinner { get; }
 
-    /// <summary>Every skater who appeared, in box-score order.</summary>
-    public IReadOnlyList<SkaterBoxScoreRowViewModel> Skaters { get; }
+    /// <summary>Every skater who appeared, in box-score order until a sort is chosen.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<SkaterBoxScoreRowViewModel> _skaters;
+
+    /// <summary>The skater table's sort, or none for box-score order.</summary>
+    [ObservableProperty]
+    private TableSort? _sort;
+
+    /// <summary>Raised when a header is clicked, with the sort chosen; the match applies it to both teams.</summary>
+    public event EventHandler<TableSort>? SortRequested;
 
     /// <summary>The starting goalie, who played the whole match.</summary>
     public GoalieBoxScoreRowViewModel Goalie { get; }
+
+    /// <summary>Sorts the skaters by a column, or reverses the sort when it is already sorted by it.</summary>
+    [RelayCommand]
+    private void SortSkaters(string column)
+    {
+        var sort = TableSorting.Click(BoxScoreTableColumns.Skaters, Sort, column);
+        ApplySort(sort);
+        SortRequested?.Invoke(this, sort);
+    }
+
+    public void ApplySort(TableSort sort)
+    {
+        Sort = sort;
+        Skaters = TableSorting.Apply(_boxScoreOrder, BoxScoreTableColumns.Skaters, sort);
+    }
 
     private static string RecordLabel(MatchRecordSnapshot record, SeasonPhase phase) =>
         phase == SeasonPhase.Playoffs
@@ -276,7 +331,25 @@ public sealed record SkaterBoxScoreRowViewModel(
     int PowerPlayGoals,
     int ShorthandedGoals,
     string CorsiPercentage,
-    string ExpectedGoalsPercentage);
+    string ExpectedGoalsPercentage,
+    SkaterBoxScoreValues Values);
+
+/// <summary>
+/// The raw figures behind a box-score row's text, which its table sorts by.
+/// </summary>
+/// <param name="Name">Last name, then first, ordinally comparable.</param>
+/// <param name="Faceoffs">Faceoffs won, then fewer lost, as one number; null when none were taken.</param>
+/// <param name="CorsiPercentage">Null while undefined (shown as a dash).</param>
+/// <param name="ExpectedGoalsPercentage">Null while undefined (shown as a dash).</param>
+public sealed record SkaterBoxScoreValues(
+    string Name,
+    Position Position,
+    int PlusMinus,
+    TimeSpan TimeOnIce,
+    double ExpectedGoals,
+    long? Faceoffs,
+    double? CorsiPercentage,
+    double? ExpectedGoalsPercentage);
 
 public sealed record GoalieBoxScoreRowViewModel(
     string Name,

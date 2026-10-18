@@ -1,7 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Playoffs;
+using HockeySim.Desktop.Tables;
 using HockeySim.Desktop.Teams;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
@@ -32,6 +34,13 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelectedResult))]
     private MatchDetailViewModel? _selectedResult;
+
+    /// <summary>The matches table's sort, or none for date order. It holds across teams and days.</summary>
+    [ObservableProperty]
+    private TableSort? _matchesSort;
+
+    // The box score's sort, which the next box score opened starts with.
+    private TableSort? _boxScoreSort;
 
     public SchedulePageViewModel(GameSession session)
     {
@@ -93,6 +102,16 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
         SelectedMatch = Matches.Single(match => match.Date == date);
     }
 
+    /// <summary>Sorts the matches by a column, or reverses the sort when it is already sorted by it.</summary>
+    [RelayCommand]
+    private void SortMatches(string column)
+    {
+        MatchesSort = TableSorting.Click(ScheduleTableColumns.Matches, MatchesSort, column);
+        var selectedDate = SelectedMatch?.Date;
+        Matches = SortedRows(Matches);
+        SelectedMatch = Matches.FirstOrDefault(match => match.Date == selectedDate);
+    }
+
     public override void Refresh()
     {
         var selectedDate = SelectedMatch?.Date;
@@ -109,13 +128,29 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
     partial void OnSelectedMatchChanged(ScheduleMatchRowViewModel? value)
     {
         var result = value is null ? null : FindResult(value.Date, value.HomeTeamId);
-        SelectedResult = result is null
-            ? null
-            : new MatchDetailViewModel(result, _session.PlayersById, _session.GetTeam);
+        if (result is null)
+        {
+            SelectedResult = null;
+            return;
+        }
+
+        var detail = new MatchDetailViewModel(result, _session.PlayersById, _session.GetTeam, _boxScoreSort);
+        detail.PropertyChanged += (_, change) =>
+        {
+            if (change.PropertyName == nameof(MatchDetailViewModel.SkaterSort))
+            {
+                _boxScoreSort = detail.SkaterSort;
+            }
+        };
+        SelectedResult = detail;
     }
 
+    /// <summary>Puts rows (in any order) into date order, then the table's sort.</summary>
+    private List<ScheduleMatchRowViewModel> SortedRows(IEnumerable<ScheduleMatchRowViewModel> rows) =>
+        TableSorting.Apply(rows.OrderBy(row => row.Date), ScheduleTableColumns.Matches, MatchesSort);
+
     /// <summary>
-    /// Lists the team's matches in date order. The phases follow one another and a team plays at
+    /// Lists the team's matches in date order, then the table's sort. The phases follow one another and a team plays at
     /// most once a day, so a date identifies a team's match in any phase.
     /// </summary>
     private List<ScheduleMatchRowViewModel> CreateRows(TeamId teamId)
@@ -137,7 +172,7 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
                 .Select(entry => (DateOnly?)entry.Match.Date)
                 .FirstOrDefault();
 
-        return matches
+        return SortedRows(matches
             .Select(entry =>
             {
                 var match = entry.Match;
@@ -158,10 +193,15 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
                     result is null ? string.Empty : MatchDisplay.ResultFor(result, teamId),
                     result is not null && result.WinnerId == teamId,
                     result is not null,
-                    match.Date == nextDate);
-            })
-            .ToList();
+                    match.Date == nextDate,
+                    result is null ? null : GoalDifferential(result, teamId));
+            }));
     }
+
+    private static int GoalDifferential(CompletedMatchSnapshot result, TeamId teamId) =>
+        result.Home.TeamId == teamId
+            ? result.Home.Score - result.Away.Score
+            : result.Away.Score - result.Home.Score;
 
     /// <summary>Labels a row's phase, naming a playoff game's round and number in its series.</summary>
     private (string Label, string Description) PhaseOf(SeasonPhase phase, DateOnly date, TeamId teamId)
@@ -195,6 +235,7 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
 /// <param name="Venue">"vs" for a home match, "@" for an away match.</param>
 /// <param name="Result">The result from the listed team's side, or empty before the match is played.</param>
 /// <param name="IsNext">Whether this is the team's next match to be played.</param>
+/// <param name="GoalDifferential">The listed team's goals for less against, or null before the match is played.</param>
 public sealed record ScheduleMatchRowViewModel(
     DateOnly Date,
     TeamId HomeTeamId,
@@ -208,7 +249,8 @@ public sealed record ScheduleMatchRowViewModel(
     string Result,
     bool IsWin,
     bool IsCompleted,
-    bool IsNext)
+    bool IsNext,
+    int? GoalDifferential)
 {
     public bool IsLoss => IsCompleted && !IsWin;
 

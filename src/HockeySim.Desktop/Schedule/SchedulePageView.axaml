@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:schedule="using:HockeySim.Desktop.Schedule"
+             xmlns:tables="using:HockeySim.Desktop.Tables"
              xmlns:teams="using:HockeySim.Desktop.Teams"
              x:Class="HockeySim.Desktop.Schedule.SchedulePageView"
              x:DataType="schedule:SchedulePageViewModel">
@@ -26,10 +27,11 @@
         </Border>
         <Border DockPanel.Dock="Top" Classes="table-header">
           <Grid ColumnDefinitions="60,96,28,*,96">
-            <TextBlock Text="PHASE" ToolTip.Tip="Preseason, regular season, or a playoff round and game" />
-            <TextBlock Grid.Column="1" Text="DATE" />
-            <TextBlock Grid.Column="3" Text="OPPONENT" />
-            <TextBlock Grid.Column="4" Text="RESULT" HorizontalAlignment="Right" />
+            <tables:SortHeader Column="phase" Label="PHASE" Sort="{Binding MatchesSort}" Command="{Binding SortMatchesCommand}" ToolTip.Tip="Preseason, regular season, or a playoff round and game" />
+            <tables:SortHeader Grid.Column="1" Column="date" Label="DATE" Sort="{Binding MatchesSort}" Command="{Binding SortMatchesCommand}" />
+            <tables:SortHeader Grid.Column="2" Column="venue" Label="@" Sort="{Binding MatchesSort}" Command="{Binding SortMatchesCommand}" ToolTip.Tip="Home or away" />
+            <tables:SortHeader Grid.Column="3" Column="opponent" Label="OPPONENT" Sort="{Binding MatchesSort}" Command="{Binding SortMatchesCommand}" />
+            <tables:SortHeader Grid.Column="4" Column="result" Label="RESULT" Sort="{Binding MatchesSort}" Command="{Binding SortMatchesCommand}" HorizontalContentAlignment="Right" />
           </Grid>
         </Border>
         <ListBox x:Name="ScheduleMatchesList"

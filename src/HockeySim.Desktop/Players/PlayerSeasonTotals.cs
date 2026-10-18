@@ -33,7 +33,11 @@ public sealed class PlayerSeasonTotals
 
     public int Points => _skater?.Points ?? 0;
 
-    public string PlusMinus => MatchDisplay.PlusMinus(_skater?.PlusMinus ?? 0);
+    public string PlusMinus => MatchDisplay.PlusMinus(PlusMinusValue);
+
+    // The "...Value" properties are the raw figures behind the formatted strings, which tables sort
+    // by. A null is a figure that is not defined yet, shown as a dash.
+    public int PlusMinusValue => _skater?.PlusMinus ?? 0;
 
     public int PenaltyMinutes => _skater?.PenaltyMinutes ?? 0;
 
@@ -43,33 +47,49 @@ public sealed class PlayerSeasonTotals
 
     public int Shots => _skater?.Shots ?? 0;
 
-    public string TimeOnIcePerGame => MatchDisplay.TimeOnIce(_skater?.TimeOnIcePerGame ?? _goalie?.TimeOnIcePerGame);
+    public string TimeOnIcePerGame => MatchDisplay.TimeOnIce(TimeOnIcePerGameValue);
 
-    public string FaceoffPercentage => MatchDisplay.Percentage(_skater?.FaceoffPercentage);
+    public TimeSpan? TimeOnIcePerGameValue => _skater?.TimeOnIcePerGame ?? _goalie?.TimeOnIcePerGame;
+
+    public string FaceoffPercentage => MatchDisplay.Percentage(FaceoffPercentageValue);
+
+    public double? FaceoffPercentageValue => _skater?.FaceoffPercentage;
 
     /// <summary>The summed expected-goal value of the skater's own attempts (ixG).</summary>
-    public string IndividualExpectedGoals => MatchDisplay.ExpectedGoals(_skater?.ExpectedGoals ?? 0);
+    public string IndividualExpectedGoals => MatchDisplay.ExpectedGoals(IndividualExpectedGoalsValue);
+
+    public double IndividualExpectedGoalsValue => _skater?.ExpectedGoals ?? 0;
 
     /// <summary>Five-on-five shot attempts for while on the ice.</summary>
     public int CorsiFor => FiveOnFive.AttemptsFor;
 
     public int CorsiAgainst => FiveOnFive.AttemptsAgainst;
 
-    public string CorsiPercentage => MatchDisplay.Percentage(FiveOnFive.CorsiPercentage);
+    public string CorsiPercentage => MatchDisplay.Percentage(CorsiPercentageValue);
+
+    public double? CorsiPercentageValue => FiveOnFive.CorsiPercentage;
 
     /// <summary>Five-on-five unblocked attempts for while on the ice.</summary>
     public int FenwickFor => FiveOnFive.UnblockedAttemptsFor;
 
     public int FenwickAgainst => FiveOnFive.UnblockedAttemptsAgainst;
 
-    public string FenwickPercentage => MatchDisplay.Percentage(FiveOnFive.FenwickPercentage);
+    public string FenwickPercentage => MatchDisplay.Percentage(FenwickPercentageValue);
+
+    public double? FenwickPercentageValue => FiveOnFive.FenwickPercentage;
 
     /// <summary>Five-on-five expected goals for while on the ice.</summary>
-    public string OnIceExpectedGoalsFor => MatchDisplay.ExpectedGoals(FiveOnFive.ExpectedGoalsFor);
+    public string OnIceExpectedGoalsFor => MatchDisplay.ExpectedGoals(OnIceExpectedGoalsForValue);
 
-    public string OnIceExpectedGoalsAgainst => MatchDisplay.ExpectedGoals(FiveOnFive.ExpectedGoalsAgainst);
+    public double OnIceExpectedGoalsForValue => FiveOnFive.ExpectedGoalsFor;
 
-    public string OnIceExpectedGoalsPercentage => MatchDisplay.Percentage(FiveOnFive.ExpectedGoalsPercentage);
+    public string OnIceExpectedGoalsAgainst => MatchDisplay.ExpectedGoals(OnIceExpectedGoalsAgainstValue);
+
+    public double OnIceExpectedGoalsAgainstValue => FiveOnFive.ExpectedGoalsAgainst;
+
+    public string OnIceExpectedGoalsPercentage => MatchDisplay.Percentage(OnIceExpectedGoalsPercentageValue);
+
+    public double? OnIceExpectedGoalsPercentageValue => FiveOnFive.ExpectedGoalsPercentage;
 
     public int ShotsAgainst => _goalie?.ShotsAgainst ?? 0;
 
@@ -78,19 +98,29 @@ public sealed class PlayerSeasonTotals
     public int GoalsAgainst => _goalie?.GoalsAgainst ?? 0;
 
     /// <summary>".912" style, or a dash before the goalie has faced a shot.</summary>
-    public string SavePercentage => MatchDisplay.SavePercentage(_goalie?.SavePercentage);
+    public string SavePercentage => MatchDisplay.SavePercentage(SavePercentageValue);
 
-    public string GoalsAgainstAverage => MatchDisplay.GoalsAgainstAverage(_goalie?.GoalsAgainstAverage);
+    public double? SavePercentageValue => _goalie?.SavePercentage;
+
+    public string GoalsAgainstAverage => MatchDisplay.GoalsAgainstAverage(GoalsAgainstAverageValue);
+
+    public double? GoalsAgainstAverageValue => _goalie?.GoalsAgainstAverage;
 
     public int Shutouts => _goalie?.Shutouts ?? 0;
 
     /// <summary>The expected-goal value of the shots a goalie faced.</summary>
-    public string ExpectedGoalsAgainst => MatchDisplay.ExpectedGoals(_goalie?.ExpectedGoalsAgainst ?? 0);
+    public string ExpectedGoalsAgainst => MatchDisplay.ExpectedGoals(ExpectedGoalsAgainstValue);
 
-    public string GoalsSavedAboveExpected => MatchDisplay.GoalsSavedAboveExpected(_goalie?.GoalsSavedAboveExpected ?? 0);
+    public double ExpectedGoalsAgainstValue => _goalie?.ExpectedGoalsAgainst ?? 0;
+
+    public string GoalsSavedAboveExpected => MatchDisplay.GoalsSavedAboveExpected(GoalsSavedAboveExpectedValue);
+
+    public double GoalsSavedAboveExpectedValue => _goalie?.GoalsSavedAboveExpected ?? 0;
 
     /// <summary>A goalie's total time in net.</summary>
-    public string TimeInNet => MatchDisplay.TimeOnIce(_goalie?.TimeOnIce ?? TimeSpan.Zero);
+    public string TimeInNet => MatchDisplay.TimeOnIce(TimeInNetValue);
+
+    public TimeSpan TimeInNetValue => _goalie?.TimeOnIce ?? TimeSpan.Zero;
 
     private ShotTotals FiveOnFive => _skater?.OnIce.FiveOnFive ?? ShotTotals.None;
 

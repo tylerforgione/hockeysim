@@ -39,7 +39,7 @@ public sealed partial class RosterPageViewModel : ShellPageViewModel
 
     public override void Refresh()
     {
-        Roster = new TeamRosterViewModel(_session, _session.ManagedTeam.Id, Roster.SelectedPlayer?.Id, Roster.Columns, Roster.Statistics);
+        Roster = new TeamRosterViewModel(_session, _session.ManagedTeam.Id, Roster.SelectedPlayer?.Id, Roster.Columns, Roster.Statistics, Roster.Sorts);
         OnPropertyChanged(nameof(Subtitle));
     }
 }
