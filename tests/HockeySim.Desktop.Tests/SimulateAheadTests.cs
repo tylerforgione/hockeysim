@@ -90,7 +90,7 @@ public sealed class SimulateAheadTests
         Assert.Equal("Continue", shell.ContinueLabel);
         Assert.Equal(firstDay.AddDays(1), session.Snapshot.Season.CurrentDate);
         Assert.Equal(16, session.Snapshot.Season.PreseasonResults.Count);
-        Assert.Equal($"Simulated 1 day; stopped on {MatchDisplay.ShortDate(firstDay.AddDays(1))}.", shell.SimulationSummary);
+        Assert.Equal("Simulated 1 day; stopped on Sat, Sep 19.", shell.SimulationSummary);
         Assert.True(shell.AdvanceDayCommand.CanExecute(null));
     }
 
@@ -119,13 +119,65 @@ public sealed class SimulateAheadTests
     {
         var session = GameTestData.StartSession();
         var shell = new GameShellViewModel(session);
-        var start = session.Snapshot.Season.CurrentDate;
 
         await shell.SimulateAheadCommand.ExecuteAsync(SimulationTarget.EndOfRegularSeason);
 
-        // The real engine injures one of the managed team's players long before the season ends.
-        var days = session.Snapshot.Season.CurrentDate.DayNumber - start.DayNumber;
+        // The real engine injures one of the managed team's players on the first day.
         Assert.Equal(SeasonPhase.RegularSeason, session.Snapshot.Season.Phase);
-        Assert.Equal($"Simulated {(days == 1 ? "1 day" : $"{days} days")}; stopped because one of your players was injured.", shell.SimulationSummary);
+        Assert.Equal("Simulated 1 day; stopped because one of your players was injured.", shell.SimulationSummary);
+    }
+
+    [Fact]
+    public async Task ARunStoppedForPlayersToReplaceSaysSo()
+    {
+        var session = GameTestData.StartSession();
+        var shell = new GameShellViewModel(session);
+        await shell.SimulateAheadCommand.ExecuteAsync(SimulationTarget.OneMonth);
+
+        // The injured player is still dressed when the team next plays, the day after the off day.
+        await shell.SimulateAheadCommand.ExecuteAsync(SimulationTarget.OneMonth);
+
+        Assert.Equal("Simulated 1 day; stopped to replace injured players before today's match.", shell.SimulationSummary);
+    }
+
+    [Fact]
+    public async Task ARunThatCrossesTheRegularSeasonsEndSaysSoAndALaterRunSaysTheSeasonIsComplete()
+    {
+        // Ottawa plays its last regular-season match well before the season's end and misses the
+        // playoffs, so the month's run ends when the playoffs are seeded and the next match run
+        // plays the whole bracket.
+        var session = GameTestData.StartSession();
+        var shell = new GameShellViewModel(session);
+        while (session.Snapshot.Season.Phase == SeasonPhase.RegularSeason)
+        {
+            if (shell.HasPlayersToReplace)
+            {
+                session.SetLineup(InjuredPlayerReplacement.ReplacingInjured(session.Snapshot));
+            }
+
+            await shell.SimulateAheadCommand.ExecuteAsync(SimulationTarget.OneMonth);
+        }
+
+        Assert.Equal("Simulated 1 day; stopped because the regular season is over.", shell.SimulationSummary);
+
+        await shell.SimulateAheadCommand.ExecuteAsync(SimulationTarget.NextMatch);
+
+        Assert.True(session.Snapshot.Season.IsComplete);
+        Assert.Equal("Simulated 50 days; stopped because the season is complete.", shell.SimulationSummary);
+    }
+
+    [Fact]
+    public void ARunCancelledBeforeAnyDayAndOneThatStartsTheRegularSeasonAreDescribed()
+    {
+        // Neither is reachable deterministically through the shell: Stop races the run's first
+        // check, and every club plays on opening day, which ends a next-match run as a target.
+        var snapshot = GameTestData.StartSession().Snapshot;
+
+        Assert.Equal(
+            "Stopped before any day was played.",
+            GameShellViewModel.DescribeSimulation(new SimulationResult(SimulationStop.Cancelled, 0, snapshot)));
+        Assert.Equal(
+            "Simulated 3 days; stopped because the regular season starts today.",
+            GameShellViewModel.DescribeSimulation(new SimulationResult(SimulationStop.PhaseChanged, 3, snapshot)));
     }
 }

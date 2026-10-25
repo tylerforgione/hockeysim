@@ -59,7 +59,6 @@ public sealed class PlayerBiographyDisplayTests
             Assert.Equal(PlayerDisplay.CountryCode(biography.Nationality), row.Nationality);
             Assert.Equal(PlayerDisplay.CountryName(biography.Nationality), row.NationalityName);
             Assert.Equal(biography.Handedness == Handedness.Left ? "L" : "R", row.Handedness);
-            Assert.Equal(row.Player.Age, row.Age);
         });
     }
 

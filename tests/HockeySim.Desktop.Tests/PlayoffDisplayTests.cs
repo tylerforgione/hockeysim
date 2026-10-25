@@ -17,11 +17,12 @@ namespace HockeySim.Desktop.Tests;
 
 /// <summary>
 /// The playoffs as Desktop shows them at each stage: the bracket, the schedule's playoff games,
-/// playoff statistics, and the champion. One season is played through the shell and shared; each
-/// test loads a fresh session from the stage it needs.
+/// playoff statistics, and the champion. One season is played through the shell and shared with
+/// the home page tests (see <see cref="PlayedSeasonCollection"/>); each test loads a fresh session
+/// from the stage it needs.
 /// </summary>
+[Collection(PlayedSeasonCollection.Name)]
 public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
-    : IClassFixture<PlayoffDisplayTests.PlayedSeason>
 {
     [Fact]
     public void BeforeTheRegularSeasonEndsThereIsNoBracketOrPlayoffStatistics()
@@ -91,7 +92,19 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         Assert.Equal("Playoffs: First round, game 1", playoffRow.PhaseDescription);
         Assert.True(playoffRow.IsNext);
         Assert.Equal(84, shell.Schedule.Matches.Count(match => match.Phase == SeasonPhase.RegularSeason && match.IsCompleted));
-        Assert.Equal("Playoffs", shell.Home.Tiles[0].Value);
+
+        // The home page follows the managed team: its first game, or nothing if it missed the playoffs.
+        if (managedSeries is null)
+        {
+            Assert.False(shell.Home.TaleOfTheTape.HasMatch);
+            Assert.Equal("No match scheduled", shell.Home.TaleOfTheTape.EmptyText);
+            Assert.Empty(shell.Home.UpcomingGames.Rows);
+        }
+        else
+        {
+            Assert.Contains("First round, game 1 · Series starts", shell.Home.TaleOfTheTape.Caption, StringComparison.Ordinal);
+            Assert.Equal("R1 G1", shell.Home.UpcomingGames.Rows[0].Detail);
+        }
     }
 
     [Fact]
@@ -254,11 +267,11 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         Assert.False(shell.AdvanceDayCommand.CanExecute(null));
         Assert.EndsWith($" · {champion} are champions", shell.CalendarLabel, StringComparison.Ordinal);
         Assert.Equal("Season complete", shell.ContinueDescription);
-        Assert.Equal("Season complete", shell.Home.NextMatchTitle);
-        Assert.Equal("Complete", shell.Home.Tiles[0].Value);
-        var finalGame = Assert.Single(shell.Home.LatestResults);
-        Assert.True(finalGame.OpenCommand.CanExecute(null));
-        Assert.All(shell.Home.DivisionStandings, row => Assert.Equal(84, row.GamesPlayed));
+        Assert.Equal("Season complete", shell.Home.TaleOfTheTape.EmptyText);
+        Assert.Equal("Season complete", shell.Home.UpcomingGames.EmptyText);
+        Assert.Empty(shell.Home.UpcomingGames.Rows);
+        Assert.True(shell.Home.RecentResults.Rows[0].OpenCommand.CanExecute(null));
+        Assert.All(shell.Home.Standings.Tables.Single().Rows, row => Assert.Equal(84, row.GamesPlayed));
         Assert.EndsWith("final standings", shell.Standings.Subtitle, StringComparison.Ordinal);
         Assert.All(shell.Standings.Tables.SelectMany(table => table.Rows), row => Assert.Equal(84, row.GamesPlayed));
 
@@ -289,6 +302,7 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         Assert.IsType<RosterPageViewModel>(shell.CurrentPage);
         shell.Navigate(ShellPage.PlayoffPicture);
         Assert.IsType<PlayoffsPageViewModel>(shell.CurrentPage);
+        var finalGame = Assert.Single(shell.Playoffs.Rounds[^1].Series).Games[^1];
         finalGame.OpenCommand.Execute(null);
         var schedule = Assert.IsType<SchedulePageViewModel>(shell.CurrentPage);
         Assert.NotNull(schedule.SelectedResult);

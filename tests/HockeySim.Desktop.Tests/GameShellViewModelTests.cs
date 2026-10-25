@@ -213,54 +213,58 @@ public sealed class GameShellViewModelTests
     }
 
     [Fact]
-    public void OpeningAMessageFromHomeShowsItInTheInboxAndMarksItRead()
-    {
-        var session = GameTestData.StartSession();
-        var shell = new GameShellViewModel(session);
-        var preview = shell.Home.InboxPreview[1];
-
-        preview.OpenCommand.Execute(null);
-
-        var inbox = Assert.IsType<InboxPageViewModel>(shell.CurrentPage);
-        Assert.Equal(preview.Message.Id, inbox.SelectedMessage?.Id);
-        Assert.False(inbox.SelectedMessage!.IsUnread);
-        Assert.True(session.Snapshot.Inbox.Single(message => message.Id == preview.Message.Id).IsRead);
-        Assert.Equal(3, shell.UnreadCount);
-        Assert.Equal("3", shell.Home.Tiles.Single(tile => tile.Label == "INBOX").Value);
-        Assert.Equal("4 messages · 3 unread", inbox.Subtitle);
-    }
-
-    [Fact]
-    public void OpeningARatingLeaderShowsThatPlayerOnTheRoster()
+    public async Task OpeningATeamLeaderShowsThatPlayerOnTheRoster()
     {
         var shell = new GameShellViewModel(GameTestData.StartSession());
-        var goalieLeader = shell.Home.RatingLeaders.Single(leader => leader.RatingName == "Reflexes");
+        await shell.AdvanceDayCommand.ExecuteAsync(null);
+        var goalieLeader = shell.Home.TeamLeaders.Tiles.Single(tile => tile.Label == "GSAx");
 
-        goalieLeader.OpenCommand.Execute(null);
+        goalieLeader.OpenPlayerCommand!.Execute(null);
 
         var roster = Assert.IsType<RosterPageViewModel>(shell.CurrentPage);
-        Assert.Equal(goalieLeader.PlayerName, roster.Roster.SelectedPlayer?.FullName);
-        Assert.Equal(goalieLeader.PlayerName, roster.Roster.SelectedGoalie?.Name);
+        Assert.EndsWith(goalieLeader.PlayerName[3..], roster.Roster.SelectedGoalie!.Name, StringComparison.Ordinal);
         Assert.Null(roster.Roster.SelectedSkater);
     }
 
     [Fact]
-    public void HomeSummarisesTheManagedTeamAndItsDivision()
+    public void HomeShowsTheManagedTeamAndItsDivision()
     {
         var session = GameTestData.StartSession();
         var home = new GameShellViewModel(session).Home;
         var team = session.ManagedTeam;
 
-        Assert.Equal("23", home.Tiles.Single(tile => tile.Label == "ROSTER").Value);
-        Assert.Equal("20", home.Tiles.Single(tile => tile.Label == "DRESSED").Value);
-        Assert.Equal("NORTHERN DIVISION", home.DivisionTitle);
-        Assert.Equal(8, home.DivisionStandings.Count);
-        Assert.Single(home.DivisionStandings, row => row.IsManaged && row.TeamName == team.Name);
-        Assert.Equal(8, home.LineupSummary.Count);
-        Assert.Equal(4, home.InboxPreview.Count);
-        Assert.All(home.RatingLeaders, leader => Assert.Contains(
-            team.Roster,
-            player => $"{player.FirstName} {player.LastName}" == leader.PlayerName));
+        Assert.Equal($"{GameTestData.ManagedTeamName} · Northern Division", home.Subtitle);
+        Assert.Equal("NORTHERN DIVISION", home.Standings.Title);
+        var table = Assert.Single(home.Standings.Tables).Rows;
+        Assert.Equal(8, table.Count);
+        Assert.Single(table, row => row.IsManaged && row.TeamName == team.Name);
+    }
+
+    [Fact]
+    public void HomePanelsOpenTheirPagesTeamsAndPlayers()
+    {
+        var shell = new GameShellViewModel(GameTestData.StartSession());
+        var opponent = shell.Home.TaleOfTheTape.Theirs!;
+
+        shell.Home.UpcomingGames.OpenScheduleCommand.Execute(null);
+        Assert.Equal(ShellPage.TeamSchedule, shell.CurrentPageKind);
+
+        shell.Home.Standings.OpenStandingsCommand.Execute(null);
+        Assert.Equal(ShellPage.Standings, shell.CurrentPageKind);
+
+        shell.Home.TaleOfTheTape.OpenLinesCommand.Execute(null);
+        Assert.Equal(ShellPage.Lines, shell.CurrentPageKind);
+
+        shell.Home.TaleOfTheTape.OpenOpponentCommand.Execute(null);
+        Assert.Equal(ShellPage.Teams, shell.CurrentPageKind);
+        Assert.Equal(opponent.TeamId, shell.Teams.SelectedTeam.Id);
+
+        shell.Home.TaleOfTheTape.OpenContextCommand.Execute(null);
+        Assert.Equal(ShellPage.TeamSchedule, shell.CurrentPageKind);
+
+        shell.Home.TaleOfTheTape.OurPlayers[1].OpenCommand!.Execute(null);
+        var roster = Assert.IsType<RosterPageViewModel>(shell.CurrentPage);
+        Assert.NotNull(roster.Roster.SelectedGoalie);
     }
 
     private static NavigationItemViewModel GetTab(GameShellViewModel shell, ShellPage page) =>

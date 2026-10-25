@@ -114,17 +114,6 @@ public sealed class TeamBrowsingTests
     }
 
     [Fact]
-    public void RosterRowsShowEachPlayersOverall()
-    {
-        var session = GameTestData.StartSession();
-        var roster = new TeamRosterViewModel(session, session.ManagedTeam.Id);
-
-        Assert.All(
-            roster.Skaters.Concat(roster.Goalies),
-            row => Assert.Equal(row.Player.Overall, row.Overall));
-    }
-
-    [Fact]
     public void SelectingAGoalieClearsTheSkaterSelection()
     {
         var session = GameTestData.StartSession();

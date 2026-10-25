@@ -140,6 +140,20 @@ public sealed class NewGameTests
         Assert.Equal(initial.ManagedTeamId, manager.GetSnapshot().ManagedTeamId);
     }
 
+    [Fact]
+    public void FreshSeedCommandsCarryTheChoicesAndDifferInRandomState()
+    {
+        var first = NewGameCommand.WithFreshSeed(2027, InitialManagedTeam);
+        var second = NewGameCommand.WithFreshSeed(2027, InitialManagedTeam);
+
+        Assert.Equal(2027, first.SeasonYear);
+        Assert.Equal(InitialManagedTeam, first.ManagedTeamName);
+        Assert.NotEqual(first.RandomState, second.RandomState);
+
+        var snapshot = new GameManager().StartNewGame(first);
+        Assert.Equal(2027, snapshot.League.SeasonYear);
+    }
+
     private static GameSnapshot StartGame(ulong seed) =>
         new GameManager().StartNewGame(CreateCommand(seed));
 
