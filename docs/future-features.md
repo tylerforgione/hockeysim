@@ -638,4 +638,6 @@ Direction:
 
 Desktop shows height and weight in imperial units from v0.2.0. Add a setting
 to show metric units instead, alongside other presentation preferences as
-they arise.
+they arise. The home page's team leaders qualify rate statistics at a
+minimum share of the team's games, chosen on the panel for the session only;
+remember that choice here too.

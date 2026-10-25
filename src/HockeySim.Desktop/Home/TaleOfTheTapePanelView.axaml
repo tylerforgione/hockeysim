@@ -1,0 +1,137 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:home="using:HockeySim.Desktop.Home"
+             xmlns:theme="using:HockeySim.Desktop.Theme"
+             x:Class="HockeySim.Desktop.Home.TaleOfTheTapePanelView"
+             x:DataType="home:TaleOfTheTapePanelViewModel">
+  <Border Classes="panel">
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Classes="panel-header">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+          <TextBlock Classes="panel-title" Text="TALE OF THE TAPE" />
+          <TextBlock x:Name="TapeCaption"
+                     Grid.Column="1"
+                     Classes="caption"
+                     HorizontalAlignment="Right"
+                     VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis"
+                     Text="{Binding Caption}" />
+        </Grid>
+      </Border>
+      <TextBlock x:Name="TapeEmptyText"
+                 Classes="caption"
+                 Margin="12,10"
+                 Text="{Binding EmptyText}"
+                 IsVisible="{Binding !HasMatch}" />
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasMatch}">
+        <StackPanel>
+          <Grid ColumnDefinitions="*,*" Margin="12,12,12,6">
+            <ContentControl Content="{Binding Ours}">
+              <ContentControl.ContentTemplate>
+                <DataTemplate x:DataType="home:TapeTeamViewModel">
+                  <StackPanel HorizontalAlignment="Center" Spacing="2">
+                    <Border Classes="crest"
+                            HorizontalAlignment="Center"
+                            Background="{Binding Colour, Converter={x:Static theme:ColourBrushConverter.Instance}}">
+                      <TextBlock Text="{Binding Initials}"
+                                 Foreground="{Binding Colour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                    </Border>
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
+                    <TextBlock Classes="cell-center strong" Text="{Binding Record}" />
+                    <TextBlock Classes="caption" TextAlignment="Center" Text="{Binding Standing}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ContentControl.ContentTemplate>
+            </ContentControl>
+            <ContentControl Grid.Column="1" Content="{Binding Theirs}">
+              <ContentControl.ContentTemplate>
+                <DataTemplate x:DataType="home:TapeTeamViewModel">
+                  <StackPanel HorizontalAlignment="Center" Spacing="2">
+                    <Border Classes="crest"
+                            HorizontalAlignment="Center"
+                            Background="{Binding Colour, Converter={x:Static theme:ColourBrushConverter.Instance}}">
+                      <TextBlock Text="{Binding Initials}"
+                                 Foreground="{Binding Colour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                    </Border>
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
+                    <TextBlock Classes="cell-center strong" Text="{Binding Record}" />
+                    <TextBlock Classes="caption" TextAlignment="Center" Text="{Binding Standing}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ContentControl.ContentTemplate>
+            </ContentControl>
+          </Grid>
+
+          <ItemsControl x:Name="TapeComparison" ItemsSource="{Binding Rows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="home:TapeRowViewModel">
+                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="64,*,64" Margin="12,4">
+                  <TextBlock Classes="cell"
+                             Classes.strong="{Binding OursBetter}"
+                             Classes.muted="{Binding TheirsBetter}"
+                             Text="{Binding OursValue}" />
+                  <TextBlock Grid.Column="1" Classes="cell-center muted" Text="{Binding Label}" />
+                  <TextBlock Grid.Column="2"
+                             Classes="cell"
+                             Classes.strong="{Binding TheirsBetter}"
+                             Classes.muted="{Binding OursBetter}"
+                             HorizontalAlignment="Right"
+                             Text="{Binding TheirsValue}" />
+                  <ProgressBar Grid.Row="1"
+                               Grid.ColumnSpan="3"
+                               Margin="0,3,0,0"
+                               Classes="share-bar"
+                               Value="{Binding OursShare}"
+                               Foreground="{Binding OursColour, Converter={x:Static theme:ColourBrushConverter.Instance}}"
+                               Background="{Binding TheirsColour, Converter={x:Static theme:ColourBrushConverter.Instance}}" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <Border Classes="table-header" Margin="0,10,0,0">
+            <TextBlock Text="PLAYERS TO WATCH" />
+          </Border>
+          <Grid ColumnDefinitions="*,*">
+            <ItemsControl x:Name="OurPlayers" ItemsSource="{Binding OurPlayers}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="home:TapePlayerViewModel">
+                  <StackPanel Margin="12,6" Spacing="0">
+                    <TextBlock Classes="label" Text="{Binding Label}" />
+                    <Button Classes="cell-link"
+                            HorizontalAlignment="Left"
+                            Command="{Binding OpenCommand}">
+                      <TextBlock Classes="cell" Text="{Binding Name}" />
+                    </Button>
+                    <TextBlock Classes="caption" Text="{Binding Line}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <ItemsControl x:Name="TheirPlayers" Grid.Column="1" ItemsSource="{Binding TheirPlayers}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="home:TapePlayerViewModel">
+                  <StackPanel Margin="12,6" Spacing="0">
+                    <TextBlock Classes="label" Text="{Binding Label}" />
+                    <Button Classes="cell-link"
+                            HorizontalAlignment="Left"
+                            Command="{Binding OpenCommand}">
+                      <TextBlock Classes="cell" Text="{Binding Name}" />
+                    </Button>
+                    <TextBlock Classes="caption" Text="{Binding Line}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Grid>
+
+          <WrapPanel Margin="6,8,6,8">
+            <Button x:Name="SetLinesLink" Classes="link" Content="Set lines ›" Command="{Binding OpenLinesCommand}" />
+            <Button x:Name="OpponentLink" Classes="link" Content="{Binding OpponentLinkText}" Command="{Binding OpenOpponentCommand}" />
+            <Button x:Name="ContextLink" Classes="link" Content="{Binding ContextLinkText}" Command="{Binding OpenContextCommand}" />
+          </WrapPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </DockPanel>
+  </Border>
+</UserControl>

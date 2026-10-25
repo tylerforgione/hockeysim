@@ -21,18 +21,38 @@ public static class MatchDisplay
     /// The team's next match from the current date on, across the preseason, regular season, and
     /// playoffs in that order; null once the season is complete or when none is scheduled.
     /// </summary>
-    public static ScheduledMatchSnapshot? NextMatch(GameSnapshot snapshot, TeamId teamId)
+    public static ScheduledMatchSnapshot? NextMatch(GameSnapshot snapshot, TeamId teamId) =>
+        UpcomingMatches(snapshot, teamId).Select(upcoming => upcoming.Match).FirstOrDefault();
+
+    /// <summary>
+    /// The team's unplayed matches from the current date on, in date order, each with the phase it
+    /// belongs to; none once the season is complete. Playoff games exist only as they are scheduled.
+    /// </summary>
+    public static IEnumerable<(ScheduledMatchSnapshot Match, SeasonPhase Phase)> UpcomingMatches(GameSnapshot snapshot, TeamId teamId)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
         var season = snapshot.Season;
-        return season.IsComplete
-            ? null
-            : snapshot.Schedule.PreseasonMatches
-                .Concat(snapshot.Schedule.Matches)
-                .Concat(snapshot.Schedule.PlayoffMatches)
-                .FirstOrDefault(match =>
-                    match.Date >= season.CurrentDate && (match.HomeTeamId == teamId || match.AwayTeamId == teamId));
+        if (season.IsComplete)
+        {
+            return [];
+        }
+
+        return snapshot.Schedule.PreseasonMatches.Select(match => (Match: match, Phase: SeasonPhase.Preseason))
+            .Concat(snapshot.Schedule.Matches.Select(match => (Match: match, Phase: SeasonPhase.RegularSeason)))
+            .Concat(snapshot.Schedule.PlayoffMatches.Select(match => (Match: match, Phase: SeasonPhase.Playoffs)))
+            .Where(upcoming => upcoming.Match.Date >= season.CurrentDate
+                && (upcoming.Match.HomeTeamId == teamId || upcoming.Match.AwayTeamId == teamId));
+    }
+
+    /// <summary>A record as wins-losses-overtime losses ("10-8-3"), counting shootout losses as overtime losses.</summary>
+    public static string Record(TeamRecordSnapshot record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+
+        return string.Create(
+            CultureInfo.CurrentCulture,
+            $"{record.Wins}-{record.RegulationLosses}-{record.OvertimeLosses + record.ShootoutLosses}");
     }
 
     /// <summary>
@@ -108,15 +128,30 @@ public static class MatchDisplay
     public static string PeriodTime(int period, TimeSpan timeInPeriod) =>
         $"{PeriodName(period)} {TimeOnIce(timeInPeriod)}";
 
+    /// <summary>Formats a rank as an ordinal ("1st", "12th", "22nd").</summary>
+    public static string Ordinal(int number)
+    {
+        var suffix = (number % 100) switch
+        {
+            11 or 12 or 13 => "th",
+            _ => (number % 10) switch
+            {
+                1 => "st",
+                2 => "nd",
+                3 => "rd",
+                _ => "th",
+            },
+        };
+        return string.Create(CultureInfo.CurrentCulture, $"{number}{suffix}");
+    }
+
     /// <summary>
     /// Names a period: "1st" to "3rd" in regulation, "OT" for the first overtime, then "2OT" and on
     /// for further playoff overtime periods.
     /// </summary>
     public static string PeriodName(int period) => period switch
     {
-        1 => "1st",
-        2 => "2nd",
-        3 => "3rd",
+        1 or 2 or 3 => Ordinal(period),
         4 => "OT",
         _ => string.Create(CultureInfo.CurrentCulture, $"{period - 3}OT"),
     };

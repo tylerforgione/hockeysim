@@ -1,5 +1,6 @@
 using System.Globalization;
 
+using HockeySim.Desktop.Schedule;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
@@ -49,7 +50,7 @@ public static class PlayoffDisplay
 
         return seed.IsWildCard
             ? string.Create(CultureInfo.CurrentCulture, $"{seed.ConferenceName} wild card {seed.Rank}")
-            : $"{seed.DivisionName}, {Ordinal(seed.Rank)}";
+            : $"{seed.DivisionName}, {MatchDisplay.Ordinal(seed.Rank)}";
     }
 
     /// <summary>
@@ -106,12 +107,4 @@ public static class PlayoffDisplay
 
         return null;
     }
-
-    private static string Ordinal(int rank) => rank switch
-    {
-        1 => "1st",
-        2 => "2nd",
-        3 => "3rd",
-        _ => string.Create(CultureInfo.CurrentCulture, $"{rank}th"),
-    };
 }

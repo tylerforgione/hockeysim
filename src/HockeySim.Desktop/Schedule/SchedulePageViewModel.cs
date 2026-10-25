@@ -47,14 +47,7 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
-        Teams = session.Snapshot.League.Conferences
-            .SelectMany(conference => conference.Divisions.Select(division => (conference, division)))
-            .SelectMany(pair => pair.division.Teams.Select(team => new TeamEntryViewModel(
-                team.Id,
-                team.Name,
-                $"{pair.division.Name} · {pair.conference.Name}",
-                team.Id == session.Snapshot.ManagedTeamId)))
-            .ToList();
+        Teams = TeamEntryViewModel.ForLeague(session.Snapshot);
         _selectedTeam = Teams.Single(team => team.IsManaged);
         Refresh();
     }
@@ -158,7 +151,7 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
         var snapshot = _session.Snapshot;
         var season = snapshot.Season;
         var results = AllResults()
-            .Where(result => result.Home.TeamId == teamId || result.Away.TeamId == teamId)
+            .Where(result => TeamResults.Involves(result, teamId))
             .ToDictionary(result => result.Date);
         var matches = snapshot.Schedule.PreseasonMatches.Select(match => (Match: match, Phase: SeasonPhase.Preseason))
             .Concat(snapshot.Schedule.Matches.Select(match => (Match: match, Phase: SeasonPhase.RegularSeason)))

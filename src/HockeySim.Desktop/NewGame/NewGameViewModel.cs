@@ -1,6 +1,3 @@
-using System.Buffers.Binary;
-using System.Security.Cryptography;
-
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -8,7 +5,6 @@ using HockeySim.Desktop.Players;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.NewGame;
 using HockeySim.Management.Saves;
-using HockeySim.Simulation.Randomness;
 
 namespace HockeySim.Desktop.NewGame;
 
@@ -119,10 +115,7 @@ public sealed partial class NewGameViewModel : ObservableObject
         try
         {
             _gameManager.StartNewGame(
-                new NewGameCommand(
-                    InitialSeasonYear,
-                    CreateRandomState(),
-                    SelectedTeamName));
+                NewGameCommand.WithFreshSeed(InitialSeasonYear, SelectedTeamName));
         }
         catch (ArgumentException exception)
         {
@@ -145,13 +138,6 @@ public sealed partial class NewGameViewModel : ObservableObject
         {
             team.IsSelected = string.Equals(team.Name, teamName, StringComparison.Ordinal);
         }
-    }
-
-    private static RandomState CreateRandomState()
-    {
-        Span<byte> bytes = stackalloc byte[sizeof(ulong)];
-        RandomNumberGenerator.Fill(bytes);
-        return new RandomState(BinaryPrimitives.ReadUInt64LittleEndian(bytes));
     }
 }
 

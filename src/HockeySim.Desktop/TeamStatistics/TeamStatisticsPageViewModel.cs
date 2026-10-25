@@ -45,10 +45,7 @@ public sealed partial class TeamStatisticsPageViewModel : ShellPageViewModel
     public override void Refresh()
     {
         OnPropertyChanged(nameof(HasPlayoffStatistics));
-        if (!HasPlayoffStatistics)
-        {
-            StatisticsSet = StatisticsSet.RegularSeason;
-        }
+        StatisticsSet = StatisticsSet.OrRegularSeason(HasPlayoffStatistics);
 
         var season = _session.Snapshot.Season;
         var teamId = _session.Snapshot.ManagedTeamId;
@@ -60,7 +57,7 @@ public sealed partial class TeamStatisticsPageViewModel : ShellPageViewModel
     [RelayCommand]
     private void ShowStatisticsSet(StatisticsSet statistics)
     {
-        StatisticsSet = HasPlayoffStatistics ? statistics : StatisticsSet.RegularSeason;
+        StatisticsSet = statistics.OrRegularSeason(HasPlayoffStatistics);
         Refresh();
     }
 }

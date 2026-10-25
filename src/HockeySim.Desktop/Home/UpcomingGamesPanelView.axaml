@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:home="using:HockeySim.Desktop.Home"
+             x:Class="HockeySim.Desktop.Home.UpcomingGamesPanelView"
+             x:DataType="home:UpcomingGamesPanelViewModel">
+  <Border Classes="panel">
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Classes="panel-header">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Classes="panel-title" Text="UPCOMING GAMES" />
+          <Button Grid.Column="1" Classes="link" Content="Schedule ›" Command="{Binding OpenScheduleCommand}" />
+        </Grid>
+      </Border>
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+          <TextBlock Classes="caption"
+                     Margin="12,10"
+                     Text="{Binding EmptyText}"
+                     IsVisible="{Binding !HasRows}" />
+          <ItemsControl x:Name="UpcomingGamesList" Classes="table" ItemsSource="{Binding Rows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="home:UpcomingGameRowViewModel">
+                <Border Classes="standing-row">
+                  <Button Classes="list-item" Command="{Binding OpenCommand}" Height="28" Padding="10,0">
+                    <Grid ColumnDefinitions="92,*,64,34" ColumnSpacing="6">
+                      <TextBlock Classes="cell muted" Text="{Binding Date}" />
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
+                        <TextBlock Classes="cell muted" Text="{Binding Venue}" />
+                        <TextBlock Classes="cell" Text="{Binding Opponent}" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Detail}" />
+                      <TextBlock Grid.Column="3" Classes="cell muted" HorizontalAlignment="Right" Text="{Binding Phase}" />
+                    </Grid>
+                  </Button>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+    </DockPanel>
+  </Border>
+</UserControl>

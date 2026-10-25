@@ -5,6 +5,7 @@ using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
 using HockeySim.Domain;
+using HockeySim.Management.GameManagement.Snapshots;
 
 namespace HockeySim.Desktop.Teams;
 
@@ -31,14 +32,7 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
 
         _session = session;
         _openLines = openLines;
-        Teams = session.Snapshot.League.Conferences
-            .SelectMany(conference => conference.Divisions.Select(division => (conference, division)))
-            .SelectMany(pair => pair.division.Teams.Select(team => new TeamEntryViewModel(
-                team.Id,
-                team.Name,
-                $"{pair.division.Name} · {pair.conference.Name}",
-                team.Id == session.Snapshot.ManagedTeamId)))
-            .ToList();
+        Teams = TeamEntryViewModel.ForLeague(session.Snapshot);
         _selectedTeam = Teams.Single(team => team.IsManaged);
         _roster = new TeamRosterViewModel(session, _selectedTeam.Id, openLines: openLines);
     }
@@ -96,4 +90,17 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
         new(_session, teamId, selectedPlayerId, Roster.Columns, Roster.Statistics, Roster.Sorts, Roster.Group, Roster.ForwardPosition, _openLines);
 }
 
-public sealed record TeamEntryViewModel(TeamId Id, string Name, string Division, bool IsManaged);
+public sealed record TeamEntryViewModel(TeamId Id, string Name, string Division, bool IsManaged)
+{
+    /// <summary>
+    /// Lists every team in league order (conference, then division), each labelled "Division · Conference".
+    /// </summary>
+    public static List<TeamEntryViewModel> ForLeague(GameSnapshot snapshot) => snapshot.League.Conferences
+        .SelectMany(conference => conference.Divisions.Select(division => (conference, division)))
+        .SelectMany(pair => pair.division.Teams.Select(team => new TeamEntryViewModel(
+            team.Id,
+            team.Name,
+            $"{pair.division.Name} · {pair.conference.Name}",
+            team.Id == snapshot.ManagedTeamId)))
+        .ToList();
+}

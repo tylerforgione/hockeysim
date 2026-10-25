@@ -154,13 +154,9 @@ public static class MatchSummaryTables
 
     private static string Number(int value) => value.ToString(CultureInfo.CurrentCulture);
 
-    private static string StarName(int place) => place switch
-    {
-        1 => "1st star",
-        2 => "2nd star",
-        3 => "3rd star",
-        _ => throw new ArgumentOutOfRangeException(nameof(place), place, "There are three stars."),
-    };
+    private static string StarName(int place) => place is >= 1 and <= 3
+        ? $"{MatchDisplay.Ordinal(place)} star"
+        : throw new ArgumentOutOfRangeException(nameof(place), place, "There are three stars.");
 }
 
 /// <param name="Title">What the table counts, such as "SHOTS".</param>

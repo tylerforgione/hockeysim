@@ -105,7 +105,7 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         _group = group;
         _forwardPosition = forwardPosition;
         Sorts = sorts ?? RosterSorts.None;
-        _statistics = HasPlayoffStatistics ? statistics : StatisticsSet.RegularSeason;
+        _statistics = statistics.OrRegularSeason(HasPlayoffStatistics);
 
         ShowStatistics();
         if (initiallySelectedPlayerId is { } id && _team.Roster.Any(player => player.Id == id))
@@ -238,7 +238,7 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     [RelayCommand]
     private void ShowStatisticsSet(StatisticsSet statistics)
     {
-        Statistics = HasPlayoffStatistics ? statistics : StatisticsSet.RegularSeason;
+        Statistics = statistics.OrRegularSeason(HasPlayoffStatistics);
     }
 
     partial void OnStatisticsChanged(StatisticsSet value)

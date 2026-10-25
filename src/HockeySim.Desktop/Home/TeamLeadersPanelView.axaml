@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:home="using:HockeySim.Desktop.Home"
+             x:Class="HockeySim.Desktop.Home.TeamLeadersPanelView"
+             x:DataType="home:TeamLeadersPanelViewModel">
+  <Border Classes="panel">
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Classes="panel-header">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+          <TextBlock Classes="panel-title" Text="TEAM LEADERS" />
+          <TextBlock Grid.Column="1" Classes="caption" VerticalAlignment="Center" Text="Min GP" />
+          <ComboBox x:Name="MinimumGamesSelector"
+                    Grid.Column="2"
+                    Width="76"
+                    VerticalAlignment="Center"
+                    ItemsSource="{Binding MinimumGamesOptions}"
+                    SelectedItem="{Binding MinimumGames}" />
+        </Grid>
+      </Border>
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl x:Name="LeaderTiles" ItemsSource="{Binding Tiles}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Columns="2" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="home:LeaderTileViewModel">
+              <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,1" Padding="12,8">
+                <StackPanel Spacing="0">
+                  <TextBlock Classes="label" Text="{Binding Label}" />
+                  <Button Classes="cell-link"
+                          HorizontalAlignment="Left"
+                          Command="{Binding OpenPlayerCommand}"
+                          IsVisible="{Binding OpenPlayerCommand, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <TextBlock Classes="cell" Text="{Binding PlayerName}" />
+                  </Button>
+                  <TextBlock Classes="stat" Text="{Binding Value}" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </DockPanel>
+  </Border>
+</UserControl>

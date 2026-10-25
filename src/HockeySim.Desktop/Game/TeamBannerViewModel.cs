@@ -52,15 +52,15 @@ public sealed partial class TeamBannerViewModel : ObservableObject
 
         Summary = string.Create(
             CultureInfo.CurrentCulture,
-            $"{record.Wins}-{record.RegulationLosses}-{record.OvertimeLosses + record.ShootoutLosses} · {record.Points} pts · {Ordinal(divisionEntry.Rank)} in {division.Name} · {Ordinal(conferenceEntry.Rank)} in {conference.Name}");
+            $"{record.Wins}-{record.RegulationLosses}-{record.OvertimeLosses + record.ShootoutLosses} · {record.Points} pts · {MatchDisplay.Ordinal(divisionEntry.Rank)} in {division.Name} · {MatchDisplay.Ordinal(conferenceEntry.Rank)} in {conference.Name}");
 
         // The streak counts regular-season games only; the last result covers every phase.
         var season = snapshot.Season;
         var lastResult = season.PreseasonResults
             .Concat(season.Results)
             .Concat(season.Playoffs?.Results ?? [])
-            .LastOrDefault(result => Involves(result, team.Id));
-        var regularSeasonResults = season.Results.Where(result => Involves(result, team.Id)).ToList();
+            .LastOrDefault(result => TeamResults.Involves(result, team.Id));
+        var regularSeasonResults = season.Results.Where(result => TeamResults.Involves(result, team.Id)).ToList();
         Figures =
         [
             new("NEXT", NextMatch(snapshot, team.Id)),
@@ -88,25 +88,6 @@ public sealed partial class TeamBannerViewModel : ObservableObject
         homeTeamId == teamId
             ? $"vs {PlayerDisplay.TeamInitials(_session.GetTeam(awayTeamId).Name)}"
             : $"@ {PlayerDisplay.TeamInitials(_session.GetTeam(homeTeamId).Name)}";
-
-    private static bool Involves(CompletedMatchSnapshot result, TeamId teamId) =>
-        result.Home.TeamId == teamId || result.Away.TeamId == teamId;
-
-    private static string Ordinal(int rank)
-    {
-        var suffix = (rank % 100) switch
-        {
-            11 or 12 or 13 => "th",
-            _ => (rank % 10) switch
-            {
-                1 => "st",
-                2 => "nd",
-                3 => "rd",
-                _ => "th",
-            },
-        };
-        return string.Create(CultureInfo.CurrentCulture, $"{rank}{suffix}");
-    }
 }
 
 /// <summary>One of the key figures on the right of a banner, such as the next match.</summary>

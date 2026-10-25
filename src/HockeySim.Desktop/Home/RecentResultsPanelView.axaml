@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:home="using:HockeySim.Desktop.Home"
+             x:Class="HockeySim.Desktop.Home.RecentResultsPanelView"
+             x:DataType="home:RecentResultsPanelViewModel">
+  <Border Classes="panel">
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Classes="panel-header">
+        <TextBlock Classes="panel-title" Text="RECENT RESULTS" />
+      </Border>
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+          <TextBlock Classes="caption"
+                     Margin="12,10"
+                     Text="{Binding EmptyText}"
+                     IsVisible="{Binding !HasRows}" />
+          <ItemsControl x:Name="RecentResultsList" Classes="table" ItemsSource="{Binding Rows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="home:RecentResultRowViewModel">
+                <Border Classes="standing-row" Height="28" Padding="12,0">
+                  <Grid ColumnDefinitions="92,*,84,66" ColumnSpacing="6">
+                    <TextBlock Classes="cell muted" Text="{Binding Date}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
+                      <TextBlock Classes="cell muted" Text="{Binding Venue}" />
+                      <TextBlock Classes="cell" Text="{Binding Opponent}" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2"
+                               Classes="cell strong"
+                               Classes.success="{Binding IsWin}"
+                               Classes.error="{Binding IsLoss}"
+                               Text="{Binding Result}" />
+                    <Button Grid.Column="3"
+                            Classes="cell-link"
+                            HorizontalAlignment="Right"
+                            Command="{Binding OpenCommand}">
+                      <TextBlock Classes="cell muted" Text="Box score" />
+                    </Button>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+    </DockPanel>
+  </Border>
+</UserControl>
