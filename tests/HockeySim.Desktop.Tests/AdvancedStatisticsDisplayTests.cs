@@ -15,6 +15,26 @@ namespace HockeySim.Desktop.Tests;
 public sealed class AdvancedStatisticsDisplayTests
 {
     [Theory]
+    [InlineData(1, "1st")]
+    [InlineData(2, "2nd")]
+    [InlineData(3, "3rd")]
+    [InlineData(4, "4th")]
+    [InlineData(11, "11th")]
+    [InlineData(12, "12th")]
+    [InlineData(13, "13th")]
+    [InlineData(21, "21st")]
+    [InlineData(22, "22nd")]
+    [InlineData(23, "23rd")]
+    [InlineData(101, "101st")]
+    [InlineData(111, "111th")]
+    [InlineData(112, "112th")]
+    [InlineData(113, "113th")]
+    public void OrdinalsUseTheRightSuffixIncludingTheTeens(int number, string expected)
+    {
+        Assert.Equal(expected, MatchDisplay.Ordinal(number));
+    }
+
+    [Theory]
     [InlineData(null, "—")]
     [InlineData(0.0, "0.0")]
     [InlineData(0.5234, "52.3")]
@@ -144,28 +164,42 @@ public sealed class AdvancedStatisticsDisplayTests
         {
             var statistics = season.SkaterStatistics.Single(skater => skater.PlayerId == row.Player.Id);
             var fiveOnFive = statistics.OnIce.FiveOnFive;
-            Assert.Equal(statistics.PlusMinus > 0 ? $"+{statistics.PlusMinus}" : statistics.PlusMinus.ToString(CultureInfo.CurrentCulture), row.Season.PlusMinus);
             Assert.Equal(statistics.PowerPlayPoints, row.Season.PowerPlayPoints);
             Assert.Equal(statistics.ShorthandedPoints, row.Season.ShorthandedPoints);
-            Assert.Equal(MatchDisplay.TimeOnIce(statistics.TimeOnIcePerGame), row.Season.TimeOnIcePerGame);
-            Assert.Equal(MatchDisplay.Percentage(statistics.FaceoffPercentage), row.Season.FaceoffPercentage);
             Assert.Equal((fiveOnFive.AttemptsFor, fiveOnFive.AttemptsAgainst), (row.Season.CorsiFor, row.Season.CorsiAgainst));
             Assert.Equal((fiveOnFive.UnblockedAttemptsFor, fiveOnFive.UnblockedAttemptsAgainst), (row.Season.FenwickFor, row.Season.FenwickAgainst));
-            Assert.Equal(MatchDisplay.Percentage(fiveOnFive.CorsiPercentage), row.Season.CorsiPercentage);
-            Assert.Equal(MatchDisplay.Percentage(fiveOnFive.FenwickPercentage), row.Season.FenwickPercentage);
-            Assert.Equal(MatchDisplay.ExpectedGoals(fiveOnFive.ExpectedGoalsFor), row.Season.OnIceExpectedGoalsFor);
-            Assert.Equal(MatchDisplay.Percentage(fiveOnFive.ExpectedGoalsPercentage), row.Season.OnIceExpectedGoalsPercentage);
-            Assert.Equal(MatchDisplay.ExpectedGoals(statistics.ExpectedGoals), row.Season.IndividualExpectedGoals);
         });
 
         var starter = roster.Goalies.Single(row => row.Player.Id == team.Lineup.StartingGoalieId);
         var goalie = season.GoalieStatistics.Single(statistics => statistics.PlayerId == starter.Player.Id);
-        Assert.Equal(MatchDisplay.GoalsAgainstAverage(goalie.GoalsAgainstAverage), starter.Season.GoalsAgainstAverage);
         Assert.Equal(goalie.Shutouts, starter.Season.Shutouts);
-        Assert.Equal(MatchDisplay.ExpectedGoals(goalie.ExpectedGoalsAgainst), starter.Season.ExpectedGoalsAgainst);
-        Assert.Equal(MatchDisplay.GoalsSavedAboveExpected(goalie.GoalsSavedAboveExpected), starter.Season.GoalsSavedAboveExpected);
-        Assert.Equal(MatchDisplay.TimeOnIce(goalie.TimeOnIce), starter.Season.TimeInNet);
-        Assert.Equal(MatchDisplay.TimeOnIce(goalie.TimeOnIcePerGame), starter.Season.TimeOnIcePerGame);
+
+        // Formatted figures are pinned to the literal text for a known skater and goalie.
+        var skater = roster.Skaters.Single(row => row.Name == "Anton Berglund");
+        Assert.Equal(
+            ["0", "0", "0", "11:42", "63.6", "68.0", "66.7", "0.76", "63.0", "0.18"],
+            [
+                skater.Season.PlusMinus,
+                skater.Season.PowerPlayPoints.ToString(CultureInfo.InvariantCulture),
+                skater.Season.ShorthandedPoints.ToString(CultureInfo.InvariantCulture),
+                skater.Season.TimeOnIcePerGame,
+                skater.Season.FaceoffPercentage,
+                skater.Season.CorsiPercentage,
+                skater.Season.FenwickPercentage,
+                skater.Season.OnIceExpectedGoalsFor,
+                skater.Season.OnIceExpectedGoalsPercentage,
+                skater.Season.IndividualExpectedGoals,
+            ]);
+        Assert.Equal("Carter Bouchard", starter.Name);
+        Assert.Equal(
+            ["3.07", "3.26", "+0.26", "58:41", "58:41"],
+            [
+                starter.Season.GoalsAgainstAverage,
+                starter.Season.ExpectedGoalsAgainst,
+                starter.Season.GoalsSavedAboveExpected,
+                starter.Season.TimeInNet,
+                starter.Season.TimeOnIcePerGame,
+            ]);
 
         // The backup has not started, so every average is undefined.
         var backup = roster.Goalies.Single(row => row.Player.Id == team.Lineup.BackupGoalieId);

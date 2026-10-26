@@ -4,7 +4,6 @@ using CommunityToolkit.Mvvm.Input;
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Players;
 using HockeySim.Domain;
-using HockeySim.Management.GameManagement.Snapshots;
 
 namespace HockeySim.Desktop.Standings;
 
@@ -17,12 +16,11 @@ namespace HockeySim.Desktop.Standings;
 public sealed partial class StandingsPageViewModel : ShellPageViewModel
 {
     private readonly GameSession _session;
+    private readonly StandingsTableBuilder _tables;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLeagueScope), nameof(IsConferenceScope), nameof(IsDivisionScope), nameof(IsWildCardScope))]
     private StandingsScope _scope = StandingsScope.Division;
-
-    private readonly Action<TeamId>? _openTeam;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Tables))]
@@ -34,7 +32,7 @@ public sealed partial class StandingsPageViewModel : ShellPageViewModel
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
-        _openTeam = openTeam;
+        _tables = new StandingsTableBuilder(session, openTeam);
         Refresh();
     }
 
@@ -84,93 +82,7 @@ public sealed partial class StandingsPageViewModel : ShellPageViewModel
         Columns = CreateColumns();
     }
 
-    /// <summary>
-    /// One column per conference, side by side, in every view built from conferences; the league
-    /// view is a single column.
-    /// </summary>
-    private List<StandingsColumnViewModel> CreateColumns()
-    {
-        var standings = _session.Snapshot.Season.Standings;
-        var results = ResultsByTeam();
-        return Scope switch
-        {
-            StandingsScope.League =>
-            [
-                new([CreateTable("LEAGUE", $"{standings.League.Count} teams", standings.League, results)]),
-            ],
-            StandingsScope.Conference => standings.Conferences
-                .Select(conference => new StandingsColumnViewModel(
-                    [CreateTable(conference.Name.ToUpperInvariant(), $"{conference.Teams.Count} teams", conference.Teams, results)]))
-                .ToList(),
-            StandingsScope.Division => standings.Conferences
-                .Select(conference => new StandingsColumnViewModel(conference.Divisions
-                    .Select(division => CreateTable(division.Name.ToUpperInvariant(), conference.Name, division.Teams, results))
-                    .ToList()))
-                .ToList(),
-            StandingsScope.WildCard => standings.WildCard
-                .Select(conference => new StandingsColumnViewModel(CreateWildCardTables(conference, results).ToList()))
-                .ToList(),
-            _ => throw new InvalidOperationException($"Unknown standings scope {Scope}."),
-        };
-    }
-
-    /// <summary>Each team's regular-season results, oldest first, for its recent form.</summary>
-    private Dictionary<TeamId, List<CompletedMatchSnapshot>> ResultsByTeam()
-    {
-        var results = _session.Snapshot.League.Teams.ToDictionary(team => team.Id, _ => new List<CompletedMatchSnapshot>());
-        foreach (var result in _session.Snapshot.Season.Results)
-        {
-            results[result.Home.TeamId].Add(result);
-            results[result.Away.TeamId].Add(result);
-        }
-
-        return results;
-    }
-
-    /// <summary>
-    /// Each division's leaders, then the conference's wild-card race with a line under the last
-    /// wild card.
-    /// </summary>
-    private IEnumerable<StandingsTableViewModel> CreateWildCardTables(
-        WildCardStandingsSnapshot conference,
-        Dictionary<TeamId, List<CompletedMatchSnapshot>> results)
-    {
-        foreach (var division in conference.DivisionLeaders)
-        {
-            yield return CreateTable(division.Name.ToUpperInvariant(), conference.Name, division.Teams, results);
-        }
-
-        yield return CreateTable(
-            $"{conference.Name.ToUpperInvariant()} WILD CARD",
-            $"Top {conference.WildCardCount} qualify",
-            conference.WildCardRace,
-            results,
-            lastQualifierIndex: conference.WildCardCount - 1);
-    }
-
-    private StandingsTableViewModel CreateTable(
-        string title,
-        string caption,
-        IReadOnlyList<StandingsEntrySnapshot> entries,
-        Dictionary<TeamId, List<CompletedMatchSnapshot>> results,
-        int? lastQualifierIndex = null)
-    {
-        var managedTeamId = _session.Snapshot.ManagedTeamId;
-        return new StandingsTableViewModel(
-            title,
-            caption,
-            entries
-                .Select((entry, index) =>
-                {
-                    var teamId = entry.Record.TeamId;
-                    return StandingsRowViewModel.Create(entry, _session.GetTeam(teamId), teamId == managedTeamId, results[teamId]) with
-                    {
-                        IsLastQualifier = index == lastQualifierIndex,
-                        OpenTeamCommand = _openTeam is null ? null : new RelayCommand(() => _openTeam(teamId)),
-                    };
-                })
-                .ToList());
-    }
+    private List<StandingsColumnViewModel> CreateColumns() => _tables.Columns(Scope);
 }
 
 /// <summary>The tables stacked in one column of the page: a conference's, or the league's.</summary>

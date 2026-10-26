@@ -79,10 +79,6 @@ public sealed class InjuryDisplayTests
         Assert.Equal(
             report.Injuries.OrderBy(row => !row.IsOut).Select(row => row.Name),
             report.Injuries.Select(row => row.Name));
-        var outCount = report.Injuries.Count(row => row.IsOut);
-        Assert.Equal(
-            $"{session.ManagedTeam.Name} · {outCount} out · {report.Injuries.Count - outCount} playing hurt",
-            report.Subtitle);
 
         var rows = roster.Skaters.Concat(roster.Goalies).ToList();
         foreach (var player in session.ManagedTeam.Roster)
@@ -92,12 +88,13 @@ public sealed class InjuryDisplayTests
             Assert.Equal(!player.CanPlay, row.IsOut);
         }
 
-        var outPlayer = session.ManagedTeam.Roster.First(player => !player.CanPlay);
-        var injury = outPlayer.Injuries.First(candidate => !candidate.CanPlayThrough);
-        var reportRow = report.Injuries.First(row => row.Name == PlayerDisplay.FullName(outPlayer) && row.IsOut);
-        Assert.Equal(InjuryDisplay.Name(injury.Type), reportRow.Injury);
+        // The one injured player is out with a high ankle sprain; the report shows it as text.
+        var reportRow = Assert.Single(report.Injuries);
+        Assert.Equal("Ben Fitzgerald", reportRow.Name);
+        Assert.Equal("High ankle sprain", reportRow.Injury);
         Assert.Equal("Out", reportRow.Status);
-        Assert.Equal(InjuryDisplay.ExpectedReturn(injury.ExpectedReturn), reportRow.ExpectedReturn);
+        Assert.Equal("Oct 14 – Oct 24", reportRow.ExpectedReturn);
+        Assert.Equal("Ottawa Owls · 1 out · 0 playing hurt", report.Subtitle);
     }
 
     [Fact]

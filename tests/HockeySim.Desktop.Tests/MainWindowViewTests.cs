@@ -112,6 +112,20 @@ public sealed class MainWindowViewTests
         var continueButton = Assert.IsType<Button>(shellView.FindControl<Button>("ContinueButton"));
         Assert.True(continueButton.IsEffectivelyEnabled);
         Assert.Single(window.GetVisualDescendants().OfType<HomePageView>());
+        foreach (var panel in new Control[]
+        {
+            Single<UpcomingGamesPanelView>(window),
+            Single<StandingsPanelView>(window),
+            Single<TaleOfTheTapePanelView>(window),
+            Single<RecentResultsPanelView>(window),
+            Single<TeamLeadersPanelView>(window),
+        })
+        {
+            Assert.True(panel.Bounds.Width > 150);
+            Assert.True(panel.Bounds.Height > 150);
+        }
+
+        Assert.Equal(8, CountStandingsRows(Single<StandingsPanelView>(window)));
 
         AssertNavigationRenders<InboxPageView>(window, ShellPage.Inbox);
         AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
@@ -215,9 +229,9 @@ public sealed class MainWindowViewTests
         var homeView = Single<HomePageView>(window);
         var resultButtons = homeView.GetVisualDescendants()
             .OfType<Button>()
-            .Where(button => button.DataContext is LeagueResultRowViewModel)
+            .Where(button => button.DataContext is RecentResultRowViewModel)
             .ToList();
-        Assert.Equal(16, resultButtons.Count);
+        Assert.Equal(6, resultButtons.Count);
         Click(resultButtons[0]);
 
         // The box score opens on its summary; the player tables are on their own tab.

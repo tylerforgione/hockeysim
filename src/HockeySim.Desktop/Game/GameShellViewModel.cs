@@ -85,7 +85,7 @@ public sealed partial class GameShellViewModel : ObservableObject
         Confirmation = confirmation ?? new ConfirmationViewModel();
 
         TeamBanner = new TeamBannerViewModel(session);
-        Home = new HomePageViewModel(session, Navigate, OpenInboxMessage, OpenPlayer, OpenMatch);
+        Home = new HomePageViewModel(session, Navigate, OpenPlayer, OpenTeam, OpenMatch);
         Inbox = new InboxPageViewModel(session);
         Roster = new RosterPageViewModel(session, OpenTeamLines);
         Lines = new LinesPageViewModel(session);
@@ -517,7 +517,8 @@ public sealed partial class GameShellViewModel : ObservableObject
         SimulationSummary = null;
     }
 
-    private string DescribeSimulation(SimulationResult result)
+    /// <summary>The banner after a run: how many days were played and why the run stopped.</summary>
+    public static string DescribeSimulation(SimulationResult result)
     {
         var season = result.Snapshot.Season;
         var days = $"Simulated {DayCount(result.DaysPlayed)}";

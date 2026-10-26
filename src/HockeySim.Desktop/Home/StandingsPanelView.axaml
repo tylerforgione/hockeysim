@@ -1,0 +1,96 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:home="using:HockeySim.Desktop.Home"
+             xmlns:standings="using:HockeySim.Desktop.Standings"
+             xmlns:theme="using:HockeySim.Desktop.Theme"
+             x:Class="HockeySim.Desktop.Home.StandingsPanelView"
+             x:DataType="home:StandingsPanelViewModel">
+  <Border Classes="panel">
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Classes="panel-header">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock x:Name="StandingsTitle" Classes="panel-title" Text="{Binding Title}" />
+          <Button Grid.Column="1" Classes="link" Content="Standings ›" Command="{Binding OpenStandingsCommand}" />
+        </Grid>
+      </Border>
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="6,6,6,4">
+        <Button x:Name="DivisionScopeButton"
+                Classes="tab"
+                Classes.selected="{Binding IsDivisionScope}"
+                Content="Division"
+                Command="{Binding SelectScopeCommand}"
+                CommandParameter="{x:Static standings:StandingsScope.Division}" />
+        <Button x:Name="WildCardScopeButton"
+                Classes="tab"
+                Classes.selected="{Binding IsWildCardScope}"
+                Content="Wild card"
+                Command="{Binding SelectScopeCommand}"
+                CommandParameter="{x:Static standings:StandingsScope.WildCard}" />
+        <Button x:Name="ConferenceScopeButton"
+                Classes="tab"
+                Classes.selected="{Binding IsConferenceScope}"
+                Content="Conference"
+                Command="{Binding SelectScopeCommand}"
+                CommandParameter="{x:Static standings:StandingsScope.Conference}" />
+        <Button x:Name="LeagueScopeButton"
+                Classes="tab"
+                Classes.selected="{Binding IsLeagueScope}"
+                Content="League"
+                Command="{Binding SelectScopeCommand}"
+                CommandParameter="{x:Static standings:StandingsScope.League}" />
+      </StackPanel>
+      <!-- The header and row templates share ColumnDefinitions so columns align. -->
+      <Border DockPanel.Dock="Top" Classes="table-header">
+        <Grid ColumnDefinitions="24,*,28,28,28,32,36">
+          <TextBlock Text="#" />
+          <TextBlock Grid.Column="1" Text="TEAM" />
+          <TextBlock Grid.Column="2" Text="GP" HorizontalAlignment="Center" />
+          <TextBlock Grid.Column="3" Text="W" HorizontalAlignment="Center" />
+          <TextBlock Grid.Column="4" Text="L" HorizontalAlignment="Center" />
+          <TextBlock Grid.Column="5" Text="OTL" HorizontalAlignment="Center" />
+          <TextBlock Grid.Column="6" Text="PTS" HorizontalAlignment="Center" />
+        </Grid>
+      </Border>
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl x:Name="StandingsTables" ItemsSource="{Binding Tables}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="home:StandingsPanelTableViewModel">
+              <StackPanel>
+                <Border Classes="table-header" IsVisible="{Binding ShowTitle}">
+                  <TextBlock Text="{Binding Title}" />
+                </Border>
+                <ItemsControl Classes="table" ItemsSource="{Binding Rows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="standings:StandingsRowViewModel">
+                      <Border Classes="standing-row"
+                              Classes.managed="{Binding IsManaged}"
+                              Classes.last-qualifier="{Binding IsLastQualifier}"
+                              Height="26"
+                              Padding="8,0">
+                        <Grid ColumnDefinitions="24,*,28,28,28,32,36">
+                          <TextBlock Classes="cell muted" Text="{Binding Rank}" />
+                          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <Border Classes="team-swatch"
+                                    Background="{Binding TeamColour, Converter={x:Static theme:ColourBrushConverter.Instance}}" />
+                            <Button Classes="cell-link" Command="{Binding OpenTeamCommand}">
+                              <TextBlock Classes="cell" Classes.strong="{Binding IsManaged}" Text="{Binding TeamName}" />
+                            </Button>
+                          </StackPanel>
+                          <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding GamesPlayed}" />
+                          <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Wins}" />
+                          <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Losses}" />
+                          <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding OvertimeLosses}" />
+                          <TextBlock Grid.Column="6" Classes="cell-center strong" Text="{Binding Points}" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </DockPanel>
+  </Border>
+</UserControl>

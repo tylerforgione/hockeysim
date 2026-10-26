@@ -18,13 +18,16 @@ view model together.
 | `Main/` | The window and top-level screen choice, with discard confirmation |
 | `Startup/`, `NewGame/`, `Saves/` | The startup menu, new-game setup, save and load screens |
 | `Game/` | `GameSession` (commands, snapshots, unsaved progress, runs of days) and the in-game shell: menu bar, Continue and its menu (`SimulateAheadOptionViewModel`), sections and page tabs (`ShellPage`, `NavigationItemViewModel`), the team banner (`TeamBannerViewModel`), and the status bar |
-| `Home/`, `Inbox/`, `Roster/`, `Lines/`, `TeamStatistics/`, `Injuries/`, `Teams/`, `Standings/`, `Playoffs/`, `Schedule/` | The shell's pages |
+| `Home/`, `Inbox/`, `Roster/`, `Lines/`, `TeamStatistics/`, `Injuries/`, `Teams/`, `Standings/`, `Playoffs/`, `Schedule/` | The shell's pages. `Teams/TeamsPageViewModel.cs` also holds `TeamEntryViewModel.ForLeague`, the team picker list the Teams, Lines, and Schedule pages share |
+| `Home/` | The home page: `HomePageViewModel` builds five self-contained panels, each a view and view model that takes the `GameSession` and only the shortcuts it needs and refreshes itself: `UpcomingGamesPanel…`, `StandingsPanel…` (scope held across refreshes), `TaleOfTheTapePanel…` (the managed team against its next opponent), `RecentResultsPanel…`, `TeamLeadersPanel…` (with the minimum-games choice). `HomeStatistics` picks the statistics set the tape and leaders share and finds its figures |
 | `Roster/` | The roster shared by the Roster and Teams pages: `TeamRosterView`/`TeamRosterViewModel` (player groups, column views, selection), `SkaterTableView` and `GoalieTableView` (each table's four column views), `PlayerStripView`/`PlayerStripViewModel` (the selected player's strip), `PlayerRowViewModel` (one row) |
-| `Players/` | Player profile, regular-season or playoff totals as displayed (`PlayerSeasonTotals`, chosen by `StatisticsSet`), and shared player and injury formatting (`PlayerDisplay`, `InjuryDisplay`) |
-| `Standings/TeamForm.cs`, `Standings/PlayoffStatusDisplay.cs` | A team's last ten games and streak (also on the banner), and the playoff-status letters and legend |
+| `Players/` | Player profile, regular-season or playoff totals as displayed (`PlayerSeasonTotals`, chosen by `StatisticsSet`, which falls back to the regular season before the playoffs), and shared player and injury formatting (`PlayerDisplay`, `InjuryDisplay`) |
+| `Standings/StandingsTableBuilder.cs` | Builds the standings tables per scope from Management's rankings, for the Standings page and the home page's standings panel |
+| `Standings/TeamForm.cs`, `Standings/PlayoffStatusDisplay.cs` | A team's last ten games (and the points they earned) and streak (also on the banner), and the playoff-status letters and legend |
 | `Playoffs/PlayoffDisplay.cs` | Shared round, seed, and series-status formatting, and finding a team's playoff game by date |
 | `TeamStatistics/TeamStatisticsDisplay.cs`, `Injuries/InjuryReportRowViewModel.cs` | Team statistic and injury report formatting |
-| `Schedule/MatchDetail*`, `MatchSummaryTables.cs`, `MatchDisplay.cs` | The box score: its banner, Summary and Players tabs, the summary's tables, and shared match and statistic formatting |
+| `Schedule/MatchDetail*`, `MatchSummaryTables.cs`, `MatchDisplay.cs` | The box score: its banner, Summary and Players tabs, the summary's tables, and shared match and statistic formatting (including ordinals) |
+| `Schedule/TeamResults.cs` | Picking a team's results: whether a result involves a team, and each team's results oldest first |
 | `Tables/` | Sortable tables: `TableSort` (column key and direction), `TableColumn` (a column's raw sort key and first direction), `TableSorting` (click and ordering, ties keep default order, dashes last), and the `SortHeader` header button. Per-table column sets: `Roster/RosterTableColumns.cs` (with `RosterSorts`, a roster's remembered skater and goalie sorts), `Schedule/ScheduleTableColumns.cs`, `Schedule/BoxScoreTableColumns.cs` |
 | `Confirmation/` | The confirmation shown over every screen |
 | `Theme/` | Palette, control styles (including the menu bar, banner, tabs, and status bar), menu-bar icons, the bundled PT Sans fonts and their licence (`Fonts/`), `TeamPalette`, which colours the window with the managed team, `ColourBrushConverter`, which paints a team's colour, and `ReadableTextBrushConverter`, which picks text that reads on it |
@@ -41,8 +44,9 @@ games, plus a headless Avalonia walkthrough.
 | `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings |
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, the preseason labels, the schedule's phases and preseason results |
 | `MatchDetailViewModelTests.cs` | The box score for regulation, overtime, and shootout matches: periods, totals, records, the comparison, stars, goalies, and tabs |
-| `SimulateAheadTests.cs` | Continue's menu by phase, one refresh per run, the run summary, Stop, a failure part-way, an early stop |
+| `SimulateAheadTests.cs` | Continue's menu by phase, one refresh per run, Stop, a failure part-way, and the run summary for every stop reason |
 | `PlayoffDisplayTests.cs` | A shared season played through the shell: the bracket before and at each playoff stage, playoff schedule rows and box scores, switching statistic sets, the completed season and champion |
+| `HomePageTests.cs` | The home page's panels: the tale of the tape (opening day, mid-season, playoffs, season complete), team leaders and the minimum-games choice, the standings panel's scopes, upcoming games and recent results and what they open; also defines the collection that shares `PlayoffDisplayTests`' played season |
 | `StandingsAndStatisticsTests.cs` | Standings scopes including the wild card, conference columns, recent form, team links, playoff markers, season totals |
 | `AdvancedStatisticsDisplayTests.cs` | Statistic formatting, box-score summaries and new columns, basic and advanced roster views, the profile line, team statistics |
 | `TableSortingTests.cs` | Sorting roster, schedule, and box-score tables: first-click direction, reversal, dashes last, ties, selection, and the sort held across teams, refreshes, groups, and column views |
@@ -120,13 +124,33 @@ leaving for the menu wait as they do for a day. The session publishes one
 snapshot when the run ends, so pages refresh once, and a banner says how many
 days were played and why the run stopped. A failure part-way keeps the days
 before it: the error banner says how many were simulated and names the day that
-could not be played. A run that played any day is unsaved progress. The home page starts
-with a season tile: preseason or regular-season matches played (the preseason
-counting toward nothing), the managed team's playoff series and its status,
-how far it went once eliminated, or that it did not qualify. Its next match is
-marked as a preseason match or by playoff round, game number, and series status,
-and its latest results list the last played day in any phase, each opening the
-box score. Once the regular season ends the standings page shows the final
+could not be played. A run that played any day is unsaved progress. The home page is built
+around the managed team's next match, in five panels, each its own view model
+and view so it can become a widget on a [home canvas](https://github.com/tylerforgione/hockeysim/issues/65):
+upcoming games and the standings over recent results and team leaders, beside
+the tale of the tape. Upcoming games lists the next seven matches in any phase,
+each with the opponent's record (or the playoff round and game) and opening on
+the schedule. The standings panel shows the managed team's division, wild-card
+view, conference, or the league, as Management ranks them, with the choice held
+for the session. The tale of the tape compares the two teams for the next match,
+the managed team on the left: crest, record, and standing, then points
+percentage, goals for and against per game, power play, penalty kill,
+five-on-five xGF% and CF%, team save percentage, and the last ten games, each
+with a bar in the teams' colours and the better side emphasised (fewer goals
+against is better; an undefined figure is a dash and favours neither). It names
+each team's top scorer and starting goalie, and links to the Lines page, the
+opponent on the Teams page, and the season series on the schedule. Once the
+managed team has a playoff series, even after it is out, it compares playoff
+figures instead: the
+playoff record and seed, without points percentage or the last ten, and the
+series status linking to the playoff picture. With no next match it says there
+is none, or that the season is complete. Recent results lists the managed team's last six results in
+any phase, each opening the box score. Team leaders shows points, goals,
+assists, five-on-five xGF%, save percentage, and goals saved above expected in
+the same regular-season or playoff figures; the two rates count only players
+who have played a minimum share of the team's games, chosen on the panel (half
+at first) and held for the session. The inbox is not on the home page; the menu
+bar and status bar carry it. Once the regular season ends the standings page shows the final
 standings. Once the champion is crowned the season is complete: the menu bar
 names the champion, Continue is disabled, and every page remains browsable. The
 schedule page lists one team's matches in every phase in date order (its seven

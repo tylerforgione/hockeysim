@@ -9,3 +9,13 @@ public enum StatisticsSet
     RegularSeason,
     Playoffs,
 }
+
+public static class StatisticsSetExtensions
+{
+    /// <summary>
+    /// Returns the requested totals when the playoffs have started, and the regular season's otherwise,
+    /// since playoff statistics do not exist before then.
+    /// </summary>
+    public static StatisticsSet OrRegularSeason(this StatisticsSet statistics, bool hasPlayoffStatistics) =>
+        hasPlayoffStatistics ? statistics : StatisticsSet.RegularSeason;
+}

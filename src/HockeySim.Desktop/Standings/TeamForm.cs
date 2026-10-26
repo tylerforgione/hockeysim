@@ -30,6 +30,19 @@ public static class TeamForm
             $"{kinds.Count(kind => kind == "W")}-{kinds.Count(kind => kind == "L")}-{kinds.Count(kind => kind == "OT")}");
     }
 
+    /// <summary>
+    /// The standings points earned in the last ten games (two for a win, one for an overtime or
+    /// shootout loss), or null before any game.
+    /// </summary>
+    public static int? LastTenPoints(IReadOnlyList<CompletedMatchSnapshot> results, TeamId teamId)
+    {
+        ArgumentNullException.ThrowIfNull(results);
+
+        return results.Count == 0
+            ? null
+            : results.TakeLast(RecentGames).Sum(result => Kind(result, teamId) switch { "W" => 2, "OT" => 1, _ => 0 });
+    }
+
     /// <summary>The run of like results ending with the latest, such as "W3" or "OT1"; a dash before any game.</summary>
     public static string Streak(IReadOnlyList<CompletedMatchSnapshot> results, TeamId teamId)
     {

@@ -45,14 +45,7 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
-        Teams = session.Snapshot.League.Conferences
-            .SelectMany(conference => conference.Divisions)
-            .SelectMany(division => division.Teams.Select(team => new TeamEntryViewModel(
-                team.Id,
-                team.Name,
-                division.Name,
-                team.Id == session.Snapshot.ManagedTeamId)))
-            .ToList();
+        Teams = TeamEntryViewModel.ForLeague(session.Snapshot);
         _selectedTeam = Teams.Single(team => team.IsManaged);
         _managedLineup = CreateManagedLineup();
         _lineup = _managedLineup;

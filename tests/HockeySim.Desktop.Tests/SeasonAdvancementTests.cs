@@ -24,15 +24,13 @@ public sealed class SeasonAdvancementTests
         Assert.Equal("Continue", shell.ContinueLabel);
         Assert.True(shell.AdvanceDayCommand.CanExecute(null));
         Assert.Equal($"{MatchDisplay.ShortDate(OpeningDay)} · 16 league matches, including yours", shell.ContinueDescription);
-        Assert.StartsWith("Today · ", shell.Home.NextMatchCaption, StringComparison.Ordinal);
-        Assert.Equal("Regular season", shell.Home.Tiles[0].Value);
-        Assert.Equal("0 of 84 played", shell.Home.Tiles[0].Caption);
+        Assert.StartsWith("Today · ", shell.Home.TaleOfTheTape.Caption, StringComparison.Ordinal);
+        Assert.Equal(MatchDisplay.ShortDate(OpeningDay), shell.Home.UpcomingGames.Rows[0].Date);
 
-        // The last preseason day is the latest played, and its results open like any other.
-        Assert.Equal($"LEAGUE RESULTS · {MatchDisplay.ShortDate(OpeningDay.AddDays(-1)).ToUpperInvariant()}", shell.Home.LatestResultsTitle);
-        Assert.Equal(16, shell.Home.LatestResults.Count);
-        Assert.All(shell.Home.LatestResults, result => Assert.True(result.OpenCommand.CanExecute(null)));
-        Assert.All(shell.Home.DivisionStandings, row => Assert.Equal(0, row.GamesPlayed));
+        // The latest preseason results are the managed team's, newest first, and open like any other.
+        Assert.Equal(6, shell.Home.RecentResults.Rows.Count);
+        Assert.All(shell.Home.RecentResults.Rows, result => Assert.True(result.OpenCommand.CanExecute(null)));
+        Assert.All(shell.Home.Standings.Tables.Single().Rows, row => Assert.Equal(0, row.GamesPlayed));
     }
 
     [Fact]
@@ -45,11 +43,11 @@ public sealed class SeasonAdvancementTests
         var daysToOpeningDay = OpeningDay.DayNumber - session.Snapshot.Season.CurrentDate.DayNumber;
         Assert.EndsWith($" · Regular season starts in {daysToOpeningDay} days", shell.CalendarLabel, StringComparison.Ordinal);
         Assert.Equal($"{firstDay} · 16 preseason matches, including yours", shell.ContinueDescription);
-        Assert.EndsWith(" · Preseason", shell.Home.NextMatchCaption, StringComparison.Ordinal);
-        Assert.Equal("Preseason", shell.Home.Tiles[0].Value);
-        Assert.Equal("0 of 7 played · counts toward nothing", shell.Home.Tiles[0].Caption);
-        Assert.Empty(shell.Home.LatestResults);
-        Assert.Equal($"Preseason · {MatchDisplay.LongDate(session.Snapshot.Season.CurrentDate)}", shell.Home.LatestResultsCaption);
+        Assert.EndsWith(" · Preseason", shell.Home.TaleOfTheTape.Caption, StringComparison.Ordinal);
+        Assert.Equal(7, shell.Home.UpcomingGames.Rows.Count);
+        Assert.All(shell.Home.UpcomingGames.Rows, row => Assert.Equal("PRE", row.Phase));
+        Assert.Empty(shell.Home.RecentResults.Rows);
+        Assert.Equal("No results", shell.Home.RecentResults.EmptyText);
 
         while (session.Snapshot.Season.Phase == SeasonPhase.Preseason)
         {
@@ -58,8 +56,8 @@ public sealed class SeasonAdvancementTests
 
         Assert.EndsWith(" · Regular season ends in 166 days", shell.CalendarLabel, StringComparison.Ordinal);
         Assert.Equal($"{MatchDisplay.ShortDate(OpeningDay)} · 16 league matches, including yours", shell.ContinueDescription);
-        Assert.DoesNotContain("Preseason", shell.Home.NextMatchCaption, StringComparison.Ordinal);
-        Assert.All(shell.Home.DivisionStandings, row => Assert.Equal(0, row.GamesPlayed));
+        Assert.DoesNotContain("Preseason", shell.Home.TaleOfTheTape.Caption, StringComparison.Ordinal);
+        Assert.All(shell.Home.Standings.Tables.Single().Rows, row => Assert.Equal(0, row.GamesPlayed));
     }
 
     [Fact]
@@ -77,11 +75,12 @@ public sealed class SeasonAdvancementTests
         Assert.StartsWith("Fri 2 Oct 2026 · Next match ", shell.CalendarLabel, StringComparison.Ordinal);
         Assert.EndsWith("Regular season ends in 165 days", shell.CalendarLabel, StringComparison.Ordinal);
 
-        Assert.Equal($"LEAGUE RESULTS · {MatchDisplay.ShortDate(OpeningDay).ToUpperInvariant()}", shell.Home.LatestResultsTitle);
-        Assert.Equal(16, shell.Home.LatestResults.Count);
-        Assert.Single(shell.Home.LatestResults, result => result.InvolvesManagedTeam);
-        Assert.StartsWith("Last: ", shell.Home.LastResultCaption, StringComparison.Ordinal);
-        var standings = shell.Home.DivisionStandings;
+        var latest = shell.Home.RecentResults.Rows[0];
+        Assert.Equal(MatchDisplay.ShortDate(OpeningDay), latest.Date);
+        Assert.Equal(
+            MatchDisplay.ResultFor(season.Results.Single(result => result.Home.TeamId == session.ManagedTeam.Id || result.Away.TeamId == session.ManagedTeam.Id), session.ManagedTeam.Id),
+            latest.Result);
+        var standings = shell.Home.Standings.Tables.Single().Rows;
         Assert.All(standings, row => Assert.Equal(1, row.GamesPlayed));
         Assert.Equal(1, standings[0].Rank);
         Assert.All(standings.Zip(standings.Skip(1)), pair =>
@@ -110,16 +109,14 @@ public sealed class SeasonAdvancementTests
         // The current calendar plays a round every other day, so the day after opening night is
         // empty for the whole league, including the managed team.
         Assert.Equal($"{MatchDisplay.ShortDate(offDay)} · No league matches", shell.ContinueDescription);
-        Assert.DoesNotContain("Today", shell.Home.NextMatchCaption, StringComparison.Ordinal);
+        Assert.DoesNotContain("Today", shell.Home.TaleOfTheTape.Caption, StringComparison.Ordinal);
 
         await shell.AdvanceDayCommand.ExecuteAsync(null);
 
         Assert.Null(shell.AdvanceError);
         Assert.Equal(OpeningDay.AddDays(2), session.Snapshot.Season.CurrentDate);
         Assert.Equal(16, session.Snapshot.Season.Results.Count);
-        Assert.False(shell.Home.HasLatestResults);
-        Assert.Equal("No league matches", shell.Home.LatestResultsCaption);
-        Assert.StartsWith("Today", shell.Home.NextMatchCaption, StringComparison.Ordinal);
+        Assert.StartsWith("Today", shell.Home.TaleOfTheTape.Caption, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -128,17 +125,19 @@ public sealed class SeasonAdvancementTests
         var session = GameTestData.StartSession();
         var shell = new GameShellViewModel(session);
         await shell.AdvanceDayCommand.ExecuteAsync(null);
-        var otherResult = shell.Home.LatestResults.First(result => !result.InvolvesManagedTeam);
+        var managedId = session.ManagedTeam.Id;
+        var otherResult = session.Snapshot.Season.Results.First(candidate => candidate.Home.TeamId != managedId && candidate.Away.TeamId != managedId);
 
-        otherResult.OpenCommand.Execute(null);
+        // The home page only lists the managed team's matches; the league schedule opens any other.
+        shell.OpenMatch(otherResult.Date, otherResult.Home.TeamId);
 
         var schedule = Assert.IsType<SchedulePageViewModel>(shell.CurrentPage);
         var detail = Assert.IsType<MatchDetailViewModel>(schedule.SelectedResult);
         var result = session.Snapshot.Season.Results.Single(candidate =>
             candidate.Date == detail.Date && candidate.Home.TeamId == detail.HomeTeamId);
-        Assert.Equal(otherResult.HomeTeamName, schedule.SelectedTeam.Name);
-        Assert.Equal(otherResult.HomeTeamName, detail.Home.TeamName);
-        Assert.Equal(otherResult.AwayTeamName, detail.Away.TeamName);
+        Assert.Equal(session.GetTeam(otherResult.Home.TeamId).Name, schedule.SelectedTeam.Name);
+        Assert.Equal(session.GetTeam(otherResult.Home.TeamId).Name, detail.Home.TeamName);
+        Assert.Equal(session.GetTeam(otherResult.Away.TeamId).Name, detail.Away.TeamName);
         Assert.Equal(MatchDisplay.FinalLabel(result.Decision), detail.FinalLabel);
 
         foreach (var (side, snapshot) in new[] { (detail.Home, result.Home), (detail.Away, result.Away) })
@@ -147,41 +146,38 @@ public sealed class SeasonAdvancementTests
             Assert.Equal(snapshot.Skaters.Select(line => (line.Goals, line.Assists)), side.Skaters.Select(skater => (skater.Goals, skater.Assists)));
             Assert.Equal(
                 snapshot.Skaters.Select(line => (
-                    MatchDisplay.PlusMinus(line.PlusMinus),
-                    MatchDisplay.TimeOnIce(line.TimeOnIce),
                     line.Shots,
                     line.ShotAttempts,
-                    MatchDisplay.ExpectedGoals(line.ExpectedGoals),
                     line.Hits,
                     line.BlockedShots,
-                    MatchDisplay.Faceoffs(line.FaceoffsWon, line.FaceoffsLost),
                     line.Takeaways,
                     line.Giveaways,
                     line.PenaltyMinutes,
                     line.PowerPlayGoals,
                     line.ShorthandedGoals)),
                 side.Skaters.Select(skater => (
-                    skater.PlusMinus,
-                    skater.TimeOnIce,
                     skater.Shots,
                     skater.ShotAttempts,
-                    skater.ExpectedGoals,
                     skater.Hits,
                     skater.BlockedShots,
-                    skater.Faceoffs,
                     skater.Takeaways,
                     skater.Giveaways,
                     skater.PenaltyMinutes,
                     skater.PowerPlayGoals,
                     skater.ShorthandedGoals)));
-            Assert.Equal(MatchDisplay.ExpectedGoals(snapshot.Goalie.ExpectedGoalsAgainst), side.Goalie.ExpectedGoalsAgainst);
-            Assert.Equal(MatchDisplay.TimeOnIce(snapshot.Goalie.TimeOnIce), side.Goalie.TimeOnIce);
             Assert.All(side.Skaters, skater => Assert.Equal(skater.Goals + skater.Assists, skater.Points));
             var shootoutGoal = result.Decision == MatchDecision.Shootout && result.WinnerId == snapshot.TeamId ? 1 : 0;
             Assert.Equal(side.Score - shootoutGoal, side.Skaters.Sum(skater => skater.Goals));
             Assert.Equal(side.Goalie.ShotsAgainst - side.Goalie.GoalsAgainst, side.Goalie.Saves);
-            Assert.Equal(MatchDisplay.SavePercentage(side.Goalie.Saves, side.Goalie.ShotsAgainst), side.Goalie.SavePercentage);
         }
+
+        // Formatted figures are pinned to the literal text for a known skater and goalie.
+        var skater = detail.Home.Skaters[0];
+        Assert.Equal("Cole Thompson", skater.Name);
+        Assert.Equal(
+            ["0", "18:02", "0.66", "—", "4", "8", "2", "2"],
+            [skater.PlusMinus, skater.TimeOnIce, skater.ExpectedGoals, skater.Faceoffs, skater.Shots.ToString(CultureInfo.InvariantCulture), skater.ShotAttempts.ToString(CultureInfo.InvariantCulture), skater.Hits.ToString(CultureInfo.InvariantCulture), skater.BlockedShots.ToString(CultureInfo.InvariantCulture)]);
+        Assert.Equal(["1.97", "59:32", ".800"], [detail.Home.Goalie.ExpectedGoalsAgainst, detail.Home.Goalie.TimeOnIce, detail.Home.Goalie.SavePercentage]);
 
         // The summary's totals are the match's, away first as on the scoreboard.
         var byPeriod = detail.PeriodTables.ToDictionary(table => table.Title);
@@ -255,13 +251,13 @@ public sealed class SeasonAdvancementTests
         var played = schedule.Matches[0];
         Assert.True(played.IsCompleted);
         Assert.True(schedule.Matches[1].IsNext);
-        var managedResult = Assert.Single(shell.Home.LatestResults, result => result.InvolvesManagedTeam);
+        var managedResult = shell.Home.RecentResults.Rows[0];
         managedResult.OpenCommand.Execute(null);
 
         Assert.Equal(ShellPage.TeamSchedule, shell.CurrentPageKind);
         Assert.Same(schedule.Matches[0], schedule.SelectedMatch);
         Assert.NotNull(schedule.SelectedResult);
-        Assert.Equal("1 of 7 played · counts toward nothing", shell.Home.Tiles[0].Caption);
+        Assert.Equal(["PRE", "PRE", "PRE", "PRE", "PRE", "PRE", string.Empty], shell.Home.UpcomingGames.Rows.Select(row => row.Phase));
     }
 
     [Fact]
@@ -279,7 +275,7 @@ public sealed class SeasonAdvancementTests
         Assert.Equal(before.Season.CurrentDate, session.Snapshot.Season.CurrentDate);
         Assert.Equal(before.RandomState, session.Snapshot.RandomState);
         Assert.Empty(session.Snapshot.Season.Results);
-        Assert.Empty(shell.Home.LatestResults);
+        Assert.Empty(shell.Home.RecentResults.Rows);
         Assert.All(shell.Schedule.Matches, match => Assert.False(match.IsCompleted));
         Assert.False(session.IsAdvancing);
         Assert.True(shell.AdvanceDayCommand.CanExecute(null));
