@@ -16,7 +16,7 @@ view model together.
 | --- | --- |
 | `Program.cs`, `App.axaml*`, `AppVersion.cs` | Startup and composition |
 | `Main/` | The window and top-level screen choice, with discard confirmation |
-| `Startup/`, `NewGame/`, `Saves/` | The startup menu, new-game setup, save and load screens. `NewGame/NewGameViewModel.cs` holds the steps (`NewGameStep`, `NewGameStepViewModel`), the team list (`ConferenceOptionViewModel`, `DivisionOptionViewModel`, `TeamOptionViewModel`), and the team preview (`TeamPreviewViewModel`, `KeyPlayerViewModel`, `RatingBarViewModel`) |
+| `Startup/`, `NewGame/`, `Saves/` | The startup menu (`StartupViewModel`: Continue, the recent games, quit), new-game setup, save and load screens. `Saves/` holds `SavedGameLoader` (loading with the discard confirmation and failure wording, shared by the load screen and the menu), `SavedGameRowViewModel` (one save's details formatting), and the shared table pieces `SavedGameRowView`, `SavedGameHeaderView`, `SavedGameColumns`. `NewGame/NewGameViewModel.cs` holds the steps (`NewGameStep`, `NewGameStepViewModel`), the team list (`ConferenceOptionViewModel`, `DivisionOptionViewModel`, `TeamOptionViewModel`), and the team preview (`TeamPreviewViewModel`, `KeyPlayerViewModel`, `RatingBarViewModel`) |
 | `Game/` | `GameSession` (commands, snapshots, unsaved progress, runs of days) and the in-game shell: menu bar, Continue and its menu (`SimulateAheadOptionViewModel`), sections and page tabs (`ShellPage`, `NavigationItemViewModel`, `IPageTab`), the team banner (`TeamBannerViewModel`), and the status bar |
 | `Home/`, `Inbox/`, `Roster/`, `Lines/`, `TeamStatistics/`, `Injuries/`, `Teams/`, `Standings/`, `Playoffs/`, `Schedule/` | The shell's pages. `Teams/TeamsPageViewModel.cs` also holds `TeamEntryViewModel.ForLeague`, the team picker list the Teams, Lines, and Schedule pages share |
 | `Home/` | The home page: `HomePageViewModel` builds five self-contained panels, each a view and view model that takes the `GameSession` and only the shortcuts it needs and refreshes itself: `UpcomingGamesPanel…`, `StandingsPanel…` (scope held across refreshes), `TaleOfTheTapePanel…` (the managed team against its next opponent), `RecentResultsPanel…`, `TeamLeadersPanel…` (with the minimum-games choice). `HomeStatistics` picks the statistics set the tape and leaders share and finds its figures |
@@ -54,6 +54,7 @@ games, plus a headless Avalonia walkthrough.
 | `RosterViewsTests.cs` | Roster player groups and the forward filter, each view's columns, the sort across groups and views, selection when filtered out, the player strip, xSV%, the Lines link |
 | `PlayerProfileTests.cs` | The profile page against real games: skaters and goalies; healthy, playing hurt (current ratings, marks, losses), and out; the injured-until line; a player who has not played; the game log's phases, labels, order, and box scores; usage and special-teams units; the playoff switch; the profile's banner, tabs, and section in the shell; a refresh; and the entry points (roster strip, home) |
 | `SaveAndLoadTests.cs` | Save and load screens, unsaved progress, confirmations |
+| `StartupMenuTests.cs` | The startup menu: Continue (open game or newest readable save), the recent games (newest first, at most eight, unreadable saves), choosing a row, refresh after saving, the load screen's row details, and standing text |
 | `PlayerBiographyDisplayTests.cs`, `AppVersionTests.cs` | Formatting, version display |
 | `TeamPaletteTests.cs` | Readable text on team colours |
 | `InjuryDisplayTests.cs` | Continue waiting for replacements, the status bar's lineup state, Lines-page injury warnings, roster markers, the injury report, the profile's health |
@@ -345,7 +346,29 @@ contrasts more; before the first game they are the league's black and silver.
 
 Desktop composes `GameSaveDirectory` with the game manager at startup. The
 Game menu's Save game item saves under a typed or chosen name, and the Load
-Game screen, from the startup menu or the Game menu, lists the saves. A `GameSession` tracks whether the game
+Game screen, from the startup menu or the Game menu, lists every save with its
+details (team and colours, in-game date, record, standing, last played). Delete
+removes the selected save, readable or not, after asking. Deleting the save the
+open game was last saved or loaded as leaves that game open with unsaved
+progress.
+
+The startup menu wears the league's neutral colours even while a game is open:
+its view merges the palette again, over the window's team brushes. Its left
+column holds the wordmark, Continue (with the game name and in-game date it
+continues), New game, Load game, Quit, and the version. Continue returns to the
+open game after quitting to the menu; with none open it loads the newest save
+whose details can be read, and it is disabled when there is neither. Beside the
+column, over a quiet rink and inset within its end boards (the view's
+code-behind follows the rink as it scales), a table lists the eight most recent saves with the
+same details as the load screen; clicking a row loads it. Standing reads
+"Preseason", the division rank ("3rd Atlantic", kept after missing the playoffs),
+the playoff round, "Eliminated", or "Champions". A save whose details cannot be
+read is listed by name and time as "Can't be read", and choosing it shows why it
+cannot be loaded. The list and Continue's target are read again each time the
+menu is shown. The menu and the load screen load through one `SavedGameLoader`,
+so both confirm discarding unsaved progress and describe failures the same way.
+
+A `GameSession` tracks whether the game
 has changed since it was last saved or loaded; overwriting an existing save, and
 anything that would discard unsaved progress (loading, starting a new game,
 exiting, or closing the window), asks first through a confirmation shown over
@@ -356,7 +379,7 @@ progress as it was. A successful load builds a new session and shell from the
 loaded snapshot rather than refreshing the old pages, because a loaded game may
 be a different league with different teams and players, and no selection or
 unapplied lineup edit should carry over. Saving stays available once the
-season is complete. The startup menu shows the running version.
+season is complete.
 
 Releases publish `HockeySim.Desktop` as a self-contained, single-file build
 named `HockeySim` for each supported runtime identifier; ordinary builds stay

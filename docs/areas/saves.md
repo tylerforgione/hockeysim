@@ -13,6 +13,7 @@ cross-cutting rules are in
 | --- | --- |
 | `Management/Saves/GameSave.cs` | The detached save model |
 | `Management/Saves/GameSaveCapture.cs` | Copies the game world into a save |
+| `Management/Saves/SavedGameDetails.cs`, `SavedGameDetailsCapture.cs` | The list-entry details written in a save's header, and their capture from the season |
 | `Management/Saves/GameSaveRestorer.cs` | Rebuilds and validates a game from a save |
 | `Management/Saves/IGameSaveStore.cs`, `ISavedGameLibrary.cs` | The persistence contracts |
 | `Management/Saves/SaveName.cs`, `GameSaveException.cs` | Save names and save errors |
@@ -32,6 +33,7 @@ version in `GameSaveFile`.
 | `Management.Tests/SaveAndLoadTests.cs` | Round trips, continued play matching uninterrupted play |
 | `Management.Tests/InvalidSaveTests.cs` | Every kind of invalid save, each leaving the active game unchanged |
 | `Management.Tests/FullSeasonTests.cs` | Saving and loading a completed season, and rejecting one saved as continuing past its end |
+| `Management.Tests/SavedGameDetailsTests.cs` | The details captured for preseason, regular season, alive, eliminated, champion, and missed-playoffs teams |
 | `Management.Tests/SaveNameTests.cs` | Accepted names, case-insensitivity |
 | `Infrastructure.Tests/GameSaveFileTests.cs` | Real files: header, versions, damaged files, failed writes |
 | `Infrastructure.Tests/GameSaveDirectoryTests.cs` | Listing and finding named saves |
@@ -46,12 +48,16 @@ lineups are worked out from health), preseason and regular-season schedules,
 current date, completed preseason, regular-season, and playoff matches (with
 their full box scores, skater time on ice by situation, on-ice and team shot totals by situation, period totals,
 scoring and penalty summaries, injuries, and hidden wear, times in whole seconds), inbox, and random state into a
-detached save, then hands it to the store. The rest of the play-by-play is not
+detached save. It also captures the save details (`SavedGameDetails`): the
+managed team's name and colours, the current date and phase, its regular-season
+record and division rank, and how far it has got in the playoffs (not in them,
+alive in a round, eliminated in a round, or champion). It hands both to the
+store. The details are derived from the game and never read back on load. The rest of the play-by-play is not
 saved. Save format version 4 added the event engine's box-score statistics,
 version 5 penalty minutes, power-play and shorthanded goals and assists, and
 power-play opportunities, version 6 empty-net goals, version 7 the shot
 totals and summaries, version 8 injuries and wear, version 9 each injury's cause, version 10 the
-preseason schedule and results, version 11 the playoff results, version 12 team colours, version 13 arenas and period totals, version 14 skater time on ice by situation, and version 15 the manager's name. The playoff
+preseason schedule and results, version 11 the playoff results, version 12 team colours, version 13 arenas and period totals, version 14 skater time on ice by situation, version 15 the manager's name, and version 16 the save details. The playoff
 bracket and its dates are not saved: the season derives them from the results
 (see [ADR 0011](../adr/0011-playoffs-derived-in-the-season.md)). The head trainer's sender role (#57) needed no new
 version: sender roles are saved by name, so older version 8 saves still load. The shot totals roughly triple a save's size: a complete
@@ -68,12 +74,17 @@ invalid save raises a `GameSaveException` and leaves the active game
 unchanged. Continuing a loaded game with the same commands gives the same
 results as uninterrupted play within one engine version.
 Infrastructure's `GameSaveFile` implements the store for one local file. It
-writes the format name and version ahead of the game, serializes the save model
+writes the format name, the version, and the details ahead of the game, serializes the save model
 with source-generated System.Text.Json, and writes through a temporary file
 that replaces the earlier save only once complete. Management's
-`ISavedGameLibrary` lists named saves and opens the store for a `SaveName`;
+`ISavedGameLibrary` lists named saves, opens the store for a `SaveName`, and deletes a save;
 Infrastructure's `GameSaveDirectory` implements it as one file per save in the
-user's application-data folder, named after the save. Save names are limited to
+user's application-data folder, named after the save. Listing reads each
+save's details from its header, decompressing only the first 16 KB and never the
+game, so the list stays quick however long the seasons are. A save whose header
+cannot be read (damaged, not a HockeySim save, or another format version) is
+listed without details rather than failing the list. A file cut off after its
+header still lists its details; loading it reports it as damaged. Save names are limited to
 characters that are portable in file names and ignore letter case, so the same
 saves appear on every file system. Storage failures (a missing file, a locked
 folder, a full disk) surface as `GameSaveStorageException`, another

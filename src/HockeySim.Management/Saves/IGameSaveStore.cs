@@ -8,8 +8,12 @@ public interface IGameSaveStore
     /// <summary>
     /// Replaces the stored game. A failed save leaves any previously stored game intact.
     /// </summary>
+    /// <param name="details">
+    /// What a listing shows about the game. Stores keep it where it can be read without loading
+    /// the game; <see cref="Load"/> does not return it.
+    /// </param>
     /// <exception cref="GameSaveStorageException">The game cannot be written.</exception>
-    void Save(GameSave save);
+    void Save(GameSave save, SavedGameDetails details);
 
     /// <summary>
     /// Reads the stored game.

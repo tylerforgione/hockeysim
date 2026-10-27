@@ -403,10 +403,7 @@ Later:
 
 - Autosave at chosen intervals (every league day, week, or before the user's
   matches), into rotating slots that do not overwrite the user's named saves.
-- Rename and delete saves from the load screen.
-- Show each save's club, season, and date in the list. That needs the summary
-  stored where listing can read it without loading the whole game, such as in
-  the save header, which changes the save format version.
+- Rename saves from the load screen.
 - Cloud or synced saves.
 
 ## Season rollover

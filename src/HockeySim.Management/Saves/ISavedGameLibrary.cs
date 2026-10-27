@@ -24,9 +24,20 @@ public interface ISavedGameLibrary
     /// </summary>
     /// <exception cref="GameSaveStorageException">The saves cannot be read.</exception>
     IGameSaveStore Open(SaveName name);
+
+    /// <summary>
+    /// Removes the game saved under <paramref name="name"/>. Deleting a name with no save does
+    /// nothing.
+    /// </summary>
+    /// <exception cref="GameSaveStorageException">The save cannot be removed.</exception>
+    void Delete(SaveName name);
 }
 
 /// <summary>
 /// A saved game as listed for the user to choose from, without loading it.
 /// </summary>
-public sealed record SavedGameSummary(SaveName Name, DateTimeOffset SavedAt);
+/// <param name="Details">
+/// What the save says about the managed team, or null when that cannot be read: the file is
+/// damaged, is not a HockeySim save, or uses another format version. Such a save is still listed.
+/// </param>
+public sealed record SavedGameSummary(SaveName Name, DateTimeOffset SavedAt, SavedGameDetails? Details = null);

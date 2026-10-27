@@ -30,15 +30,20 @@
             BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="0,1,0,0"
             Padding="16,10">
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="16">
         <TextBlock x:Name="LoadErrorText"
                    Classes="error"
                    Text="{Binding ErrorMessage}"
                    IsVisible="{Binding HasError}"
                    TextWrapping="Wrap"
                    VerticalAlignment="Center" />
-        <Button x:Name="LoadSaveButton"
+        <Button x:Name="DeleteSaveButton"
                 Grid.Column="1"
+                Padding="24,8"
+                Content="Delete"
+                Command="{Binding DeleteCommand}" />
+        <Button x:Name="LoadSaveButton"
+                Grid.Column="2"
                 Classes="primary"
                 Padding="24,8"
                 Content="Load"
@@ -46,14 +51,9 @@
       </Grid>
     </Border>
 
-    <Border Classes="panel" Margin="24" MaxWidth="760" HorizontalAlignment="Stretch">
+    <Border Classes="panel" Margin="24" MaxWidth="1200" HorizontalAlignment="Stretch">
       <DockPanel>
-        <Border DockPanel.Dock="Top" Classes="table-header">
-          <Grid ColumnDefinitions="*,220">
-            <TextBlock Text="SAVED GAME" />
-            <TextBlock Grid.Column="1" Text="SAVED" />
-          </Grid>
-        </Border>
+        <saves:SavedGameHeaderView DockPanel.Dock="Top" />
         <Grid>
           <TextBlock x:Name="NoSavesText"
                      Classes="caption"
@@ -67,10 +67,7 @@
                    SelectedItem="{Binding SelectedSave}">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="saves:SavedGameRowViewModel">
-                <Grid ColumnDefinitions="*,220">
-                  <TextBlock Classes="strong" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Grid.Column="1" Classes="muted" Text="{Binding SavedAtLabel}" />
-                </Grid>
+                <saves:SavedGameRowView />
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>

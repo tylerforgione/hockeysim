@@ -514,6 +514,11 @@ continued. Loading a saved game replaces the current game only when the whole
 save is valid; team records, season statistics, and standings are rebuilt from
 its completed matches.
 
+**Save details**:
+What a saved game's list entry shows without loading it: the managed team and its
+colours, the in-game date, the team's record, and its standing. Captured when the
+game is saved and stored ahead of the game in the save file.
+
 **Save name**:
 The name a saved game is stored under, chosen by the user. Names that differ
 only in letter case are the same save, so saving under an existing name

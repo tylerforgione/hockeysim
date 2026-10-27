@@ -76,6 +76,20 @@ public sealed partial class GameSession : ObservableObject
         private set => SetProperty(ref _hasUnsavedChanges, value);
     }
 
+    /// <summary>
+    /// Records that <paramref name="name"/> was deleted from the saved games. If the game was last
+    /// saved or loaded as that save, no copy of it remains, so it has unsaved progress again.
+    /// </summary>
+    public void NoteSaveDeleted(SaveName name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        if (SaveName.TryParse(GameName, out var saved, out _) && saved.Equals(name))
+        {
+            HasUnsavedChanges = true;
+        }
+    }
+
     public TeamSnapshot ManagedTeam => Snapshot.League.Teams.Single(team => team.Id == Snapshot.ManagedTeamId);
 
     /// <summary>

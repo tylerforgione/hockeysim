@@ -31,10 +31,15 @@ public sealed class GameSaveDirectory : ISavedGameLibrary
 
     /// <remarks>
     /// Files whose names are not valid save names, such as ones copied in by hand, are not listed.
+    /// Each save's header is read for its details, but never its game; a save whose header cannot
+    /// be read is listed without details.
     /// </remarks>
     public IReadOnlyList<SavedGameSummary> List() =>
         ReadSaveFiles()
-            .Select(file => new SavedGameSummary(file.Name, new DateTimeOffset(File.GetLastWriteTimeUtc(file.Path))))
+            .Select(file => new SavedGameSummary(
+                file.Name,
+                new DateTimeOffset(File.GetLastWriteTimeUtc(file.Path)),
+                new GameSaveFile(file.Path).ReadDetails()))
             .OrderByDescending(summary => summary.SavedAt)
             .ThenBy(summary => summary.Name.Value, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
@@ -45,6 +50,24 @@ public sealed class GameSaveDirectory : ISavedGameLibrary
     {
         ArgumentNullException.ThrowIfNull(name);
         return new GameSaveFile(FindFile(name) ?? Path.Combine(DirectoryPath, name.Value + FileExtension));
+    }
+
+    public void Delete(SaveName name)
+    {
+        var path = FindFile(name);
+        if (path is null)
+        {
+            return;
+        }
+
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            throw new GameSaveStorageException($"The save '{name.Value}' could not be deleted. {exception.Message}", exception);
+        }
     }
 
     private string? FindFile(SaveName name)

@@ -341,6 +341,20 @@
     <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}" />
   </Style>
 
+  <!-- Startup menu's Continue: names the game it opens. -->
+  <Style Selector="Button.menu-continue">
+    <Setter Property="Height" Value="NaN" />
+    <Setter Property="MinHeight" Value="64" />
+    <Setter Property="BorderThickness" Value="3,0,0,0" />
+    <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.menu-continue:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+
   <!-- Menu bar: history and home buttons, text menus, the date, and Continue. -->
   <Style Selector="Border.menu-bar">
     <Setter Property="Background" Value="{DynamicResource MenuBarBrush}" />
@@ -703,6 +717,28 @@
   </Style>
   <Style Selector="Border.standing-row.managed.last-qualifier">
     <Setter Property="BorderThickness" Value="2,0,0,2" />
+  </Style>
+
+  <!-- A row that is chosen by clicking it, outside a ListBox. -->
+  <Style Selector="Button.table-row">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="2,0,0,0" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="ItemsControl.table ContentPresenter:nth-child(2n) > Button.table-row">
+    <Setter Property="Background" Value="{DynamicResource RowAltBrush}" />
+  </Style>
+  <Style Selector="Button.table-row:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
   </Style>
 
   <!-- A team's colour beside its name in a table. -->
