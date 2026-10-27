@@ -66,6 +66,10 @@ management game.
 The one team the user controls. Only its lineup can be changed by the user;
 other teams are read-only.
 
+**Manager**:
+The user, as the managed team's general manager. The manager's name is chosen
+when the game is created and kept with the game.
+
 **AI team**:
 Any team other than the managed team. The game sets its lineup, and it replaces
 injured players itself (see match-day lineup).
@@ -80,6 +84,22 @@ not use; those are low and not shown.
 **Overall rating**:
 A player's ratings summarised as one 0-100 value, weighted for their position.
 It never includes durability.
+
+**Team overall**:
+A team's strength as one 0-100 value: 40% the mean overall rating of the twelve
+skaters on its forward lines, 30% the six on its defence pairs, and 30% its
+starting goalie's. Those three figures are its forwards, defence, and goalie
+ratings.
+
+**Outlook**:
+How a team is expected to fare, from its team overall's rank in the league:
+contender (top quarter), playoff bubble, middle, or rebuild (bottom quarter).
+Ranking rather than fixed thresholds gives every generated league each outlook.
+
+**World seed**:
+The number a new game's random state starts from. The same seed and season
+generate the same league, players, and schedules; without one the game draws
+an unpredictable seed.
 
 **Hidden information**:
 Game state the user cannot see, such as a player's durability and wear. It is kept out

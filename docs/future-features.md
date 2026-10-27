@@ -214,6 +214,10 @@ Direction:
 - GPU acceleration is not planned. Matches are branchy and small; a GPU library
   would be a new cross-platform runtime dependency; and floating-point results
   that differ between devices would break reproducibility across machines.
+  ILGPU, the main .NET option, targets CUDA and OpenCL 2.0 or later: macOS has
+  no CUDA and only a deprecated OpenCL 1.2, so on macOS it would fall back to
+  the CPU. Its kernels also cannot use classes, lists, or allocation, which
+  would mean keeping a second engine in step with the first.
 
 ## Playoff odds and projections
 
@@ -389,8 +393,8 @@ Direction:
   Management and free of storage types.
 - `Microsoft.Data.Sqlite` is a new runtime dependency (with a native SQLite
   library); approve it under the [technology stack](tech-stack.md) policy.
-  Record the change in a new ADR that supersedes ADR 0004, with a schema
-  versioning and migration approach.
+  The proposed decision, with Dapper for queries and schema versioning, is
+  [ADR 0012](adr/0012-sqlite-league-database.md).
 
 ## Autosave and save management
 

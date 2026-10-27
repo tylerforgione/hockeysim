@@ -9,10 +9,11 @@ namespace HockeySim.Management.Saves;
 /// </summary>
 internal static class GameSaveCapture
 {
-    public static GameSave Create(Season season, TeamId managedTeamId, RandomState randomState, InboxMessages inbox) =>
+    public static GameSave Create(Season season, TeamId managedTeamId, string managerName, RandomState randomState, InboxMessages inbox) =>
         new(
             season.League.SeasonYear,
             managedTeamId,
+            managerName,
             randomState,
             season.League.Conferences.Select(CaptureConference).ToList(),
             CaptureSchedule(season.PreseasonSchedule),
