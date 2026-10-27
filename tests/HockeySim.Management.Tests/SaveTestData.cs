@@ -15,7 +15,7 @@ internal static class SaveTestData
         var lines = new List<string>
         {
             $"year {snapshot.League.SeasonYear}, date {snapshot.Season.CurrentDate:yyyy-MM-dd} ({snapshot.Season.Phase}), "
-            + $"complete {snapshot.Season.IsComplete}, managed {snapshot.ManagedTeamId}, {snapshot.RandomState}, "
+            + $"complete {snapshot.Season.IsComplete}, managed {snapshot.ManagedTeamId}, manager {snapshot.ManagerName}, {snapshot.RandomState}, "
             + $"to replace {string.Join(",", snapshot.PlayersToReplace)}",
         };
 

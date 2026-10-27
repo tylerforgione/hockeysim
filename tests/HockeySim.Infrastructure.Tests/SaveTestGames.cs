@@ -55,7 +55,7 @@ internal static class SaveTestGames
         var lines = new List<string>
         {
             $"date {snapshot.Season.CurrentDate:yyyy-MM-dd} ({snapshot.Season.Phase}), complete {snapshot.Season.IsComplete}, "
-            + $"managed {snapshot.ManagedTeamId}, {snapshot.RandomState}, to replace {string.Join(",", snapshot.PlayersToReplace)}",
+            + $"managed {snapshot.ManagedTeamId}, manager {snapshot.ManagerName}, {snapshot.RandomState}, to replace {string.Join(",", snapshot.PlayersToReplace)}",
         };
 
         foreach (var team in snapshot.League.Teams)

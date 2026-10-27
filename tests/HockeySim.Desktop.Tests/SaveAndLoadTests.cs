@@ -306,7 +306,7 @@ public sealed class SaveAndLoadTests : IDisposable
         var (main, gameManager, before) = TryLoadingOverASavedGame("Future");
 
         Assert.Equal(
-            "'Future' was saved by a different version of HockeySim (save format 999). This version reads save format 14 only. Your current game is unchanged.",
+            "'Future' was saved by a different version of HockeySim (save format 999). This version reads save format 15 only. Your current game is unchanged.",
             main.LoadGame!.ErrorMessage);
         AssertActiveGameKept(main, gameManager, before);
     }
@@ -513,13 +513,17 @@ public sealed class SaveAndLoadTests : IDisposable
         var main = new MainWindowViewModel(gameManager ?? new GameManager(), _saves.Library, exitApplication);
         main.Startup.ShowNewGameCommand.Execute(null);
         var newGame = main.NewGame!;
-        newGame.GameName = gameName;
+        newGame.WorldSeedText = "13579";
+        newGame.NextCommand.Execute(null);
         newGame.Conferences
             .SelectMany(conference => conference.Divisions)
             .SelectMany(division => division.Teams)
             .Single(team => team.Name == GameTestData.ManagedTeamName)
             .SelectCommand.Execute(null);
-        newGame.CreateGameCommand.Execute(null);
+        newGame.NextCommand.Execute(null);
+        newGame.ManagerName = "Test Manager";
+        newGame.SaveName = gameName;
+        newGame.StartGameCommand.Execute(null);
         return main;
     }
 

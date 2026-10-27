@@ -67,6 +67,12 @@ public sealed class MainWindowViewTests
         Click(Assert.IsType<Button>(startupView.FindControl<Button>("NewGameMenuButton")));
 
         var newGameView = Single<NewGameView>(window);
+        Assert.False(Named<Button>(newGameView, "BackButton").IsEffectivelyEnabled);
+        Assert.True(Named<Button>(newGameView, "NextButton").IsEffectivelyEnabled);
+        Assert.False(Named<Button>(newGameView, "StartGameButton").IsVisible);
+        Named<TextBox>(newGameView, "WorldSeedTextBox").Text = "13579";
+        Click(Named<Button>(newGameView, "NextButton"));
+
         var conferences = Assert.IsType<ItemsControl>(newGameView.FindControl<ItemsControl>("ConferencesList"));
         var teamButtons = newGameView.GetVisualDescendants()
             .OfType<Button>()
@@ -80,10 +86,22 @@ public sealed class MainWindowViewTests
             Assert.True(button.Bounds.Width > 80);
             Assert.True(button.Bounds.Height > 20);
         });
+        Assert.False(Named<Button>(newGameView, "NextButton").IsEffectivelyEnabled);
+        Assert.True(Named<TextBlock>(newGameView, "NoTeamText").IsVisible);
 
-        Click(teamButtons.Single(button => Equals(button.Content, "Seattle Evergreens")));
-        viewModel.NewGame!.GameName = "Seattle Dynasty";
-        Click(Assert.IsType<Button>(newGameView.FindControl<Button>("CreateGameButton")));
+        Click(teamButtons.Single(button => ((TeamOptionViewModel)button.DataContext!).Name == "Seattle Evergreens"));
+        Assert.False(Named<TextBlock>(newGameView, "NoTeamText").IsVisible);
+        Assert.Equal(5, Named<ItemsControl>(newGameView, "KeyPlayersList").ItemCount);
+        Assert.Equal(3, Named<ItemsControl>(newGameView, "RatingsList").ItemCount);
+        Click(Named<Button>(newGameView, "NextButton"));
+
+        Assert.Equal("Seattle Evergreens", Named<TextBox>(newGameView, "SaveNameTextBox").Text);
+        Assert.Equal("13579", Named<TextBlock>(newGameView, "SummarySeedText").Text);
+        Assert.True(Named<Button>(newGameView, "StartGameButton").IsVisible);
+        Assert.False(Named<Button>(newGameView, "NextButton").IsVisible);
+        Named<TextBox>(newGameView, "ManagerNameTextBox").Text = "Pat Quinn";
+        Named<TextBox>(newGameView, "SaveNameTextBox").Text = "Seattle Dynasty";
+        Click(Named<Button>(newGameView, "StartGameButton"));
 
         var shellView = Single<GameShellView>(window);
         Assert.Equal("SEATTLE EVERGREENS", Named<TextBlock>(shellView, "ShellTeamName").Text);

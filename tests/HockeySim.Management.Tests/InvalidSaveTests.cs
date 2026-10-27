@@ -1,5 +1,6 @@
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
+using HockeySim.Management.NewGame;
 using HockeySim.Management.Saves;
 
 using Xunit;
@@ -66,6 +67,9 @@ public sealed class InvalidSaveTests(InvalidSaveTests.ControlGame control)
         HeightOutOfRange,
         PlayerTooYoungOnOpeningDay,
         ManagedTeamNotInLeague,
+        MissingManagerName,
+        BlankManagerName,
+        TooLongManagerName,
         ScheduledTeamNotInLeague,
         MisnumberedInbox,
         ScratchedSkaterInUnit,
@@ -355,6 +359,9 @@ public sealed class InvalidSaveTests(InvalidSaveTests.ControlGame control)
                 Biography = firstPlayer.Biography with { BirthDate = save.Schedule[0].Date.AddYears(-15) },
             }),
             ManagedTeamNotInLeague => save with { ManagedTeamId = new TeamId(Guid.NewGuid()) },
+            MissingManagerName => save with { ManagerName = null! },
+            BlankManagerName => save with { ManagerName = "   " },
+            TooLongManagerName => save with { ManagerName = new string('a', NewGameCommand.MaximumManagerNameLength + 1) },
             ScheduledTeamNotInLeague => save with
             {
                 Schedule = [.. save.Schedule.SkipLast(1), save.Schedule[^1] with { HomeTeamId = new TeamId(Guid.NewGuid()) }],

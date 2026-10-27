@@ -1,7 +1,9 @@
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.GameManagement.Snapshots;
+using HockeySim.Management.NewGame;
 using HockeySim.Management.Saves;
+using HockeySim.Simulation.Randomness;
 
 using Xunit;
 
@@ -21,6 +23,17 @@ public sealed class SaveAndLoadTests
         var loaded = SaveAndLoadIntoNewManager(manager).Snapshot;
 
         Assert.Equal(Describe(saved), Describe(loaded));
+    }
+
+    [Fact]
+    public void TheManagerNameLoadsAsSaved()
+    {
+        var manager = new GameManager();
+        manager.StartNewGame(new NewGameCommand(2026, new RandomState(12345), "Halifax Mariners", "  Pat Jones "));
+
+        var loaded = SaveAndLoadIntoNewManager(manager).Snapshot;
+
+        Assert.Equal("Pat Jones", loaded.ManagerName);
     }
 
     [Fact]

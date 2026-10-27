@@ -4,6 +4,7 @@ using HockeySim.Domain;
 using HockeySim.Infrastructure.Saves;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.Lineups;
+using HockeySim.Management.NewGame;
 using HockeySim.Management.Saves;
 using HockeySim.Simulation.Randomness;
 
@@ -45,6 +46,19 @@ public sealed class GameSaveFileTests : IDisposable
 
         Assert.Equal(Describe(saved), Describe(loaded));
         Assert.Equal(Describe(ContinueWithLineupChange(uninterrupted)), Describe(ContinueWithLineupChange(resumed)));
+    }
+
+    [Fact]
+    public void TheManagerNameLoadsAsSaved()
+    {
+        var manager = new GameManager();
+        manager.StartNewGame(new NewGameCommand(2026, new RandomState(12345), "Halifax Mariners", "Pat Jones"));
+        manager.SaveGame(new GameSaveFile(SavePath));
+
+        var loaded = new GameManager().LoadGame(new GameSaveFile(SavePath));
+
+        Assert.Equal("Pat Jones", loaded.ManagerName);
+        Assert.Equal("Pat Jones", (string?)SaveFileContents.Read(SavePath)["game"]!["managerName"]);
     }
 
     [Fact]
@@ -177,14 +191,14 @@ public sealed class GameSaveFileTests : IDisposable
 
     [Theory]
     [InlineData("""[]""")]
-    [InlineData("""{"formatVersion":14,"game":{}}""")]
-    [InlineData("""{"format":"Another game","formatVersion":14,"game":{}}""")]
+    [InlineData("""{"formatVersion":15,"game":{}}""")]
+    [InlineData("""{"format":"Another game","formatVersion":15,"game":{}}""")]
     [InlineData("""{"format":"HockeySim save","game":{}}""")]
     [InlineData("""{"format":"HockeySim save","formatVersion":"3","game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":14}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":14,"game":null}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":14,"game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":14,"game":{"seasonYear":2026""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":15}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":15,"game":null}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":15,"game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":15,"game":{"seasonYear":2026""")]
     public void ADocumentThatIsNotAWholeSaveIsRejected(string json)
     {
         Directory.CreateDirectory(_directory);
