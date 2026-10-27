@@ -19,6 +19,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 {
     private readonly GameManager _gameManager;
     private readonly ISavedGameLibrary _saves;
+    private readonly SavedGameLoader _loader;
     private readonly Action _exitApplication;
     private bool _exitConfirmed;
 
@@ -40,7 +41,20 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _gameManager = gameManager;
         _saves = saves;
         _exitApplication = exitApplication ?? (() => { });
-        Startup = new StartupViewModel(ShowNewGame, ContinueGame, () => ShowLoadGame(ShowStartup), RequestExit);
+        _loader = new SavedGameLoader(
+            gameManager,
+            saves,
+            ConfirmDiscardingProgress,
+            () => Game is not null,
+            name => ShowGame(new GameSession(_gameManager, name.Value, isSaved: true)));
+        Startup = new StartupViewModel(
+            saves,
+            _loader,
+            () => Game?.Session,
+            ReturnToGame,
+            ShowNewGame,
+            () => ShowLoadGame(ShowStartup),
+            RequestExit);
         _currentScreen = Startup;
     }
 
@@ -127,20 +141,20 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private void ShowLoadGame(Action back)
     {
         CurrentScreen = new LoadGameViewModel(
-            _gameManager,
             _saves,
-            ConfirmDiscardingProgress,
+            _loader,
+            Confirmation,
             back,
-            name => ShowGame(new GameSession(_gameManager, name.Value, isSaved: true)),
-            hasActiveGame: Game is not null);
+            name => Game?.Session.NoteSaveDeleted(name));
     }
 
     private void ShowStartup()
     {
+        Startup.Refresh();
         CurrentScreen = Startup;
     }
 
-    private void ContinueGame()
+    private void ReturnToGame()
     {
         if (Game is not null)
         {
@@ -160,8 +174,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// </summary>
     private void ShowGame(GameSession session)
     {
-        Game = new GameShellViewModel(session, ShowStartup, _saves, Confirmation, () => ShowLoadGame(ContinueGame));
-        Startup.CanContinue = true;
+        Game = new GameShellViewModel(session, ShowStartup, _saves, Confirmation, () => ShowLoadGame(ReturnToGame));
         CurrentScreen = Game;
     }
 }

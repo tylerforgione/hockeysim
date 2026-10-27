@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="HockeySim.Desktop.Saves.SavedGameHeaderView">
+  <Border Classes="table-header">
+    <Grid x:Name="HeaderGrid">
+      <TextBlock Text="SAVED GAME" />
+      <TextBlock Grid.Column="1" Text="TEAM" />
+      <TextBlock Grid.Column="2" Text="DATE" />
+      <TextBlock Grid.Column="3" Text="RECORD" />
+      <TextBlock Grid.Column="4" Text="STANDING" />
+      <TextBlock Grid.Column="5" Text="LAST PLAYED" />
+    </Grid>
+  </Border>
+</UserControl>

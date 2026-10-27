@@ -24,6 +24,15 @@ migrate older saves; the version must change whenever the saved shape or its
 serialization changes. A stable-release compatibility policy is still to be
 decided.
 
+The save details (the managed team, its colours, the date, record, and
+standing) follow the version, ahead of the game, so the saved-games list can
+show them by decompressing only the start of each file. A full load replays the
+whole season and would make listing slow. The details are the one place a save
+stores figures the game otherwise derives: they are written from the game when
+it is saved and never read back on load, so they cannot change the loaded game.
+A sidecar file per save was rejected because it could fall out of step with the
+save it describes.
+
 Management owns the save model (`GameSave`) and the store contract
 (`IGameSaveStore`); Infrastructure serializes that model directly rather than
 mapping it to separate file types. This keeps one description of the saved

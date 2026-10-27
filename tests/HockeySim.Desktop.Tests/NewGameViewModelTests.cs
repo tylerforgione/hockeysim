@@ -382,7 +382,7 @@ public sealed class NewGameViewModelTests
         Assert.False(viewModel.Startup.ContinueCommand.CanExecute(null));
 
         viewModel.NewGame!.CancelCommand.Execute(null);
-        viewModel.Startup.ExitCommand.Execute(null);
+        viewModel.Startup.QuitCommand.Execute(null);
 
         Assert.True(viewModel.IsStartupVisible);
         Assert.True(exitWasRequested);

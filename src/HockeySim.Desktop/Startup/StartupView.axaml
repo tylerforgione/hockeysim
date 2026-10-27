@@ -1,9 +1,22 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:saves="using:HockeySim.Desktop.Saves"
              xmlns:viewModels="using:HockeySim.Desktop.Startup"
              x:Class="HockeySim.Desktop.Startup.StartupView"
              x:DataType="viewModels:StartupViewModel"
              Background="{DynamicResource AppBackgroundBrush}">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <!--
+          The window wears the managed team's colours while a game is open. The menu is not that
+          team's, so it takes the league defaults again for its accents.
+        -->
+        <ResourceInclude Source="avares://HockeySim/Theme/Palette.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+
   <Grid ColumnDefinitions="380,*">
     <Border Background="{DynamicResource SunkenBrush}"
             BorderBrush="{DynamicResource BorderBrush}"
@@ -25,46 +38,84 @@
 
         <StackPanel VerticalAlignment="Center" Spacing="2" Margin="-12,0,0,0">
           <Button x:Name="ContinueMenuButton"
-                  Classes="menu"
-                  Content="Continue"
-                  Command="{Binding ContinueCommand}" />
+                  Classes="menu menu-continue"
+                  Command="{Binding ContinueCommand}">
+            <StackPanel Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Continue" />
+              <TextBlock x:Name="ContinueSubtitleText"
+                         Classes="caption"
+                         FontSize="13"
+                         FontWeight="Normal"
+                         Text="{Binding ContinueSubtitle}"
+                         IsVisible="{Binding HasContinueSubtitle}"
+                         TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </Button>
           <Button x:Name="NewGameMenuButton"
                   Classes="menu"
-                  Content="New Game"
+                  Content="New game"
                   Command="{Binding ShowNewGameCommand}" />
           <Button x:Name="LoadGameMenuButton"
                   Classes="menu"
-                  Content="Load Game"
+                  Content="Load game"
                   Command="{Binding ShowLoadGameCommand}" />
-          <Button Classes="menu"
-                  Content="Options"
-                  IsEnabled="False"
-                  ToolTip.ShowOnDisabled="True"
-                  ToolTip.Tip="Not available yet" />
-          <Border Classes="divider" Margin="12,8" />
-          <Button x:Name="ExitMenuButton"
+          <Button x:Name="QuitMenuButton"
                   Classes="menu"
-                  Content="Exit"
-                  Command="{Binding ExitCommand}" />
+                  Content="Quit"
+                  Command="{Binding QuitCommand}" />
         </StackPanel>
       </DockPanel>
     </Border>
 
-    <Border Grid.Column="1" Background="{DynamicResource TeamPrimaryBrush}" ClipToBounds="True">
-      <Grid>
-        <!-- Rink markings as a quiet backdrop. -->
-        <Canvas Width="900" Height="420" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.14">
-          <Border Width="900" Height="420" CornerRadius="160" BorderThickness="3" BorderBrush="{DynamicResource OnTeamPrimaryBrush}" />
-          <Border Canvas.Left="449" Width="3" Height="420" Background="{DynamicResource OnTeamPrimaryBrush}" />
-          <Border Canvas.Left="290" Width="3" Height="420" Background="{DynamicResource TeamSecondaryBrush}" />
-          <Border Canvas.Left="607" Width="3" Height="420" Background="{DynamicResource TeamSecondaryBrush}" />
-          <Ellipse Canvas.Left="370" Canvas.Top="130" Width="160" Height="160" StrokeThickness="3" Stroke="{DynamicResource OnTeamPrimaryBrush}" />
-          <Ellipse Canvas.Left="95" Canvas.Top="65" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource OnTeamPrimaryBrush}" />
-          <Ellipse Canvas.Left="95" Canvas.Top="245" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource OnTeamPrimaryBrush}" />
-          <Ellipse Canvas.Left="695" Canvas.Top="65" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource OnTeamPrimaryBrush}" />
-          <Ellipse Canvas.Left="695" Canvas.Top="245" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource OnTeamPrimaryBrush}" />
+    <Grid x:Name="RinkArea" Grid.Column="1" ClipToBounds="True">
+      <!-- Rink markings as a quiet backdrop. -->
+      <Viewbox Stretch="Uniform" Margin="{x:Static viewModels:StartupView.RinkMargin}" Opacity="0.5">
+        <Canvas Width="900" Height="420">
+          <Border Width="900" Height="420" CornerRadius="160" BorderThickness="3" BorderBrush="{DynamicResource BorderStrongBrush}" />
+          <Border Canvas.Left="449" Width="3" Height="420" Background="{DynamicResource BorderStrongBrush}" />
+          <Border Canvas.Left="290" Width="3" Height="420" Background="{DynamicResource BorderStrongBrush}" />
+          <Border Canvas.Left="607" Width="3" Height="420" Background="{DynamicResource BorderStrongBrush}" />
+          <Ellipse Canvas.Left="370" Canvas.Top="130" Width="160" Height="160" StrokeThickness="3" Stroke="{DynamicResource BorderStrongBrush}" />
+          <Ellipse Canvas.Left="95" Canvas.Top="65" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource BorderStrongBrush}" />
+          <Ellipse Canvas.Left="95" Canvas.Top="245" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource BorderStrongBrush}" />
+          <Ellipse Canvas.Left="695" Canvas.Top="65" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource BorderStrongBrush}" />
+          <Ellipse Canvas.Left="695" Canvas.Top="245" Width="110" Height="110" StrokeThickness="2" Stroke="{DynamicResource BorderStrongBrush}" />
         </Canvas>
-      </Grid>
-    </Border>
+      </Viewbox>
+
+      <!-- Inset inside the rink's end boards by the code-behind, so the boards stay in view. -->
+      <StackPanel x:Name="RecentGamesArea" Margin="24" VerticalAlignment="Center" Spacing="10">
+        <Border x:Name="RecentGamesPanel"
+                Classes="panel"
+                IsVisible="{Binding HasRecentGames}">
+          <StackPanel>
+            <saves:SavedGameHeaderView />
+            <ItemsControl x:Name="RecentGamesList"
+                          Classes="table"
+                          ItemsSource="{Binding RecentGames}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="saves:SavedGameRowViewModel">
+                  <Button Classes="table-row"
+                          Command="{Binding $parent[UserControl].((viewModels:StartupViewModel)DataContext).OpenSaveCommand}"
+                          CommandParameter="{Binding}">
+                    <saves:SavedGameRowView />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+        <TextBlock x:Name="NoSavesText"
+                   Classes="caption"
+                   Text="No saved games"
+                   IsVisible="{Binding !HasRecentGames}"
+                   HorizontalAlignment="Center" />
+        <TextBlock x:Name="StartupErrorText"
+                   Classes="error"
+                   Text="{Binding ErrorMessage}"
+                   IsVisible="{Binding HasError}"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Grid>
   </Grid>
 </UserControl>

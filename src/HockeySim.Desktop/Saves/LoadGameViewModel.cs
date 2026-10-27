@@ -1,60 +1,56 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using HockeySim.Management.GameManagement;
+using HockeySim.Desktop.Confirmation;
 using HockeySim.Management.Saves;
 
 namespace HockeySim.Desktop.Saves;
 
 /// <summary>
-/// Lists the saved games and loads the chosen one in place of any game in progress.
+/// Lists the saved games, loads the chosen one in place of any game in progress, and deletes saves.
 /// </summary>
 public sealed partial class LoadGameViewModel : ObservableObject
 {
-    private readonly GameManager _gameManager;
-    private readonly ISavedGameLibrary _saves;
-    private readonly Action<string, Action> _confirmDiscardingProgress;
+    private readonly ISavedGameLibrary _library;
+    private readonly SavedGameLoader _loader;
+    private readonly ConfirmationViewModel _confirmation;
     private readonly Action _back;
-    private readonly Action<SaveName> _gameLoaded;
-    private readonly bool _hasActiveGame;
+    private readonly Action<SaveName> _saveDeleted;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LoadCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
     private SavedGameRowViewModel? _selectedSave;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasError))]
     private string? _errorMessage;
 
-    /// <param name="confirmDiscardingProgress">
-    /// Asks before discarding unsaved progress in the game in progress, describing the action that
-    /// would discard it, and runs the action only if the user agrees or nothing would be lost.
-    /// </param>
-    /// <param name="hasActiveGame">Whether a game is in progress, which a failed load leaves as it was.</param>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSaves))]
+    private IReadOnlyList<SavedGameRowViewModel> _saves;
+
+    /// <param name="saveDeleted">Told of each save deleted, so the game in progress can note it.</param>
     public LoadGameViewModel(
-        GameManager gameManager,
         ISavedGameLibrary saves,
-        Action<string, Action> confirmDiscardingProgress,
+        SavedGameLoader loader,
+        ConfirmationViewModel confirmation,
         Action back,
-        Action<SaveName> gameLoaded,
-        bool hasActiveGame)
+        Action<SaveName> saveDeleted)
     {
-        ArgumentNullException.ThrowIfNull(gameManager);
         ArgumentNullException.ThrowIfNull(saves);
-        ArgumentNullException.ThrowIfNull(confirmDiscardingProgress);
+        ArgumentNullException.ThrowIfNull(loader);
+        ArgumentNullException.ThrowIfNull(confirmation);
         ArgumentNullException.ThrowIfNull(back);
-        ArgumentNullException.ThrowIfNull(gameLoaded);
+        ArgumentNullException.ThrowIfNull(saveDeleted);
 
-        _gameManager = gameManager;
-        _saves = saves;
-        _confirmDiscardingProgress = confirmDiscardingProgress;
+        _library = saves;
+        _loader = loader;
+        _confirmation = confirmation;
         _back = back;
-        _gameLoaded = gameLoaded;
-        _hasActiveGame = hasActiveGame;
-        Saves = SavedGameRowViewModel.List(saves, out _errorMessage);
+        _saveDeleted = saveDeleted;
+        _saves = SavedGameRowViewModel.List(saves, out _errorMessage);
     }
-
-    public IReadOnlyList<SavedGameRowViewModel> Saves { get; }
 
     public bool HasSaves => Saves.Count > 0;
 
@@ -69,42 +65,48 @@ public sealed partial class LoadGameViewModel : ObservableObject
         }
 
         ErrorMessage = null;
-        _confirmDiscardingProgress($"Loading '{save.Name}'", () => LoadSave(save.Name));
+        _loader.Load(save.Name, message => ErrorMessage = message);
     }
 
     private bool CanLoad() => SelectedSave is not null;
+
+    [RelayCommand(CanExecute = nameof(CanLoad))]
+    private void Delete()
+    {
+        if (SelectedSave is not { } save)
+        {
+            return;
+        }
+
+        _confirmation.Request(
+            "Delete saved game?",
+            $"'{save.Name}' will be deleted. This can't be undone.",
+            "Delete",
+            () => DeleteConfirmed(save.Name));
+    }
+
+    private void DeleteConfirmed(SaveName name)
+    {
+        ErrorMessage = null;
+        try
+        {
+            _library.Delete(name);
+        }
+        catch (GameSaveStorageException exception)
+        {
+            ErrorMessage = $"'{name}' could not be deleted. {exception.Message}";
+            return;
+        }
+
+        _saveDeleted(name);
+        SelectedSave = null;
+        Saves = SavedGameRowViewModel.List(_library, out var error);
+        ErrorMessage = error;
+    }
 
     [RelayCommand]
     private void Back()
     {
         _back();
     }
-
-    private void LoadSave(SaveName name)
-    {
-        try
-        {
-            // Management rebuilds the whole save before replacing anything, so a failure here
-            // leaves any game in progress exactly as it was.
-            _gameManager.LoadGame(_saves.Open(name));
-        }
-        catch (GameSaveException exception)
-        {
-            ErrorMessage = DescribeFailure(name, exception)
-                + (_hasActiveGame ? " Your current game is unchanged." : string.Empty);
-            return;
-        }
-
-        _gameLoaded(name);
-    }
-
-    private static string DescribeFailure(SaveName name, GameSaveException exception) => exception switch
-    {
-        UnsupportedGameSaveVersionException unsupported =>
-            $"'{name}' was saved by a different version of HockeySim (save format {unsupported.Version}). "
-            + $"This version reads save format {unsupported.SupportedVersion} only.",
-        InvalidGameSaveException =>
-            $"'{name}' is damaged or is not a valid HockeySim save. {exception.Message}",
-        _ => $"'{name}' could not be loaded. {exception.Message}",
-    };
 }

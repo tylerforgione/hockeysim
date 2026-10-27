@@ -68,6 +68,54 @@ public sealed class GameSaveDirectoryTests : IDisposable
     }
 
     [Fact]
+    public void ListedSavesCarryTheDetailsFromTheirHeaders()
+    {
+        var manager = StartGame();
+        Advance(manager, 12);
+        var capture = new CapturingStore();
+        manager.SaveGame(capture);
+        manager.SaveGame(Saves.Open(SaveName.Parse("Dynasty")));
+
+        var listed = Assert.Single(Saves.List());
+
+        Assert.Equal(capture.SavedDetails, listed.Details);
+    }
+
+    [Fact]
+    public void ASaveWhoseHeaderCannotBeReadIsListedWithoutDetailsBesideGoodOnes()
+    {
+        var manager = StartGame();
+        manager.SaveGame(Saves.Open(SaveName.Parse("Good")));
+        manager.SaveGame(Saves.Open(SaveName.Parse("Old Format")));
+        manager.SaveGame(Saves.Open(SaveName.Parse("Truncated")));
+        var oldFormat = Path.Combine(_directory, "Old Format.hockeysim");
+        var document = SaveFileContents.Read(oldFormat);
+        document["formatVersion"] = GameSaveFile.FormatVersion - 1;
+        SaveFileContents.Write(oldFormat, document);
+        var truncated = Path.Combine(_directory, "Truncated.hockeysim");
+        File.WriteAllBytes(truncated, File.ReadAllBytes(truncated)[..10]);
+        File.WriteAllText(Path.Combine(_directory, "Garbage.hockeysim"), "not a save");
+
+        var listed = Saves.List().ToDictionary(save => save.Name.Value, save => save.Details);
+
+        Assert.Equal(["Garbage", "Good", "Old Format", "Truncated"], listed.Keys.Order(StringComparer.Ordinal));
+        Assert.NotNull(listed["Good"]);
+        Assert.Null(listed["Old Format"]);
+        Assert.Null(listed["Truncated"]);
+        Assert.Null(listed["Garbage"]);
+    }
+
+    [Fact]
+    public void FindingAndOpeningASaveDoesNotReadItsHeader()
+    {
+        Directory.CreateDirectory(_directory);
+        File.WriteAllText(Path.Combine(_directory, "Garbage.hockeysim"), "not a save");
+
+        Assert.True(Saves.Contains(SaveName.Parse("Garbage")));
+        Assert.Equal(Path.Combine(_directory, "Garbage.hockeysim"), ((GameSaveFile)Saves.Open(SaveName.Parse("Garbage"))).FilePath);
+    }
+
+    [Fact]
     public void ANameDifferingOnlyInCaseFindsAndReplacesTheExistingSave()
     {
         var manager = StartGame();
@@ -109,6 +157,43 @@ public sealed class GameSaveDirectoryTests : IDisposable
         {
             File.Delete(_directory);
         }
+    }
+
+    [Fact]
+    public void DeletingASaveRemovesItAndLeavesTheOthers()
+    {
+        var manager = StartGame();
+        manager.SaveGame(Saves.Open(SaveName.Parse("Keep")));
+        manager.SaveGame(Saves.Open(SaveName.Parse("Drop")));
+
+        Saves.Delete(SaveName.Parse("Drop"));
+
+        Assert.False(Saves.Contains(SaveName.Parse("Drop")));
+        Assert.True(Saves.Contains(SaveName.Parse("Keep")));
+        Assert.Equal(["Keep"], Saves.List().Select(save => save.Name.Value));
+    }
+
+    [Fact]
+    public void DeletingIgnoresLetterCase()
+    {
+        StartGame().SaveGame(Saves.Open(SaveName.Parse("Dynasty")));
+
+        Saves.Delete(SaveName.Parse("DYNASTY"));
+
+        Assert.Empty(Saves.List());
+        Assert.False(File.Exists(Path.Combine(_directory, "Dynasty.hockeysim")));
+    }
+
+    [Fact]
+    public void DeletingANameWithNoSaveDoesNothing()
+    {
+        Saves.Delete(SaveName.Parse("Missing"));
+        Assert.False(Directory.Exists(_directory));
+
+        StartGame().SaveGame(Saves.Open(SaveName.Parse("Dynasty")));
+        Saves.Delete(SaveName.Parse("Missing"));
+
+        Assert.Equal(["Dynasty"], Saves.List().Select(save => save.Name.Value));
     }
 
     [Fact]

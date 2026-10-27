@@ -5,7 +5,7 @@ using HockeySim.Management.Saves;
 namespace HockeySim.Infrastructure.Saves;
 
 /// <summary>
-/// The body of a save file, after the format header has been checked.
+/// The details and game of a save file, after the format header has been checked.
 /// </summary>
 /// <remarks>
 /// Nullable annotations and constructor parameters are enforced, so a missing or null value the
@@ -25,4 +25,5 @@ namespace HockeySim.Infrastructure.Saves;
         typeof(RandomStateJsonConverter),
     ])]
 [JsonSerializable(typeof(GameSave))]
+[JsonSerializable(typeof(SavedGameDetails))]
 internal sealed partial class GameSaveJsonContext : JsonSerializerContext;

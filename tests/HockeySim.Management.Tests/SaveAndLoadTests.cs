@@ -276,7 +276,7 @@ public sealed class SaveAndLoadTests
 
     private sealed class FailingStore : IGameSaveStore
     {
-        public void Save(GameSave save) => throw new NotSupportedException();
+        public void Save(GameSave save, SavedGameDetails details) => throw new NotSupportedException();
 
         public GameSave Load() => throw new UnsupportedGameSaveVersionException(2, 1);
     }

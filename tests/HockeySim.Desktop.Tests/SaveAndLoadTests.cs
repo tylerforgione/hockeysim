@@ -306,7 +306,7 @@ public sealed class SaveAndLoadTests : IDisposable
         var (main, gameManager, before) = TryLoadingOverASavedGame("Future");
 
         Assert.Equal(
-            "'Future' was saved by a different version of HockeySim (save format 999). This version reads save format 15 only. Your current game is unchanged.",
+            "'Future' was saved by a different version of HockeySim (save format 999). This version reads save format 16 only. Your current game is unchanged.",
             main.LoadGame!.ErrorMessage);
         AssertActiveGameKept(main, gameManager, before);
     }
@@ -375,7 +375,7 @@ public sealed class SaveAndLoadTests : IDisposable
         Assert.False(main.CanCloseWithoutConfirmation);
 
         main.Game!.ShowMainMenuCommand.Execute(null);
-        main.Startup.ExitCommand.Execute(null);
+        main.Startup.QuitCommand.Execute(null);
         main.Confirmation.ConfirmCommand.Execute(null);
         Assert.Equal(1, exits);
         Assert.True(main.CanCloseWithoutConfirmation);
@@ -416,6 +416,124 @@ public sealed class SaveAndLoadTests : IDisposable
         var resumed = await PlayOnAsync(main.Game!);
 
         Assert.Equal(Describe(uninterrupted), Describe(resumed));
+    }
+
+    [Fact]
+    public void DeleteIsDisabledWithoutASelection()
+    {
+        CreateSave("Spare", days: 0);
+        var load = OpenLoadScreen(new MainWindowViewModel(new GameManager(), _saves.Library));
+
+        Assert.False(load.DeleteCommand.CanExecute(null));
+        load.SelectedSave = load.Saves.Single();
+        Assert.True(load.DeleteCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void CancellingADeleteKeepsTheSave()
+    {
+        CreateSave("Spare", days: 0);
+        var main = new MainWindowViewModel(new GameManager(), _saves.Library);
+        var load = OpenLoadScreen(main);
+        load.SelectedSave = load.Saves.Single();
+
+        load.DeleteCommand.Execute(null);
+
+        Assert.True(main.Confirmation.IsOpen);
+        Assert.Equal("Delete saved game?", main.Confirmation.Current!.Title);
+        Assert.Equal("Delete", main.Confirmation.Current.ConfirmLabel);
+        Assert.Contains("'Spare'", main.Confirmation.Current.Message, StringComparison.Ordinal);
+        Assert.True(File.Exists(_saves.PathFor("Spare")));
+
+        main.Confirmation.CancelCommand.Execute(null);
+
+        Assert.True(File.Exists(_saves.PathFor("Spare")));
+        Assert.Single(load.Saves);
+        Assert.NotNull(load.SelectedSave);
+    }
+
+    [Fact]
+    public void ConfirmingADeleteRemovesTheSaveFromTheListAndTheFolder()
+    {
+        CreateSave("Spare", days: 0);
+        CreateSave("Keeper", days: 0);
+        var main = new MainWindowViewModel(new GameManager(), _saves.Library);
+        var load = OpenLoadScreen(main);
+        load.SelectedSave = load.Saves.Single(save => save.DisplayName == "Spare");
+
+        load.DeleteCommand.Execute(null);
+        main.Confirmation.ConfirmCommand.Execute(null);
+
+        Assert.False(File.Exists(_saves.PathFor("Spare")));
+        Assert.Equal(["Keeper"], load.Saves.Select(save => save.DisplayName));
+        Assert.True(load.HasSaves);
+        Assert.Null(load.SelectedSave);
+        Assert.False(load.DeleteCommand.CanExecute(null));
+        Assert.False(load.HasError);
+
+        load.BackCommand.Execute(null);
+        Assert.Equal(["Keeper"], main.Startup.RecentGames.Select(save => save.DisplayName));
+    }
+
+    [Fact]
+    public void AnUnreadableSaveCanBeDeleted()
+    {
+        WriteSaveDocument("Broken", "{ not a save");
+        var main = new MainWindowViewModel(new GameManager(), _saves.Library);
+        var load = OpenLoadScreen(main);
+        load.SelectedSave = Assert.Single(load.Saves);
+        Assert.False(load.SelectedSave.HasDetails);
+
+        load.DeleteCommand.Execute(null);
+        main.Confirmation.ConfirmCommand.Execute(null);
+
+        Assert.Empty(load.Saves);
+        Assert.False(File.Exists(_saves.PathFor("Broken")));
+    }
+
+    [Fact]
+    public void DeletingTheOpenGamesSaveMakesItUnsavedButKeepsItOpen()
+    {
+        var main = StartGame("Current Career");
+        Save(main.Game!, "Current Career");
+        CreateSave("Other", days: 0);
+        main.Game!.ShowMainMenuCommand.Execute(null);
+        var load = OpenLoadScreen(main);
+
+        load.SelectedSave = load.Saves.Single(save => save.DisplayName == "Other");
+        load.DeleteCommand.Execute(null);
+        main.Confirmation.ConfirmCommand.Execute(null);
+        Assert.False(main.Game.Session.HasUnsavedChanges);
+
+        load.SelectedSave = load.Saves.Single();
+        load.DeleteCommand.Execute(null);
+        main.Confirmation.ConfirmCommand.Execute(null);
+
+        Assert.Empty(load.Saves);
+        Assert.NotNull(main.Game);
+        Assert.True(main.Game.Session.HasUnsavedChanges);
+        Assert.True(main.HasUnsavedProgress);
+    }
+
+    [Fact]
+    public void AFailedDeleteShowsTheErrorAndKeepsTheList()
+    {
+        var main = new MainWindowViewModel(new GameManager(), new FailingSaveLibrary("Stuck"));
+        var load = OpenLoadScreen(main);
+        load.SelectedSave = Assert.Single(load.Saves);
+
+        load.DeleteCommand.Execute(null);
+        main.Confirmation.ConfirmCommand.Execute(null);
+
+        Assert.True(load.HasError);
+        Assert.Contains(FailingSaveLibrary.Message, load.ErrorMessage, StringComparison.Ordinal);
+        Assert.Single(load.Saves);
+    }
+
+    private static LoadGameViewModel OpenLoadScreen(MainWindowViewModel main)
+    {
+        main.Startup.ShowLoadGameCommand.Execute(null);
+        return main.LoadGame!;
     }
 
     private static async Task<GameSnapshot> PlayOnAsync(GameShellViewModel shell)
@@ -562,7 +680,9 @@ public sealed class SaveAndLoadTests : IDisposable
 
         public IGameSaveStore Open(SaveName name) => this;
 
-        public void Save(GameSave save) => throw new GameSaveStorageException(Message);
+        public void Delete(SaveName name) => throw new GameSaveStorageException(Message);
+
+        public void Save(GameSave save, SavedGameDetails details) => throw new GameSaveStorageException(Message);
 
         public GameSave Load() => throw new GameSaveStorageException(Message);
     }

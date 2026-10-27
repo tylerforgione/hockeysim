@@ -64,6 +64,12 @@ public sealed class MainWindowViewTests
         Assert.Equal(
             $"Version {AppVersion.Current} · Pre-release build",
             startupView.FindControl<TextBlock>("VersionLabel")?.Text);
+        Assert.False(Assert.IsType<Button>(startupView.FindControl<Button>("ContinueMenuButton")).IsEffectivelyEnabled);
+        Assert.NotNull(startupView.FindControl<Button>("LoadGameMenuButton"));
+        Assert.NotNull(startupView.FindControl<Button>("QuitMenuButton"));
+        Assert.True(Named<TextBlock>(startupView, "NoSavesText").IsVisible);
+        Assert.False(Named<Border>(startupView, "RecentGamesPanel").IsVisible);
+        Assert.Contains("menu-continue", Named<Button>(startupView, "ContinueMenuButton").Classes);
         Click(Assert.IsType<Button>(startupView.FindControl<Button>("NewGameMenuButton")));
 
         var newGameView = Single<NewGameView>(window);
@@ -572,7 +578,20 @@ public sealed class MainWindowViewTests
         // Play on, then load the save from the main menu; the unsaved day must be confirmed away.
         ClickAndWait(continueButton, () => !viewModel.Game!.Session.IsAdvancing);
         Click(MenuItemNamed(shellView, "QuitToMenuItem"));
-        Click(Assert.IsType<Button>(Single<StartupView>(window).FindControl<Button>("LoadGameMenuButton")));
+
+        // The window wears the managed team's colours, but the menu keeps the league's neutral ones.
+        var menuView = Single<StartupView>(window);
+        Assert.True(window.Resources.ContainsKey(TeamPalette.PrimaryKey));
+        Assert.True(menuView.TryFindResource(TeamPalette.PrimaryKey, out var menuPrimary));
+        Assert.Equal(Color.Parse("#000000"), Assert.IsAssignableFrom<ISolidColorBrush>(menuPrimary).Color);
+        Assert.NotEqual(Color.Parse("#000000"), Assert.IsAssignableFrom<ISolidColorBrush>(window.Resources[TeamPalette.PrimaryKey]).Color);
+        Assert.True(Named<Border>(menuView, "RecentGamesPanel").IsVisible);
+        Assert.Equal(1, Named<ItemsControl>(menuView, "RecentGamesList").ItemCount);
+        AssertRecentGamesInsideRink(menuView);
+        var rowButton = Assert.Single(menuView.GetVisualDescendants().OfType<Button>(), button => button.DataContext is SavedGameRowViewModel);
+        Assert.Same(viewModel.Startup.OpenSaveCommand, rowButton.Command);
+        Assert.StartsWith("Opening Night · ", Named<TextBlock>(menuView, "ContinueSubtitleText").Text, StringComparison.Ordinal);
+        Click(Assert.IsType<Button>(menuView.FindControl<Button>("LoadGameMenuButton")));
         var loadView = Single<LoadGameView>(window);
         var savesList = Assert.IsType<ListBox>(loadView.FindControl<ListBox>("SavesList"));
         Assert.Equal(1, savesList.ItemCount);
@@ -651,6 +670,16 @@ public sealed class MainWindowViewTests
 
     private static Color ResourceColor(Window window, string key) =>
         Assert.IsAssignableFrom<ISolidColorBrush>(window.FindResource(key)).Color;
+
+    private static void AssertRecentGamesInsideRink(StartupView menuView)
+    {
+        var rinkArea = Named<Grid>(menuView, "RinkArea");
+        var recent = Named<StackPanel>(menuView, "RecentGamesArea");
+        Assert.True(recent.Margin.Left > StartupView.RinkMargin.Left);
+        Assert.True(recent.Margin.Right > StartupView.RinkMargin.Right);
+        Assert.True(recent.Bounds.Left > StartupView.RinkMargin.Left);
+        Assert.True(recent.Bounds.Right < rinkArea.Bounds.Width - StartupView.RinkMargin.Right);
+    }
 
     private static T Single<T>(Visual root)
         where T : Visual =>

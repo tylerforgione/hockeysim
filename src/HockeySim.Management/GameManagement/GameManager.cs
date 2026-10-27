@@ -297,14 +297,17 @@ public sealed class GameManager
         ArgumentNullException.ThrowIfNull(store);
 
         GameSave save;
+        SavedGameDetails details;
         lock (_gate)
         {
             EnsureNotAdvancing();
-            save = GameSaveCapture.Create(GetSeason(), _managedTeamId, _managerName, _randomState, _inbox);
+            var season = GetSeason();
+            save = GameSaveCapture.Create(season, _managedTeamId, _managerName, _randomState, _inbox);
+            details = SavedGameDetailsCapture.Create(season, _managedTeamId);
         }
 
         // The save is a detached copy, so writing it does not hold up other commands.
-        store.Save(save);
+        store.Save(save, details);
     }
 
     /// <summary>
