@@ -47,6 +47,17 @@ public sealed class PlayerSeasonTotals
 
     public int Shots => _skater?.Shots ?? 0;
 
+    /// <summary>Goals as a share of shots on goal, or a dash before a first shot.</summary>
+    public string ShootingPercentage => MatchDisplay.Percentage(ShootingPercentageValue);
+
+    public double? ShootingPercentageValue => _skater is { Shots: > 0 } skater ? skater.Goals / (double)skater.Shots : null;
+
+    /// <summary>
+    /// The skater's average time on ice in each strength situation, or null before an appearance
+    /// (and for a goalie).
+    /// </summary>
+    public SituationalTimeOnIce? TimeOnIceBySituationPerGame => _skater?.TimeOnIceBySituationPerGame;
+
     public string TimeOnIcePerGame => MatchDisplay.TimeOnIce(TimeOnIcePerGameValue);
 
     public TimeSpan? TimeOnIcePerGameValue => _skater?.TimeOnIcePerGame ?? _goalie?.TimeOnIcePerGame;
@@ -158,9 +169,78 @@ public sealed class PlayerSeasonTotals
             .ToDictionary(pair => pair.PlayerId, pair => pair.Totals);
     }
 
+    /// <summary>The summary line for the profile's overview, grouped: fewer figures than <see cref="ProfileGroups"/>.</summary>
+    public IReadOnlyList<SeasonStatGroupViewModel> OverviewGroups(bool isGoalie) =>
+        isGoalie ? GoalieOverviewGroups() : SkaterOverviewGroups();
+
     /// <summary>The full statistic line for the player profile, grouped.</summary>
     public IReadOnlyList<SeasonStatGroupViewModel> ProfileGroups(bool isGoalie) =>
         isGoalie ? GoalieGroups() : SkaterGroups();
+
+    private List<SeasonStatGroupViewModel> SkaterOverviewGroups()
+    {
+        var skater = _skater;
+        var fiveOnFive = FiveOnFive;
+        return
+        [
+            new("SCORING",
+            [
+                Count("GP", GamesPlayed, "Games played"),
+                Count("G", Goals, "Goals"),
+                Count("A", Assists, "Assists"),
+                Count("P", Points, "Points"),
+                new("+/-", PlusMinus, "Plus/minus"),
+                Count("PIM", PenaltyMinutes, "Penalty minutes"),
+            ]),
+            new("SHOOTING AND USAGE",
+            [
+                Count("SOG", Shots, "Shots on goal"),
+                new("SH%", ShootingPercentage, "Shooting percentage: goals per shot on goal"),
+                new("ixG", IndividualExpectedGoals, "Individual expected goals"),
+                new("TOI/GP", TimeOnIcePerGame, "Average time on ice per game"),
+                Count("PPP", PowerPlayPoints, "Power-play points"),
+                Count("SHP", ShorthandedPoints, "Shorthanded points"),
+            ]),
+            new("ON ICE AT 5V5",
+            [
+                Count("CF", fiveOnFive.AttemptsFor, "Corsi for: team shot attempts while on the ice"),
+                Count("CA", fiveOnFive.AttemptsAgainst, "Corsi against: opponent shot attempts while on the ice"),
+                new("CF%", CorsiPercentage, "Corsi percentage"),
+                new("xGF", OnIceExpectedGoalsFor, "Team expected goals while on the ice"),
+                new("xGA", OnIceExpectedGoalsAgainst, "Opponent expected goals while on the ice"),
+                new("xGF%", OnIceExpectedGoalsPercentage, "Share of expected goals"),
+            ]),
+            new("PHYSICAL",
+            [
+                Count("HIT", skater?.Hits ?? 0, "Hits"),
+                Count("BLK", skater?.BlockedShots ?? 0, "Opponent shot attempts blocked"),
+                Count("TK", skater?.Takeaways ?? 0, "Takeaways"),
+                Count("GV", skater?.Giveaways ?? 0, "Giveaways"),
+                new("FO%", FaceoffPercentage, "Faceoff percentage"),
+            ]),
+        ];
+    }
+
+    private List<SeasonStatGroupViewModel> GoalieOverviewGroups() =>
+    [
+        new("GOALTENDING",
+        [
+            Count("GP", GamesPlayed, "Games played (starts)"),
+            Count("SA", ShotsAgainst, "Shots against"),
+            Count("SV", Saves, "Saves"),
+            Count("GA", GoalsAgainst, "Goals against"),
+            new("SV%", SavePercentage, "Save percentage"),
+            new("GAA", GoalsAgainstAverage, "Goals-against average"),
+        ]),
+        new("EXPECTED AND USAGE",
+        [
+            new("xGA", ExpectedGoalsAgainst, "Expected goals against"),
+            new("GSAx", GoalsSavedAboveExpected, "Goals saved above expected"),
+            new("xSV%", ExpectedSavePercentage, "Expected save percentage"),
+            Count("SO", Shutouts, "Shutouts"),
+            new("TOI/GP", TimeOnIcePerGame, "Average time in net per start"),
+        ]),
+    ];
 
     private List<SeasonStatGroupViewModel> SkaterGroups()
     {
@@ -250,3 +330,7 @@ public sealed class PlayerSeasonTotals
     private static SeasonStatViewModel Count(string label, int value, string description) =>
         new(label, value.ToString(CultureInfo.CurrentCulture), description);
 }
+
+public sealed record SeasonStatViewModel(string Label, string Value, string Description);
+
+public sealed record SeasonStatGroupViewModel(string Name, IReadOnlyList<SeasonStatViewModel> Statistics);

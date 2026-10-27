@@ -16,153 +16,146 @@
       <Setter Property="DockPanel.Dock" Value="Top" />
     </Style>
   </UserControl.Styles>
-  <Grid ColumnDefinitions="*,280" ColumnSpacing="6">
-    <DockPanel>
-      <Border DockPanel.Dock="Top" Classes="panel">
-        <Border Classes="panel-header" Height="NaN" Padding="10,3">
-          <WrapPanel ItemSpacing="12" LineSpacing="4" VerticalAlignment="Center">
-            <!-- Which players the tables list. -->
-            <StackPanel x:Name="GroupButtons" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
-              <Button x:Name="ShowAllPlayersButton"
-                      Classes="tab"
-                      Classes.selected="{Binding ShowsAllPlayers}"
-                      Content="All players"
-                      Command="{Binding ShowGroupCommand}"
-                      CommandParameter="{x:Static roster:RosterGroup.AllPlayers}" />
-              <Button x:Name="ShowSkatersButton"
-                      Classes="tab"
-                      Classes.selected="{Binding ShowsSkatersGroup}"
-                      Content="Skaters"
-                      Command="{Binding ShowGroupCommand}"
-                      CommandParameter="{x:Static roster:RosterGroup.Skaters}" />
-              <Button x:Name="ShowForwardsButton"
-                      Classes="tab"
-                      Classes.selected="{Binding ShowsForwardsGroup}"
-                      Content="Forwards"
-                      Command="{Binding ShowGroupCommand}"
-                      CommandParameter="{x:Static roster:RosterGroup.Forwards}" />
-              <Button x:Name="ShowDefenceButton"
-                      Classes="tab"
-                      Classes.selected="{Binding ShowsDefenceGroup}"
-                      Content="Defence"
-                      Command="{Binding ShowGroupCommand}"
-                      CommandParameter="{x:Static roster:RosterGroup.Defence}" />
-              <Button x:Name="ShowGoaliesButton"
-                      Classes="tab"
-                      Classes.selected="{Binding ShowsGoaliesGroup}"
-                      Content="Goalies"
-                      Command="{Binding ShowGroupCommand}"
-                      CommandParameter="{x:Static roster:RosterGroup.Goalies}" />
-            </StackPanel>
-            <ComboBox x:Name="PositionFilter"
-                      Width="120"
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Classes="panel">
+      <Border Classes="panel-header" Height="NaN" Padding="10,3">
+        <WrapPanel ItemSpacing="12" LineSpacing="4" VerticalAlignment="Center">
+          <!-- Which players the tables list. -->
+          <StackPanel x:Name="GroupButtons" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+            <Button x:Name="ShowAllPlayersButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsAllPlayers}"
+                    Content="All players"
+                    Command="{Binding ShowGroupCommand}"
+                    CommandParameter="{x:Static roster:RosterGroup.AllPlayers}" />
+            <Button x:Name="ShowSkatersButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsSkatersGroup}"
+                    Content="Skaters"
+                    Command="{Binding ShowGroupCommand}"
+                    CommandParameter="{x:Static roster:RosterGroup.Skaters}" />
+            <Button x:Name="ShowForwardsButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsForwardsGroup}"
+                    Content="Forwards"
+                    Command="{Binding ShowGroupCommand}"
+                    CommandParameter="{x:Static roster:RosterGroup.Forwards}" />
+            <Button x:Name="ShowDefenceButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsDefenceGroup}"
+                    Content="Defence"
+                    Command="{Binding ShowGroupCommand}"
+                    CommandParameter="{x:Static roster:RosterGroup.Defence}" />
+            <Button x:Name="ShowGoaliesButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsGoaliesGroup}"
+                    Content="Goalies"
+                    Command="{Binding ShowGroupCommand}"
+                    CommandParameter="{x:Static roster:RosterGroup.Goalies}" />
+          </StackPanel>
+          <ComboBox x:Name="PositionFilter"
+                    Width="120"
+                    VerticalAlignment="Center"
+                    AutomationProperties.Name="Forwards"
+                    IsVisible="{Binding ShowsForwardsGroup}"
+                    SelectedIndex="{Binding ForwardFilterIndex, Mode=TwoWay}">
+            <ComboBoxItem Content="All forwards" />
+            <ComboBoxItem Content="Centres" />
+            <ComboBoxItem Content="Wingers" />
+          </ComboBox>
+          <!-- Which columns the tables show. -->
+          <StackPanel x:Name="ColumnButtons" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+            <Button x:Name="ShowBasicButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsBasic}"
+                    Content="Basic"
+                    Command="{Binding ShowColumnsCommand}"
+                    CommandParameter="{x:Static roster:RosterColumns.Basic}" />
+            <Button x:Name="ShowAdvancedButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsAdvanced}"
+                    Content="Advanced"
+                    Command="{Binding ShowColumnsCommand}"
+                    CommandParameter="{x:Static roster:RosterColumns.Advanced}" />
+            <Button x:Name="ShowRatingsButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsRatings}"
+                    Content="Ratings"
+                    Command="{Binding ShowColumnsCommand}"
+                    CommandParameter="{x:Static roster:RosterColumns.Ratings}" />
+            <Button x:Name="ShowBioButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsBio}"
+                    Content="Bio"
+                    Command="{Binding ShowColumnsCommand}"
+                    CommandParameter="{x:Static roster:RosterColumns.Bio}" />
+          </StackPanel>
+          <!-- Switches both tables and the profile between the two sets of totals. -->
+          <StackPanel Orientation="Horizontal"
+                      Spacing="0"
                       VerticalAlignment="Center"
-                      AutomationProperties.Name="Forwards"
-                      IsVisible="{Binding ShowsForwardsGroup}"
-                      SelectedIndex="{Binding ForwardFilterIndex, Mode=TwoWay}">
-              <ComboBoxItem Content="All forwards" />
-              <ComboBoxItem Content="Centres" />
-              <ComboBoxItem Content="Wingers" />
+                      IsVisible="{Binding HasPlayoffStatistics}">
+            <Button x:Name="ShowRegularSeasonButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsRegularSeason}"
+                    Content="Regular season"
+                    Command="{Binding ShowStatisticsSetCommand}"
+                    CommandParameter="{x:Static players:StatisticsSet.RegularSeason}" />
+            <Button x:Name="ShowPlayoffsButton"
+                    Classes="tab"
+                    Classes.selected="{Binding ShowsPlayoffs}"
+                    Content="Playoffs"
+                    Command="{Binding ShowStatisticsSetCommand}"
+                    CommandParameter="{x:Static players:StatisticsSet.Playoffs}" />
+          </StackPanel>
+          <!-- Advanced figures are five-on-five only for now. -->
+          <StackPanel x:Name="SituationPanel"
+                      Orientation="Horizontal"
+                      Spacing="6"
+                      VerticalAlignment="Center"
+                      IsVisible="{Binding ShowsAdvanced}">
+            <TextBlock Classes="caption" VerticalAlignment="Center" Text="Situation" />
+            <ComboBox x:Name="SituationSelector"
+                      Width="90"
+                      IsEnabled="False"
+                      SelectedIndex="0"
+                      AutomationProperties.Name="Situation">
+              <ComboBoxItem Content="5 on 5" />
             </ComboBox>
-            <!-- Which columns the tables show. -->
-            <StackPanel x:Name="ColumnButtons" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
-              <Button x:Name="ShowBasicButton"
-                      Classes="tab"
-                      Classes.selected="{Binding ShowsBasic}"
-                      Content="Basic"
-                      Command="{Binding ShowColumnsCommand}"
-                      CommandParameter="{x:Static roster:RosterColumns.Basic}" />
-              <Button x:Name="ShowAdvancedButton"
-                      Classes="tab"
-                      Classes.selected="{Binding ShowsAdvanced}"
-                      Content="Advanced"
-                      Command="{Binding ShowColumnsCommand}"
-                      CommandParameter="{x:Static roster:RosterColumns.Advanced}" />
-              <Button x:Name="ShowRatingsButton"
-                      Classes="tab"
-                      Classes.selected="{Binding ShowsRatings}"
-                      Content="Ratings"
-                      Command="{Binding ShowColumnsCommand}"
-                      CommandParameter="{x:Static roster:RosterColumns.Ratings}" />
-              <Button x:Name="ShowBioButton"
-                      Classes="tab"
-                      Classes.selected="{Binding ShowsBio}"
-                      Content="Bio"
-                      Command="{Binding ShowColumnsCommand}"
-                      CommandParameter="{x:Static roster:RosterColumns.Bio}" />
-            </StackPanel>
-            <!-- Switches both tables and the profile between the two sets of totals. -->
-            <StackPanel Orientation="Horizontal"
-                        Spacing="0"
-                        VerticalAlignment="Center"
-                        IsVisible="{Binding HasPlayoffStatistics}">
-              <Button x:Name="ShowRegularSeasonButton"
-                      Classes="tab"
-                      Classes.selected="{Binding ShowsRegularSeason}"
-                      Content="Regular season"
-                      Command="{Binding ShowStatisticsSetCommand}"
-                      CommandParameter="{x:Static players:StatisticsSet.RegularSeason}" />
-              <Button x:Name="ShowPlayoffsButton"
-                      Classes="tab"
-                      Classes.selected="{Binding ShowsPlayoffs}"
-                      Content="Playoffs"
-                      Command="{Binding ShowStatisticsSetCommand}"
-                      CommandParameter="{x:Static players:StatisticsSet.Playoffs}" />
-            </StackPanel>
-            <!-- Advanced figures are five-on-five only for now. -->
-            <StackPanel x:Name="SituationPanel"
-                        Orientation="Horizontal"
-                        Spacing="6"
-                        VerticalAlignment="Center"
-                        IsVisible="{Binding ShowsAdvanced}">
-              <TextBlock Classes="caption" VerticalAlignment="Center" Text="Situation" />
-              <ComboBox x:Name="SituationSelector"
-                        Width="90"
-                        IsEnabled="False"
-                        SelectedIndex="0"
-                        AutomationProperties.Name="Situation">
-                <ComboBoxItem Content="5 on 5" />
-              </ComboBox>
-            </StackPanel>
-            <TextBlock x:Name="PlayerCountText"
-                       Classes="caption"
-                       VerticalAlignment="Center"
-                       Text="{Binding PlayerCount, StringFormat='{}{0} players'}" />
-          </WrapPanel>
-        </Border>
+          </StackPanel>
+          <TextBlock x:Name="PlayerCountText"
+                     Classes="caption"
+                     VerticalAlignment="Center"
+                     Text="{Binding PlayerCount, StringFormat='{}{0} players'}" />
+        </WrapPanel>
       </Border>
-
-      <roster:PlayerStripView x:Name="PlayerStripPanel" DockPanel.Dock="Bottom" Margin="0,6,0,0" />
-
-      <Border x:Name="GoaliesPanel"
-              Classes="panel goalies-panel"
-              Classes.alone="{Binding ShowsGoaliesGroup}"
-              Margin="0,6,0,0"
-              IsVisible="{Binding ShowsGoalieTable}">
-        <DockPanel>
-          <Border DockPanel.Dock="Top" Classes="panel-header">
-            <TextBlock Classes="panel-title" Text="GOALIES" />
-          </Border>
-          <roster:GoalieTableView x:Name="GoalieTable" />
-        </DockPanel>
-      </Border>
-
-      <Border x:Name="SkatersPanel"
-              Classes="panel"
-              Margin="0,6,0,0"
-              IsVisible="{Binding ShowsSkaterTable}">
-        <DockPanel>
-          <Border DockPanel.Dock="Top" Classes="panel-header">
-            <TextBlock Classes="panel-title" Text="SKATERS" />
-          </Border>
-          <roster:SkaterTableView x:Name="SkaterTable" />
-        </DockPanel>
-      </Border>
-    </DockPanel>
-
-    <Border Grid.Column="1" Classes="panel">
-      <players:PlayerDetailView x:Name="PlayerDetail"
-                                DataContext="{Binding SelectedPlayer}" />
     </Border>
-  </Grid>
+
+    <roster:PlayerStripView x:Name="PlayerStripPanel" DockPanel.Dock="Bottom" Margin="0,6,0,0" />
+
+    <Border x:Name="GoaliesPanel"
+            Classes="panel goalies-panel"
+            Classes.alone="{Binding ShowsGoaliesGroup}"
+            Margin="0,6,0,0"
+            IsVisible="{Binding ShowsGoalieTable}">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="panel-header">
+          <TextBlock Classes="panel-title" Text="GOALIES" />
+        </Border>
+        <roster:GoalieTableView x:Name="GoalieTable" />
+      </DockPanel>
+    </Border>
+
+    <Border x:Name="SkatersPanel"
+            Classes="panel"
+            Margin="0,6,0,0"
+            IsVisible="{Binding ShowsSkaterTable}">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="panel-header">
+          <TextBlock Classes="panel-title" Text="SKATERS" />
+        </Border>
+        <roster:SkaterTableView x:Name="SkaterTable" />
+      </DockPanel>
+    </Border>
+  </DockPanel>
 </UserControl>

@@ -8,6 +8,7 @@ public sealed partial class GoalieTableView : UserControl
     public GoalieTableView()
     {
         InitializeComponent();
+        RosterRowActivation.OpenProfileOnDoubleTap(this);
     }
 
     private void InitializeComponent()

@@ -11,16 +11,17 @@ namespace HockeySim.Desktop.Roster;
 
 /// <summary>
 /// A read-only roster shown by player group (all players, skaters, forwards, defence, or goalies)
-/// and column view, with the selected player's profile and summary strip. The tables show ratings,
-/// basic season totals, advanced five-on-five figures, or biographies; they do not fit side by
-/// side. Once the playoffs start, the totals and the profile switch together between the regular
-/// season and the playoffs.
+/// and column view, with the selected player's summary strip. The tables show ratings, basic season
+/// totals, advanced five-on-five figures, or biographies; they do not fit side by side. Once the
+/// playoffs start, the totals switch between the regular season and the playoffs, and the player
+/// profile opened from the roster follows the same choice.
 /// </summary>
 public sealed partial class TeamRosterViewModel : ObservableObject
 {
     private readonly TeamSnapshot _team;
     private readonly GameSession _session;
     private readonly Action<TeamId>? _openLines;
+    private readonly Action<PlayerId, PlayerProfileTab, StatisticsSet>? _openPlayer;
     private List<PlayerRowViewModel> _rows = [];
 
     [ObservableProperty]
@@ -37,11 +38,9 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     [ObservableProperty]
     private PlayerRowViewModel? _selectedGoalie;
 
+    /// <summary>The selected player's summary strip, or null with no player listed.</summary>
     [ObservableProperty]
-    private PlayerDetailViewModel? _selectedPlayer;
-
-    /// <summary>The summary strip of <see cref="SelectedPlayer"/>.</summary>
-    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OpenProfileCommand), nameof(OpenGameLogCommand))]
     private PlayerStripViewModel? _selectedStrip;
 
     [ObservableProperty]
@@ -85,6 +84,10 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     /// <param name="group">The player group to show, kept from the roster this one replaces.</param>
     /// <param name="forwardPosition">Which forwards the Forwards group lists.</param>
     /// <param name="openLines">Opens the Lines page on this roster's team; the Lines link is disabled without it.</param>
+    /// <param name="openPlayer">
+    /// Opens a player's profile on a tab with the roster's statistic set; the Profile and Game log links are disabled
+    /// without it.
+    /// </param>
     public TeamRosterViewModel(
         GameSession session,
         TeamId teamId,
@@ -94,13 +97,15 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         RosterSorts? sorts = null,
         RosterGroup group = RosterGroup.AllPlayers,
         ForwardFilter forwardPosition = ForwardFilter.AllForwards,
-        Action<TeamId>? openLines = null)
+        Action<TeamId>? openLines = null,
+        Action<PlayerId, PlayerProfileTab, StatisticsSet>? openPlayer = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
         _team = session.GetTeam(teamId);
         _openLines = openLines;
+        _openPlayer = openPlayer;
         _columns = columns;
         _group = group;
         _forwardPosition = forwardPosition;
@@ -205,6 +210,21 @@ public sealed partial class TeamRosterViewModel : ObservableObject
 
     private bool CanOpenLines() => _openLines is not null;
 
+    /// <summary>Opens the selected player's profile; a double-click on a row does the same.</summary>
+    [RelayCommand(CanExecute = nameof(CanOpenPlayer))]
+    private void OpenProfile()
+    {
+        _openPlayer!(SelectedStrip!.PlayerId, PlayerProfileTab.Overview, Statistics);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanOpenPlayer))]
+    private void OpenGameLog()
+    {
+        _openPlayer!(SelectedStrip!.PlayerId, PlayerProfileTab.GameLog, Statistics);
+    }
+
+    private bool CanOpenPlayer() => _openPlayer is not null && SelectedStrip is not null;
+
     /// <summary>Sorts the skaters table by a column, or reverses the sort when it is already sorted by it.</summary>
     [RelayCommand]
     private void SortSkaters(string column)
@@ -243,7 +263,7 @@ public sealed partial class TeamRosterViewModel : ObservableObject
 
     partial void OnStatisticsChanged(StatisticsSet value)
     {
-        var selectedPlayerId = SelectedPlayer?.Id;
+        var selectedPlayerId = SelectedStrip?.PlayerId;
         ShowStatistics();
         SelectVisiblePlayer(selectedPlayerId);
     }
@@ -267,7 +287,7 @@ public sealed partial class TeamRosterViewModel : ObservableObject
     /// </summary>
     private void ShowSortedRows()
     {
-        var selectedPlayerId = SelectedPlayer?.Id;
+        var selectedPlayerId = SelectedStrip?.PlayerId;
         ApplyRows();
         SelectVisiblePlayer(selectedPlayerId);
     }
@@ -321,7 +341,6 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         {
             SelectedSkater = null;
             SelectedGoalie = null;
-            SelectedPlayer = null;
             SelectedStrip = null;
             return;
         }
@@ -365,7 +384,6 @@ public sealed partial class TeamRosterViewModel : ObservableObject
 
     private void ShowPlayer(PlayerRowViewModel row)
     {
-        SelectedPlayer = new PlayerDetailViewModel(row.Player, _team, row.Season, _session.Snapshot.League.SeasonYear, Statistics);
         SelectedStrip = new PlayerStripViewModel(row);
     }
 }

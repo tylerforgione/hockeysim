@@ -232,6 +232,7 @@ public sealed class PlayerSnapshot
 {
     private readonly ReadOnlyDictionary<Rating, int> _ratings;
     private readonly ReadOnlyCollection<InjurySnapshot> _injuries;
+    private readonly ReadOnlyDictionary<Rating, int> _ratingReductions;
 
     private PlayerSnapshot(
         PlayerId id,
@@ -243,7 +244,8 @@ public sealed class PlayerSnapshot
         int number,
         int overall,
         IReadOnlyDictionary<Rating, int> ratings,
-        IReadOnlyList<InjurySnapshot> injuries)
+        IReadOnlyList<InjurySnapshot> injuries,
+        IReadOnlyDictionary<Rating, int> ratingReductions)
     {
         Id = id;
         FirstName = firstName;
@@ -255,6 +257,7 @@ public sealed class PlayerSnapshot
         Overall = overall;
         _ratings = new ReadOnlyDictionary<Rating, int>(new Dictionary<Rating, int>(ratings));
         _injuries = new ReadOnlyCollection<InjurySnapshot>(injuries.ToList());
+        _ratingReductions = new ReadOnlyDictionary<Rating, int>(new Dictionary<Rating, int>(ratingReductions));
     }
 
     public PlayerId Id { get; }
@@ -275,8 +278,18 @@ public sealed class PlayerSnapshot
     /// <summary>The player's overall rating for their position.</summary>
     public int Overall { get; }
 
-    /// <summary>Every rating visible to the user, which excludes <see cref="Rating.Durability"/>.</summary>
+    /// <summary>
+    /// Every rating visible to the user, which excludes <see cref="Rating.Durability"/>. These are
+    /// the healthy values; a player playing through an injury plays at each rating less its
+    /// <see cref="RatingReductions"/> entry, to a floor of zero.
+    /// </summary>
     public IReadOnlyDictionary<Rating, int> Ratings => _ratings;
+
+    /// <summary>
+    /// The rating points each injury not yet healed takes off while the player plays through it, by
+    /// rating; empty for a healthy player. The reductions of several injuries add up.
+    /// </summary>
+    public IReadOnlyDictionary<Rating, int> RatingReductions => _ratingReductions;
 
     /// <summary>The injuries not yet healed, in the order suffered.</summary>
     public IReadOnlyList<InjurySnapshot> Injuries => _injuries;
@@ -299,7 +312,8 @@ public sealed class PlayerSnapshot
             player.Ratings
                 .Where(pair => pair.Key != Rating.Durability)
                 .ToDictionary(pair => pair.Key, pair => pair.Value.Value),
-            season.HealthOf(player.Id).InjuriesOn(currentDate).Select(InjurySnapshot.Create).ToList());
+            season.HealthOf(player.Id).InjuriesOn(currentDate).Select(InjurySnapshot.Create).ToList(),
+            season.HealthOf(player.Id).RatingReductionsOn(currentDate));
     }
 }
 

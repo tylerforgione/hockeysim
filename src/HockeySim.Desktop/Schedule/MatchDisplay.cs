@@ -1,5 +1,6 @@
 using System.Globalization;
 
+using HockeySim.Desktop.Playoffs;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
@@ -43,6 +44,28 @@ public static class MatchDisplay
             .Concat(snapshot.Schedule.PlayoffMatches.Select(match => (Match: match, Phase: SeasonPhase.Playoffs)))
             .Where(upcoming => upcoming.Match.Date >= season.CurrentDate
                 && (upcoming.Match.HomeTeamId == teamId || upcoming.Match.AwayTeamId == teamId));
+    }
+
+    /// <summary>
+    /// Labels a team's match by phase: "PRE", "REG", or a playoff game's round and number such as
+    /// "R1 G3", with a description for a tooltip.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">A playoff match no series holds.</exception>
+    public static (string Label, string Description) PhaseOf(SeasonPhase phase, PlayoffsSnapshot? playoffs, DateOnly date, TeamId teamId)
+    {
+        switch (phase)
+        {
+            case SeasonPhase.Preseason:
+                return ("PRE", "Preseason: counts toward nothing");
+            case SeasonPhase.RegularSeason:
+                return ("REG", "Regular season");
+            default:
+                var (series, gameNumber) = PlayoffDisplay.FindGame(playoffs, date, teamId)
+                    ?? throw new InvalidOperationException($"No playoff series holds the game on {date}.");
+                return (
+                    $"{PlayoffDisplay.RoundAbbreviation(series.Round)} G{gameNumber}",
+                    $"Playoffs: {PlayoffDisplay.RoundName(series.Round)}, game {gameNumber}");
+        }
     }
 
     /// <summary>A record as wins-losses-overtime losses ("10-8-3"), counting shootout losses as overtime losses.</summary>

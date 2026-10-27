@@ -17,6 +17,7 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
 {
     private readonly GameSession _session;
     private readonly Action<TeamId>? _openLines;
+    private readonly Action<PlayerId, PlayerProfileTab, StatisticsSet>? _openPlayer;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Subtitle))]
@@ -26,15 +27,17 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
     private TeamRosterViewModel _roster;
 
     /// <param name="openLines">Opens the Lines page on the shown team; the roster's Lines link is disabled without it.</param>
-    public TeamsPageViewModel(GameSession session, Action<TeamId>? openLines = null)
+    /// <param name="openPlayer">Opens a player's profile from the roster; the Profile and Game log links are disabled without it.</param>
+    public TeamsPageViewModel(GameSession session, Action<TeamId>? openLines = null, Action<PlayerId, PlayerProfileTab, StatisticsSet>? openPlayer = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
         _openLines = openLines;
+        _openPlayer = openPlayer;
         Teams = TeamEntryViewModel.ForLeague(session.Snapshot);
         _selectedTeam = Teams.Single(team => team.IsManaged);
-        _roster = new TeamRosterViewModel(session, _selectedTeam.Id, openLines: openLines);
+        _roster = new TeamRosterViewModel(session, _selectedTeam.Id, openLines: openLines, openPlayer: openPlayer);
     }
 
     public override string Subtitle => $"{SelectedTeam.Name} · {SelectedTeam.Division}";
@@ -59,7 +62,7 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
 
     public override void Refresh()
     {
-        Roster = CreateRoster(SelectedTeam.Id, Roster.SelectedPlayer?.Id);
+        Roster = CreateRoster(SelectedTeam.Id, Roster.SelectedStrip?.PlayerId);
     }
 
     [RelayCommand]
@@ -87,7 +90,7 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
     /// sorts so browsing from team to team compares like with like.
     /// </summary>
     private TeamRosterViewModel CreateRoster(TeamId teamId, PlayerId? selectedPlayerId) =>
-        new(_session, teamId, selectedPlayerId, Roster.Columns, Roster.Statistics, Roster.Sorts, Roster.Group, Roster.ForwardPosition, _openLines);
+        new(_session, teamId, selectedPlayerId, Roster.Columns, Roster.Statistics, Roster.Sorts, Roster.Group, Roster.ForwardPosition, _openLines, _openPlayer);
 }
 
 public sealed record TeamEntryViewModel(TeamId Id, string Name, string Division, bool IsManaged)

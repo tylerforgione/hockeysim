@@ -147,6 +147,11 @@ internal static class GameSaveCapture
             skater.Assists,
             skater.PlusMinus,
             WholeSeconds(skater.TimeOnIce),
+            new(
+                WholeSeconds(skater.TimeOnIceBySituation.FiveOnFive),
+                WholeSeconds(skater.TimeOnIceBySituation.PowerPlay),
+                WholeSeconds(skater.TimeOnIceBySituation.PenaltyKill),
+                WholeSeconds(skater.TimeOnIceBySituation.Other)),
             skater.Shots,
             skater.ShotAttempts,
             skater.Hits,

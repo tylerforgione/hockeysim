@@ -11,6 +11,7 @@ internal sealed class SkaterState
 {
     private double _drainFactor;
     private double _recoveryFactor;
+    private readonly int[] _secondsBySituation = new int[Enum.GetValues<StrengthSituation>().Length];
 
     /// <param name="reductions">Rating points taken off by injuries the skater is playing through.</param>
     public SkaterState(Player player, IReadOnlyDictionary<Rating, int> reductions)
@@ -74,9 +75,17 @@ internal sealed class SkaterState
     /// <summary>The share of their ratings the skater can bring at their current energy.</summary>
     public double Performance => MatchTuning.ExhaustedPerformance + ((1 - MatchTuning.ExhaustedPerformance) * Energy);
 
-    public void Skate(int seconds, double drainMultiplier)
+    /// <summary>The time on ice split by strength situation; its parts sum to <see cref="TimeOnIceSeconds"/>.</summary>
+    public SituationalTimeOnIce TimeOnIceBySituation() => new(
+        TimeSpan.FromSeconds(_secondsBySituation[(int)StrengthSituation.FiveOnFive]),
+        TimeSpan.FromSeconds(_secondsBySituation[(int)StrengthSituation.PowerPlay]),
+        TimeSpan.FromSeconds(_secondsBySituation[(int)StrengthSituation.PenaltyKill]),
+        TimeSpan.FromSeconds(_secondsBySituation[(int)StrengthSituation.Other]));
+
+    public void Skate(int seconds, double drainMultiplier, StrengthSituation situation)
     {
         TimeOnIceSeconds += seconds;
+        _secondsBySituation[(int)situation] += seconds;
         Energy = Math.Max(0, Energy - (seconds * MatchTuning.EnergyDrainPerSecond * drainMultiplier * _drainFactor));
     }
 

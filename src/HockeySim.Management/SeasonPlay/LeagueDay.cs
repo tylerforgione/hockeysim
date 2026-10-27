@@ -116,6 +116,7 @@ internal static class LeagueDay
             skater.Assists,
             skater.PlusMinus,
             skater.TimeOnIce,
+            skater.TimeOnIceBySituation,
             skater.Shots,
             skater.ShotAttempts,
             skater.Hits,

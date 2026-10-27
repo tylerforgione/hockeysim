@@ -172,7 +172,7 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
                 var isHome = match.HomeTeamId == teamId;
                 var opponent = _session.GetTeam(isHome ? match.AwayTeamId : match.HomeTeamId);
                 results.TryGetValue(match.Date, out var result);
-                var (phaseLabel, phaseDescription) = PhaseOf(entry.Phase, match.Date, teamId);
+                var (phaseLabel, phaseDescription) = MatchDisplay.PhaseOf(entry.Phase, season.Playoffs, match.Date, teamId);
                 return new ScheduleMatchRowViewModel(
                     match.Date,
                     match.HomeTeamId,
@@ -195,24 +195,6 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
         result.Home.TeamId == teamId
             ? result.Home.Score - result.Away.Score
             : result.Away.Score - result.Home.Score;
-
-    /// <summary>Labels a row's phase, naming a playoff game's round and number in its series.</summary>
-    private (string Label, string Description) PhaseOf(SeasonPhase phase, DateOnly date, TeamId teamId)
-    {
-        switch (phase)
-        {
-            case SeasonPhase.Preseason:
-                return ("PRE", "Preseason: counts toward nothing");
-            case SeasonPhase.RegularSeason:
-                return ("REG", "Regular season");
-            default:
-                var (series, gameNumber) = PlayoffDisplay.FindGame(_session.Snapshot.Season.Playoffs, date, teamId)
-                    ?? throw new InvalidOperationException($"No playoff series holds the game on {date}.");
-                return (
-                    $"{PlayoffDisplay.RoundAbbreviation(series.Round)} G{gameNumber}",
-                    $"Playoffs: {PlayoffDisplay.RoundName(series.Round)}, game {gameNumber}");
-        }
-    }
 
     private CompletedMatchSnapshot? FindResult(DateOnly date, TeamId homeTeamId) =>
         AllResults().FirstOrDefault(result => result.Date == date && result.Home.TeamId == homeTeamId);

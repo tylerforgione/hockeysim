@@ -15,6 +15,7 @@ public sealed class PlayerStripViewModel
         ArgumentNullException.ThrowIfNull(row);
 
         var player = row.Player;
+        PlayerId = player.Id;
         Number = $"#{player.Number}";
         Name = row.Name;
         Position = PlayerDisplay.PositionName(player.Position);
@@ -54,6 +55,8 @@ public sealed class PlayerStripViewModel
             ]);
         Ratings = ratings;
     }
+
+    public PlayerId PlayerId { get; }
 
     /// <summary>The jersey number with its hash, such as #19.</summary>
     public string Number { get; }

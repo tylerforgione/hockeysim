@@ -210,7 +210,8 @@ internal sealed class MatchSide
     public bool ChangeAtStoppage() => Change(rotation => rotation.ShouldChangeAtStoppage);
 
     /// <summary>Plays time: the skaters on the ice tire and the rest recover on the bench.</summary>
-    public void Elapse(int seconds)
+    /// <param name="situation">The side's strength situation for the whole interval.</param>
+    public void Elapse(int seconds, StrengthSituation situation)
     {
         foreach (var rotation in _active)
         {
@@ -228,7 +229,7 @@ internal sealed class MatchSide
 
         for (var index = 0; index < onIce.Count; index++)
         {
-            onIce[index].Skater.Skate(seconds, _onIceDrain[index]);
+            onIce[index].Skater.Skate(seconds, _onIceDrain[index], situation);
         }
 
         if (!IsGoaliePulled)
