@@ -414,7 +414,7 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
     {
         public GameSave? Save { get; private set; }
 
-        void IGameSaveStore.Save(GameSave save) => Save = save;
+        void IGameSaveStore.Save(GameSave save, SavedGameDetails details) => Save = save;
 
         public GameSave Load() => Save ?? throw new InvalidOperationException("Nothing is saved.");
     }

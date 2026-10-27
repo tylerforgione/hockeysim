@@ -116,7 +116,13 @@ internal sealed class CapturingStore : IGameSaveStore
 {
     public GameSave? Saved { get; private set; }
 
-    public void Save(GameSave save) => Saved = save;
+    public SavedGameDetails? SavedDetails { get; private set; }
+
+    public void Save(GameSave save, SavedGameDetails details)
+    {
+        Saved = save;
+        SavedDetails = details;
+    }
 
     public GameSave Load() => throw new NotSupportedException();
 }

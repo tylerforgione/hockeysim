@@ -108,9 +108,107 @@ public sealed class GameSaveFileTests : IDisposable
 
         var document = SaveFileContents.Read(SavePath);
 
-        Assert.Equal(["format", "formatVersion", "game"], document.Select(property => property.Key));
+        Assert.Equal(["format", "formatVersion", "details", "game"], document.Select(property => property.Key));
         Assert.Equal("HockeySim save", (string?)document["format"]);
         Assert.Equal(GameSaveFile.FormatVersion, (int?)document["formatVersion"]);
+    }
+
+    [Fact]
+    public void TheDetailsAreWrittenAheadOfTheGameAndReadWithoutIt()
+    {
+        var manager = StartGame();
+        Advance(manager, 12);
+        var capture = new CapturingStore();
+        manager.SaveGame(capture);
+        manager.SaveGame(new GameSaveFile(SavePath));
+
+        var details = new GameSaveFile(SavePath).ReadDetails();
+
+        Assert.Equal(capture.SavedDetails, details);
+        Assert.Equal("Halifax Mariners", details!.TeamName);
+        Assert.Equal(capture.SavedDetails!.PrimaryColour, (string?)SaveFileContents.Read(SavePath)["details"]!["primaryColour"]);
+    }
+
+    [Fact]
+    public void LoadingIgnoresTheDetails()
+    {
+        var manager = StartGame();
+        var saved = Advance(manager, 4);
+        manager.SaveGame(new GameSaveFile(SavePath));
+        var document = SaveFileContents.Read(SavePath);
+        document["details"] = new JsonObject { ["unrelated"] = true };
+        SaveFileContents.Write(SavePath, document);
+
+        Assert.Equal(Describe(saved), Describe(new GameManager().LoadGame(new GameSaveFile(SavePath))));
+    }
+
+    [Fact]
+    public void ReadingTheDetailsNeverReadsTheGame()
+    {
+        StartGame().SaveGame(new GameSaveFile(SavePath));
+        var document = SaveFileContents.Read(SavePath);
+        document["game"] = new JsonObject { ["damaged"] = true };
+        SaveFileContents.Write(SavePath, document);
+
+        Assert.NotNull(new GameSaveFile(SavePath).ReadDetails());
+        Assert.Throws<InvalidGameSaveException>(() => new GameSaveFile(SavePath).Load());
+    }
+
+    [Fact]
+    public void ASaveFromAnotherFormatVersionHasNoDetails()
+    {
+        StartGame().SaveGame(new GameSaveFile(SavePath));
+        var document = SaveFileContents.Read(SavePath);
+        document["formatVersion"] = GameSaveFile.FormatVersion - 1;
+        SaveFileContents.Write(SavePath, document);
+
+        Assert.Null(new GameSaveFile(SavePath).ReadDetails());
+    }
+
+    [Theory]
+    [InlineData("""[]""")]
+    [InlineData("""{"formatVersion":16,"details":{},"game":{}}""")]
+    [InlineData("""{"format":"Another game","formatVersion":16,"details":{},"game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":"16","details":{},"game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":16,"game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":16,"details":null,"game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":16,"details":{},"game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":16,"details":{"teamName":"Halifax""")]
+    [InlineData("""{"game":{},"format":"HockeySim save","formatVersion":16,"details":{}}""")]
+    public void ADocumentWithoutValidDetailsHasNone(string json)
+    {
+        Directory.CreateDirectory(_directory);
+        SaveFileContents.WriteCompressed(SavePath, json);
+
+        Assert.Null(new GameSaveFile(SavePath).ReadDetails());
+    }
+
+    [Theory]
+    [InlineData(new byte[0])]
+    [InlineData(new byte[] { 0x7B, 0x7D })]
+    [InlineData(new byte[] { 0x00, 0xFF, 0x13, 0x37, 0x42, 0x99, 0x01, 0x02 })]
+    public void AFileThatIsNotACompressedSaveHasNoDetails(byte[] contents)
+    {
+        Directory.CreateDirectory(_directory);
+        File.WriteAllBytes(SavePath, contents);
+
+        Assert.Null(new GameSaveFile(SavePath).ReadDetails());
+    }
+
+    [Fact]
+    public void ASaveCutOffBeforeItsDetailsHaveBeenWrittenHasNoDetails()
+    {
+        StartGame().SaveGame(new GameSaveFile(SavePath));
+        var bytes = File.ReadAllBytes(SavePath);
+        File.WriteAllBytes(SavePath, bytes[..10]);
+
+        Assert.Null(new GameSaveFile(SavePath).ReadDetails());
+    }
+
+    [Fact]
+    public void AMissingFileHasNoDetails()
+    {
+        Assert.Null(new GameSaveFile(SavePath).ReadDetails());
     }
 
     [Fact]
@@ -139,7 +237,7 @@ public sealed class GameSaveFileTests : IDisposable
 
         // Serialization fails part-way through writing, after the temporary file has begun.
         var unwritable = capture.Saved! with { Inbox = null! };
-        Assert.ThrowsAny<Exception>(() => store.Save(unwritable));
+        Assert.ThrowsAny<Exception>(() => store.Save(unwritable, capture.SavedDetails!));
 
         Assert.Equal([SavePath], Directory.GetFiles(_directory));
         Assert.Equal(Describe(saved), Describe(new GameManager().LoadGame(store)));
@@ -155,7 +253,7 @@ public sealed class GameSaveFileTests : IDisposable
         StartGame().SaveGame(capture);
         var store = new GameSaveFile(SavePath);
 
-        store.Save(capture.Saved! with { RandomState = new RandomState(value) });
+        store.Save(capture.Saved! with { RandomState = new RandomState(value) }, capture.SavedDetails!);
 
         Assert.Equal(new RandomState(value), store.Load().RandomState);
     }
@@ -171,6 +269,7 @@ public sealed class GameSaveFileTests : IDisposable
     [InlineData(10)]
     [InlineData(11)]
     [InlineData(12)]
+    [InlineData(15)]
     public void ASaveFromAnotherFormatVersionIsRejectedAsUnsupported(int version)
     {
         StartGame().SaveGame(new GameSaveFile(SavePath));
@@ -191,14 +290,14 @@ public sealed class GameSaveFileTests : IDisposable
 
     [Theory]
     [InlineData("""[]""")]
-    [InlineData("""{"formatVersion":15,"game":{}}""")]
-    [InlineData("""{"format":"Another game","formatVersion":15,"game":{}}""")]
+    [InlineData("""{"formatVersion":16,"game":{}}""")]
+    [InlineData("""{"format":"Another game","formatVersion":16,"game":{}}""")]
     [InlineData("""{"format":"HockeySim save","game":{}}""")]
     [InlineData("""{"format":"HockeySim save","formatVersion":"3","game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":15}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":15,"game":null}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":15,"game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":15,"game":{"seasonYear":2026""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":16}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":16,"game":null}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":16,"game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":16,"game":{"seasonYear":2026""")]
     public void ADocumentThatIsNotAWholeSaveIsRejected(string json)
     {
         Directory.CreateDirectory(_directory);
