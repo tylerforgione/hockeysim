@@ -503,6 +503,21 @@ stream and derived from game state
 ([reproducible saves](adr/0002-reproducible-saves.md)). Decide whether such
 events interrupt [bulk simulation](#skip-to-date-and-bulk-simulation).
 
+## Linked names in inbox messages
+
+Inbox message bodies are plain text, so a message naming a player or team
+leaves the user to find them elsewhere. Make each name in a message a link, as
+Football Manager and OOTP do: hovering shows a short summary card (position,
+age, key ratings or status for a player; record and standing for a team), and
+clicking opens the player profile or team page. Leagues get the same treatment
+once there is more than one (see
+[development leagues](#development-leagues-and-roster-transactions)).
+
+Direction: messages carry references to the players and teams they name
+alongside the text, rather than Desktop matching names in the body, so
+duplicate names and renamed teams resolve correctly and old messages still
+point at the right entity after it is saved and loaded.
+
 ## Goalie, bench, and instigator penalties
 
 The match engine (#51) penalizes only skaters, for infractions in the run of
