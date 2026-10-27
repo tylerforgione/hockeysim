@@ -113,6 +113,11 @@ public sealed partial class LineupEditorViewModel : ObservableObject
     /// <summary>Gets the first- and second-choice extra attackers.</summary>
     public IReadOnlyList<LineupSlotViewModel> ExtraAttackers { get; }
 
+    /// <summary>
+    /// Gets the player being dragged, or none when no drag is under way.
+    /// </summary>
+    public PlayerOptionViewModel? DraggedPlayer { get; private set; }
+
     private IEnumerable<LineupSlotViewModel> UnitSlots => _units.SelectMany(unit => unit.Slots);
 
     // Every slot in the same order as SavedSlotOrder. The tabs list situations in enum order, so
@@ -152,6 +157,54 @@ public sealed partial class LineupEditorViewModel : ObservableObject
                     unit.Slots.Select(Id).ToList()))
                 .ToList(),
             ExtraAttackers.Select(Id).ToList());
+    }
+
+    /// <summary>
+    /// Starts dragging a player. Does nothing for a read-only lineup.
+    /// </summary>
+    public void BeginDrag(PlayerOptionViewModel player)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+
+        DraggedPlayer = IsEditable ? player : null;
+    }
+
+    /// <summary>
+    /// Gets whether the dragged player can be dropped on a slot: one that lists them (goalie slots
+    /// only goalies, skater slots only skaters) and that they do not already fill.
+    /// </summary>
+    public bool CanDrop(LineupSlotViewModel target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+
+        return DraggedPlayer is { } player
+            && target.SelectedPlayer != player
+            && target.Options.Contains(player);
+    }
+
+    /// <summary>
+    /// Drops the dragged player on a slot as if they were chosen there, so the usual swap rules apply,
+    /// and ends the drag.
+    /// </summary>
+    /// <returns>Whether the slot took the player.</returns>
+    public bool Drop(LineupSlotViewModel target)
+    {
+        var dropped = CanDrop(target);
+        if (dropped)
+        {
+            target.SelectedPlayer = DraggedPlayer;
+        }
+
+        EndDrag();
+        return dropped;
+    }
+
+    /// <summary>
+    /// Ends a drag, whether it was dropped or cancelled.
+    /// </summary>
+    public void EndDrag()
+    {
+        DraggedPlayer = null;
     }
 
     private LineupSlotViewModel Slot(

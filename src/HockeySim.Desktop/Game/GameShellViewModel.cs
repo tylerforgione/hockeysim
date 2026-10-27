@@ -88,7 +88,7 @@ public sealed partial class GameShellViewModel : ObservableObject
         Home = new HomePageViewModel(session, Navigate, playerId => OpenPlayer(playerId), OpenTeam, OpenMatch);
         Inbox = new InboxPageViewModel(session);
         Roster = new RosterPageViewModel(session, OpenTeamLines, OpenPlayerFromRoster);
-        Lines = new LinesPageViewModel(session);
+        Lines = new LinesPageViewModel(session, playerId => OpenPlayer(playerId));
         Schedule = new SchedulePageViewModel(session);
         TeamStatistics = new TeamStatisticsPageViewModel(session);
         Injuries = new InjuriesPageViewModel(session);

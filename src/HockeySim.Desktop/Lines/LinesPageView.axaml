@@ -6,13 +6,26 @@
              x:Class="HockeySim.Desktop.Lines.LinesPageView"
              x:DataType="lines:LinesPageViewModel">
   <UserControl.Resources>
-    <!-- A slot's player choice with warnings beneath when the player is injured or out of position. -->
+    <!-- A slot's player choice with warnings beneath when the player is injured or out of position. The
+         name opens the player's profile and only the arrow opens the list; another team's lineup shows
+         the name alone. -->
     <DataTemplate x:Key="SlotPicker" x:DataType="lines:LineupSlotViewModel">
-      <StackPanel Spacing="1">
-        <ComboBox HorizontalAlignment="Stretch"
-                  ItemsSource="{Binding Options}"
-                  SelectedItem="{Binding SelectedPlayer}"
-                  IsEnabled="{Binding IsEditable}" />
+      <StackPanel Classes="drop-slot" Background="Transparent" Spacing="1">
+        <Grid ColumnDefinitions="Auto,*">
+          <Border Classes="drag-handle" IsVisible="{Binding IsEditable}">
+            <Path Data="{x:Static theme:Icons.Grip}" />
+          </Border>
+          <ComboBox Grid.Column="1"
+                    Classes="slot-choice"
+                    HorizontalAlignment="Stretch"
+                    ItemsSource="{Binding Options}"
+                    SelectedItem="{Binding SelectedPlayer}"
+                    IsVisible="{Binding IsEditable}" />
+          <Button Grid.Column="1"
+                  Classes="slot-link player-link slot-readonly"
+                  Content="{Binding SelectedPlayer}"
+                  IsVisible="{Binding !IsEditable}" />
+        </Grid>
         <TextBlock Classes="caption"
                    Classes.error="{Binding IsOutNote}"
                    Classes.warning="{Binding !IsOutNote}"
@@ -34,7 +47,7 @@
       <Grid ColumnDefinitions="34,*,Auto,Auto">
         <TextBlock Classes="cell muted" Text="{Binding Number}" />
         <TextBlock Grid.Column="1"
-                   Classes="cell"
+                   Classes="cell player-name"
                    Classes.muted="{Binding IsScratched}"
                    Text="{Binding Name}"
                    TextTrimming="CharacterEllipsis" />
@@ -101,6 +114,109 @@
   </UserControl.DataTemplates>
 
   <UserControl.Styles>
+    <!-- A player's name as a link to their profile. -->
+    <Style Selector="Button.slot-link">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.slot-link.slot-readonly">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="Padding" Value="6,0,2,0" />
+    </Style>
+    <Style Selector="Button.slot-link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.slot-link TextBlock.player-name">
+      <Setter Property="Foreground" Value="{DynamicResource TeamSecondaryBrush}" />
+    </Style>
+    <Style Selector="Button.slot-link TextBlock.player-name.muted">
+      <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+    </Style>
+    <Style Selector="Button.slot-link:pointerover TextBlock.player-name">
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+      <Setter Property="TextDecorations" Value="Underline" />
+    </Style>
+
+    <!--
+      A slot's player choice: the selected player is a link to their profile and the arrow beside it
+      opens the list. The popup keeps the parts the ComboBox expects (PART_Popup and its items presenter).
+    -->
+    <Style Selector="ComboBox.slot-choice">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Grid ColumnDefinitions="*,24">
+            <Border x:Name="Background"
+                    Grid.ColumnSpan="2"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{TemplateBinding CornerRadius}" />
+            <Button x:Name="PlayerLink"
+                    Classes="slot-link player-link"
+                    Margin="{TemplateBinding Padding}"
+                    Content="{TemplateBinding SelectionBoxItem}" />
+            <Border x:Name="DropDownArrow" Grid.Column="1" Background="Transparent">
+              <Path Data="M1939 486L2029 576L1024 1581L19 576L109 486L1024 1401L1939 486Z"
+                    Width="8"
+                    Height="8"
+                    Stretch="Uniform"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Fill="{DynamicResource SecondaryTextBrush}" />
+            </Border>
+            <Popup Name="PART_Popup"
+                   WindowManagerAddShadowHint="False"
+                   IsOpen="{TemplateBinding IsDropDownOpen, Mode=TwoWay}"
+                   MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                   MinWidth="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}"
+                   PlacementTarget="Background"
+                   IsLightDismissEnabled="True"
+                   InheritsTransform="True">
+              <Border Background="{DynamicResource SurfaceBrush}"
+                      BorderBrush="{DynamicResource BorderStrongBrush}"
+                      BorderThickness="1"
+                      HorizontalAlignment="Stretch">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                  <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                </ScrollViewer>
+              </Border>
+            </Popup>
+          </Grid>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="ComboBox.slot-choice:pointerover /template/ Border#DropDownArrow Path">
+      <Setter Property="Fill" Value="{DynamicResource TeamSecondaryBrush}" />
+    </Style>
+    <!-- The grip a player is dragged by. -->
+    <Style Selector="Border.drag-ghost">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource TeamSecondaryBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="8,3" />
+      <Setter Property="Opacity" Value="0.92" />
+    </Style>
+    <Style Selector="Border.drag-handle">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Width" Value="18" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Border.drag-handle Path">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="StrokeThickness" Value="2" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="Stroke" Value="{DynamicResource SecondaryTextBrush}" />
+    </Style>
+    <Style Selector="Border.drag-handle:pointerover Path">
+      <Setter Property="Stroke" Value="{DynamicResource TeamSecondaryBrush}" />
+    </Style>
     <Style Selector="TextBlock.slot-row-label">
       <Setter Property="FontSize" Value="11" />
       <Setter Property="FontWeight" Value="Bold" />
@@ -109,229 +225,240 @@
     </Style>
   </UserControl.Styles>
 
-  <DockPanel>
-    <Border DockPanel.Dock="Top" Classes="panel" Margin="0,0,0,6" Padding="8,4">
-      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-        <StackPanel Orientation="Horizontal" Spacing="0">
-          <Button x:Name="EvenStrengthTabButton"
-                  Classes="tab"
-                  Classes.selected="{Binding IsEvenStrengthTab}"
-                  Content="Even strength"
-                  Command="{Binding SelectTabCommand}"
-                  CommandParameter="{x:Static lines:LinesTab.EvenStrength}" />
-          <Button x:Name="PowerPlayTabButton"
-                  Classes="tab"
-                  Classes.selected="{Binding IsPowerPlayTab}"
-                  Content="Power play"
-                  Command="{Binding SelectTabCommand}"
-                  CommandParameter="{x:Static lines:LinesTab.PowerPlay}" />
-          <Button x:Name="PenaltyKillTabButton"
-                  Classes="tab"
-                  Classes.selected="{Binding IsPenaltyKillTab}"
-                  Content="Penalty kill"
-                  Command="{Binding SelectTabCommand}"
-                  CommandParameter="{x:Static lines:LinesTab.PenaltyKill}" />
-          <Button x:Name="OtherTabButton"
-                  Classes="tab"
-                  Classes.selected="{Binding IsOtherTab}"
-                  Content="Other"
-                  Command="{Binding SelectTabCommand}"
-                  CommandParameter="{x:Static lines:LinesTab.Other}" />
-        </StackPanel>
-        <TextBlock Grid.Column="1"
-                   Classes="caption"
-                   VerticalAlignment="Center"
-                   HorizontalAlignment="Right"
-                   TextTrimming="CharacterEllipsis"
-                   Text="{Binding OwnershipNote}" />
-        <ComboBox x:Name="LinesTeamSelector"
+  <Grid>
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Classes="panel" Margin="0,0,0,6" Padding="8,4">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <StackPanel Orientation="Horizontal" Spacing="0">
+            <Button x:Name="EvenStrengthTabButton"
+                    Classes="tab"
+                    Classes.selected="{Binding IsEvenStrengthTab}"
+                    Content="Even strength"
+                    Command="{Binding SelectTabCommand}"
+                    CommandParameter="{x:Static lines:LinesTab.EvenStrength}" />
+            <Button x:Name="PowerPlayTabButton"
+                    Classes="tab"
+                    Classes.selected="{Binding IsPowerPlayTab}"
+                    Content="Power play"
+                    Command="{Binding SelectTabCommand}"
+                    CommandParameter="{x:Static lines:LinesTab.PowerPlay}" />
+            <Button x:Name="PenaltyKillTabButton"
+                    Classes="tab"
+                    Classes.selected="{Binding IsPenaltyKillTab}"
+                    Content="Penalty kill"
+                    Command="{Binding SelectTabCommand}"
+                    CommandParameter="{x:Static lines:LinesTab.PenaltyKill}" />
+            <Button x:Name="OtherTabButton"
+                    Classes="tab"
+                    Classes.selected="{Binding IsOtherTab}"
+                    Content="Other"
+                    Command="{Binding SelectTabCommand}"
+                    CommandParameter="{x:Static lines:LinesTab.Other}" />
+          </StackPanel>
+          <TextBlock Grid.Column="1"
+                     Classes="caption"
+                     VerticalAlignment="Center"
+                     HorizontalAlignment="Right"
+                     TextTrimming="CharacterEllipsis"
+                     Text="{Binding OwnershipNote}" />
+          <ComboBox x:Name="LinesTeamSelector"
+                    Grid.Column="2"
+                    Width="220"
+                    VerticalAlignment="Center"
+                    ItemsSource="{Binding Teams}"
+                    SelectedItem="{Binding SelectedTeam}"
+                    MaxDropDownHeight="520">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="teams:TeamEntryViewModel">
+                <TextBlock Classes="cell" Text="{Binding Name}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </Grid>
+      </Border>
+  
+      <Border DockPanel.Dock="Bottom"
+              Classes="panel"
+              Margin="0,8,0,0"
+              Padding="12,8"
+              IsVisible="{Binding IsEditable}">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock x:Name="LineupError"
+                       Classes="error"
+                       Text="{Binding ErrorMessage}"
+                       IsVisible="{Binding HasError}"
+                       TextWrapping="Wrap" />
+            <TextBlock Classes="success"
+                       Text="{Binding StatusMessage}"
+                       IsVisible="{Binding !HasError}" />
+            <TextBlock Classes="warning"
+                       Text="Unsaved changes"
+                       IsVisible="{Binding HasChanges}" />
+          </StackPanel>
+          <Button Grid.Column="1"
+                  Classes="secondary"
+                  Content="Revert"
+                  Command="{Binding RevertCommand}" />
+          <Button x:Name="SaveLineupButton"
                   Grid.Column="2"
-                  Width="220"
-                  VerticalAlignment="Center"
-                  ItemsSource="{Binding Teams}"
-                  SelectedItem="{Binding SelectedTeam}"
-                  MaxDropDownHeight="520">
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="teams:TeamEntryViewModel">
-              <TextBlock Classes="cell" Text="{Binding Name}" />
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
-      </Grid>
-    </Border>
-
-    <Border DockPanel.Dock="Bottom"
-            Classes="panel"
-            Margin="0,8,0,0"
-            Padding="12,8"
-            IsVisible="{Binding IsEditable}">
-      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-        <StackPanel VerticalAlignment="Center">
-          <TextBlock x:Name="LineupError"
-                     Classes="error"
-                     Text="{Binding ErrorMessage}"
-                     IsVisible="{Binding HasError}"
-                     TextWrapping="Wrap" />
-          <TextBlock Classes="success"
-                     Text="{Binding StatusMessage}"
-                     IsVisible="{Binding !HasError}" />
-          <TextBlock Classes="warning"
-                     Text="Unsaved changes"
-                     IsVisible="{Binding HasChanges}" />
-        </StackPanel>
-        <Button Grid.Column="1"
-                Classes="secondary"
-                Content="Revert"
-                Command="{Binding RevertCommand}" />
-        <Button x:Name="SaveLineupButton"
-                Grid.Column="2"
-                Classes="primary"
-                Content="Save lineup"
-                Command="{Binding SaveCommand}" />
-      </Grid>
-    </Border>
-
-    <Grid ColumnDefinitions="*,280" ColumnSpacing="6">
-      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="6">
-          <StackPanel x:Name="EvenStrengthUnits" Spacing="6" IsVisible="{Binding IsEvenStrengthTab}">
-            <Border Classes="panel">
-              <StackPanel>
-                <Border Classes="panel-header">
-                  <TextBlock Classes="panel-title" Text="FORWARD LINES" />
-                </Border>
-                <Grid ColumnDefinitions="72,*,*,*" ColumnSpacing="6" Margin="12,8,12,2">
-                  <TextBlock Grid.Column="1" Classes="label" Text="LEFT WING" />
-                  <TextBlock Grid.Column="2" Classes="label" Text="CENTRE" />
-                  <TextBlock Grid.Column="3" Classes="label" Text="RIGHT WING" />
-                </Grid>
-                <ItemsControl x:Name="ForwardLinesList" ItemsSource="{Binding Lineup.ForwardLines}" Margin="12,0,12,10">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="lines:ForwardLineRowViewModel">
-                      <Grid ColumnDefinitions="72,*,*,*" ColumnSpacing="6" Margin="0,3">
-                        <TextBlock Classes="slot-row-label" Text="{Binding Label}" />
-                        <ContentControl Grid.Column="1" Content="{Binding LeftWing}" ContentTemplate="{StaticResource SlotPicker}" />
-                        <ContentControl Grid.Column="2" Content="{Binding Centre}" ContentTemplate="{StaticResource SlotPicker}" />
-                        <ContentControl Grid.Column="3" Content="{Binding RightWing}" ContentTemplate="{StaticResource SlotPicker}" />
-                      </Grid>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
-            </Border>
-
-            <Grid ColumnDefinitions="2*,*" ColumnSpacing="6">
+                  Classes="primary"
+                  Content="Save lineup"
+                  Command="{Binding SaveCommand}" />
+        </Grid>
+      </Border>
+  
+      <Grid ColumnDefinitions="*,280" ColumnSpacing="6">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="6">
+            <StackPanel x:Name="EvenStrengthUnits" Spacing="6" IsVisible="{Binding IsEvenStrengthTab}">
               <Border Classes="panel">
                 <StackPanel>
                   <Border Classes="panel-header">
-                    <TextBlock Classes="panel-title" Text="DEFENCE PAIRS" />
+                    <TextBlock Classes="panel-title" Text="FORWARD LINES" />
                   </Border>
-                  <Grid ColumnDefinitions="72,*,*" ColumnSpacing="6" Margin="12,8,12,2">
-                    <TextBlock Grid.Column="1" Classes="label" Text="LEFT DEFENCE" />
-                    <TextBlock Grid.Column="2" Classes="label" Text="RIGHT DEFENCE" />
+                  <Grid ColumnDefinitions="72,*,*,*" ColumnSpacing="6" Margin="12,8,12,2">
+                    <TextBlock Grid.Column="1" Classes="label" Text="LEFT WING" />
+                    <TextBlock Grid.Column="2" Classes="label" Text="CENTRE" />
+                    <TextBlock Grid.Column="3" Classes="label" Text="RIGHT WING" />
                   </Grid>
-                  <ItemsControl ItemsSource="{Binding Lineup.DefencePairs}" Margin="12,0,12,10">
+                  <ItemsControl x:Name="ForwardLinesList" ItemsSource="{Binding Lineup.ForwardLines}" Margin="12,0,12,10">
                     <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="lines:DefencePairRowViewModel">
-                        <Grid ColumnDefinitions="72,*,*" ColumnSpacing="6" Margin="0,3">
+                      <DataTemplate x:DataType="lines:ForwardLineRowViewModel">
+                        <Grid ColumnDefinitions="72,*,*,*" ColumnSpacing="6" Margin="0,3">
                           <TextBlock Classes="slot-row-label" Text="{Binding Label}" />
-                          <ContentControl Grid.Column="1" Content="{Binding LeftDefence}" ContentTemplate="{StaticResource SlotPicker}" />
-                          <ContentControl Grid.Column="2" Content="{Binding RightDefence}" ContentTemplate="{StaticResource SlotPicker}" />
+                          <ContentControl Grid.Column="1" Content="{Binding LeftWing}" ContentTemplate="{StaticResource SlotPicker}" />
+                          <ContentControl Grid.Column="2" Content="{Binding Centre}" ContentTemplate="{StaticResource SlotPicker}" />
+                          <ContentControl Grid.Column="3" Content="{Binding RightWing}" ContentTemplate="{StaticResource SlotPicker}" />
                         </Grid>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
                 </StackPanel>
               </Border>
-
-              <Border Grid.Column="1" Classes="panel">
-                <StackPanel>
-                  <Border Classes="panel-header">
-                    <TextBlock Classes="panel-title" Text="GOALIES" />
-                  </Border>
-                  <StackPanel Margin="12,8,12,10" Spacing="4">
-                    <TextBlock Classes="label" Text="STARTER" />
-                    <ComboBox x:Name="StartingGoalieSelector"
-                              ItemsSource="{Binding Lineup.StartingGoalie.Options}"
-                              SelectedItem="{Binding Lineup.StartingGoalie.SelectedPlayer}"
-                              IsEnabled="{Binding IsEditable}" />
-                    <TextBlock Classes="label" Text="BACKUP" Margin="0,6,0,0" />
-                    <ComboBox ItemsSource="{Binding Lineup.BackupGoalie.Options}"
-                              SelectedItem="{Binding Lineup.BackupGoalie.SelectedPlayer}"
-                              IsEnabled="{Binding IsEditable}" />
+  
+              <Grid ColumnDefinitions="2*,*" ColumnSpacing="6">
+                <Border Classes="panel">
+                  <StackPanel>
+                    <Border Classes="panel-header">
+                      <TextBlock Classes="panel-title" Text="DEFENCE PAIRS" />
+                    </Border>
+                    <Grid ColumnDefinitions="72,*,*" ColumnSpacing="6" Margin="12,8,12,2">
+                      <TextBlock Grid.Column="1" Classes="label" Text="LEFT DEFENCE" />
+                      <TextBlock Grid.Column="2" Classes="label" Text="RIGHT DEFENCE" />
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding Lineup.DefencePairs}" Margin="12,0,12,10">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="lines:DefencePairRowViewModel">
+                          <Grid ColumnDefinitions="72,*,*" ColumnSpacing="6" Margin="0,3">
+                            <TextBlock Classes="slot-row-label" Text="{Binding Label}" />
+                            <ContentControl Grid.Column="1" Content="{Binding LeftDefence}" ContentTemplate="{StaticResource SlotPicker}" />
+                            <ContentControl Grid.Column="2" Content="{Binding RightDefence}" ContentTemplate="{StaticResource SlotPicker}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                   </StackPanel>
-                </StackPanel>
-              </Border>
-            </Grid>
-          </StackPanel>
-
-          <ItemsControl x:Name="PowerPlayUnits" ItemsSource="{Binding Lineup.PowerPlay}" IsVisible="{Binding IsPowerPlayTab}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Spacing="6" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-          </ItemsControl>
-
-          <ItemsControl x:Name="PenaltyKillUnits" ItemsSource="{Binding Lineup.PenaltyKill}" IsVisible="{Binding IsPenaltyKillTab}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Spacing="6" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-          </ItemsControl>
-
-          <StackPanel x:Name="OtherSituationUnits" Spacing="6" IsVisible="{Binding IsOtherTab}">
-            <ItemsControl ItemsSource="{Binding Lineup.OtherSituationUnits}">
+                </Border>
+  
+                <Border Grid.Column="1" Classes="panel">
+                  <StackPanel>
+                    <Border Classes="panel-header">
+                      <TextBlock Classes="panel-title" Text="GOALIES" />
+                    </Border>
+                    <StackPanel Margin="12,8,12,10" Spacing="4">
+                      <TextBlock Classes="label" Text="STARTER" />
+                      <ContentControl x:Name="StartingGoalie"
+                                      Content="{Binding Lineup.StartingGoalie}"
+                                      ContentTemplate="{StaticResource SlotPicker}" />
+                      <TextBlock Classes="label" Text="BACKUP" Margin="0,6,0,0" />
+                      <ContentControl Content="{Binding Lineup.BackupGoalie}" ContentTemplate="{StaticResource SlotPicker}" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </StackPanel>
+  
+            <ItemsControl x:Name="PowerPlayUnits" ItemsSource="{Binding Lineup.PowerPlay}" IsVisible="{Binding IsPowerPlayTab}">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                   <StackPanel Spacing="6" />
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
             </ItemsControl>
-            <Border Classes="panel">
-              <StackPanel>
-                <Border Classes="panel-header">
-                  <TextBlock Classes="panel-title" Text="EXTRA ATTACKER" />
-                </Border>
-                <ItemsControl ItemsSource="{Binding Lineup.ExtraAttackers}" Margin="12,8,12,10">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <StackPanel Orientation="Horizontal" Spacing="6" />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                </ItemsControl>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-        </StackPanel>
-      </ScrollViewer>
-
-      <Border Grid.Column="1" Classes="panel">
-        <DockPanel>
-          <Border DockPanel.Dock="Top" Classes="panel-header">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Classes="panel-title" Text="SCRATCHES" />
-              <Border Grid.Column="1" Classes="pill muted">
-                <TextBlock Text="{Binding Lineup.Scratches.Count}" />
-              </Border>
-            </Grid>
-          </Border>
-          <ItemsControl x:Name="ScratchesList" ItemsSource="{Binding Lineup.Scratches}" Margin="0,4">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="lines:PlayerOptionViewModel">
-                <Grid ColumnDefinitions="36,*,Auto" Height="26" Margin="12,0">
-                  <TextBlock Classes="cell muted" Text="{Binding Number}" />
-                  <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Name}" />
-                  <Border Grid.Column="2" Classes="position">
-                    <TextBlock Text="{Binding PositionAbbreviation}" />
+  
+            <ItemsControl x:Name="PenaltyKillUnits" ItemsSource="{Binding Lineup.PenaltyKill}" IsVisible="{Binding IsPenaltyKillTab}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="6" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+  
+            <StackPanel x:Name="OtherSituationUnits" Spacing="6" IsVisible="{Binding IsOtherTab}">
+              <ItemsControl ItemsSource="{Binding Lineup.OtherSituationUnits}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="6" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+              <Border Classes="panel">
+                <StackPanel>
+                  <Border Classes="panel-header">
+                    <TextBlock Classes="panel-title" Text="EXTRA ATTACKER" />
                   </Border>
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </DockPanel>
-      </Border>
-    </Grid>
-  </DockPanel>
+                  <ItemsControl ItemsSource="{Binding Lineup.ExtraAttackers}" Margin="12,8,12,10">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="6" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+  
+        <Border Grid.Column="1" Classes="panel">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Classes="panel-header">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Classes="panel-title" Text="SCRATCHES" />
+                <Border Grid.Column="1" Classes="pill muted">
+                  <TextBlock Text="{Binding Lineup.Scratches.Count}" />
+                </Border>
+              </Grid>
+            </Border>
+            <ItemsControl x:Name="ScratchesList" ItemsSource="{Binding Lineup.Scratches}" Margin="0,4">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="lines:PlayerOptionViewModel">
+                  <Grid ColumnDefinitions="Auto,36,*,Auto" Height="26" Margin="6,0,12,0">
+                    <Border Classes="drag-handle" IsVisible="{Binding $parent[UserControl].((lines:LinesPageViewModel)DataContext).IsEditable}">
+                      <Path Data="{x:Static theme:Icons.Grip}" />
+                    </Border>
+                    <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding Number}" />
+                    <Button Grid.Column="2" Classes="slot-link player-link" HorizontalAlignment="Left">
+                      <TextBlock Classes="cell player-name" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                    </Button>
+                    <Border Grid.Column="3" Classes="position">
+                      <TextBlock Text="{Binding PositionAbbreviation}" />
+                    </Border>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </DockPanel>
+        </Border>
+      </Grid>
+    </DockPanel>
+
+  <!-- The dragged player follows the pointer above the page. -->
+  <Canvas IsHitTestVisible="False">
+    <Border x:Name="DragGhost" Classes="drag-ghost" IsVisible="False">
+      <TextBlock x:Name="DragGhostText" Classes="cell" />
+    </Border>
+  </Canvas>
+  </Grid>
 </UserControl>
