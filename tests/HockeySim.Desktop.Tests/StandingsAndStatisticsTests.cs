@@ -250,24 +250,20 @@ public sealed class StandingsAndStatisticsTests
         Assert.All(roster.Skaters.Concat(roster.Goalies), row => Assert.Equal(PlayerSeasonTotals.None, row.Season));
         Assert.All(roster.Goalies, row => Assert.Equal("—", row.Season.SavePercentage));
 
-        roster.SelectPlayer(roster.Skaters[0].Player.Id);
-        var skater = roster.SelectedPlayer!;
-        Assert.Equal("2026–27 REGULAR SEASON", skater.SeasonTitle);
+        var skater = PlayerProfileTests.Profile(session, roster.Skaters[0].Player.Id);
+        Assert.Equal("2026–27 statistics", skater.StatisticsTitle);
         Assert.Equal(
             ["SCORING", "SPECIAL TEAMS", "SHOOTING AND PLAY", "FACEOFFS AND ICE TIME", "5-ON-5 ON ICE"],
-            skater.SeasonStatisticGroups.Select(group => group.Name));
-        Assert.Equal(["GP", "G", "A", "P", "+/-", "PIM", "ENG"], skater.SeasonStatisticGroups[0].Statistics.Select(stat => stat.Label));
-        var skaterLine = skater.SeasonStatisticGroups.SelectMany(group => group.Statistics).ToDictionary(stat => stat.Label, stat => stat.Value);
+            skater.StatisticGroups.Select(group => group.Name));
+        Assert.Equal(["GP", "G", "A", "P", "+/-", "PIM", "ENG"], skater.StatisticGroups[0].Statistics.Select(stat => stat.Label));
+        var skaterLine = skater.StatisticGroups.SelectMany(group => group.Statistics).ToDictionary(stat => stat.Label, stat => stat.Value);
         Assert.All(["FO%", "TOI/GP", "CF%", "FF%", "SF%", "GF%", "xGF%"], label => Assert.Equal("—", skaterLine[label]));
         Assert.All(["GP", "G", "A", "P", "+/-", "PPP", "CF", "CA"], label => Assert.Equal("0", skaterLine[label]));
-        Assert.Equal("No appearances yet this season.", skater.SeasonCaption);
 
-        roster.SelectPlayer(roster.Goalies[0].Player.Id);
-        var goalie = roster.SelectedPlayer!;
-        Assert.Equal(["GP", "SA", "SV", "GA", "SV%", "GAA", "SO"], goalie.SeasonStatisticGroups[0].Statistics.Select(stat => stat.Label));
-        Assert.Equal(["0", "0", "0", "0", "—", "—", "0"], goalie.SeasonStatisticGroups[0].Statistics.Select(stat => stat.Value));
-        Assert.Equal(["0.00", "0.00", "0:00", "—"], goalie.SeasonStatisticGroups[1].Statistics.Select(stat => stat.Value));
-        Assert.Equal("No starts yet this season.", goalie.SeasonCaption);
+        var goalie = PlayerProfileTests.Profile(session, roster.Goalies[0].Player.Id);
+        Assert.Equal(["GP", "SA", "SV", "GA", "SV%", "GAA", "SO"], goalie.StatisticGroups[0].Statistics.Select(stat => stat.Label));
+        Assert.Equal(["0", "0", "0", "0", "—", "—", "0"], goalie.StatisticGroups[0].Statistics.Select(stat => stat.Value));
+        Assert.Equal(["0.00", "0.00", "0:00", "—"], goalie.StatisticGroups[1].Statistics.Select(stat => stat.Value));
     }
 
     [Fact]
@@ -305,11 +301,9 @@ public sealed class StandingsAndStatisticsTests
             roster.Goalies.Where(row => row != starter),
             row => Assert.Equal("—", row.Season.SavePercentage));
 
-        roster.SelectPlayer(starter.Player.Id);
-        var detail = roster.SelectedPlayer!;
+        var detail = PlayerProfileTests.Profile(session, starter.Player.Id);
         Assert.Equal(other.Name, detail.TeamName);
-        Assert.Equal(starter.Season.SavePercentage, detail.SeasonStatisticGroups.SelectMany(group => group.Statistics).Single(stat => stat.Label == "SV%").Value);
-        Assert.False(detail.HasSeasonCaption);
+        Assert.Equal(starter.Season.SavePercentage, detail.StatisticGroups.SelectMany(group => group.Statistics).Single(stat => stat.Label == "SV%").Value);
     }
 
     [Fact]
@@ -341,6 +335,8 @@ public sealed class StandingsAndStatisticsTests
         var shell = new GameShellViewModel(session);
         var openingDay = session.Snapshot;
         await shell.AdvanceDayCommand.ExecuteAsync(null);
+        shell.OpenPlayer(session.ManagedTeam.Lineup.ForwardLines[0].CentreId);
+        Assert.Equal("1", shell.Profile!.StatisticGroups[0].Statistics[0].Value);
         Assert.All(shell.Standings.Tables.SelectMany(table => table.Rows), row => Assert.Equal(1, row.GamesPlayed));
 
         session.Snapshot = openingDay;
@@ -349,7 +345,8 @@ public sealed class StandingsAndStatisticsTests
         Assert.All(shell.Standings.Tables.SelectMany(table => table.Rows), row => Assert.Equal(0, row.GamesPlayed));
         Assert.All(shell.Roster.Roster.Skaters, row => Assert.Equal(PlayerSeasonTotals.None, row.Season));
         Assert.All(shell.Teams.Roster.Goalies, row => Assert.Equal("—", row.Season.SavePercentage));
-        Assert.Equal("No appearances yet this season.", shell.Roster.Roster.SelectedPlayer?.SeasonCaption);
+        Assert.Equal("0", shell.Profile!.StatisticGroups[0].Statistics[0].Value);
+        Assert.DoesNotContain(shell.Profile.GameLog, row => row.PhaseLabel == "REG");
     }
 
     private static void AssertTables(

@@ -41,15 +41,18 @@ internal static class TestResults
         int takeaways = 0,
         int giveaways = 0,
         TimeSpan? timeOnIce = null,
-        SituationalShotTotals? onIce = null)
+        SituationalShotTotals? onIce = null,
+        SituationalTimeOnIce? timeOnIceBySituation = null)
     {
         var shotsOnGoal = shots ?? goals;
+        var totalTimeOnIce = timeOnIceBySituation?.All ?? timeOnIce ?? TimeSpan.FromMinutes(15);
         return new SkaterBoxScore(
             playerId,
             goals,
             assists,
             plusMinus,
-            timeOnIce ?? TimeSpan.FromMinutes(15),
+            totalTimeOnIce,
+            timeOnIceBySituation ?? new(totalTimeOnIce, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero),
             shotsOnGoal,
             shotAttempts ?? shotsOnGoal,
             hits,

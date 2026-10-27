@@ -208,6 +208,24 @@ public sealed class SeasonAdvancementTests
     }
 
     [Fact]
+    public void APlayedMatchesSnapshotCarriesEachSkatersTimeOnIceBySituation()
+    {
+        var manager = new GameManager();
+        StartAtOpeningDay(manager);
+
+        var after = manager.AdvanceDay();
+
+        var boxScores = after.Season.Results.SelectMany(result => result.Home.Skaters.Concat(result.Away.Skaters)).ToList();
+        Assert.NotEmpty(boxScores);
+        Assert.All(boxScores, box => Assert.Equal(box.TimeOnIce, box.TimeOnIceBySituation.All));
+        Assert.All(after.Season.SkaterStatistics, skater =>
+        {
+            Assert.Equal(skater.TimeOnIce, skater.TimeOnIceBySituation.All);
+            Assert.NotNull(skater.TimeOnIceBySituationPerGame);
+        });
+    }
+
+    [Fact]
     public void TheSameStartAndActionsProduceTheSameResults()
     {
         static GameSnapshot Play()

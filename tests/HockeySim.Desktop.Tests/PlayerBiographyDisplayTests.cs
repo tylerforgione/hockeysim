@@ -61,26 +61,4 @@ public sealed class PlayerBiographyDisplayTests
             Assert.Equal(biography.Handedness == Handedness.Left ? "L" : "R", row.Handedness);
         });
     }
-
-    [Fact]
-    public void TheProfileShowsTheBiographyAndWhetherThePlayerShootsOrCatches()
-    {
-        var session = GameTestData.StartSession();
-        var team = session.ManagedTeam;
-        var skater = team.Roster.First(player => player.Position != Position.Goalie);
-        var goalie = team.Roster.First(player => player.Position == Position.Goalie);
-
-        var skaterDetail = new PlayerDetailViewModel(skater, team, session.GetSeasonTotals(skater.Id), 2026);
-        var goalieDetail = new PlayerDetailViewModel(goalie, team, session.GetSeasonTotals(goalie.Id), 2026);
-
-        Assert.Equal("SHOOTS", skaterDetail.HandednessLabel);
-        Assert.Equal("CATCHES", goalieDetail.HandednessLabel);
-        Assert.Equal(PlayerDisplay.HandednessName(skater.Biography.Handedness), skaterDetail.Handedness);
-        Assert.Equal(PlayerDisplay.FormatHeight(skater.Biography.Height), skaterDetail.Height);
-        Assert.Equal($"{skater.Biography.Weight.Pounds} lb", skaterDetail.Weight);
-        Assert.Equal(PlayerDisplay.FormatBirthDate(skater.Biography.BirthDate), skaterDetail.BirthDate);
-        Assert.StartsWith(skater.Biography.Birthplace.City, skaterDetail.Birthplace);
-        Assert.EndsWith(PlayerDisplay.CountryName(skater.Biography.Birthplace.Country), skaterDetail.Birthplace);
-        Assert.Equal(PlayerDisplay.CountryName(skater.Biography.Nationality), skaterDetail.Nationality);
-    }
 }

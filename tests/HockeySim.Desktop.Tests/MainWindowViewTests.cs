@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -370,36 +371,87 @@ public sealed class MainWindowViewTests
         Assert.True(goalieTable.IsEffectivelyVisible);
         Assert.False(positionFilter.IsEffectivelyVisible);
 
-        // The strip under the tables shows the selected player; Lines opens, the rest wait for later pages.
+        // The strip under the tables shows the selected player, with links to the profile, the game log, and the lines.
         var strip = Named<PlayerStripView>(rosterView, "PlayerStripPanel");
         Assert.True(strip.IsEffectivelyVisible);
         Assert.Equal(rosterModel.SelectedStrip!.Name, Named<TextBlock>(strip, "StripNameText").Text);
         Assert.Equal("Goalie", Named<TextBlock>(strip, "StripPositionText").Text);
-        Assert.False(Named<Button>(strip, "StripProfileLink").IsEffectivelyEnabled);
-        Assert.False(Named<Button>(strip, "StripGameLogLink").IsEffectivelyEnabled);
+        Assert.True(Named<Button>(strip, "StripProfileLink").IsEffectivelyEnabled);
+        Assert.True(Named<Button>(strip, "StripGameLogLink").IsEffectivelyEnabled);
         Assert.True(Named<Button>(strip, "StripLinesLink").IsEffectivelyEnabled);
+        Assert.DoesNotContain(window.GetVisualDescendants(), visual => visual is PlayerProfilePageView);
         Click(Named<Button>(rosterView, "ShowAllPlayersButton"));
         Click(Named<Button>(rosterView, "ShowAdvancedButton"));
         rosterModel.SelectPlayer(rosterModel.Skaters[0].Player.Id);
         Dispatcher.UIThread.RunJobs();
 
-        var playerDetail = Single<PlayerDetailView>(rosterView);
-        var overallText = playerDetail.FindControl<TextBlock>("PlayerOverallText");
-        Assert.True(overallText?.IsEffectivelyVisible);
-        Assert.Equal(
-            Assert.IsType<PlayerDetailViewModel>(playerDetail.DataContext).Overall.ToString(CultureInfo.InvariantCulture),
-            overallText!.Text);
-        Assert.Equal(
-            Assert.IsType<PlayerDetailViewModel>(playerDetail.DataContext).Health,
-            playerDetail.FindControl<TextBlock>("HealthText")?.Text);
-        var seasonStatistics = playerDetail.FindControl<StackPanel>("SeasonStatistics");
-        Assert.True(seasonStatistics?.IsEffectivelyVisible);
-        Assert.Equal(
-            ["GP", "G", "A", "P", "+/-", "PIM", "ENG"],
-            seasonStatistics!.GetVisualDescendants().OfType<TextBlock>()
-                .Where(text => text.DataContext is SeasonStatViewModel && text.Classes.Contains("label"))
-                .Select(text => text.Text)
-                .Take(7));
+        // Double-clicking a row opens that player's profile, on the overview.
+        var skaterRow = Named<SkaterTableView>(rosterView, "SkaterTable").GetVisualDescendants().OfType<ListBoxItem>().First(item => item.IsEffectivelyVisible);
+        var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, isPrimary: true);
+        var released = new PointerReleasedEventArgs(
+            skaterRow, pointer, window, new Point(5, 5), 0, new PointerPointProperties(), KeyModifiers.None, MouseButton.Left);
+        skaterRow.RaiseEvent(new TappedEventArgs(InputElement.DoubleTappedEvent, released) { Source = skaterRow });
+        Dispatcher.UIThread.RunJobs();
+
+        var profileView = Single<PlayerProfilePageView>(window);
+        var profile = Assert.IsType<PlayerProfilePageViewModel>(profileView.DataContext);
+        Assert.Equal(rosterModel.Skaters[0].Player.Id, profile.Id);
+        Assert.Equal(PlayerProfileTab.Overview, profile.Tab);
+        Assert.True(profileView.Bounds.Width > 600);
+        Assert.True(profileView.Bounds.Height > 300);
+
+        // The player's own banner replaces the team's, and the profile's tabs the section's.
+        Assert.DoesNotContain(shellView.GetVisualDescendants().OfType<TextBlock>(), text => text.Name == "ShellTeamName");
+        Assert.Equal(profile.FullName.ToUpperInvariant(), Named<TextBlock>(shellView, "PlayerNameText").Text);
+        Assert.Equal(profile.Number[1..], Named<TextBlock>(shellView, "PlayerNumberText").Text);
+        Assert.Equal(3, Named<ItemsControl>(shellView, "PlayerFigures").ItemCount);
+        Assert.Equal(seattlePrimary, Assert.IsAssignableFrom<ISolidColorBrush>(Named<Border>(shellView, "PlayerBanner").Background).Color);
+        Assert.False(Named<Button>(shellView, "PlayerTeamLink").Content is null);
+        Assert.False(Named<Border>(shellView, "PlayerInjuryBadge").IsEffectivelyVisible);
+        var pageTabs = Named<ItemsControl>(shellView, "PageTabs");
+        Assert.Equal(6, pageTabs.ItemCount);
+        var tabButtons = pageTabs.GetVisualDescendants().OfType<Button>().ToList();
+        Assert.Equal(["Overview", "Ratings", "Statistics", "Game log", "Health", "Career"], tabButtons.Select(button => button.Content));
+        Assert.Equal([true, true, true, true, true, false], tabButtons.Select(button => button.IsEffectivelyEnabled));
+        Assert.Equal("Seattle Evergreens", shellView.FindControl<TextBlock>("PageSubtitle")?.Text);
+
+        // The overview: biography and usage, statistics with the last five games, and ratings.
+        Assert.True(Named<Grid>(profileView, "OverviewTab").IsEffectivelyVisible);
+        Assert.Equal(8, Named<ItemsControl>(profileView, "BiographyFacts").ItemCount);
+        Assert.Equal(4, Named<ItemsControl>(profileView, "UsageFacts").ItemCount);
+        Assert.Equal(4, Named<ItemsControl>(profileView, "OverviewStatistics").ItemCount);
+        Assert.Equal(14, Named<ItemsControl>(profileView, "OverviewRatings").ItemCount);
+        Assert.Equal(profile.StatisticsTitle.ToUpperInvariant(), Named<TextBlock>(profileView, "OverviewStatisticsTitle").Text);
+        Assert.False(Named<Border>(profileView, "InjuredUntilPanel").IsEffectivelyVisible);
+        foreach (var panel in new[] { "BiographyPanel", "UsagePanel", "StatisticsPanel", "OverviewRatingsPanel" })
+        {
+            Assert.True(Named<Border>(profileView, panel).Bounds.Height > 100);
+        }
+
+        // Each tab shows its page and hides the others.
+        Click(tabButtons.Single(button => Equals(button.Content, "Ratings")));
+        Assert.True(Named<Border>(profileView, "RatingsTab").IsEffectivelyVisible);
+        Assert.False(Named<Grid>(profileView, "OverviewTab").IsEffectivelyVisible);
+        Assert.Equal(3, Named<ItemsControl>(profileView, "RatingGroups").ItemCount);
+        Click(tabButtons.Single(button => Equals(button.Content, "Statistics")));
+        Assert.True(Named<Border>(profileView, "StatisticsTab").IsEffectivelyVisible);
+        Assert.Equal(5, Named<ItemsControl>(profileView, "FullStatistics").ItemCount);
+        Click(tabButtons.Single(button => Equals(button.Content, "Game log")));
+        Assert.True(Named<Border>(profileView, "GameLogTab").IsEffectivelyVisible);
+        Click(tabButtons.Single(button => Equals(button.Content, "Health")));
+        Assert.True(Named<Border>(profileView, "HealthTab").IsEffectivelyVisible);
+        Assert.True(Named<TextBlock>(profileView, "HealthyText").IsEffectivelyVisible);
+        Click(tabButtons.Single(button => Equals(button.Content, "Overview")));
+        Assert.True(Named<Grid>(profileView, "OverviewTab").IsEffectivelyVisible);
+
+        // The team link opens the team; the roster's Game log link opens the profile on its game log.
+        Click(Named<Button>(shellView, "PlayerTeamLink"));
+        Assert.Single(window.GetVisualDescendants().OfType<TeamsPageView>());
+        AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
+        Click(Named<Button>(Single<RosterPageView>(window), "StripGameLogLink"));
+        profileView = Single<PlayerProfilePageView>(window);
+        Assert.Equal(PlayerProfileTab.GameLog, Assert.IsType<PlayerProfilePageViewModel>(profileView.DataContext).Tab);
+        Assert.True(Named<Border>(profileView, "GameLogTab").IsEffectivelyVisible);
 
         // Save from the Game menu under a typed name.
         Assert.Equal("Unsaved changes", Single<GameShellView>(window).FindControl<TextBlock>("SaveStatusText")?.Text);

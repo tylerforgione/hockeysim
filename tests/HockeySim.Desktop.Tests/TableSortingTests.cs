@@ -183,13 +183,13 @@ public sealed class TableSortingTests
         roster.SortSkatersCommand.Execute("overall");
         roster.SortSkatersCommand.Execute("overall");
 
-        Assert.Equal(player, roster.SelectedPlayer!.Id);
+        Assert.Equal(player, roster.SelectedStrip!.PlayerId);
         Assert.Same(roster.Skaters.Single(row => row.Player.Id == player), roster.SelectedSkater);
 
         var goalie = roster.Goalies[1].Player.Id;
         roster.SelectPlayer(goalie);
         roster.SortSkatersCommand.Execute("name");
-        Assert.Equal(goalie, roster.SelectedPlayer!.Id);
+        Assert.Equal(goalie, roster.SelectedStrip!.PlayerId);
         roster.SortGoaliesCommand.Execute("name");
         roster.SortGoaliesCommand.Execute("name");
         Assert.Same(roster.Goalies.Single(row => row.Player.Id == goalie), roster.SelectedGoalie);
@@ -254,7 +254,7 @@ public sealed class TableSortingTests
         var roster = shell.Roster.Roster;
         Assert.Equal(new TableSort("points", SortDirection.Ascending), roster.SkaterSort);
         Assert.Equal(roster.Skaters.Select(row => row.Season.Points).Order(), roster.Skaters.Select(row => row.Season.Points));
-        Assert.Equal(selected, roster.SelectedPlayer!.Id);
+        Assert.Equal(selected, roster.SelectedStrip!.PlayerId);
     }
 
     [Fact]

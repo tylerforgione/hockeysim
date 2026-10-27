@@ -59,6 +59,82 @@ public sealed class OnIceStatisticsTests
     }
 
     [Fact]
+    public void EachSkatersTimeOnIceBySituationSumsToTheirTimeOnIce()
+    {
+        Assert.All(Results, result =>
+        {
+            foreach (var skater in result.Home.Skaters.Concat(result.Away.Skaters))
+            {
+                Assert.Equal(skater.TimeOnIce, skater.TimeOnIceBySituation.All);
+            }
+        });
+    }
+
+    [Fact]
+    public void TimeOnIceBySituationFollowsTheManpowerThePenaltiesAllow()
+    {
+        Assert.All(Results, result =>
+        {
+            var replay = new ManpowerReplay(result);
+            foreach (var (team, opponent) in new[] { (result.Home, result.Away), (result.Away, result.Home) })
+            {
+                var skaterSeconds = (StrengthSituation situation) =>
+                    team.Skaters.Sum(skater => (long)skater.TimeOnIceBySituation[situation].TotalSeconds);
+                foreach (var (situation, powerPlay) in new[] { (StrengthSituation.PowerPlay, true), (StrengthSituation.PenaltyKill, false) })
+                {
+                    // Skaters on the ice are the manpower the penalties allow, plus an extra attacker
+                    // while a goalie is pulled, so at most one more skater than the manpower.
+                    var seconds = replay.SpecialTeamsSeconds(team.TeamId, powerPlay);
+                    var manpowerSeconds = replay.SpecialTeamsManpowerSeconds(team.TeamId, powerPlay);
+                    Assert.InRange(skaterSeconds(situation), manpowerSeconds, manpowerSeconds + seconds);
+
+                    // One team's power play is exactly the other's penalty kill.
+                    Assert.Equal(seconds, replay.SpecialTeamsSeconds(opponent.TeamId, !powerPlay));
+                }
+            }
+        });
+    }
+
+    [Fact]
+    public void ASkaterHasPowerPlayOrPenaltyKillTimeOnlyWhileTheirTeamHadMoreOrFewerSkaters()
+    {
+        Assert.All(Results, result =>
+        {
+            var replay = new ManpowerReplay(result);
+            foreach (var team in new[] { result.Home, result.Away })
+            {
+                var hasPowerPlay = replay.SpecialTeamsSeconds(team.TeamId, powerPlay: true) > 0;
+                var hasPenaltyKill = replay.SpecialTeamsSeconds(team.TeamId, powerPlay: false) > 0;
+                Assert.Equal(hasPowerPlay, team.Skaters.Any(skater => skater.TimeOnIceBySituation.PowerPlay > TimeSpan.Zero));
+                Assert.Equal(hasPenaltyKill, team.Skaters.Any(skater => skater.TimeOnIceBySituation.PenaltyKill > TimeSpan.Zero));
+            }
+        });
+    }
+
+    [Fact]
+    public void ARegulationMatchWithoutPenaltiesOrAPulledGoalieIsAllFiveOnFive()
+    {
+        var disciplined = TestTeams.CreateMatch(
+            TestTeams.Create("Home", (_, rating) => rating == Rating.Discipline ? 100 : TestTeams.AverageRating),
+            TestTeams.Create("Away", (_, rating) => rating == Rating.Discipline ? 100 : TestTeams.AverageRating));
+        var results = TestMatches.SimulateMany(disciplined, 1000)
+            .Where(result => result.PlayingTime <= TimeSpan.FromMinutes(MatchResult.RegulationPeriodCount * 20)
+                && result.Events.All(matchEvent => matchEvent is not PenaltyEvent
+                    && matchEvent.OnIce.HomeGoalie is not null
+                    && matchEvent.OnIce.AwayGoalie is not null))
+            .ToList();
+
+        Assert.NotEmpty(results);
+        Assert.All(results, result =>
+        {
+            foreach (var skater in result.Home.Skaters.Concat(result.Away.Skaters))
+            {
+                Assert.Equal(skater.TimeOnIce, skater.TimeOnIceBySituation.FiveOnFive);
+            }
+        });
+    }
+
+    [Fact]
     public void SpecialTeamsGoalsAreCountedInTheMatchingSituation()
     {
         Assert.All(Results, result =>

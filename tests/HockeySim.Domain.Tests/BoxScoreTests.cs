@@ -81,6 +81,17 @@ public sealed class BoxScoreTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new GoalieBoxScore(Id(), 0, 0, 0, time));
     }
 
+    [Fact]
+    public void TimeOnIceBySituationMustSumToTheTimeOnIce()
+    {
+        var split = new SituationalTimeOnIce(
+            TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+
+        Assert.Equal(split, Skater(timeOnIce: TimeSpan.FromMinutes(12), timeOnIceBySituation: split).TimeOnIceBySituation);
+        Assert.Throws<ArgumentException>(() => Skater(timeOnIce: TimeSpan.FromMinutes(12) + TimeSpan.FromSeconds(1), timeOnIceBySituation: split));
+        Assert.Throws<ArgumentException>(() => Skater(timeOnIce: TimeSpan.FromMinutes(11), timeOnIceBySituation: split));
+    }
+
     [Theory]
     [InlineData(double.NaN)]
     [InlineData(double.PositiveInfinity)]
@@ -284,6 +295,7 @@ public sealed class BoxScoreTests
         int assists = 0,
         int plusMinus = 0,
         TimeSpan? timeOnIce = null,
+        SituationalTimeOnIce? timeOnIceBySituation = null,
         int hits = 0,
         int blockedShots = 0,
         int faceoffsWon = 0,
@@ -296,13 +308,16 @@ public sealed class BoxScoreTests
         int powerPlayAssists = 0,
         int shorthandedGoals = 0,
         int shorthandedAssists = 0,
-        int emptyNetGoals = 0) =>
-        new(
+        int emptyNetGoals = 0)
+    {
+        var total = timeOnIce ?? TimeSpan.FromMinutes(12);
+        return new(
             Id(),
             goals,
             assists,
             plusMinus,
-            timeOnIce ?? TimeSpan.FromMinutes(12),
+            total,
+            timeOnIceBySituation ?? new(total, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero),
             shots: Math.Max(goals, 0),
             shotAttempts: Math.Max(goals, 0),
             hits,
@@ -319,6 +334,7 @@ public sealed class BoxScoreTests
             shorthandedAssists,
             emptyNetGoals,
             SituationalShotTotals.None);
+    }
 
     private static PlayerId Id() => new(Guid.NewGuid());
 }

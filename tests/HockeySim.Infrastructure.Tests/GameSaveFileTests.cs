@@ -177,14 +177,14 @@ public sealed class GameSaveFileTests : IDisposable
 
     [Theory]
     [InlineData("""[]""")]
-    [InlineData("""{"formatVersion":13,"game":{}}""")]
-    [InlineData("""{"format":"Another game","formatVersion":13,"game":{}}""")]
+    [InlineData("""{"formatVersion":14,"game":{}}""")]
+    [InlineData("""{"format":"Another game","formatVersion":14,"game":{}}""")]
     [InlineData("""{"format":"HockeySim save","game":{}}""")]
     [InlineData("""{"format":"HockeySim save","formatVersion":"3","game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":13}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":13,"game":null}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":13,"game":{}}""")]
-    [InlineData("""{"format":"HockeySim save","formatVersion":13,"game":{"seasonYear":2026""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":14}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":14,"game":null}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":14,"game":{}}""")]
+    [InlineData("""{"format":"HockeySim save","formatVersion":14,"game":{"seasonYear":2026""")]
     public void ADocumentThatIsNotAWholeSaveIsRejected(string json)
     {
         Directory.CreateDirectory(_directory);
