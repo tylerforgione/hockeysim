@@ -11,6 +11,10 @@ public sealed record SkaterBoxScore
     /// power-play and penalty-shot goals.
     /// </param>
     /// <param name="timeOnIce">Time on the ice in regulation and overtime, in whole seconds.</param>
+    /// <param name="timeOnIceBySituation">
+    /// The time on ice split by strength situation from the skater's team's side; its parts sum
+    /// to <paramref name="timeOnIce"/>.
+    /// </param>
     /// <param name="shots">Shots on goal, including goals.</param>
     /// <param name="shotAttempts">Shots on goal, missed shots, and shots that were blocked.</param>
     /// <param name="blockedShots">The opponent's shot attempts this skater blocked.</param>
@@ -33,6 +37,7 @@ public sealed record SkaterBoxScore
         int assists,
         int plusMinus,
         TimeSpan timeOnIce,
+        SituationalTimeOnIce timeOnIceBySituation,
         int shots,
         int shotAttempts,
         int hits,
@@ -53,6 +58,12 @@ public sealed record SkaterBoxScore
         ArgumentOutOfRangeException.ThrowIfNegative(goals);
         ArgumentOutOfRangeException.ThrowIfNegative(assists);
         MatchTime.ThrowIfInvalid(timeOnIce, nameof(timeOnIce));
+        ArgumentNullException.ThrowIfNull(timeOnIceBySituation);
+        if (timeOnIceBySituation.All != timeOnIce)
+        {
+            throw new ArgumentException("The time on ice by situation must sum to the time on ice.", nameof(timeOnIceBySituation));
+        }
+
         ArgumentOutOfRangeException.ThrowIfLessThan(shots, goals);
         ArgumentOutOfRangeException.ThrowIfLessThan(shotAttempts, shots);
         ArgumentOutOfRangeException.ThrowIfNegative(hits);
@@ -78,6 +89,7 @@ public sealed record SkaterBoxScore
         Assists = assists;
         PlusMinus = plusMinus;
         TimeOnIce = timeOnIce;
+        TimeOnIceBySituation = timeOnIceBySituation;
         Shots = shots;
         ShotAttempts = shotAttempts;
         Hits = hits;
@@ -107,6 +119,9 @@ public sealed record SkaterBoxScore
     public int PlusMinus { get; }
 
     public TimeSpan TimeOnIce { get; }
+
+    /// <summary>The time on ice by strength situation, summing to <see cref="TimeOnIce"/>.</summary>
+    public SituationalTimeOnIce TimeOnIceBySituation { get; }
 
     public int Shots { get; }
 

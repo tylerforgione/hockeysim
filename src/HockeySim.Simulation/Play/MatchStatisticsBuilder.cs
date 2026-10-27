@@ -5,7 +5,7 @@ namespace HockeySim.Simulation.Play;
 
 /// <summary>
 /// Derives every individual and team statistic from the play-by-play, so they always reconcile
-/// with the events and with each other. Only time on ice, which comes from the shifts, and
+/// with the events and with each other. Only time on ice, which comes from the shifts and is split by the same strength situations, and
 /// power-play opportunities, which come from the penalties being served, are kept by the match.
 /// </summary>
 internal sealed class MatchStatisticsBuilder
@@ -65,6 +65,7 @@ internal sealed class MatchStatisticsBuilder
                 tally.Assists,
                 tally.PlusMinus,
                 TimeSpan.FromSeconds(skater.TimeOnIceSeconds),
+                skater.TimeOnIceBySituation(),
                 tally.Shots,
                 tally.ShotAttempts,
                 tally.Hits,
@@ -233,9 +234,9 @@ internal sealed class MatchStatisticsBuilder
             ? (onIce.HomeGoalie, onIce.AwayGoalie)
             : (onIce.AwayGoalie, onIce.HomeGoalie);
 
-        var situation = SituationFor(
-            Manpower(shooters.Count, shootingGoalie),
-            Manpower(defenders.Count, defendingGoalie),
+        var situation = StrengthSituations.For(
+            StrengthSituations.Manpower(shooters.Count, shootingGoalie is null),
+            StrengthSituations.Manpower(defenders.Count, defendingGoalie is null),
             bothGoaliesInNet: shootingGoalie is not null && defendingGoalie is not null);
         var defendingSituation = situation switch
         {
@@ -256,18 +257,6 @@ internal sealed class MatchStatisticsBuilder
             Skater(playerId).OnIce.Against(defendingSituation, count);
         }
     }
-
-    /// <summary>
-    /// The skaters the penalties allow a team: those on the ice, less the extra attacker that
-    /// replaces a pulled goalie.
-    /// </summary>
-    private static int Manpower(int skatersOnIce, PlayerId? goalie) => goalie is null ? skatersOnIce - 1 : skatersOnIce;
-
-    private static StrengthSituation SituationFor(int manpower, int opponentManpower, bool bothGoaliesInNet) =>
-        manpower > opponentManpower ? StrengthSituation.PowerPlay
-        : manpower < opponentManpower ? StrengthSituation.PenaltyKill
-        : manpower == 5 && bothGoaliesInNet ? StrengthSituation.FiveOnFive
-        : StrengthSituation.Other;
 
     private SkaterTally Skater(PlayerId playerId)
     {

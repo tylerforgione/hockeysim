@@ -238,6 +238,7 @@ internal static class GameSaveRestorer
             skater.Assists,
             skater.PlusMinus,
             TimeSpan.FromSeconds(skater.TimeOnIceSeconds),
+            RestoreTimeOnIce(Required(skater.TimeOnIceBySituation, "time on ice by situation")),
             skater.Shots,
             skater.ShotAttempts,
             skater.Hits,
@@ -254,6 +255,13 @@ internal static class GameSaveRestorer
             skater.ShorthandedAssists,
             skater.EmptyNetGoals,
             RestoreShotTotals(skater.OnIce));
+
+    private static SituationalTimeOnIce RestoreTimeOnIce(SavedSituationalTimeOnIce saved) =>
+        new(
+            TimeSpan.FromSeconds(saved.FiveOnFiveSeconds),
+            TimeSpan.FromSeconds(saved.PowerPlaySeconds),
+            TimeSpan.FromSeconds(saved.PenaltyKillSeconds),
+            TimeSpan.FromSeconds(saved.OtherSeconds));
 
     private static SituationalShotTotals RestoreShotTotals(SavedSituationalShotTotals? saved)
     {

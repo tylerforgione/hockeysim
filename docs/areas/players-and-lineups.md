@@ -22,7 +22,7 @@ commands).
 | `Management/Lineups/` | `SetLineupCommand` and its selections; `MatchDayLineup` (players who cannot play, AI teams' replacements) and `UnavailablePlayersException` |
 | `Management/Inbox/`, `Snapshots/InboxMessageSnapshot.cs` | Inbox messages: the new-game messages, and the head trainer's `InjuryMessages` and their phrasings (`InjuryWording`), and the champion's announcement (`ChampionMessages`) |
 | `Management/GameManagement/GameManager.cs` | Commands: new game, select team, set lineup, read message |
-| `Management/GameManagement/Snapshots/GameSnapshot.cs` | `PlayerSnapshot` with its injuries, team and lineup snapshots, and `PlayersToReplace` |
+| `Management/GameManagement/Snapshots/GameSnapshot.cs` | `PlayerSnapshot` with its injuries and rating reductions, team and lineup snapshots, and `PlayersToReplace` |
 
 Domain paths are under `src/HockeySim.Domain/`, Management paths under
 `src/HockeySim.Management/`.
@@ -39,7 +39,7 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | `Management.Tests/PlayerRatingGenerationTests.cs`, `PlayerBiographyGenerationTests.cs` | Generated distributions over several seeds |
 | `Management.Tests/LineupTests.cs`, `SpecialSituationUnitTests.cs` | Lineup commands, rejected changes, snapshot isolation |
 | `Management.Tests/InboxTests.cs` | Inbox messages |
-| `Management.Tests/InjuredPlayerTests.cs` | Rejected days, replacing injured players, AI teams' replacements and restored lineups, injury and recovery messages, injuries in snapshots |
+| `Management.Tests/InjuredPlayerTests.cs` | Rejected days, replacing injured players, AI teams' replacements and restored lineups, injury and recovery messages, injuries and rating reductions in snapshots |
 | `Management.Tests/HeadTrainerReportTests.cs` | A season's head trainer reports: volume, varied wording, managed team only, the same words after saving and loading |
 | `Management.Tests/InjuredPlayerReplacement.cs` (copied in the Infrastructure and Desktop tests) | Plays days as a user would, replacing players who cannot play |
 
@@ -177,11 +177,16 @@ each position. Unlisted ratings, including durability, carry no weight:
 Durability is hidden information. Management's `PlayerSnapshot` carries the
 overall rating and every other rating, but not durability. Because the overall
 rating gives durability no weight, it cannot reveal it. Saves still carry every
-rating, durability included. Desktop shows the overall rating as the OVR column
-on both roster rating tables and in the player profile. The profile lists only
-the ratings that matter to the position: the skater skills plus faceoffs,
-stamina, toughness, and discipline for a skater, and the goaltending ratings,
-stamina, and discipline for a goalie. Exact ratings stay visible for now; see
+rating, durability included. `PlayerSnapshot.Ratings` are the healthy values;
+`PlayerSnapshot.RatingReductions` carries, by rating, the points the player's
+unhealed injuries take off while they play through them (empty when healthy), so
+a player plays at each rating less its reduction, never below zero, as the match
+engine does. Desktop shows the overall rating as the OVR column on both roster
+rating tables and in the player profile. The profile lists only the ratings that
+matter to the position: the skater skills plus faceoffs, stamina, toughness, and
+discipline for a skater, and the goaltending ratings, stamina, and discipline for
+a goalie, each at the rating the player plays at today with the healthy rating
+marked. Exact ratings stay visible for now; see
 [scouting](../future-features.md#scouting-and-hidden-information).
 
 ## Player biographies

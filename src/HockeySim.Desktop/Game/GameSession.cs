@@ -90,6 +90,10 @@ public sealed partial class GameSession : ObservableObject
     public PlayerSeasonTotals GetSeasonTotals(PlayerId playerId, StatisticsSet statistics = StatisticsSet.RegularSeason) =>
         (statistics == StatisticsSet.Playoffs ? _playoffTotals : _seasonTotals).GetValueOrDefault(playerId, PlayerSeasonTotals.None);
 
+    /// <summary>Gets the team a player is on.</summary>
+    public TeamSnapshot TeamOf(PlayerId playerId) =>
+        Snapshot.League.Teams.Single(team => team.Roster.Any(player => player.Id == playerId));
+
     public TeamSnapshot GetTeam(TeamId teamId) => Snapshot.League.Teams.Single(team => team.Id == teamId);
 
     public void SetLineup(SetLineupCommand command)

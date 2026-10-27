@@ -5,6 +5,7 @@
              xmlns:inbox="using:HockeySim.Desktop.Inbox"
              xmlns:injuries="using:HockeySim.Desktop.Injuries"
              xmlns:lines="using:HockeySim.Desktop.Lines"
+             xmlns:players="using:HockeySim.Desktop.Players"
              xmlns:playoffs="using:HockeySim.Desktop.Playoffs"
              xmlns:roster="using:HockeySim.Desktop.Roster"
              xmlns:saves="using:HockeySim.Desktop.Saves"
@@ -47,6 +48,9 @@
     <DataTemplate x:DataType="schedule:SchedulePageViewModel">
       <schedule:SchedulePageView />
     </DataTemplate>
+    <DataTemplate x:DataType="players:PlayerProfilePageViewModel">
+      <players:PlayerProfilePageView />
+    </DataTemplate>
     <DataTemplate x:DataType="saves:SaveGameViewModel">
       <saves:SaveGameView />
     </DataTemplate>
@@ -80,6 +84,80 @@
                     <StackPanel>
                       <TextBlock Classes="banner-figure-label" Text="{Binding Label}" />
                       <TextBlock Classes="banner-figure-value" Text="{Binding Value}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <!-- A player's banner, in the colours of the player's own team. -->
+    <DataTemplate x:DataType="players:PlayerBannerViewModel">
+      <Border x:Name="PlayerBanner"
+              Classes="player-banner"
+              Background="{Binding Colours.Primary, Converter={x:Static theme:ColourBrushConverter.Instance}}"
+              TextElement.Foreground="{Binding Colours.Primary, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="18" Margin="16,0,0,0">
+          <Border Classes="jersey" VerticalAlignment="Center">
+            <TextBlock x:Name="PlayerNumberText" Text="{Binding Number}" />
+          </Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+            <TextBlock x:Name="PlayerNameText"
+                       Classes="player-name"
+                       Text="{Binding FullName, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock x:Name="PlayerDescriptionText" Opacity="0.85" VerticalAlignment="Center" Text="{Binding Description}" />
+              <TextBlock Opacity="0.85" VerticalAlignment="Center" Text="·" />
+              <Button x:Name="PlayerTeamLink"
+                      Classes="banner-link"
+                      Command="{Binding OpenTeamCommand}"
+                      VerticalAlignment="Center">
+                <TextBlock Text="{Binding TeamName}"
+                           Foreground="{Binding Colours.Primary, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+              </Button>
+            </StackPanel>
+            <Border x:Name="PlayerInjuryBadge"
+                    Classes="pill"
+                    Classes.injury-out="{Binding IsOut}"
+                    Classes.injury-playing="{Binding !IsOut}"
+                    HorizontalAlignment="Left"
+                    IsVisible="{Binding HasInjury}"
+                    ToolTip.Tip="{Binding InjurySummary}">
+              <TextBlock Text="{Binding InjuryBadge}" />
+            </Border>
+          </StackPanel>
+          <StackPanel Grid.Column="2" Orientation="Horizontal">
+            <!-- Two slanted stripes in the team's secondary colour, as on a sweater. -->
+            <Path Classes="banner-stripe"
+                  Data="M44,0 H86 L46,64 H4 Z"
+                  Opacity="0.9"
+                  Fill="{Binding Colours.Secondary, Converter={x:Static theme:ColourBrushConverter.Instance}}" />
+            <Path Classes="banner-stripe"
+                  Data="M8,0 H18 L-22,64 H-32 Z"
+                  Opacity="0.5"
+                  Margin="0,0,24,0"
+                  Fill="{Binding Colours.Secondary, Converter={x:Static theme:ColourBrushConverter.Instance}}" />
+            <ItemsControl x:Name="PlayerFigures" ItemsSource="{Binding Figures}" VerticalAlignment="Center">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="1" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="players:PlayerFigureViewModel">
+                  <Border Classes="player-figure">
+                    <StackPanel>
+                      <TextBlock Classes="player-figure-label" Text="{Binding Label}" />
+                      <TextBlock Classes="player-figure-value"
+                                 Text="{Binding Value}"
+                                 IsVisible="{Binding !HasRating}" />
+                      <TextBlock Classes="player-figure-value"
+                                 Text="{Binding Value}"
+                                 IsVisible="{Binding HasRating}"
+                                 Foreground="{Binding Rating, Converter={StaticResource RatingBrush}}" />
                     </StackPanel>
                   </Border>
                 </DataTemplate>
@@ -231,18 +309,18 @@
       <!-- The current section's pages. -->
       <Border DockPanel.Dock="Top" Classes="tab-strip">
         <Grid ColumnDefinitions="*,Auto">
-          <ItemsControl x:Name="PageTabs" ItemsSource="{Binding CurrentSection.Items}" VerticalAlignment="Bottom">
+          <ItemsControl x:Name="PageTabs" ItemsSource="{Binding PageTabs}" VerticalAlignment="Bottom">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <StackPanel Orientation="Horizontal" Spacing="2" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="game:NavigationItemViewModel">
+              <DataTemplate x:DataType="game:IPageTab">
                 <Button Classes="page-tab"
                         Classes.active="{Binding IsActive}"
                         Content="{Binding Label}"
-                        Command="{Binding NavigateCommand}" />
+                        Command="{Binding Command}" />
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>

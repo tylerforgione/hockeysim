@@ -74,8 +74,13 @@ internal sealed class MatchState(MatchSide home, MatchSide away, PenaltyBox pena
 
     public void Elapse(int seconds)
     {
-        Home.Elapse(seconds);
-        Away.Elapse(seconds);
+        // The interval is played in the strength situation it starts in, by the same rule as the
+        // on-ice shot totals: the manpower the penalties allow, so an extra attacker is not counted.
+        var bothGoaliesInNet = !Home.IsGoaliePulled && !Away.IsGoaliePulled;
+        var homeManpower = StrengthSituations.Manpower(Home.OnIce.Count, Home.IsGoaliePulled);
+        var awayManpower = StrengthSituations.Manpower(Away.OnIce.Count, Away.IsGoaliePulled);
+        Home.Elapse(seconds, StrengthSituations.For(homeManpower, awayManpower, bothGoaliesInNet));
+        Away.Elapse(seconds, StrengthSituations.For(awayManpower, homeManpower, bothGoaliesInNet));
         PenaltyBox.Elapse(seconds);
         Clock += seconds;
         PlayingSeconds += seconds;

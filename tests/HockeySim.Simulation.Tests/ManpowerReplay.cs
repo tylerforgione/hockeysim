@@ -36,6 +36,8 @@ internal sealed class ManpowerReplay
     private readonly HashSet<PlayerId> _leftMatch = [];
     private readonly Dictionary<TeamId, int> _powerPlayOpportunities = [];
     private readonly Dictionary<TeamId, long> _manpowerSeconds = [];
+    private readonly Dictionary<(TeamId Team, bool PowerPlay), long> _specialTeamsSeconds = [];
+    private readonly Dictionary<(TeamId Team, bool PowerPlay), long> _specialTeamsManpowerSeconds = [];
     private readonly List<Checkpoint> _checkpoints = [];
     private int _gameSeconds;
 
@@ -67,6 +69,19 @@ internal sealed class ManpowerReplay
     /// match: the team's time on ice, apart from any extra attacker.
     /// </summary>
     public long ManpowerSeconds(TeamId teamId) => _manpowerSeconds[teamId];
+
+    /// <summary>
+    /// The seconds the team had more skaters than the opponent, or fewer, as the penalties allow.
+    /// One team's power play is the other's penalty kill, whoever has pulled a goalie.
+    /// </summary>
+    public long SpecialTeamsSeconds(TeamId teamId, bool powerPlay) => _specialTeamsSeconds.GetValueOrDefault((teamId, powerPlay));
+
+    /// <summary>
+    /// The seconds each skater the penalties allowed the team was on the ice during
+    /// <see cref="SpecialTeamsSeconds"/>, apart from any extra attacker.
+    /// </summary>
+    public long SpecialTeamsManpowerSeconds(TeamId teamId, bool powerPlay) =>
+        _specialTeamsManpowerSeconds.GetValueOrDefault((teamId, powerPlay));
 
     public static int GameSeconds(MatchEvent matchEvent) =>
         ((matchEvent.Period - 1) * 20 * 60) + (int)matchEvent.TimeInPeriod.TotalSeconds;
@@ -208,6 +223,17 @@ internal sealed class ManpowerReplay
             var seconds = next - _gameSeconds;
             _manpowerSeconds[Home] += (long)seconds * Manpower(Home);
             _manpowerSeconds[Away] += (long)seconds * Manpower(Away);
+            foreach (var team in new[] { Home, Away })
+            {
+                var (manpower, opponentManpower) = (Manpower(team), Manpower(Opponent(team)));
+                if (manpower != opponentManpower)
+                {
+                    var key = (team, powerPlay: manpower > opponentManpower);
+                    _specialTeamsSeconds[key] = _specialTeamsSeconds.GetValueOrDefault(key) + seconds;
+                    _specialTeamsManpowerSeconds[key] = _specialTeamsManpowerSeconds.GetValueOrDefault(key) + ((long)seconds * manpower);
+                }
+            }
+
             foreach (var served in _box.Where(served => served.IsRunning))
             {
                 served.Remaining -= seconds;

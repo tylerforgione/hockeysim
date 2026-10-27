@@ -46,8 +46,8 @@
 
       <StackPanel Grid.Column="1" Spacing="6" HorizontalAlignment="Right">
         <StackPanel Orientation="Horizontal" Spacing="0" HorizontalAlignment="Right">
-          <Button x:Name="StripProfileLink" Classes="link" Content="Profile" IsEnabled="False" />
-          <Button x:Name="StripGameLogLink" Classes="link" Content="Game log" IsEnabled="False" />
+          <Button x:Name="StripProfileLink" Classes="link" Content="Profile" Command="{Binding OpenProfileCommand}" />
+          <Button x:Name="StripGameLogLink" Classes="link" Content="Game log" Command="{Binding OpenGameLogCommand}" />
           <Button x:Name="StripLinesLink" Classes="link" Content="Lines" Command="{Binding OpenLinesCommand}" />
         </StackPanel>
         <ItemsControl x:Name="StripRatings" ItemsSource="{Binding SelectedStrip.Ratings}">

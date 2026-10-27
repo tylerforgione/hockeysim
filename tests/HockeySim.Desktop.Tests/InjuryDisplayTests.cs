@@ -105,8 +105,10 @@ public sealed class InjuryDisplayTests
 
         Assert.False(new InjuriesPageViewModel(session).HasInjuries);
         Assert.All(roster.Skaters.Concat(roster.Goalies), row => Assert.False(row.HasInjury));
-        Assert.Equal("Healthy", roster.SelectedPlayer!.Health);
-        Assert.False(roster.SelectedPlayer.HasInjuries);
+
+        var profile = PlayerProfileTests.Profile(session, roster.SelectedStrip!.PlayerId);
+        Assert.Equal("Healthy", profile.Health);
+        Assert.False(profile.HasInjuries);
     }
 
     [Fact]
@@ -114,15 +116,14 @@ public sealed class InjuryDisplayTests
     {
         var session = SessionWhereContinueIsBlocked();
         var outPlayer = session.ManagedTeam.Roster.First(player => !player.CanPlay);
-        var roster = new TeamRosterViewModel(session, session.ManagedTeam.Id, outPlayer.Id);
-        var profile = roster.SelectedPlayer!;
+        var profile = PlayerProfileTests.Profile(session, outPlayer.Id, PlayerProfileTab.Health);
 
         Assert.Equal("Out injured", profile.Health);
         Assert.True(profile.IsOut);
         Assert.Equal(outPlayer.Injuries.Count, profile.Injuries.Count);
         var outInjury = profile.Injuries.First(injury => injury.IsOut);
         Assert.Equal("Cannot play until healed", outInjury.Effect);
-        Assert.StartsWith("Expected back ", outInjury.ExpectedReturn, StringComparison.Ordinal);
+        Assert.Equal(InjuryDisplay.ExpectedReturn(outPlayer.Injuries.First(injury => !injury.CanPlayThrough).ExpectedReturn), outInjury.ExpectedReturn);
     }
 
     [Fact]

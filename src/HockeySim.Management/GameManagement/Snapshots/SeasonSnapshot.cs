@@ -301,6 +301,7 @@ public sealed class CompletedMatchTeamSnapshot
 /// <param name="Shots">Shots on goal, including goals.</param>
 /// <param name="ShotAttempts">Shots on goal, missed shots, and blocked attempts.</param>
 /// <param name="BlockedShots">The opponent's attempts this skater blocked.</param>
+/// <param name="TimeOnIceBySituation">The time on ice by strength situation, summing to the time on ice.</param>
 /// <param name="OnIce">
 /// Both teams' shot totals while the skater was on the ice, by strength situation; penalty shots
 /// are not counted.
@@ -311,6 +312,7 @@ public sealed record SkaterBoxScoreSnapshot(
     int Assists,
     int PlusMinus,
     TimeSpan TimeOnIce,
+    SituationalTimeOnIce TimeOnIceBySituation,
     int Shots,
     int ShotAttempts,
     int Hits,
@@ -341,6 +343,7 @@ public sealed record SkaterBoxScoreSnapshot(
             boxScore.Assists,
             boxScore.PlusMinus,
             boxScore.TimeOnIce,
+            boxScore.TimeOnIceBySituation,
             boxScore.Shots,
             boxScore.ShotAttempts,
             boxScore.Hits,
@@ -429,6 +432,10 @@ public sealed record TeamRecordSnapshot(
 /// they are defined: time on ice per game before an appearance, faceoff percentage before a
 /// faceoff.
 /// </summary>
+/// <param name="TimeOnIceBySituation">The time on ice by strength situation, summing to the time on ice.</param>
+/// <param name="TimeOnIceBySituationPerGame">
+/// Average time on ice in each strength situation, <see langword="null"/> before an appearance.
+/// </param>
 /// <param name="OnIce">Both teams' shot totals while the skater was on the ice, by strength situation.</param>
 public sealed record SkaterSeasonStatisticsSnapshot(
     PlayerId PlayerId,
@@ -439,6 +446,8 @@ public sealed record SkaterSeasonStatisticsSnapshot(
     int PlusMinus,
     TimeSpan TimeOnIce,
     TimeSpan? TimeOnIcePerGame,
+    SituationalTimeOnIce TimeOnIceBySituation,
+    SituationalTimeOnIce? TimeOnIceBySituationPerGame,
     int Shots,
     int ShotAttempts,
     int Hits,
@@ -473,6 +482,8 @@ public sealed record SkaterSeasonStatisticsSnapshot(
             statistics.PlusMinus,
             statistics.TimeOnIce,
             statistics.TimeOnIcePerGame,
+            statistics.TimeOnIceBySituation,
+            statistics.TimeOnIceBySituationPerGame,
             statistics.Shots,
             statistics.ShotAttempts,
             statistics.Hits,

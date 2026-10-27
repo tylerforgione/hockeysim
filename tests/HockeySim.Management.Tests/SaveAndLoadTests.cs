@@ -44,6 +44,8 @@ public sealed class SaveAndLoadTests
         MissingSummary,
         ShotTotalsNotMatchingOpponent,
         MissingOnIceShotTotals,
+        MissingTimeOnIceBySituation,
+        TimeOnIceBySituationNotSummingToTimeOnIce,
         MissingPeriodTotals,
         PeriodTotalsNotMatchingShots,
         DressedPlayerNotOnRoster,
@@ -485,6 +487,30 @@ public sealed class SaveAndLoadTests
                             AttemptsAgainst = firstResult.Home.ShotTotals.FiveOnFive.AttemptsAgainst + 1,
                         },
                     },
+                },
+            }),
+            MissingTimeOnIceBySituation => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    Skaters = [firstResult.Home.Skaters[0] with { TimeOnIceBySituation = null! }, .. firstResult.Home.Skaters.Skip(1)],
+                },
+            }),
+            TimeOnIceBySituationNotSummingToTimeOnIce => WithFirstResult(save, firstResult with
+            {
+                Home = firstResult.Home with
+                {
+                    Skaters =
+                    [
+                        firstResult.Home.Skaters[0] with
+                        {
+                            TimeOnIceBySituation = firstResult.Home.Skaters[0].TimeOnIceBySituation with
+                            {
+                                FiveOnFiveSeconds = firstResult.Home.Skaters[0].TimeOnIceBySituation.FiveOnFiveSeconds + 1,
+                            },
+                        },
+                        .. firstResult.Home.Skaters.Skip(1),
+                    ],
                 },
             }),
             MissingPeriodTotals => WithFirstResult(save, firstResult with { Home = firstResult.Home with { Periods = null! } }),

@@ -512,6 +512,64 @@
     <Setter Property="Foreground" Value="{DynamicResource OnTeamPrimaryBrush}" />
   </Style>
 
+  <!--
+    A player's banner, in the colours of the player's own team rather than the managed team's. Its
+    text colour is set on the banner itself, from the team's primary.
+  -->
+  <Style Selector="Border.player-banner">
+    <Setter Property="Height" Value="96" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Border.jersey">
+    <Setter Property="Background" Value="#4D000000" />
+    <Setter Property="Width" Value="70" />
+    <Setter Property="Height" Value="76" />
+  </Style>
+  <Style Selector="Border.jersey TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}" />
+    <Setter Property="FontSize" Value="38" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.player-name">
+    <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}" />
+    <Setter Property="FontSize" Value="32" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LineHeight" Value="32" />
+  </Style>
+  <Style Selector="Border.player-figure">
+    <Setter Property="Background" Value="#59000000" />
+    <Setter Property="Padding" Value="16,10" />
+    <Setter Property="MinWidth" Value="96" />
+  </Style>
+  <Style Selector="TextBlock.player-figure-label">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <Style Selector="TextBlock.player-figure-value">
+    <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}" />
+    <Setter Property="FontSize" Value="28" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <!-- The team link in a banner: plain text in the banner's colour, underlined. -->
+  <Style Selector="Button.banner-link">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.banner-link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.banner-link TextBlock">
+    <Setter Property="TextDecorations" Value="Underline" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
   <!-- Page tabs for the current section. -->
   <Style Selector="Border.tab-strip">
     <Setter Property="Background" Value="{DynamicResource TabStripBrush}" />
@@ -723,6 +781,22 @@
     <Setter Property="FontWeight" Value="Bold" />
   </Style>
 
+  <!-- Over a rating bar, marks where the healthy rating would reach: a tick at the end of an empty bar. -->
+  <Style Selector="ProgressBar.rating-mark">
+    <Setter Property="MinHeight" Value="12" />
+    <Setter Property="Height" Value="12" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="Minimum" Value="0" />
+    <Setter Property="Maximum" Value="100" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="Transparent" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ProgressBar.rating-mark /template/ Border#PART_Indicator">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WarningBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,2,0" />
+  </Style>
   <Style Selector="ProgressBar.rating-bar">
     <Setter Property="MinHeight" Value="6" />
     <Setter Property="Height" Value="6" />

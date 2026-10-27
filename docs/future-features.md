@@ -503,6 +503,21 @@ stream and derived from game state
 ([reproducible saves](adr/0002-reproducible-saves.md)). Decide whether such
 events interrupt [bulk simulation](#skip-to-date-and-bulk-simulation).
 
+## Linked names in inbox messages
+
+Inbox message bodies are plain text, so a message naming a player or team
+leaves the user to find them elsewhere. Make each name in a message a link, as
+Football Manager and OOTP do: hovering shows a short summary card (position,
+age, key ratings or status for a player; record and standing for a team), and
+clicking opens the player profile or team page. Leagues get the same treatment
+once there is more than one (see
+[development leagues](#development-leagues-and-roster-transactions)).
+
+Direction: messages carry references to the players and teams they name
+alongside the text, rather than Desktop matching names in the body, so
+duplicate names and renamed teams resolve correctly and old messages still
+point at the right entity after it is saved and loaded.
+
 ## Goalie, bench, and instigator penalties
 
 The match engine (#51) penalizes only skaters, for infractions in the run of
@@ -513,6 +528,15 @@ extra minors and misconducts), a teammate serving an ejected player's major,
 penalized players returning to the ice only at the next change rather than at
 once, and awarded goals for a foul on a breakaway at an empty net (#52 calls an
 ordinary penalty there instead of a penalty shot). Each changes seeded results, so it is an engine version change.
+
+## Backup goalies in matches
+
+The starting goalie plays the whole match, apart from time pulled for an extra
+attacker, so only starters appear in box scores, goalie totals, and a goalie's
+game log. Later, the backup comes in when the starter is injured or pulled
+after conceding, and the box score, totals, and game log record each goalie's
+share of the match (time in net, shots and goals against, and the decision).
+This changes seeded results, so it is an engine version change.
 
 ## Full injury and health system
 

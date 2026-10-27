@@ -230,7 +230,7 @@ public sealed class RosterViewsTests
         roster.ShowGroupCommand.Execute(RosterGroup.Skaters);
         Assert.Same(roster.Skaters[0], roster.SelectedSkater);
         Assert.Null(roster.SelectedGoalie);
-        Assert.Equal(roster.Skaters[0].Player.Id, roster.SelectedPlayer!.Id);
+        Assert.Equal(roster.Skaters[0].Player.Id, roster.SelectedStrip!.PlayerId);
 
         var defenceman = roster.Skaters.First(row => row.Player.Position == Position.Defence);
         roster.SelectPlayer(defenceman.Player.Id);
@@ -264,7 +264,7 @@ public sealed class RosterViewsTests
         roster.SortGoaliesCommand.Execute("age");
         roster.ShowGroupCommand.Execute(RosterGroup.AllPlayers);
 
-        Assert.Equal(goalie.Player.Id, roster.SelectedPlayer!.Id);
+        Assert.Equal(goalie.Player.Id, roster.SelectedStrip!.PlayerId);
         Assert.Same(roster.Goalies.Single(row => row.Player.Id == goalie.Player.Id), roster.SelectedGoalie);
     }
 

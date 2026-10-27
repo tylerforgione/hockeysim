@@ -39,6 +39,7 @@ Paths are under `src/HockeySim.Simulation/`.
 | `Play/ExpectedGoalsModel.cs` | xG by shot context (its values are in `MatchTuning`) |
 | `Play/MatchTuning.cs` | Every tuning constant, calibrated to NHL averages (see [Calibration](#calibration)) |
 | `Play/MatchStatisticsBuilder.cs` | Derives all statistics from the play-by-play |
+| `Play/StrengthSituations.cs` | The one rule for a team's strength situation, used by on-ice shot totals and time on ice by situation |
 | `Play/OnIceSkater.cs` | A skater in a slot: role, side, and strengths adjusted for out-of-position and off-hand play |
 | `Play/Zone.cs`, `Play/Probability.cs` | Small helpers |
 | `Events/` | Play-by-play event records and their enums (goal situations, infractions, and penalty kinds are in Domain, since completed matches record them too) |
@@ -69,7 +70,7 @@ pull its goalie to tie a match). Keep them independent of the engine's code.
 | `MatchStrengthTests.cs` | Relative statistical checks for lineup strength and goalie quality |
 | `PlayByPlayTests.cs` | Event order, faceoff restarts, on-ice players, xG on shots |
 | `EventStatisticsTests.cs`, `MatchStatisticsTests.cs` | Statistics recounted from the events and reconciled |
-| `OnIceStatisticsTests.cs` | On-ice and team shot totals recounted by situation, with `ManpowerReplay` as the oracle |
+| `OnIceStatisticsTests.cs` | On-ice and team shot totals recounted by situation, and time on ice by situation checked against `ManpowerReplay`, the oracle |
 | `OvertimeTests.cs` | Three-on-three, shootouts, playoff overtime |
 | `ShiftAndFatigueTests.cs`, `PhysicalPlayTests.cs` | Ice-time shares, stamina, hits |
 | `LineupFitTests.cs` | Relative statistical checks for out-of-position and off-hand play; an extra attacker of any position keeps their full strengths |
@@ -358,8 +359,11 @@ for each strength situation from the team's own side: five-on-five (both
 goalies in net), power play, penalty kill, and other (four-on-four,
 three-on-three, or equal manpower with a goalie pulled). As with goal
 situations, the manpower comes from the penalties being served, so an extra
-attacker is not counted: the builder takes each team's skaters on the ice less
-one for a pulled goalie. Penalty shots are left out, as they are from
+attacker is not counted: each team's skaters on the ice less
+one for a pulled goalie (`StrengthSituations` holds the rule). Every skater also
+records time on ice by the same situations: as time elapses, each interval is
+put in the situation it starts in, from the skater's team's side, so the parts
+sum exactly to their time on ice. Penalty shots are left out, as they are from
 plus/minus, so the team's totals are its attempts less its penalty shots. Corsi
 (all attempts), Fenwick (unblocked attempts), and the other shares are derived
 from these totals; see [season](season.md).

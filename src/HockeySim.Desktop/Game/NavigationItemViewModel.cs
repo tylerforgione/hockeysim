@@ -1,10 +1,12 @@
+using System.Windows.Input;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace HockeySim.Desktop.Game;
 
 /// <summary>A page tab in the strip under the team banner.</summary>
-public sealed partial class NavigationItemViewModel : ObservableObject
+public sealed partial class NavigationItemViewModel : ObservableObject, IPageTab
 {
     private readonly Action<ShellPage> _navigate;
 
@@ -25,6 +27,8 @@ public sealed partial class NavigationItemViewModel : ObservableObject
 
     /// <summary>Gets whether the page exists yet; planned pages are listed but disabled.</summary>
     public bool IsAvailable { get; }
+
+    ICommand IPageTab.Command => NavigateCommand;
 
     [RelayCommand(CanExecute = nameof(IsAvailable))]
     private void Navigate()

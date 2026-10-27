@@ -37,11 +37,11 @@ public sealed partial class GameShellViewModel : ObservableObject
     private readonly Dictionary<ShellPage, ShellPageViewModel> _pages;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Banner))]
+    [NotifyPropertyChangedFor(nameof(Banner), nameof(PageTabs))]
     private ShellPageViewModel _currentPage;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsHomeSection))]
+    [NotifyPropertyChangedFor(nameof(IsHomeSection), nameof(PageTabs))]
     private NavigationSectionViewModel _currentSection;
 
     [ObservableProperty]
@@ -85,14 +85,14 @@ public sealed partial class GameShellViewModel : ObservableObject
         Confirmation = confirmation ?? new ConfirmationViewModel();
 
         TeamBanner = new TeamBannerViewModel(session);
-        Home = new HomePageViewModel(session, Navigate, OpenPlayer, OpenTeam, OpenMatch);
+        Home = new HomePageViewModel(session, Navigate, playerId => OpenPlayer(playerId), OpenTeam, OpenMatch);
         Inbox = new InboxPageViewModel(session);
-        Roster = new RosterPageViewModel(session, OpenTeamLines);
+        Roster = new RosterPageViewModel(session, OpenTeamLines, OpenPlayerFromRoster);
         Lines = new LinesPageViewModel(session);
         Schedule = new SchedulePageViewModel(session);
         TeamStatistics = new TeamStatisticsPageViewModel(session);
         Injuries = new InjuriesPageViewModel(session);
-        Teams = new TeamsPageViewModel(session, OpenTeamLines);
+        Teams = new TeamsPageViewModel(session, OpenTeamLines, OpenPlayerFromRoster);
         Standings = new StandingsPageViewModel(session, OpenTeam);
         Playoffs = new PlayoffsPageViewModel(session, OpenMatch);
         _pages = new Dictionary<ShellPage, ShellPageViewModel>
@@ -160,6 +160,9 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     public InjuriesPageViewModel Injuries { get; }
 
+    /// <summary>Gets the player profile last opened, or null before any is.</summary>
+    public PlayerProfilePageViewModel? Profile { get; private set; }
+
     public TeamsPageViewModel Teams { get; }
 
     public StandingsPageViewModel Standings { get; }
@@ -175,6 +178,9 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     /// <summary>Gets the current page's own banner, or the managed team's.</summary>
     public object Banner => CurrentPage.Banner ?? TeamBanner;
+
+    /// <summary>Gets the tabs under the banner: the current page's own, or its section's pages.</summary>
+    public IReadOnlyList<IPageTab> PageTabs => CurrentPage.Tabs ?? CurrentSection.Items;
 
     public string TeamName => Session.ManagedTeam.Name;
 
@@ -386,7 +392,13 @@ public sealed partial class GameShellViewModel : ObservableObject
         }
 
         _currentPageKind = page;
-        CurrentSection = Sections.Single(section => section.Items.Any(item => item.Page == page));
+
+        // A page in no section, such as a player's profile, keeps the section it was opened from.
+        if (Sections.SingleOrDefault(section => section.Items.Any(item => item.Page == page)) is { } section)
+        {
+            CurrentSection = section;
+        }
+
         CurrentPage = target;
         UpdateNavigationState();
         OnPropertyChanged(nameof(CurrentPageKind));
@@ -398,10 +410,28 @@ public sealed partial class GameShellViewModel : ObservableObject
         Inbox.OpenMessage(messageId);
     }
 
-    public void OpenPlayer(PlayerId playerId)
+    /// <summary>
+    /// Shows a player's profile. The statistic set defaults to the one the home page shows for the
+    /// player's team: the playoffs once the team has a series.
+    /// </summary>
+    public void OpenPlayer(PlayerId playerId, PlayerProfileTab tab = PlayerProfileTab.Overview, StatisticsSet? statistics = null)
     {
-        Navigate(ShellPage.Roster);
-        Roster.SelectPlayer(playerId);
+        var team = Session.TeamOf(playerId);
+        var profile = new PlayerProfilePageViewModel(
+            Session,
+            playerId,
+            tab,
+            statistics ?? HomeStatistics.For(Session.Snapshot, team.Id),
+            OpenTeam,
+            OpenMatch);
+        Profile = profile;
+        _pages[ShellPage.PlayerProfile] = profile;
+        Navigate(ShellPage.PlayerProfile);
+    }
+
+    private void OpenPlayerFromRoster(PlayerId playerId, PlayerProfileTab tab, StatisticsSet statistics)
+    {
+        OpenPlayer(playerId, tab, statistics);
     }
 
     /// <summary>

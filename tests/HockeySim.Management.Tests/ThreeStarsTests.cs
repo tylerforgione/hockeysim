@@ -268,6 +268,7 @@ public sealed class ThreeStarsTests
                 assisted,
                 0,
                 TimeSpan.FromMinutes(15),
+                new SituationalTimeOnIce(TimeSpan.FromMinutes(15), TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero),
                 shots,
                 shots + 10,
                 line.Hits,

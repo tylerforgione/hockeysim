@@ -216,6 +216,16 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
             Assert.Equal(boxScores.Sum(box => box.Assists), skater.Assists);
             Assert.Equal(boxScores.Sum(box => box.PlusMinus), skater.PlusMinus);
             Assert.Equal(boxScores.Aggregate(TimeSpan.Zero, (total, box) => total + box.TimeOnIce), skater.TimeOnIce);
+            Assert.Equal(boxScores.Sum(box => box.TimeOnIceBySituation.FiveOnFive.TotalSeconds), skater.TimeOnIceBySituation.FiveOnFive.TotalSeconds);
+            Assert.Equal(boxScores.Sum(box => box.TimeOnIceBySituation.PowerPlay.TotalSeconds), skater.TimeOnIceBySituation.PowerPlay.TotalSeconds);
+            Assert.Equal(boxScores.Sum(box => box.TimeOnIceBySituation.PenaltyKill.TotalSeconds), skater.TimeOnIceBySituation.PenaltyKill.TotalSeconds);
+            Assert.Equal(boxScores.Sum(box => box.TimeOnIceBySituation.Other.TotalSeconds), skater.TimeOnIceBySituation.Other.TotalSeconds);
+            Assert.Equal(skater.TimeOnIce, skater.TimeOnIceBySituation.All);
+            Assert.All(boxScores, box => Assert.Equal(box.TimeOnIce, box.TimeOnIceBySituation.All));
+            Assert.InRange(
+                skater.TimeOnIceBySituationPerGame!.PowerPlay.TotalSeconds - (skater.TimeOnIceBySituation.PowerPlay.TotalSeconds / skater.GamesPlayed),
+                -0.5,
+                0.5);
             Assert.Equal(boxScores.Sum(box => box.Shots), skater.Shots);
             Assert.Equal(boxScores.Sum(box => box.ShotAttempts), skater.ShotAttempts);
             Assert.Equal(boxScores.Sum(box => box.Hits), skater.Hits);

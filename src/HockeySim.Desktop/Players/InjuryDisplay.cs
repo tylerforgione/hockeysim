@@ -29,6 +29,26 @@ public static class InjuryDisplay
             ? ShortDate(expected.Earliest)
             : $"{ShortDate(expected.Earliest)} – {ShortDate(expected.Latest)}";
 
+    /// <summary>
+    /// When the injuries heal, such as "Injured until Sun 23 Nov", or with the earliest and latest
+    /// dates ("Injured until Sun 23 Nov – Wed 26 Nov") when the staff cannot say which day. It
+    /// follows the injury that heals last; null when there is none.
+    /// </summary>
+    public static string? InjuredUntil(IReadOnlyList<InjurySnapshot> injuries)
+    {
+        ArgumentNullException.ThrowIfNull(injuries);
+
+        if (injuries.Count == 0)
+        {
+            return null;
+        }
+
+        var expected = injuries.MaxBy(injury => injury.ExpectedReturn.Latest)!.ExpectedReturn;
+        return expected.Earliest == expected.Latest
+            ? $"Injured until {DayDate(expected.Earliest)}"
+            : $"Injured until {DayDate(expected.Earliest)} – {DayDate(expected.Latest)}";
+    }
+
     public static string Name(InjuryType type) => type switch
     {
         InjuryType.Concussion => "Concussion",
@@ -49,6 +69,8 @@ public static class InjuryDisplay
         InjuryType.BruisedFoot => "Bruised foot",
         _ => type.ToString(),
     };
+
+    private static string DayDate(DateOnly date) => date.ToString("ddd d MMM", CultureInfo.CurrentCulture);
 
     private static string ShortDate(DateOnly date) => date.ToString("MMM d", CultureInfo.CurrentCulture);
 }

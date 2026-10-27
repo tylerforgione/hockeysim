@@ -1,0 +1,345 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:players="using:HockeySim.Desktop.Players"
+             xmlns:theme="using:HockeySim.Desktop.Theme"
+             x:Class="HockeySim.Desktop.Players.PlayerProfilePageView"
+             x:DataType="players:PlayerProfilePageViewModel">
+  <UserControl.Resources>
+    <!-- Switches the banner and every statistic between the regular season's totals and the playoffs'. -->
+    <DataTemplate x:Key="StatisticsSwitch" x:DataType="players:PlayerProfilePageViewModel">
+      <StackPanel Orientation="Horizontal"
+                  Spacing="0"
+                  VerticalAlignment="Center"
+                  IsVisible="{Binding HasPlayoffStatistics}">
+        <Button Classes="tab"
+                Classes.selected="{Binding ShowsRegularSeason}"
+                Content="Regular season"
+                Command="{Binding ShowStatisticsSetCommand}"
+                CommandParameter="{x:Static players:StatisticsSet.RegularSeason}" />
+        <Button Classes="tab"
+                Classes.selected="{Binding ShowsPlayoffs}"
+                Content="Playoffs"
+                Command="{Binding ShowStatisticsSetCommand}"
+                CommandParameter="{x:Static players:StatisticsSet.Playoffs}" />
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <UserControl.DataTemplates>
+    <!-- A label and its value, one line of a panel. -->
+    <DataTemplate x:DataType="players:ProfileFactViewModel">
+      <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,5">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBlock Classes="cell" Foreground="{DynamicResource SecondaryTextBrush}" Text="{Binding Label}" />
+          <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Value}" />
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <!-- A rating as a bar. While playing hurt, a tick marks the healthy rating and the loss is written beside it. -->
+    <DataTemplate x:DataType="players:RatingLineViewModel">
+      <Grid ColumnDefinitions="130,*,64" ColumnSpacing="8" Height="22">
+        <TextBlock Classes="cell" Foreground="{DynamicResource SecondaryTextBrush}" Text="{Binding Name}" />
+        <Panel Grid.Column="1" VerticalAlignment="Center">
+          <ProgressBar Classes="rating-bar"
+                       Value="{Binding Value}"
+                       Foreground="{Binding Value, Converter={StaticResource RatingBrush}}" />
+          <ProgressBar Classes="rating-mark"
+                       Value="{Binding Healthy}"
+                       IsVisible="{Binding HasLoss}" />
+        </Panel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+          <TextBlock Classes="rating"
+                     FontWeight="Bold"
+                     Text="{Binding Value}"
+                     Foreground="{Binding Value, Converter={StaticResource RatingBrush}}" />
+          <TextBlock Classes="warning"
+                     FontSize="11"
+                     VerticalAlignment="Center"
+                     Text="{Binding LossText}"
+                     IsVisible="{Binding HasLoss}" />
+        </StackPanel>
+      </Grid>
+    </DataTemplate>
+
+    <!-- A group of statistics as tiles, value over label. -->
+    <DataTemplate x:DataType="players:SeasonStatGroupViewModel">
+      <StackPanel Margin="8,8,8,0" Spacing="3">
+        <TextBlock Classes="label" Text="{Binding Name}" />
+        <ItemsControl ItemsSource="{Binding Statistics}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Columns="6" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="players:SeasonStatViewModel">
+              <Border Background="{DynamicResource RowAltBrush}"
+                      BorderBrush="{DynamicResource BorderBrush}"
+                      BorderThickness="0,0,1,1"
+                      Padding="4,6"
+                      ToolTip.Tip="{Binding Description}">
+                <StackPanel>
+                  <TextBlock Classes="stat" FontSize="19" HorizontalAlignment="Center" Text="{Binding Value}" />
+                  <TextBlock Classes="label" HorizontalAlignment="Center" Text="{Binding Label}" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </DataTemplate>
+
+    <!-- A match the player appeared in; its figures are the cells, under the page's column labels. -->
+    <DataTemplate x:DataType="players:PlayerGameRowViewModel">
+      <Grid ColumnDefinitions="40,88,*,78,Auto" ColumnSpacing="4">
+        <TextBlock Classes="cell muted" Text="{Binding PhaseLabel}" ToolTip.Tip="{Binding PhaseDescription}" />
+        <TextBlock Grid.Column="1" Classes="cell" Foreground="{DynamicResource SecondaryTextBrush}" Text="{Binding DateLabel}" />
+        <TextBlock Grid.Column="2" Classes="cell" Text="{Binding Opponent}" />
+        <TextBlock Grid.Column="3"
+                   Classes="cell"
+                   Classes.success="{Binding IsWin}"
+                   Classes.error="{Binding IsLoss}"
+                   Text="{Binding Result}" />
+        <ItemsControl Grid.Column="4" ItemsSource="{Binding Cells}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Classes="cell-center" Width="38" TextAlignment="Center" Text="{Binding}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Grid>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <Panel>
+    <!-- Overview: biography and usage, the season so far, and ratings. -->
+    <Grid x:Name="OverviewTab"
+          IsVisible="{Binding ShowsOverview}"
+          ColumnDefinitions="300,*,360"
+          RowDefinitions="Auto,*"
+          ColumnSpacing="6"
+          RowSpacing="6">
+      <Border x:Name="BiographyPanel" Classes="panel">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Classes="panel-header">
+            <TextBlock Classes="panel-title" Text="BIOGRAPHY" />
+          </Border>
+          <ItemsControl x:Name="BiographyFacts" ItemsSource="{Binding Biography}" />
+        </DockPanel>
+      </Border>
+
+      <Border x:Name="UsagePanel" Grid.Row="1" Classes="panel">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Classes="panel-header">
+            <TextBlock Classes="panel-title" Text="USAGE" />
+          </Border>
+          <ItemsControl x:Name="UsageFacts" ItemsSource="{Binding Usage}" VerticalAlignment="Top" />
+        </DockPanel>
+      </Border>
+
+      <Border x:Name="StatisticsPanel" Grid.Column="1" Grid.RowSpan="2" Classes="panel">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Classes="panel-header">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock x:Name="OverviewStatisticsTitle"
+                         Classes="panel-title"
+                         Text="{Binding StatisticsTitle, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
+              <ContentControl Grid.Column="1" Content="{Binding}" ContentTemplate="{StaticResource StatisticsSwitch}" />
+            </Grid>
+          </Border>
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+              <ItemsControl x:Name="OverviewStatistics" ItemsSource="{Binding OverviewStatisticGroups}" />
+              <TextBlock Classes="label" Margin="8,12,8,3" Text="LAST FIVE GAMES" />
+              <Border Classes="table-header">
+                <Grid ColumnDefinitions="40,88,*,78,Auto" ColumnSpacing="4">
+                  <TextBlock Text="" />
+                  <TextBlock Grid.Column="1" Text="DATE" />
+                  <TextBlock Grid.Column="2" Text="OPPONENT" />
+                  <TextBlock Grid.Column="3" Text="RESULT" />
+                  <ItemsControl Grid.Column="4" ItemsSource="{Binding GameLogColumns}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="x:String">
+                        <TextBlock Width="38" TextAlignment="Center" Text="{Binding}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Grid>
+              </Border>
+              <ListBox x:Name="LastFiveGames"
+                       Classes="table"
+                       ItemsSource="{Binding LastFiveGames}"
+                       SelectedItem="{Binding SelectedGame}" />
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+
+      <Border x:Name="OverviewRatingsPanel" Grid.Column="2" Grid.RowSpan="2" Classes="panel">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Classes="panel-header">
+            <TextBlock Classes="panel-title" Text="RATINGS" />
+          </Border>
+          <Border x:Name="InjuredUntilPanel"
+                  DockPanel.Dock="Bottom"
+                  Margin="10"
+                  Padding="8"
+                  Background="{DynamicResource RowAltBrush}"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="1"
+                  IsVisible="{Binding InjuredUntil, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <TextBlock x:Name="InjuredUntilText" Classes="warning" Text="{Binding InjuredUntil}" />
+          </Border>
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="OverviewRatings" ItemsSource="{Binding OverviewRatings}" Margin="10,6" />
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+
+    <!-- Ratings: overall, then every rating in its group. -->
+    <Border x:Name="RatingsTab" Classes="panel" IsVisible="{Binding ShowsRatings}">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="panel-header">
+          <TextBlock Classes="panel-title" Text="RATINGS" />
+        </Border>
+        <Border DockPanel.Dock="Bottom"
+                Margin="10"
+                Padding="8"
+                Background="{DynamicResource RowAltBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                IsVisible="{Binding InjuredUntil, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <TextBlock Classes="warning" Text="{Binding InjuredUntil}" />
+        </Border>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="10,6" Spacing="10">
+            <ContentControl x:Name="OverallRating" Content="{Binding OverallRating}" />
+            <ItemsControl x:Name="RatingGroups" ItemsSource="{Binding RatingGroups}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <UniformGrid Rows="1" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="players:RatingGroupViewModel">
+                  <StackPanel Margin="0,0,16,0" Spacing="3">
+                    <TextBlock Classes="label" Margin="0,0,0,2" Text="{Binding Name}" />
+                    <ItemsControl ItemsSource="{Binding Ratings}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <!-- Statistics: the full line for the chosen part of the season. -->
+    <Border x:Name="StatisticsTab" Classes="panel" IsVisible="{Binding ShowsStatistics}">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="panel-header">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Classes="panel-title" Text="{Binding StatisticsTitle, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
+            <ContentControl Grid.Column="1" Content="{Binding}" ContentTemplate="{StaticResource StatisticsSwitch}" />
+          </Grid>
+        </Border>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <ItemsControl x:Name="FullStatistics" ItemsSource="{Binding StatisticGroups}" Margin="0,0,0,8" />
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <!-- Game log: every completed match of the season the player appeared in, newest first. -->
+    <Border x:Name="GameLogTab" Classes="panel" IsVisible="{Binding ShowsGameLog}">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="panel-header">
+          <TextBlock Classes="panel-title" Text="GAME LOG" />
+        </Border>
+        <Border DockPanel.Dock="Top" Classes="table-header">
+          <Grid ColumnDefinitions="40,88,*,78,Auto" ColumnSpacing="4">
+            <TextBlock Text="" />
+            <TextBlock Grid.Column="1" Text="DATE" />
+            <TextBlock Grid.Column="2" Text="OPPONENT" />
+            <TextBlock Grid.Column="3" Text="RESULT" />
+            <ItemsControl Grid.Column="4" ItemsSource="{Binding GameLogColumns}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Width="38" TextAlignment="Center" Text="{Binding}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Grid>
+        </Border>
+        <ListBox x:Name="GameLogTable"
+                 Classes="table"
+                 ItemsSource="{Binding GameLog}"
+                 SelectedItem="{Binding SelectedGame}" />
+      </DockPanel>
+    </Border>
+
+    <!-- Health: each injury the player has not recovered from. -->
+    <Border x:Name="HealthTab" Classes="panel" IsVisible="{Binding ShowsHealth}">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="panel-header">
+          <TextBlock Classes="panel-title" Text="HEALTH" />
+        </Border>
+        <Panel>
+          <TextBlock x:Name="HealthyText"
+                     Margin="10,8"
+                     VerticalAlignment="Top"
+                     Text="Healthy"
+                     IsVisible="{Binding IsHealthy}" />
+          <DockPanel IsVisible="{Binding HasInjuries}">
+          <Border DockPanel.Dock="Top" Classes="table-header">
+            <Grid ColumnDefinitions="*,80,110,100,110,2*" ColumnSpacing="6">
+              <TextBlock Text="INJURY" />
+              <TextBlock Grid.Column="1" Text="BODY PART" />
+              <TextBlock Grid.Column="2" Text="STATUS" />
+              <TextBlock Grid.Column="3" Text="SUFFERED" />
+              <TextBlock Grid.Column="4" Text="EXPECTED BACK" />
+              <TextBlock Grid.Column="5" Text="EFFECT" />
+            </Grid>
+          </Border>
+          <ItemsControl x:Name="InjuryRows" Classes="table" ItemsSource="{Binding Injuries}" VerticalAlignment="Top">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="players:PlayerInjuryViewModel">
+                <Border Classes="standing-row" Height="24" Padding="8,0">
+                  <Grid ColumnDefinitions="*,80,110,100,110,2*" ColumnSpacing="6">
+                    <TextBlock Classes="cell" FontWeight="SemiBold" Text="{Binding Name}" />
+                    <TextBlock Grid.Column="1" Classes="cell" Text="{Binding BodyPart}" />
+                    <TextBlock Grid.Column="2"
+                               Classes="cell"
+                               Classes.error="{Binding IsOut}"
+                               Classes.warning="{Binding !IsOut}"
+                               Text="{Binding Status}" />
+                    <TextBlock Grid.Column="3" Classes="cell" Text="{Binding Suffered}" />
+                    <TextBlock Grid.Column="4" Classes="cell" Text="{Binding ExpectedReturn}" />
+                    <TextBlock Grid.Column="5" Classes="cell" Text="{Binding Effect}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          </DockPanel>
+        </Panel>
+      </DockPanel>
+    </Border>
+  </Panel>
+</UserControl>

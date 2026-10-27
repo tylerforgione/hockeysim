@@ -213,7 +213,7 @@ public sealed class GameShellViewModelTests
     }
 
     [Fact]
-    public async Task OpeningATeamLeaderShowsThatPlayerOnTheRoster()
+    public async Task OpeningATeamLeaderShowsThatPlayersProfile()
     {
         var shell = new GameShellViewModel(GameTestData.StartSession());
         await shell.AdvanceDayCommand.ExecuteAsync(null);
@@ -221,9 +221,11 @@ public sealed class GameShellViewModelTests
 
         goalieLeader.OpenPlayerCommand!.Execute(null);
 
-        var roster = Assert.IsType<RosterPageViewModel>(shell.CurrentPage);
-        Assert.EndsWith(goalieLeader.PlayerName[3..], roster.Roster.SelectedGoalie!.Name, StringComparison.Ordinal);
-        Assert.Null(roster.Roster.SelectedSkater);
+        var profile = Assert.IsType<PlayerProfilePageViewModel>(shell.CurrentPage);
+        Assert.Equal(ShellPage.PlayerProfile, shell.CurrentPageKind);
+        Assert.True(profile.IsGoalie);
+        Assert.EndsWith(goalieLeader.PlayerName[3..], profile.FullName, StringComparison.Ordinal);
+        Assert.Equal(PlayerProfileTab.Overview, profile.Tab);
     }
 
     [Fact]
@@ -263,8 +265,8 @@ public sealed class GameShellViewModelTests
         Assert.Equal(ShellPage.TeamSchedule, shell.CurrentPageKind);
 
         shell.Home.TaleOfTheTape.OurPlayers[1].OpenCommand!.Execute(null);
-        var roster = Assert.IsType<RosterPageViewModel>(shell.CurrentPage);
-        Assert.NotNull(roster.Roster.SelectedGoalie);
+        var profile = Assert.IsType<PlayerProfilePageViewModel>(shell.CurrentPage);
+        Assert.True(profile.IsGoalie);
     }
 
     private static NavigationItemViewModel GetTab(GameShellViewModel shell, ShellPage page) =>

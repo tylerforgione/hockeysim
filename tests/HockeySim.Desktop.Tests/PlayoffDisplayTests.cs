@@ -198,12 +198,13 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
             playoffs.GoalieStatistics.SingleOrDefault(candidate => candidate.PlayerId == row.Player.Id)?.GamesPlayed ?? 0,
             row.Season.GamesPlayed));
 
-        // The profile follows the switch and keeps the selected player.
-        var profile = roster.SelectedPlayer!;
+        // The profile opened from the roster follows the switch and keeps the selected player.
+        roster.OpenProfileCommand.Execute(null);
+        var profile = shell.Profile!;
         Assert.Equal(skater.Player.Id, profile.Id);
-        Assert.Equal("2026–27 PLAYOFFS", profile.SeasonTitle);
+        Assert.True(profile.ShowsPlayoffs);
         var gamesPlayed = playoffs.SkaterStatistics.Single(statistics => statistics.PlayerId == skater.Player.Id).GamesPlayed;
-        Assert.Equal(gamesPlayed.ToString(System.Globalization.CultureInfo.CurrentCulture), profile.SeasonStatisticGroups[0].Statistics[0].Value);
+        Assert.Equal(gamesPlayed.ToString(System.Globalization.CultureInfo.CurrentCulture), profile.StatisticGroups[0].Statistics[0].Value);
 
         // The choice holds across teams and refreshes. A team that missed the playoffs has none.
         var missed = session.Snapshot.League.Teams.First(team => !playoffs.Series.Any(series =>
@@ -213,16 +214,20 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         Assert.True(roster.ShowsPlayoffs);
         Assert.All(roster.Skaters.Concat(roster.Goalies), row => Assert.Equal(PlayerSeasonTotals.None, row.Season));
         roster.SelectPlayer(roster.Skaters[0].Player.Id);
-        Assert.Equal("No playoff appearances.", roster.SelectedPlayer!.SeasonCaption);
+        roster.OpenProfileCommand.Execute(null);
+        Assert.True(shell.Profile!.ShowsPlayoffs);
+        Assert.Equal("0", shell.Profile.StatisticGroups[0].Statistics[0].Value);
         roster.SelectPlayer(roster.Goalies[0].Player.Id);
-        Assert.Equal("No playoff starts.", roster.SelectedPlayer!.SeasonCaption);
+        roster.OpenProfileCommand.Execute(null);
+        Assert.True(shell.Profile.IsGoalie);
+        Assert.Equal("0", shell.Profile.StatisticGroups[0].Statistics[0].Value);
 
         shell.Teams.Refresh();
         Assert.True(shell.Teams.Roster.ShowsPlayoffs);
 
         shell.Teams.Roster.ShowStatisticsSetCommand.Execute(StatisticsSet.RegularSeason);
         Assert.Contains(shell.Teams.Roster.Skaters, row => row.Season.GamesPlayed > 10);
-        Assert.Equal("2026–27 REGULAR SEASON", shell.Teams.Roster.SelectedPlayer!.SeasonTitle);
+        Assert.True(shell.Teams.Roster.ShowsRegularSeason);
 
         shell.Roster.Roster.ShowStatisticsSetCommand.Execute(StatisticsSet.Playoffs);
         shell.Roster.Refresh();

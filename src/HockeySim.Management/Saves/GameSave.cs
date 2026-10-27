@@ -173,6 +173,7 @@ public sealed record SavedShotTotals(
     double ExpectedGoalsAgainst);
 
 /// <param name="TimeOnIceSeconds">Time on ice in whole seconds.</param>
+/// <param name="TimeOnIceBySituation">The time on ice by strength situation.</param>
 /// <param name="OnIce">Both teams' shot totals while the skater was on the ice.</param>
 public sealed record SavedSkaterBoxScore(
     PlayerId PlayerId,
@@ -180,6 +181,7 @@ public sealed record SavedSkaterBoxScore(
     int Assists,
     int PlusMinus,
     int TimeOnIceSeconds,
+    SavedSituationalTimeOnIce TimeOnIceBySituation,
     int Shots,
     int ShotAttempts,
     int Hits,
@@ -196,6 +198,9 @@ public sealed record SavedSkaterBoxScore(
     int ShorthandedAssists,
     int EmptyNetGoals,
     SavedSituationalShotTotals OnIce);
+
+/// <summary>A skater's time on ice by strength situation, in whole seconds.</summary>
+public sealed record SavedSituationalTimeOnIce(int FiveOnFiveSeconds, int PowerPlaySeconds, int PenaltyKillSeconds, int OtherSeconds);
 
 /// <param name="TimeOnIceSeconds">Time in net in whole seconds.</param>
 public sealed record SavedGoalieBoxScore(

@@ -3,9 +3,9 @@ using Avalonia.Markup.Xaml;
 
 namespace HockeySim.Desktop.Players;
 
-public sealed partial class PlayerDetailView : UserControl
+public sealed partial class PlayerProfilePageView : UserControl
 {
-    public PlayerDetailView()
+    public PlayerProfilePageView()
     {
         InitializeComponent();
     }

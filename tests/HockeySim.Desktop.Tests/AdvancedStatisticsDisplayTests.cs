@@ -213,9 +213,8 @@ public sealed class AdvancedStatisticsDisplayTests
         var team = session.ManagedTeam;
         var centre = team.Lineup.ForwardLines[0].CentreId;
         var statistics = session.Snapshot.Season.SkaterStatistics.Single(skater => skater.PlayerId == centre);
-        var roster = new TeamRosterViewModel(session, team.Id, centre);
 
-        var line = roster.SelectedPlayer!.SeasonStatisticGroups.SelectMany(group => group.Statistics).ToDictionary(stat => stat.Label, stat => stat.Value);
+        var line = PlayerProfileTests.Profile(session, centre).StatisticGroups.SelectMany(group => group.Statistics).ToDictionary(stat => stat.Label, stat => stat.Value);
 
         Assert.Equal(
             ["GP", "G", "A", "P", "+/-", "PIM", "ENG", "PPG", "PPA", "PPP", "SHG", "SHA", "SHP", "S", "SAT", "ixG", "HIT", "BLK", "TK", "GV",
@@ -230,10 +229,10 @@ public sealed class AdvancedStatisticsDisplayTests
         Assert.Equal(Count(statistics.OnIce.FiveOnFive.GoalsAgainst), line["GA"]);
         Assert.Equal(MatchDisplay.Percentage(statistics.OnIce.FiveOnFive.GoalsPercentage), line["GF%"]);
 
-        var goalie = new TeamRosterViewModel(session, team.Id, team.Lineup.StartingGoalieId).SelectedPlayer!;
+        var goalie = PlayerProfileTests.Profile(session, team.Lineup.StartingGoalieId);
         Assert.Equal(
             ["GP", "SA", "SV", "GA", "SV%", "GAA", "SO", "xGA", "GSAx", "TOI", "TOI/GP"],
-            goalie.SeasonStatisticGroups.SelectMany(group => group.Statistics).Select(stat => stat.Label));
+            goalie.StatisticGroups.SelectMany(group => group.Statistics).Select(stat => stat.Label));
     }
 
     [Fact]

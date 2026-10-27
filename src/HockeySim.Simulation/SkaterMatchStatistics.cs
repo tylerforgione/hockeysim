@@ -12,6 +12,10 @@ namespace HockeySim.Simulation;
 /// power-play and penalty-shot goals.
 /// </param>
 /// <param name="TimeOnIce">Time on the ice in regulation and overtime, in whole seconds.</param>
+/// <param name="TimeOnIceBySituation">
+/// <paramref name="TimeOnIce"/> split by strength situation from the skater's team's side, decided
+/// the same way as for <paramref name="OnIce"/>; the parts sum to <paramref name="TimeOnIce"/>.
+/// </param>
 /// <param name="Shots">Shots on goal, including goals.</param>
 /// <param name="ShotAttempts">Shots on goal, missed shots, and shots that were blocked.</param>
 /// <param name="BlockedShots">The opponent's shot attempts this skater blocked.</param>
@@ -35,6 +39,7 @@ public sealed record SkaterMatchStatistics(
     int Assists,
     int PlusMinus,
     TimeSpan TimeOnIce,
+    SituationalTimeOnIce TimeOnIceBySituation,
     int Shots,
     int ShotAttempts,
     int Hits,

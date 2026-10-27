@@ -38,7 +38,7 @@ public sealed class TeamBrowsingTests
         Assert.Equal(
             other.Roster.Select(player => player.Id.Value).Order(),
             teams.Roster.Skaters.Concat(teams.Roster.Goalies).Select(row => row.Player.Id.Value).Order());
-        Assert.Equal(other.Name, teams.Roster.SelectedPlayer?.TeamName);
+        Assert.Contains(other.Roster, player => player.Id == teams.Roster.SelectedStrip?.PlayerId);
     }
 
     [Fact]
@@ -71,49 +71,6 @@ public sealed class TeamBrowsingTests
     }
 
     [Fact]
-    public void GoalieDetailShowsIdentityOverallAndOnlyGoalieRatings()
-    {
-        var session = GameTestData.StartSession();
-        var team = session.ManagedTeam;
-        var goalie = team.Roster.First(player => player.Position == Position.Goalie);
-
-        var detail = new PlayerDetailViewModel(goalie, team, session.GetSeasonTotals(goalie.Id), 2026);
-
-        Assert.Equal($"{goalie.FirstName} {goalie.LastName}", detail.FullName);
-        Assert.Equal($"#{goalie.Number}", detail.Number);
-        Assert.Equal("Goalie", detail.Position);
-        Assert.Equal(goalie.Age, detail.Age);
-        Assert.Equal(team.Name, detail.TeamName);
-        Assert.Equal(goalie.Overall, detail.Overall);
-        Assert.Equal(["GOALTENDING", "GAME"], detail.RatingGroups.Select(group => group.Name));
-        Assert.Equal(
-            ["Reflexes", "Positioning", "Rebound Control", "Stamina", "Discipline"],
-            detail.RatingGroups.SelectMany(group => group.Ratings).Select(rating => rating.Name));
-        Assert.Equal(goalie.Ratings[Rating.GoalieReflex], RatingValue(detail, "Reflexes"));
-        Assert.Equal(goalie.Ratings[Rating.Stamina], RatingValue(detail, "Stamina"));
-    }
-
-    [Fact]
-    public void SkaterDetailShowsOverallAndEverySkaterRatingButNotDurability()
-    {
-        var session = GameTestData.StartSession();
-        var team = session.ManagedTeam;
-        var centre = team.Roster.First(player => player.Position == Position.Centre);
-
-        var detail = new PlayerDetailViewModel(centre, team, session.GetSeasonTotals(centre.Id), 2026);
-
-        Assert.Equal(centre.Overall, detail.Overall);
-        Assert.Equal(["OFFENCE", "DEFENCE", "GAME"], detail.RatingGroups.Select(group => group.Name));
-        var names = detail.RatingGroups.SelectMany(group => group.Ratings).Select(rating => rating.Name).ToList();
-        Assert.Equal(14, names.Count);
-        Assert.DoesNotContain("Durability", names);
-        Assert.DoesNotContain("Reflexes", names);
-        Assert.Equal(centre.Ratings[Rating.Faceoffs], RatingValue(detail, "Faceoffs"));
-        Assert.Equal(centre.Ratings[Rating.Toughness], RatingValue(detail, "Toughness"));
-        Assert.Equal(centre.Ratings[Rating.Discipline], RatingValue(detail, "Discipline"));
-    }
-
-    [Fact]
     public void SelectingAGoalieClearsTheSkaterSelection()
     {
         var session = GameTestData.StartSession();
@@ -122,9 +79,6 @@ public sealed class TeamBrowsingTests
         roster.SelectedGoalie = roster.Goalies[1];
 
         Assert.Null(roster.SelectedSkater);
-        Assert.Equal(roster.Goalies[1].Player.Id, roster.SelectedPlayer?.Id);
+        Assert.Equal(roster.Goalies[1].Player.Id, roster.SelectedStrip?.PlayerId);
     }
-
-    private static int RatingValue(PlayerDetailViewModel detail, string name) =>
-        detail.RatingGroups.SelectMany(group => group.Ratings).Single(rating => rating.Name == name).Value;
 }

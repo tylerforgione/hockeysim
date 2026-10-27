@@ -8,6 +8,7 @@ public sealed partial class SkaterTableView : UserControl
     public SkaterTableView()
     {
         InitializeComponent();
+        RosterRowActivation.OpenProfileOnDoubleTap(this);
     }
 
     private void InitializeComponent()

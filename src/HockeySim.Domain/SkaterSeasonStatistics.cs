@@ -18,6 +18,9 @@ public sealed record SkaterSeasonStatistics(PlayerId PlayerId, TeamId TeamId)
 
     public TimeSpan TimeOnIce { get; private init; }
 
+    /// <summary>The time on ice by strength situation, summing to <see cref="TimeOnIce"/>.</summary>
+    public SituationalTimeOnIce TimeOnIceBySituation { get; private init; } = SituationalTimeOnIce.None;
+
     public int Shots { get; private init; }
 
     public int ShotAttempts { get; private init; }
@@ -64,6 +67,20 @@ public sealed record SkaterSeasonStatistics(PlayerId PlayerId, TeamId TeamId)
     /// <summary>Average time on ice, or <see langword="null"/> before a first appearance.</summary>
     public TimeSpan? TimeOnIcePerGame => SeasonAverages.PerGame(TimeOnIce, GamesPlayed);
 
+    /// <summary>
+    /// Average time on ice in each strength situation, each rounded to the nearest second on its own
+    /// (so the parts may differ from <see cref="TimeOnIcePerGame"/> by a second), or
+    /// <see langword="null"/> before a first appearance.
+    /// </summary>
+    public SituationalTimeOnIce? TimeOnIceBySituationPerGame =>
+        GamesPlayed == 0
+            ? null
+            : new(
+                SeasonAverages.PerGame(TimeOnIceBySituation.FiveOnFive, GamesPlayed)!.Value,
+                SeasonAverages.PerGame(TimeOnIceBySituation.PowerPlay, GamesPlayed)!.Value,
+                SeasonAverages.PerGame(TimeOnIceBySituation.PenaltyKill, GamesPlayed)!.Value,
+                SeasonAverages.PerGame(TimeOnIceBySituation.Other, GamesPlayed)!.Value);
+
     internal SkaterSeasonStatistics Add(SkaterBoxScore boxScore) =>
         this with
         {
@@ -72,6 +89,7 @@ public sealed record SkaterSeasonStatistics(PlayerId PlayerId, TeamId TeamId)
             Assists = Assists + boxScore.Assists,
             PlusMinus = PlusMinus + boxScore.PlusMinus,
             TimeOnIce = TimeOnIce + boxScore.TimeOnIce,
+            TimeOnIceBySituation = TimeOnIceBySituation.Add(boxScore.TimeOnIceBySituation),
             Shots = Shots + boxScore.Shots,
             ShotAttempts = ShotAttempts + boxScore.ShotAttempts,
             Hits = Hits + boxScore.Hits,

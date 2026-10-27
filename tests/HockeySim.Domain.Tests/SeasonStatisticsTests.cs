@@ -47,6 +47,8 @@ public sealed class SeasonStatisticsTests
 
         Assert.Null(skater.FaceoffPercentage);
         Assert.Null(skater.TimeOnIcePerGame);
+        Assert.Null(skater.TimeOnIceBySituationPerGame);
+        Assert.Equal(SituationalTimeOnIce.None, skater.TimeOnIceBySituation);
         Assert.Equal(SituationalShotTotals.None, skater.OnIce);
         Assert.Null(goalie.SavePercentage);
         Assert.Null(goalie.GoalsAgainstAverage);
@@ -74,6 +76,10 @@ public sealed class SeasonStatisticsTests
         Assert.Equal(0, scorer.Assists);
         Assert.Equal(2, scorer.PlusMinus);
         Assert.Equal(new TimeSpan(0, 37, 1), scorer.TimeOnIce);
+        Assert.Equal(
+            new SituationalTimeOnIce(new TimeSpan(0, 30, 1), TimeSpan.FromMinutes(4), TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(1)),
+            scorer.TimeOnIceBySituation);
+        Assert.Equal(scorer.TimeOnIce, scorer.TimeOnIceBySituation.All);
         Assert.Equal(10, scorer.Shots);
         Assert.Equal(18, scorer.ShotAttempts);
         Assert.Equal(6, scorer.Hits);
@@ -105,6 +111,11 @@ public sealed class SeasonStatisticsTests
 
         // 37:01 over two games is 18:30.5, rounded up to the whole second.
         Assert.Equal(new TimeSpan(0, 18, 31), scorer.TimeOnIcePerGame);
+
+        // Five-on-five is 30:01 over two games, 15:00.5 rounded up; the other situations divide evenly.
+        Assert.Equal(
+            new SituationalTimeOnIce(new TimeSpan(0, 15, 1), TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30)),
+            scorer.TimeOnIceBySituationPerGame);
         Assert.Equal(20 / 32.0, scorer.OnIce.FiveOnFive.CorsiPercentage!.Value, precision: 10);
         Assert.Equal(0.8 / 1.8, scorer.OnIce.FiveOnFive.ExpectedGoalsPercentage!.Value, precision: 10);
         Assert.Null(scorer.OnIce.FiveOnFive.GoalsPercentage);
@@ -205,7 +216,9 @@ public sealed class SeasonStatisticsTests
                 Skater(
                     Scorer, 2, shots: 5, shotAttempts: 9, expectedGoals: 0.9, plusMinus: 1, blockedShots: 1,
                     faceoffsWon: 7, faceoffsLost: 3, penaltyMinutes: 2, powerPlayGoals: 1, shorthandedGoals: 1,
-                    hits: 3, takeaways: 2, giveaways: 1, timeOnIce: scorerTimeOnIce, onIce: ScorerOnIce),
+                    hits: 3, takeaways: 2, giveaways: 1, timeOnIce: scorerTimeOnIce, onIce: ScorerOnIce,
+                    timeOnIceBySituation: new(
+                        scorerTimeOnIce - TimeSpan.FromSeconds(210), TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30))),
                 Skater(_first.Lineup.ForwardLines[0].LeftWing.Id, 0, 2, shots: 0, shotAttempts: 8, powerPlayAssists: 1, shorthandedAssists: 1),
             ],
             Goalie(FirstGoalie, 6, 0, 0.5),

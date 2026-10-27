@@ -226,6 +226,37 @@ public sealed class InjuredPlayerTests
         Assert.Contains(snapshot.League.Teams.SelectMany(team => team.Roster), player => !player.CanPlay);
     }
 
+    [Fact]
+    public void SnapshotsCarryTheRatingPointsAPlayerLosesWhilePlayingThroughAnInjury()
+    {
+        var manager = new GameManager();
+        var snapshot = StartAtOpeningDay(manager);
+        Assert.All(snapshot.League.Teams.SelectMany(team => team.Roster), player => Assert.Empty(player.RatingReductions));
+
+        PlayerSnapshot? playingHurt = null;
+        for (var day = 0; day < MaximumDays && playingHurt is null; day++)
+        {
+            snapshot = manager.AdvanceDayReplacingInjured();
+            playingHurt = snapshot.League.Teams.SelectMany(team => team.Roster)
+                .FirstOrDefault(player => player.Injuries.Count > 0 && player.CanPlay);
+        }
+
+        Assert.NotNull(playingHurt);
+        var expected = new Dictionary<Rating, int>();
+        foreach (var injury in playingHurt.Injuries)
+        {
+            foreach (var (rating, points) in InjuryCatalogue.For(injury.Type).RatingReductions)
+            {
+                expected[rating] = expected.GetValueOrDefault(rating) + points;
+            }
+        }
+
+        Assert.NotEmpty(expected);
+        Assert.Equal(expected.OrderBy(pair => pair.Key), playingHurt.RatingReductions.OrderBy(pair => pair.Key));
+        Assert.All(snapshot.League.Teams.SelectMany(team => team.Roster).Where(player => player.Injuries.Count == 0), player =>
+            Assert.Empty(player.RatingReductions));
+    }
+
     private static (GameSnapshot Before, UnavailablePlayersException Rejection) AdvanceUntilRejected(GameManager manager)
     {
         for (var day = 0; day < MaximumDays; day++)

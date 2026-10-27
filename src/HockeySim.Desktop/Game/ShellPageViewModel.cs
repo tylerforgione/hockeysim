@@ -17,6 +17,12 @@ public abstract class ShellPageViewModel : ObservableObject
     public virtual object? Banner => null;
 
     /// <summary>
+    /// Gets the tabs shown in place of the current section's pages, such as a player's profile
+    /// tabs, or null to show the section's.
+    /// </summary>
+    public virtual IReadOnlyList<IPageTab>? Tabs => null;
+
+    /// <summary>
     /// Re-renders the page from the session's latest snapshot.
     /// </summary>
     public abstract void Refresh();
