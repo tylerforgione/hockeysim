@@ -29,7 +29,9 @@ version in `GameSaveFile`.
 
 | File | Covers |
 | --- | --- |
-| `Management.Tests/SaveAndLoadTests.cs` | Round trips, continued play matching uninterrupted play, every kind of invalid save |
+| `Management.Tests/SaveAndLoadTests.cs` | Round trips, continued play matching uninterrupted play |
+| `Management.Tests/InvalidSaveTests.cs` | Every kind of invalid save, each leaving the active game unchanged |
+| `Management.Tests/FullSeasonTests.cs` | Saving and loading a completed season, and rejecting one saved as continuing past its end |
 | `Management.Tests/SaveNameTests.cs` | Accepted names, case-insensitivity |
 | `Infrastructure.Tests/GameSaveFileTests.cs` | Real files: header, versions, damaged files, failed writes |
 | `Infrastructure.Tests/GameSaveDirectoryTests.cs` | Listing and finding named saves |

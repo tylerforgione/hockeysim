@@ -2,9 +2,11 @@ using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 using HockeySim.Management.GameManagement.Snapshots;
 using HockeySim.Management.Inbox;
+using HockeySim.Management.Saves;
 
 using Xunit;
 
+using static HockeySim.Management.Tests.SaveTestData;
 using static HockeySim.Management.Tests.SeasonAdvancementTests;
 
 namespace HockeySim.Management.Tests;
@@ -376,6 +378,33 @@ public sealed class FullSeasonTests(FullSeasonTests.CompletedSeason completed)
         Assert.Equal(before.Season.CurrentDate, after.Season.CurrentDate);
         Assert.Equal(before.RandomState, after.RandomState);
         Assert.Equal(Fingerprint(before), Fingerprint(after));
+    }
+
+    [Fact]
+    public void ACompletedSeasonLoadsAsSavedAndStillCannotAdvance()
+    {
+        var saved = completed.Manager.GetSnapshot();
+        var store = new MemorySaveStore();
+        completed.Manager.SaveGame(store);
+        var loadedManager = new GameManager();
+        var loaded = loadedManager.LoadGame(store);
+
+        Assert.Equal(Describe(saved), Describe(loaded));
+        Assert.Equal(1344, loaded.Season.Results.Count);
+        Assert.NotNull(loaded.Season.Playoffs!.ChampionId);
+        Assert.Throws<InvalidOperationException>(loadedManager.AdvanceDay);
+    }
+
+    [Fact]
+    public void ACompletedSeasonCannotBeSavedAsContinuingPastItsEnd()
+    {
+        var store = new MemorySaveStore();
+        completed.Manager.SaveGame(store);
+        var pastTheEnd = store.Saved! with { CurrentDate = store.Saved.CurrentDate.AddDays(1) };
+
+        var exception = Assert.Throws<InvalidGameSaveException>(
+            () => new GameManager().LoadGame(new MemorySaveStore(pastTheEnd)));
+        Assert.Contains("after the end of the season", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

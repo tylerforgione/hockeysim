@@ -456,11 +456,14 @@ public sealed class MainWindowViewTests
         Assert.DoesNotContain(window.GetVisualDescendants(), visual => visual is PlayerProfilePageView);
         Click(Named<Button>(rosterView, "ShowAllPlayersButton"));
         Click(Named<Button>(rosterView, "ShowAdvancedButton"));
-        rosterModel.SelectPlayer(rosterModel.Skaters[0].Player.Id);
+        // New games draw a fresh seed, so the first skater may be injured; open a healthy one.
+        var healthy = rosterModel.Skaters.First(row => !row.HasInjury);
+        rosterModel.SelectPlayer(healthy.Player.Id);
         Dispatcher.UIThread.RunJobs();
 
         // Double-clicking a row opens that player's profile, on the overview.
-        var skaterRow = Named<SkaterTableView>(rosterView, "SkaterTable").GetVisualDescendants().OfType<ListBoxItem>().First(item => item.IsEffectivelyVisible);
+        var skaterRow = Named<SkaterTableView>(rosterView, "SkaterTable").GetVisualDescendants().OfType<ListBoxItem>()
+            .First(item => item.IsEffectivelyVisible && item.DataContext == healthy);
         var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, isPrimary: true);
         var released = new PointerReleasedEventArgs(
             skaterRow, pointer, window, new Point(5, 5), 0, new PointerPointProperties(), KeyModifiers.None, MouseButton.Left);
@@ -469,7 +472,7 @@ public sealed class MainWindowViewTests
 
         var profileView = Single<PlayerProfilePageView>(window);
         var profile = Assert.IsType<PlayerProfilePageViewModel>(profileView.DataContext);
-        Assert.Equal(rosterModel.Skaters[0].Player.Id, profile.Id);
+        Assert.Equal(healthy.Player.Id, profile.Id);
         Assert.Equal(PlayerProfileTab.Overview, profile.Tab);
         Assert.True(profileView.Bounds.Width > 600);
         Assert.True(profileView.Bounds.Height > 300);
