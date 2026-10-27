@@ -17,6 +17,7 @@ public sealed class GameSnapshot
         ScheduleSnapshot schedule,
         SeasonSnapshot season,
         TeamId managedTeamId,
+        string managerName,
         IReadOnlyList<PlayerId> playersToReplace,
         RandomState randomState,
         IReadOnlyList<InboxMessageSnapshot> inbox)
@@ -25,6 +26,7 @@ public sealed class GameSnapshot
         Schedule = schedule;
         Season = season;
         ManagedTeamId = managedTeamId;
+        ManagerName = managerName;
         _playersToReplace = new ReadOnlyCollection<PlayerId>(playersToReplace.ToList());
         RandomState = randomState;
         _inbox = new ReadOnlyCollection<InboxMessageSnapshot>(inbox.ToList());
@@ -37,6 +39,9 @@ public sealed class GameSnapshot
     public SeasonSnapshot Season { get; }
 
     public TeamId ManagedTeamId { get; }
+
+    /// <summary>The name the user manages under.</summary>
+    public string ManagerName { get; }
 
     /// <summary>
     /// Gets the managed team's dressed players who cannot play today, in lineup order. The day
@@ -57,6 +62,7 @@ public sealed class GameSnapshot
     internal static GameSnapshot Create(
         Season season,
         TeamId managedTeamId,
+        string managerName,
         IReadOnlyList<PlayerId> playersToReplace,
         RandomState randomState,
         InboxMessages inbox) =>
@@ -65,6 +71,7 @@ public sealed class GameSnapshot
             ScheduleSnapshot.Create(season),
             SeasonSnapshot.Create(season),
             managedTeamId,
+            managerName,
             playersToReplace,
             randomState,
             inbox.Messages.Select(InboxMessageSnapshot.Create).ToList());

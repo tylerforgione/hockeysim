@@ -25,6 +25,7 @@ namespace HockeySim.Management.Saves;
 public sealed record GameSave(
     int SeasonYear,
     TeamId ManagedTeamId,
+    string ManagerName,
     RandomState RandomState,
     IReadOnlyList<SavedConference> Conferences,
     IReadOnlyList<SavedScheduledMatch> PreseasonSchedule,

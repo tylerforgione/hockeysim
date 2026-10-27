@@ -25,6 +25,7 @@ public sealed class GameManager
     private Season? _season;
     private InboxMessages _inbox = new();
     private TeamId _managedTeamId;
+    private string _managerName = NewGameCommand.DefaultManagerName;
     private RandomState _randomState;
     private bool _isAdvancing;
 
@@ -48,10 +49,18 @@ public sealed class GameManager
                         division.Name,
                         division.TeamNames)))));
 
+    /// <summary>
+    /// Describes the league <see cref="StartNewGame"/> would generate for the same season year
+    /// and random state. It changes nothing: any current game is left as it is.
+    /// </summary>
+    public NewGamePreviewSnapshot PreviewNewGame(int seasonYear, RandomState randomState) =>
+        NewGamePreviewSnapshot.Create(LeagueGenerator.Create(seasonYear, new ControlledRandom(randomState)));
+
     public GameSnapshot StartNewGame(NewGameCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentException.ThrowIfNullOrWhiteSpace(command.ManagedTeamName);
+        var managerName = ValidateManagerName(command);
 
         lock (_gate)
         {
@@ -76,6 +85,7 @@ public sealed class GameManager
 
             _season = new Season(league, preseason, schedule);
             _managedTeamId = managedTeam.Id;
+            _managerName = managerName;
             _randomState = random.State;
             _inbox = inbox;
             return CreateSnapshot();
@@ -290,7 +300,7 @@ public sealed class GameManager
         lock (_gate)
         {
             EnsureNotAdvancing();
-            save = GameSaveCapture.Create(GetSeason(), _managedTeamId, _randomState, _inbox);
+            save = GameSaveCapture.Create(GetSeason(), _managedTeamId, _managerName, _randomState, _inbox);
         }
 
         // The save is a detached copy, so writing it does not hold up other commands.
@@ -321,6 +331,7 @@ public sealed class GameManager
 
             _season = restored.Season;
             _managedTeamId = restored.ManagedTeamId;
+            _managerName = restored.ManagerName;
             _randomState = restored.RandomState;
             _inbox = restored.Inbox;
             return CreateSnapshot();
@@ -394,12 +405,16 @@ public sealed class GameManager
         return playsToday ? MatchDayLineup.UnavailablePlayers(GetManagedTeam(), season) : [];
     }
 
+    private static string ValidateManagerName(NewGameCommand command) =>
+        NewGameCommand.NormalizeManagerName(command.ManagerName, nameof(command));
+
     private GameSnapshot CreateSnapshot()
     {
         var season = GetSeason();
         return GameSnapshot.Create(
             season,
             _managedTeamId,
+            _managerName,
             ManagedPlayersToReplace(season).Select(player => player.Id).ToList(),
             _randomState,
             _inbox);

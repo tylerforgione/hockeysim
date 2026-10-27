@@ -1,5 +1,6 @@
 using HockeySim.Domain;
 using HockeySim.Management.Inbox;
+using HockeySim.Management.NewGame;
 using HockeySim.Simulation.Randomness;
 
 namespace HockeySim.Management.Saves;
@@ -7,7 +8,7 @@ namespace HockeySim.Management.Saves;
 /// <summary>
 /// A game rebuilt from a save, ready to replace the active game.
 /// </summary>
-internal sealed record RestoredGame(Season Season, TeamId ManagedTeamId, RandomState RandomState, InboxMessages Inbox);
+internal sealed record RestoredGame(Season Season, TeamId ManagedTeamId, string ManagerName, RandomState RandomState, InboxMessages Inbox);
 
 /// <summary>
 /// Rebuilds a game from save data through the same Domain operations that built it, so a loaded
@@ -27,6 +28,7 @@ internal static class GameSaveRestorer
 
         try
         {
+            var managerName = NewGameCommand.NormalizeManagerName(save.ManagerName, nameof(save.ManagerName));
             var league = RestoreLeague(save);
             if (league.Teams.All(team => team.Id != save.ManagedTeamId))
             {
@@ -39,7 +41,7 @@ internal static class GameSaveRestorer
                 RestoreSchedule(save.Schedule, "schedule"));
             ReplayLeagueDays(season, save);
 
-            return new RestoredGame(season, save.ManagedTeamId, save.RandomState, RestoreInbox(save));
+            return new RestoredGame(season, save.ManagedTeamId, managerName, save.RandomState, RestoreInbox(save));
         }
         catch (ArgumentException exception)
         {

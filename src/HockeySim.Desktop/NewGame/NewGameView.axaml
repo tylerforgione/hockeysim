@@ -11,19 +11,40 @@
             BorderBrush="{DynamicResource TeamSecondaryBrush}"
             BorderThickness="0,0,0,3"
             Height="56"
-            Padding="12,0">
-      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
-        <Button Classes="chrome"
-                Content="‹  Back"
-                VerticalAlignment="Center"
-                Command="{Binding BackCommand}" />
-        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-          <TextBlock Text="New Game"
-                     Foreground="{DynamicResource OnTeamPrimaryBrush}"
-                     FontSize="16"
-                     FontWeight="Bold" />
-        </StackPanel>
-      </Grid>
+            Padding="16,0">
+      <TextBlock Text="New Game"
+                 Foreground="{DynamicResource OnTeamPrimaryBrush}"
+                 VerticalAlignment="Center"
+                 FontSize="16"
+                 FontWeight="Bold" />
+    </Border>
+
+    <!-- The steps, left to right; the current one is marked and finished ones show a tick. -->
+    <Border DockPanel.Dock="Top" Classes="tab-strip" Height="40" Padding="12,0">
+      <ItemsControl x:Name="StepsList" ItemsSource="{Binding Steps}" VerticalAlignment="Center">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="2" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="viewModels:NewGameStepViewModel">
+            <Button Classes="page-tab"
+                    Classes.active="{Binding IsCurrent}"
+                    Height="32"
+                    Padding="16,0"
+                    Command="{Binding OpenCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding Marker}"
+                           Classes.success="{Binding IsDone}"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
     </Border>
 
     <Border DockPanel.Dock="Bottom"
@@ -31,111 +52,343 @@
             BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="0,1,0,0"
             Padding="16,10">
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-        <TextBlock Classes="error"
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+        <Button x:Name="CancelButton"
+                Classes="secondary"
+                Padding="20,8"
+                Content="Cancel"
+                Command="{Binding CancelCommand}" />
+        <TextBlock Grid.Column="1"
+                   Classes="error"
                    Text="{Binding ErrorMessage}"
                    IsVisible="{Binding HasError}"
                    TextWrapping="Wrap"
                    VerticalAlignment="Center" />
-        <Button x:Name="CreateGameButton"
-                Grid.Column="1"
-                Classes="primary"
-                Padding="24,8"
-                Content="Start Career"
-                Command="{Binding CreateGameCommand}" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+          <Button x:Name="BackButton"
+                  Classes="secondary"
+                  Padding="20,8"
+                  Content="Back"
+                  Command="{Binding BackCommand}" />
+          <Button x:Name="NextButton"
+                  Classes="primary"
+                  Padding="24,8"
+                  Content="Next"
+                  IsVisible="{Binding IsNextVisible}"
+                  Command="{Binding NextCommand}" />
+          <Button x:Name="StartGameButton"
+                  Padding="24,8"
+                  Content="Start game"
+                  IsVisible="{Binding IsManagerStep}"
+                  Command="{Binding StartGameCommand}"
+                  Background="{Binding SelectedTeam.PrimaryColour, Converter={x:Static theme:ColourBrushConverter.Instance}}"
+                  Foreground="{Binding SelectedTeam.PrimaryColour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}"
+                  BorderBrush="{Binding SelectedTeam.SecondaryColour, Converter={x:Static theme:ColourBrushConverter.Instance}}"
+                  BorderThickness="2"
+                  FontWeight="Bold" />
+        </StackPanel>
       </Grid>
     </Border>
 
-    <Grid Margin="12" ColumnDefinitions="300,*" ColumnSpacing="6">
+    <!-- League. -->
+    <Grid x:Name="LeagueStep"
+          Margin="12"
+          ColumnDefinitions="*,*"
+          ColumnSpacing="6"
+          IsVisible="{Binding IsLeagueStep}">
       <Border Classes="panel" VerticalAlignment="Top">
         <StackPanel>
           <Border Classes="panel-header">
-            <TextBlock Classes="panel-title" Text="CAREER" />
+            <TextBlock Classes="panel-title" Text="LEAGUE" />
+          </Border>
+          <StackPanel Margin="12" Spacing="8">
+            <Border Background="{DynamicResource SelectedBrush}"
+                    BorderBrush="{DynamicResource TeamSecondaryBrush}"
+                    BorderThickness="2,0,0,0"
+                    Padding="12,10">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Fictional league" FontWeight="SemiBold" />
+                <TextBlock Classes="caption" Text="{Binding LeagueSummary}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Background="{DynamicResource SunkenBrush}"
+                    BorderBrush="Transparent"
+                    BorderThickness="2,0,0,0"
+                    Padding="12,10"
+                    IsEnabled="False">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Real players" FontWeight="SemiBold" Foreground="{DynamicResource DisabledTextBrush}" />
+                <TextBlock Grid.Column="1" Classes="caption" Text="Not available yet" />
+              </Grid>
+            </Border>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Column="1" Classes="panel" VerticalAlignment="Top">
+        <StackPanel>
+          <Border Classes="panel-header">
+            <TextBlock Classes="panel-title" Text="SETTINGS" />
           </Border>
           <StackPanel Margin="12" Spacing="14">
             <StackPanel Spacing="4">
-              <TextBlock Classes="label" Text="GAME NAME" />
-              <TextBox x:Name="GameNameTextBox"
-                       Text="{Binding GameName}"
-                       MaxLength="{Binding MaximumNameLength}"
-                       PlaceholderText="e.g. Halifax Dynasty" />
+              <TextBlock Classes="label" Text="FIRST SEASON" />
+              <TextBlock Text="{Binding SeasonLabel}" FontWeight="SemiBold" />
             </StackPanel>
-
-            <StackPanel Spacing="6">
-              <TextBlock Classes="label" Text="CLUB" />
-              <Border Background="{DynamicResource SunkenBrush}"
-                      BorderBrush="{DynamicResource BorderBrush}"
-                      BorderThickness="1"
-                      Padding="10">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                  <Border Classes="badge" Width="40" Height="40">
-                    <TextBlock Text="{Binding SelectedTeamInitials}" FontSize="13" />
-                  </Border>
-                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
-                    <TextBlock Text="{Binding SelectedTeamDisplayName}"
-                               FontWeight="SemiBold"
-                               Classes.muted="{Binding !HasSelectedTeam}"
-                               TextTrimming="CharacterEllipsis" />
-                    <TextBlock Classes="caption" Text="{Binding SelectedTeamDivision}" TextWrapping="Wrap" />
-                  </StackPanel>
-                </Grid>
-              </Border>
-            </StackPanel>
-
             <StackPanel Spacing="4">
-              <TextBlock Classes="label" Text="LEAGUE" />
-              <TextBlock Text="Fictional league" FontWeight="SemiBold" />
-              <TextBlock Classes="caption" Text="{Binding LeagueSummary}" />
-              <TextBlock Classes="caption" Text="{Binding SeasonLabel}" />
+              <TextBlock Classes="label" Text="WORLD SEED" />
+              <TextBox x:Name="WorldSeedTextBox"
+                       Text="{Binding WorldSeedText}"
+                       PlaceholderText="Random" />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- Team. -->
+    <Grid x:Name="TeamStep"
+          Margin="12"
+          ColumnDefinitions="*,400"
+          ColumnSpacing="6"
+          IsVisible="{Binding IsTeamStep}">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl x:Name="ConferencesList" ItemsSource="{Binding Conferences}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Columns="2" ColumnSpacing="6" VerticalAlignment="Top" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="viewModels:ConferenceOptionViewModel">
+              <Border Classes="panel">
+                <StackPanel>
+                  <Border Classes="panel-header">
+                    <TextBlock Classes="panel-title" Text="{Binding Name, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
+                  </Border>
+                  <ItemsControl ItemsSource="{Binding Divisions}" Margin="0,0,0,8">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="viewModels:DivisionOptionViewModel">
+                        <StackPanel>
+                          <Grid ColumnDefinitions="*,36,96" Margin="12,10,12,4">
+                            <TextBlock Classes="label" Text="{Binding Name}" />
+                            <TextBlock Grid.Column="1" Classes="label" Text="OVR" TextAlignment="Right" />
+                            <TextBlock Grid.Column="2" Classes="label" Text="OUTLOOK" Margin="12,0,0,0" />
+                          </Grid>
+                          <ItemsControl ItemsSource="{Binding Teams}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="viewModels:TeamOptionViewModel">
+                                <Button Classes="list-item"
+                                        Classes.selected="{Binding IsSelected}"
+                                        Height="28"
+                                        Padding="12,0"
+                                        Command="{Binding SelectCommand}">
+                                  <Grid ColumnDefinitions="Auto,*,36,96" VerticalAlignment="Center">
+                                    <Border Classes="team-swatch"
+                                            Width="16"
+                                            Height="16"
+                                            BorderThickness="3"
+                                            Margin="0,0,8,0"
+                                            Background="{Binding Colours.Primary, Converter={x:Static theme:ColourBrushConverter.Instance}}"
+                                            BorderBrush="{Binding Colours.Secondary, Converter={x:Static theme:ColourBrushConverter.Instance}}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2"
+                                               Classes="rating"
+                                               Text="{Binding Overall}"
+                                               TextAlignment="Right"
+                                               Foreground="{Binding Overall, Converter={StaticResource RatingBrush}}"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="3"
+                                               Classes="caption"
+                                               Text="{Binding OutlookText}"
+                                               Margin="12,0,0,0"
+                                               TextTrimming="CharacterEllipsis"
+                                               VerticalAlignment="Center" />
+                                  </Grid>
+                                </Button>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <Border x:Name="TeamPreviewPanel" Grid.Column="1" Classes="panel" VerticalAlignment="Top">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Classes="panel-header">
+            <TextBlock Classes="panel-title" Text="PREVIEW" />
+          </Border>
+          <TextBlock x:Name="NoTeamText"
+                     Classes="caption"
+                     Margin="12,10"
+                     Text="No team selected"
+                     IsVisible="{Binding !HasSelectedTeam}" />
+          <ContentControl x:Name="TeamPreviewContent"
+                          Content="{Binding SelectedTeam}"
+                          IsVisible="{Binding HasSelectedTeam}">
+            <ContentControl.ContentTemplate>
+              <DataTemplate x:DataType="viewModels:TeamPreviewViewModel">
+                <StackPanel>
+                  <Border Background="{Binding PrimaryColour, Converter={x:Static theme:ColourBrushConverter.Instance}}"
+                          BorderBrush="{Binding SecondaryColour, Converter={x:Static theme:ColourBrushConverter.Instance}}"
+                          BorderThickness="0,0,0,3"
+                          Padding="14,12">
+                    <StackPanel Spacing="12">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Border Classes="crest"
+                                Background="{Binding SecondaryColour, Converter={x:Static theme:ColourBrushConverter.Instance}}">
+                          <TextBlock Text="{Binding Initials}"
+                                     Foreground="{Binding SecondaryColour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                          <TextBlock Text="{Binding Name}"
+                                     Classes="heading"
+                                     TextWrapping="Wrap"
+                                     Foreground="{Binding PrimaryColour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                          <TextBlock Text="{Binding Location}"
+                                     TextWrapping="Wrap"
+                                     Foreground="{Binding PrimaryColour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                        </StackPanel>
+                      </Grid>
+                      <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                        <Border Background="{Binding SecondaryColour, Converter={x:Static theme:ColourBrushConverter.Instance}}" Padding="10,6">
+                          <StackPanel>
+                            <TextBlock Classes="label"
+                                       Text="OVR"
+                                       Foreground="{Binding SecondaryColour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                            <TextBlock Classes="stat"
+                                       Text="{Binding Overall}"
+                                       Foreground="{Binding SecondaryColour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                          </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Background="{Binding SecondaryColour, Converter={x:Static theme:ColourBrushConverter.Instance}}" Padding="10,6">
+                          <StackPanel>
+                            <TextBlock Classes="label"
+                                       Text="OUTLOOK"
+                                       Foreground="{Binding SecondaryColour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                            <TextBlock Text="{Binding OutlookText}"
+                                       FontWeight="Bold"
+                                       Margin="0,8,0,0"
+                                       TextWrapping="Wrap"
+                                       Foreground="{Binding SecondaryColour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                          </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Background="{Binding SecondaryColour, Converter={x:Static theme:ColourBrushConverter.Instance}}" Padding="10,6">
+                          <StackPanel>
+                            <TextBlock Classes="label"
+                                       Text="AVG AGE"
+                                       Foreground="{Binding SecondaryColour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                            <TextBlock Classes="stat"
+                                       Text="{Binding AverageAgeText}"
+                                       Foreground="{Binding SecondaryColour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                          </StackPanel>
+                        </Border>
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Classes="table-header">
+                    <TextBlock Text="KEY PLAYERS" />
+                  </Border>
+                  <ItemsControl x:Name="KeyPlayersList" ItemsSource="{Binding KeyPlayers}" Margin="0,4">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="viewModels:KeyPlayerViewModel">
+                        <Grid ColumnDefinitions="24,36,*,32" Margin="12,3">
+                          <TextBlock Classes="muted" Text="{Binding Position}" />
+                          <TextBlock Grid.Column="1" Classes="muted" Text="{Binding Number}" />
+                          <TextBlock Grid.Column="2" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Grid.Column="3"
+                                     Classes="rating"
+                                     Text="{Binding Overall}"
+                                     TextAlignment="Right"
+                                     Foreground="{Binding Overall, Converter={StaticResource RatingBrush}}" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <Border Classes="table-header">
+                    <TextBlock Text="RATINGS BY POSITION" />
+                  </Border>
+                  <ItemsControl x:Name="RatingsList" ItemsSource="{Binding Ratings}" Margin="0,4,0,8">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="viewModels:RatingBarViewModel">
+                        <Grid ColumnDefinitions="72,*,32" Margin="12,4">
+                          <TextBlock Classes="muted" Text="{Binding Label}" VerticalAlignment="Center" />
+                          <ProgressBar Grid.Column="1"
+                                       Classes="rating-bar"
+                                       Margin="0,0,10,0"
+                                       Value="{Binding Value}"
+                                       Foreground="{Binding Value, Converter={StaticResource RatingBrush}}" />
+                          <TextBlock Grid.Column="2"
+                                     Classes="rating"
+                                     Text="{Binding Value}"
+                                     TextAlignment="Right"
+                                     Foreground="{Binding Value, Converter={StaticResource RatingBrush}}" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </DataTemplate>
+            </ContentControl.ContentTemplate>
+          </ContentControl>
+        </DockPanel>
+      </Border>
+    </Grid>
+
+    <!-- Manager. -->
+    <Grid x:Name="ManagerStep"
+          Margin="12"
+          ColumnDefinitions="*,*"
+          ColumnSpacing="6"
+          IsVisible="{Binding IsManagerStep}">
+      <Border Classes="panel" VerticalAlignment="Top">
+        <StackPanel>
+          <Border Classes="panel-header">
+            <TextBlock Classes="panel-title" Text="MANAGER" />
+          </Border>
+          <StackPanel Margin="12" Spacing="14">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="label" Text="YOUR NAME" />
+              <TextBox x:Name="ManagerNameTextBox"
+                       Text="{Binding ManagerName}"
+                       MaxLength="{Binding MaximumManagerNameLength}" />
+            </StackPanel>
+            <StackPanel Spacing="4">
+              <TextBlock Classes="label" Text="SAVE NAME" />
+              <TextBox x:Name="SaveNameTextBox"
+                       Text="{Binding SaveName}"
+                       MaxLength="{Binding MaximumSaveNameLength}" />
             </StackPanel>
           </StackPanel>
         </StackPanel>
       </Border>
 
-      <ItemsControl x:Name="ConferencesList" Grid.Column="1" ItemsSource="{Binding Conferences}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <UniformGrid Columns="2" ColumnSpacing="6" VerticalAlignment="Top" />
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="viewModels:ConferenceOptionViewModel">
-            <Border Classes="panel">
-              <StackPanel>
-                <Border Classes="panel-header">
-                  <TextBlock Classes="panel-title" Text="{Binding Name, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
-                </Border>
-                <ItemsControl ItemsSource="{Binding Divisions}" Margin="0,4,0,8">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <UniformGrid Columns="2" />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="viewModels:DivisionOptionViewModel">
-                      <StackPanel>
-                        <TextBlock Classes="label" Text="{Binding Name}" Margin="12,8,12,4" />
-                        <ItemsControl ItemsSource="{Binding Teams}">
-                          <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="viewModels:TeamOptionViewModel">
-                              <Button Classes="list-item"
-                                      Classes.selected="{Binding IsSelected}"
-                                      Height="30"
-                                      Padding="12,0"
-                                      Content="{Binding Name}"
-                                      Command="{Binding SelectCommand}" />
-                            </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                      </StackPanel>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+      <Border Grid.Column="1" Classes="panel" VerticalAlignment="Top">
+        <StackPanel>
+          <Border Classes="panel-header">
+            <TextBlock Classes="panel-title" Text="SUMMARY" />
+          </Border>
+          <Grid Margin="12" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+            <TextBlock Classes="label" Text="LEAGUE" />
+            <TextBlock Grid.Column="1" Text="{Binding SummaryLeague}" />
+            <TextBlock Grid.Row="1" Classes="label" Text="WORLD SEED" />
+            <TextBlock x:Name="SummarySeedText" Grid.Row="1" Grid.Column="1" Text="{Binding SummarySeed}" />
+            <TextBlock Grid.Row="2" Classes="label" Text="TEAM" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SummaryTeam}" />
+            <TextBlock Grid.Row="3" Classes="label" Text="MANAGER" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SummaryManager}" />
+          </Grid>
+        </StackPanel>
+      </Border>
     </Grid>
   </DockPanel>
 </UserControl>
