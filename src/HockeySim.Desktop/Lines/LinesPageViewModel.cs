@@ -15,6 +15,7 @@ namespace HockeySim.Desktop.Lines;
 public sealed partial class LinesPageViewModel : ShellPageViewModel
 {
     private readonly GameSession _session;
+    private readonly Action<PlayerId>? _openPlayer;
     private LineupEditorViewModel _managedLineup;
 
     [ObservableProperty]
@@ -40,11 +41,13 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel
     [ObservableProperty]
     private string? _statusMessage;
 
-    public LinesPageViewModel(GameSession session)
+    /// <param name="openPlayer">Opens a player's profile; without it the profile cannot be opened from here.</param>
+    public LinesPageViewModel(GameSession session, Action<PlayerId>? openPlayer = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
+        _openPlayer = openPlayer;
         Teams = TeamEntryViewModel.ForLeague(session.Snapshot);
         _selectedTeam = Teams.Single(team => team.IsManaged);
         _managedLineup = CreateManagedLineup();
@@ -95,6 +98,14 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel
     {
         Tab = tab;
     }
+
+    [RelayCommand(CanExecute = nameof(CanOpenPlayer))]
+    private void OpenPlayer(PlayerOptionViewModel player)
+    {
+        _openPlayer!(player.Id);
+    }
+
+    private bool CanOpenPlayer() => _openPlayer is not null;
 
     [RelayCommand(CanExecute = nameof(HasChanges))]
     private void Save()

@@ -376,6 +376,178 @@ public sealed class LinesPageViewModelTests
         Assert.False(lines.IsOtherTab);
     }
 
+    [Fact]
+    public void DroppingADressedPlayerOnAnotherDressedSlotSwapsThem()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+        var firstLeftWing = lines.Lineup.ForwardLines[0].LeftWing;
+        var fourthRightWing = lines.Lineup.ForwardLines[3].RightWing;
+        var dragged = firstLeftWing.SelectedPlayer!;
+        var displaced = fourthRightWing.SelectedPlayer;
+
+        lines.Lineup.BeginDrag(dragged);
+        var dropped = lines.Lineup.Drop(fourthRightWing);
+
+        Assert.True(dropped);
+        Assert.Equal(dragged, fourthRightWing.SelectedPlayer);
+        Assert.Equal(displaced, firstLeftWing.SelectedPlayer);
+        Assert.True(lines.HasChanges);
+        Assert.Null(lines.Lineup.DraggedPlayer);
+    }
+
+    [Fact]
+    public void DroppingAScratchedPlayerOnADressedSlotDressesThemWithTheReplacedPlayersUnitSlots()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+        var scratchedCentre = lines.Lineup.Scratches.Single(player => player.PositionAbbreviation == "C");
+        var centre = lines.Lineup.ForwardLines[0].Centre;
+        var replacedCentre = centre.SelectedPlayer!;
+        var replacedSlots = AllUnitSlots(lines.Lineup).Where(slot => slot.SelectedPlayer == replacedCentre).ToList();
+        Assert.NotEmpty(replacedSlots);
+
+        lines.Lineup.BeginDrag(scratchedCentre);
+        lines.Lineup.Drop(centre);
+
+        Assert.Equal(scratchedCentre, centre.SelectedPlayer);
+        Assert.All(replacedSlots, slot => Assert.Equal(scratchedCentre, slot.SelectedPlayer));
+        Assert.Contains(replacedCentre, lines.Lineup.Scratches);
+        Assert.DoesNotContain(scratchedCentre, lines.Lineup.Scratches);
+    }
+
+    [Fact]
+    public void DroppingWithinAUnitSwapsItsPlayers()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+        var unit = lines.Lineup.PowerPlay[0].Units[0];
+        var first = unit.Slots[0];
+        var last = unit.Slots[^1];
+        var firstPlayer = first.SelectedPlayer;
+        var lastPlayer = last.SelectedPlayer!;
+
+        lines.Lineup.BeginDrag(lastPlayer);
+        lines.Lineup.Drop(first);
+
+        Assert.Equal(lastPlayer, first.SelectedPlayer);
+        Assert.Equal(firstPlayer, last.SelectedPlayer);
+    }
+
+    [Fact]
+    public void DroppingOnAnExtraAttackerSwapsTheTwoChoices()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+        var first = lines.Lineup.ExtraAttackers[0];
+        var second = lines.Lineup.ExtraAttackers[1];
+        var firstPlayer = first.SelectedPlayer;
+        var secondPlayer = second.SelectedPlayer;
+
+        lines.Lineup.BeginDrag(secondPlayer!);
+        lines.Lineup.Drop(first);
+
+        Assert.Equal(secondPlayer, first.SelectedPlayer);
+        Assert.Equal(firstPlayer, second.SelectedPlayer);
+    }
+
+    [Fact]
+    public void GoalieSlotsAreOnlyTargetsForGoaliesAndSkaterSlotsOnlyForSkaters()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+        var lineup = lines.Lineup;
+        var skater = lineup.ForwardLines[0].Centre.SelectedPlayer!;
+        var scratchedGoalie = lineup.Scratches.Single(player => player.PositionAbbreviation == "G");
+
+        lineup.BeginDrag(skater);
+        Assert.False(lineup.CanDrop(lineup.StartingGoalie));
+        Assert.False(lineup.CanDrop(lineup.BackupGoalie));
+        Assert.True(lineup.CanDrop(lineup.ForwardLines[1].Centre));
+        Assert.False(lineup.Drop(lineup.StartingGoalie));
+        Assert.False(lines.HasChanges);
+
+        lineup.BeginDrag(scratchedGoalie);
+        Assert.True(lineup.CanDrop(lineup.StartingGoalie));
+        Assert.True(lineup.CanDrop(lineup.BackupGoalie));
+        Assert.False(lineup.CanDrop(lineup.ForwardLines[1].Centre));
+        Assert.All(AllUnitSlots(lineup), slot => Assert.False(lineup.CanDrop(slot)));
+        Assert.False(lineup.Drop(lineup.ForwardLines[1].Centre));
+        Assert.False(lines.HasChanges);
+
+        lineup.BeginDrag(scratchedGoalie);
+        Assert.True(lineup.Drop(lineup.StartingGoalie));
+        Assert.Equal(scratchedGoalie, lineup.StartingGoalie.SelectedPlayer);
+    }
+
+    [Fact]
+    public void DroppingEndsTheDrag()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+        var lineup = lines.Lineup;
+        var target = lineup.ForwardLines[1].Centre;
+
+        lineup.BeginDrag(lineup.ForwardLines[0].Centre.SelectedPlayer!);
+        lineup.Drop(target);
+
+        Assert.Null(lineup.DraggedPlayer);
+        Assert.False(lineup.CanDrop(lineup.ForwardLines[2].Centre));
+    }
+
+    [Fact]
+    public void DroppingAPlayerOnTheSlotTheyHoldDoesNothing()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+        var slot = lines.Lineup.ForwardLines[0].Centre;
+        var player = slot.SelectedPlayer!;
+
+        lines.Lineup.BeginDrag(player);
+        var dropped = lines.Lineup.Drop(slot);
+
+        Assert.False(dropped);
+        Assert.Equal(player, slot.SelectedPlayer);
+        Assert.False(lines.HasChanges);
+        Assert.Null(lines.Lineup.DraggedPlayer);
+    }
+
+    [Fact]
+    public void AnotherTeamsLineupIgnoresDrags()
+    {
+        var session = GameTestData.StartSession();
+        var lines = new LinesPageViewModel(session);
+        lines.SelectTeam(lines.Teams.First(team => !team.IsManaged).Id);
+        var lineup = lines.Lineup;
+        var first = lineup.ForwardLines[0].Centre;
+        var second = lineup.ForwardLines[1].Centre;
+        var firstPlayer = first.SelectedPlayer!;
+        var secondPlayer = second.SelectedPlayer;
+
+        lineup.BeginDrag(firstPlayer);
+
+        Assert.Null(lineup.DraggedPlayer);
+        Assert.False(lineup.CanDrop(second));
+        Assert.False(lineup.Drop(second));
+        Assert.Equal(firstPlayer, first.SelectedPlayer);
+        Assert.Equal(secondPlayer, second.SelectedPlayer);
+    }
+
+    [Fact]
+    public void OpenPlayerCommandOpensThePlayersProfile()
+    {
+        var session = GameTestData.StartSession();
+        PlayerId? opened = null;
+        var lines = new LinesPageViewModel(session, id => opened = id);
+        var player = lines.Lineup.Scratches[0];
+
+        Assert.True(lines.OpenPlayerCommand.CanExecute(player));
+        lines.OpenPlayerCommand.Execute(player);
+
+        Assert.Equal(player.Id, opened);
+    }
+
+    [Fact]
+    public void OpenPlayerCommandIsDisabledWithoutAProfileToOpen()
+    {
+        var lines = new LinesPageViewModel(GameTestData.StartSession());
+
+        Assert.False(lines.OpenPlayerCommand.CanExecute(lines.Lineup.Scratches[0]));
+    }
+
     private static IEnumerable<LineupSlotViewModel> AllUnitSlots(LineupEditorViewModel lineup) =>
         lineup.PowerPlay.Concat(lineup.PenaltyKill).Concat(lineup.OtherSituationUnits)
             .SelectMany(group => group.Units)

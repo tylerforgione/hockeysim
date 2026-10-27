@@ -14,4 +14,7 @@ public static class Icons
     public static Geometry Forward { get; } = Geometry.Parse("M6,3 L11,8 L6,13");
 
     public static Geometry Expand { get; } = Geometry.Parse("M4,6 L8,10 L12,6");
+
+    /// <summary>Two columns of three dots; render with round line caps.</summary>
+    public static Geometry Grip { get; } = Geometry.Parse("M6,4 V4.1 M10,4 V4.1 M6,8 V8.1 M10,8 V8.1 M6,12 V12.1 M10,12 V12.1");
 }

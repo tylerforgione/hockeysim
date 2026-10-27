@@ -21,6 +21,7 @@ view model together.
 | `Home/`, `Inbox/`, `Roster/`, `Lines/`, `TeamStatistics/`, `Injuries/`, `Teams/`, `Standings/`, `Playoffs/`, `Schedule/` | The shell's pages. `Teams/TeamsPageViewModel.cs` also holds `TeamEntryViewModel.ForLeague`, the team picker list the Teams, Lines, and Schedule pages share |
 | `Home/` | The home page: `HomePageViewModel` builds five self-contained panels, each a view and view model that takes the `GameSession` and only the shortcuts it needs and refreshes itself: `UpcomingGamesPanel…`, `StandingsPanel…` (scope held across refreshes), `TaleOfTheTapePanel…` (the managed team against its next opponent), `RecentResultsPanel…`, `TeamLeadersPanel…` (with the minimum-games choice). `HomeStatistics` picks the statistics set the tape and leaders share and finds its figures |
 | `Roster/` | The roster shared by the Roster and Teams pages: `TeamRosterView`/`TeamRosterViewModel` (player groups, column views, selection, the links to a player's profile), `SkaterTableView` and `GoalieTableView` (each table's four column views, double-clicking a row opening the profile through `RosterRowActivation`), `PlayerStripView`/`PlayerStripViewModel` (the selected player's strip), `PlayerRowViewModel` (one row) |
+| `Lines/` | The Lines page: `LinesPageViewModel` (team, tabs, save and revert, opening a profile), `LineupEditorViewModel` (one team's slots, swap rules, scratches, and the drag: `BeginDrag`, `CanDrop`, `Drop`, `EndDrag`), `LineupSlotViewModel` (one slot's choice and warnings), `PlayerOptionViewModel`, and `LineupDragDrop`, the in-page drag: a press on a grip, the ghost that follows the pointer, and the hit test that drops on a slot. The view's code-behind opens profiles from the name links |
 | `Players/` | The player profile and what it shows: `PlayerProfilePageView`/`PlayerProfilePageViewModel` (the shell page: tabs, statistic set, biography, usage, ratings, health), `PlayerProfileTab`, `PlayerBannerViewModel` (the banner, painted in the player's team colours), `PlayerGameLog` (the game log's rows), `RatingViewModels.cs`, `PlayerInjuryViewModel`; regular-season or playoff totals as displayed (`PlayerSeasonTotals`, chosen by `StatisticsSet`, which falls back to the regular season before the playoffs); and shared player and injury formatting (`PlayerDisplay`, `InjuryDisplay`) |
 | `Standings/StandingsTableBuilder.cs` | Builds the standings tables per scope from Management's rankings, for the Standings page and the home page's standings panel |
 | `Standings/TeamForm.cs`, `Standings/PlayoffStatusDisplay.cs` | A team's last ten games (and the points they earned) and streak (also on the banner), and the playoff-status letters and legend |
@@ -41,7 +42,7 @@ games, plus a headless Avalonia walkthrough.
 | --- | --- |
 | `MainWindowViewTests.cs` | Headless walkthrough of the menu bar, Continue's menu, and every page, team colours, the profile page and its tabs, saving, loading, closing |
 | `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup; sections, tabs, planned pages, the banner, and the status bar; browsing teams |
-| `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings |
+| `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings, dragging and dropping players, opening profiles |
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, the preseason labels, the schedule's phases and preseason results |
 | `MatchDetailViewModelTests.cs` | The box score for regulation, overtime, and shootout matches: periods, totals, records, the comparison, stars, goalies, and tabs |
 | `SimulateAheadTests.cs` | Continue's menu by phase, one refresh per run, Stop, a failure part-way, and the run summary for every stop reason |
@@ -106,6 +107,14 @@ extra-attacker slots never are), and
 each choice marks an injured player OUT or INJ. Handedness is not shown or
 warned about there; the roster and player profile show it. AI teams' lineups are
 shown as they dress today, with injured players already replaced.
+Every player's name, in a slot or among the scratches, opens their profile; only
+a slot's arrow opens its list, and other clubs' slots have no list. On the
+managed team's lineup, each slot and scratch also has a grip: dragging it carries
+the player's number and name with the pointer, and releasing over a slot is the
+same as choosing that player there (goalie slots take only goalies, skater slots
+only skaters). Releasing elsewhere or pressing Escape cancels. The drag is drawn
+by the page rather than the operating system, whose drag shows a file icon that
+Avalonia cannot replace.
 Choosing a player already in the same line set, unit, or
 extra-attacker pair swaps the two; dressing a scratched player hands them the
 replaced player's unit slots. Unsaved edits survive browsing other teams. Continue plays the

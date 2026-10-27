@@ -147,7 +147,7 @@ public sealed class MainWindowViewTests
         Assert.False(saveButton.IsEffectivelyEnabled);
 
         // Choose the scratched goalie as the starter through the rendered combo box.
-        var starterCombo = Assert.IsType<ComboBox>(linesView.FindControl<ComboBox>("StartingGoalieSelector"));
+        var starterCombo = Named<ContentControl>(linesView, "StartingGoalie").GetVisualDescendants().OfType<ComboBox>().Single();
         var scratchedGoalie = viewModel.Game!.Lines.Lineup.Scratches.Single(player => player.PositionAbbreviation == "G");
         starterCombo.SelectedItem = scratchedGoalie;
         Dispatcher.UIThread.RunJobs();
@@ -159,6 +159,42 @@ public sealed class MainWindowViewTests
         Assert.Equal(
             scratchedGoalie.Id,
             snapshot.League.Teams.Single(team => team.Id == snapshot.ManagedTeamId).Lineup.StartingGoalieId);
+        Assert.False(saveButton.IsEffectivelyEnabled);
+
+        // Dragging a player by the grip onto another slot swaps them, with a ghost following the pointer.
+        var forwardLines = Named<ItemsControl>(linesView, "ForwardLinesList");
+        var slotViews = forwardLines.GetVisualDescendants().OfType<StackPanel>().Where(panel => panel.Classes.Contains("drop-slot")).Take(2).ToList();
+        var fromSlot = Assert.IsType<LineupSlotViewModel>(slotViews[0].DataContext);
+        var toSlot = Assert.IsType<LineupSlotViewModel>(slotViews[1].DataContext);
+        var (fromPlayer, toPlayer) = (fromSlot.SelectedPlayer, toSlot.SelectedPlayer);
+        var ghost = Named<Border>(linesView, "DragGhost");
+        var gripCentre = CentreIn(window, slotViews[0].GetVisualDescendants().OfType<Border>().First(border => border.Classes.Contains("drag-handle")));
+        var rowLabelCentre = CentreIn(window, linesView.GetVisualDescendants().OfType<TextBlock>().First(text => text.Classes.Contains("slot-row-label")));
+
+        // Released over no slot, the drag changes nothing.
+        window.MouseDown(gripCentre, MouseButton.Left);
+        window.MouseMove(rowLabelCentre);
+        Assert.True(ghost.IsVisible);
+        Assert.Equal(fromPlayer!.ToString(), Named<TextBlock>(linesView, "DragGhostText").Text);
+        window.MouseUp(rowLabelCentre, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(ghost.IsVisible);
+        Assert.Null(viewModel.Game!.Lines.Lineup.DraggedPlayer);
+        Assert.Same(fromPlayer, fromSlot.SelectedPlayer);
+        Assert.Same(toPlayer, toSlot.SelectedPlayer);
+        Assert.False(saveButton.IsEffectivelyEnabled);
+
+        window.MouseDown(gripCentre, MouseButton.Left);
+        window.MouseMove(CentreIn(window, slotViews[1]));
+        Assert.True(ghost.IsVisible);
+        Assert.Same(fromPlayer, viewModel.Game!.Lines.Lineup.DraggedPlayer);
+        window.MouseUp(CentreIn(window, slotViews[1]), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(ghost.IsVisible);
+        Assert.Same(fromPlayer, toSlot.SelectedPlayer);
+        Assert.Same(toPlayer, fromSlot.SelectedPlayer);
+        Assert.True(saveButton.IsEffectivelyEnabled);
+        Click(viewModel.Game!.Lines.RevertCommand);
         Assert.False(saveButton.IsEffectivelyEnabled);
 
         // Each unit tab renders its units, with a choice for every slot.
@@ -176,10 +212,48 @@ public sealed class MainWindowViewTests
         linesTeamSelector.SelectedItem = viewModel.Game!.Lines.Teams.First(team => !team.IsManaged);
         Dispatcher.UIThread.RunJobs();
         Assert.False(saveButton.IsEffectivelyVisible);
-        Assert.All(otherUnits.GetVisualDescendants().OfType<ComboBox>(), combo => Assert.False(combo.IsEffectivelyEnabled));
+        Assert.All(otherUnits.GetVisualDescendants().OfType<ComboBox>(), combo => Assert.False(combo.IsEffectivelyVisible));
         linesTeamSelector.SelectedItem = viewModel.Game!.Lines.Teams.Single(team => team.IsManaged);
         Dispatcher.UIThread.RunJobs();
         Assert.True(saveButton.IsEffectivelyVisible);
+
+        // A slot's arrow opens its list without opening the player; its name opens the player instead.
+        var slotCombo = otherUnits.GetVisualDescendants().OfType<ComboBox>().First();
+        var slotPlayer = Assert.IsType<LineupSlotViewModel>(slotCombo.DataContext).SelectedPlayer!;
+        PointerClick(window, slotCombo.GetVisualDescendants().OfType<Border>().Single(border => border.Name == "DropDownArrow"));
+        Assert.True(slotCombo.IsDropDownOpen);
+        Assert.Empty(window.GetVisualDescendants().OfType<PlayerProfilePageView>());
+        slotCombo.IsDropDownOpen = false;
+        Dispatcher.UIThread.RunJobs();
+        PointerClick(window, slotCombo.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "PlayerLink"));
+        Assert.False(slotCombo.IsDropDownOpen);
+        Assert.Equal(slotPlayer.Id, Assert.IsType<PlayerProfilePageViewModel>(Single<PlayerProfilePageView>(window).DataContext).Id);
+
+        // A scratched player's grip only drags, so clicking it opens nothing; their name opens the profile.
+        AssertNavigationRenders<LinesPageView>(window, ShellPage.Lines);
+        linesView = Single<LinesPageView>(window);
+        var scratchesList = Named<ItemsControl>(linesView, "ScratchesList");
+        var scratchedPlayer = viewModel.Game!.Lines.Lineup.Scratches[0];
+        var scratchRow = scratchesList.GetVisualDescendants().OfType<Grid>().First();
+        PointerClick(window, scratchRow.GetVisualDescendants().OfType<Border>().First(border => border.Classes.Contains("drag-handle")));
+        Assert.Empty(window.GetVisualDescendants().OfType<PlayerProfilePageView>());
+        PointerClick(window, scratchRow.GetVisualDescendants().OfType<Button>().Single());
+        var openedProfile = Assert.IsType<PlayerProfilePageViewModel>(Single<PlayerProfilePageView>(window).DataContext);
+        Assert.Equal(scratchedPlayer.Id, openedProfile.Id);
+
+        // Another team's lineup offers no list, but each name still opens that player.
+        AssertNavigationRenders<LinesPageView>(window, ShellPage.Lines);
+        linesView = Single<LinesPageView>(window);
+        var otherTeam = viewModel.Game!.Lines.Teams.First(team => !team.IsManaged);
+        Named<ComboBox>(linesView, "LinesTeamSelector").SelectedItem = otherTeam;
+        Dispatcher.UIThread.RunJobs();
+        var readOnlyLink = linesView.GetVisualDescendants().OfType<Button>().First(button => button.IsEffectivelyVisible && button.Classes.Contains("slot-readonly"));
+        var readOnlyPlayer = Assert.IsType<PlayerOptionViewModel>(readOnlyLink.Content);
+        PointerClick(window, readOnlyLink);
+        Assert.Equal(readOnlyPlayer.Id, Assert.IsType<PlayerProfilePageViewModel>(Single<PlayerProfilePageView>(window).DataContext).Id);
+        AssertNavigationRenders<LinesPageView>(window, ShellPage.Lines);
+        Named<ComboBox>(Single<LinesPageView>(window), "LinesTeamSelector").SelectedItem = viewModel.Game!.Lines.Teams.Single(team => team.IsManaged);
+        Dispatcher.UIThread.RunJobs();
 
         // Simulate the preseason from Continue's menu and play opening night with Continue, then
         // open a result from the home page.
@@ -574,6 +648,19 @@ public sealed class MainWindowViewTests
         button.Command?.Execute(button.CommandParameter);
         Dispatcher.UIThread.RunJobs();
     }
+
+    /// <summary>Presses and releases the left button at the centre of <paramref name="target"/>, as a click does.</summary>
+    private static void PointerClick(Window window, Visual target)
+    {
+        var bounds = target.Bounds;
+        var centre = target.TranslatePoint(new Point(bounds.Width / 2, bounds.Height / 2), window)!.Value;
+        window.MouseDown(centre, MouseButton.Left);
+        window.MouseUp(centre, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static Point CentreIn(Window window, Visual target) =>
+        target.TranslatePoint(new Point(target.Bounds.Width / 2, target.Bounds.Height / 2), window)!.Value;
 
     private static void Click(MenuItem item)
     {
