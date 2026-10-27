@@ -16,7 +16,7 @@ view model together.
 | --- | --- |
 | `Program.cs`, `App.axaml*`, `AppVersion.cs` | Startup and composition |
 | `Main/` | The window and top-level screen choice, with discard confirmation |
-| `Startup/`, `NewGame/`, `Saves/` | The startup menu, new-game setup, save and load screens |
+| `Startup/`, `NewGame/`, `Saves/` | The startup menu, new-game setup, save and load screens. `NewGame/NewGameViewModel.cs` holds the steps (`NewGameStep`, `NewGameStepViewModel`), the team list (`ConferenceOptionViewModel`, `DivisionOptionViewModel`, `TeamOptionViewModel`), and the team preview (`TeamPreviewViewModel`, `KeyPlayerViewModel`, `RatingBarViewModel`) |
 | `Game/` | `GameSession` (commands, snapshots, unsaved progress, runs of days) and the in-game shell: menu bar, Continue and its menu (`SimulateAheadOptionViewModel`), sections and page tabs (`ShellPage`, `NavigationItemViewModel`, `IPageTab`), the team banner (`TeamBannerViewModel`), and the status bar |
 | `Home/`, `Inbox/`, `Roster/`, `Lines/`, `TeamStatistics/`, `Injuries/`, `Teams/`, `Standings/`, `Playoffs/`, `Schedule/` | The shell's pages. `Teams/TeamsPageViewModel.cs` also holds `TeamEntryViewModel.ForLeague`, the team picker list the Teams, Lines, and Schedule pages share |
 | `Home/` | The home page: `HomePageViewModel` builds five self-contained panels, each a view and view model that takes the `GameSession` and only the shortcuts it needs and refreshes itself: `UpcomingGamesPanel…`, `StandingsPanel…` (scope held across refreshes), `TaleOfTheTapePanel…` (the managed team against its next opponent), `RecentResultsPanel…`, `TeamLeadersPanel…` (with the minimum-games choice). `HomeStatistics` picks the statistics set the tape and leaders share and finds its figures |
@@ -41,7 +41,7 @@ games, plus a headless Avalonia walkthrough.
 | File | Covers |
 | --- | --- |
 | `MainWindowViewTests.cs` | Headless walkthrough of the menu bar, Continue's menu, and every page, team colours, the profile page and its tabs, saving, loading, closing |
-| `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup; sections, tabs, planned pages, the banner, and the status bar; browsing teams |
+| `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup: steps, the world seed and its preview, the team preview, the manager and save names, starting the previewed world; sections, tabs, planned pages, the banner, and the status bar; browsing teams |
 | `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings, dragging and dropping players, opening profiles |
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, the preseason labels, the schedule's phases and preseason results |
 | `MatchDetailViewModelTests.cs` | The box score for regulation, overtime, and shootout matches: periods, totals, records, the comparison, stars, goalies, and tabs |
@@ -60,6 +60,22 @@ games, plus a headless Avalonia walkthrough.
 | `GameTestData.cs`, `TestMatchSimulators.cs`, `TemporarySaveDirectory.cs`, `InjuredPlayerReplacement.cs`, `PreseasonPlay.cs` | Builders (sessions start on opening day unless a test needs the preseason), test engines, and replacing injured players between days |
 
 ## Behaviour
+
+New-game setup has three steps across the top, League, Team, and Manager, with
+Cancel, Back, Next, and on the last step Start game below; a step header opens
+any step already reached. League offers the fictional league (real players are
+listed but disabled), names the first season, and takes an optional world seed.
+Leaving it generates the league through Management's `PreviewNewGame`, from the
+typed seed or a fresh random one; an unchanged seed keeps the league already
+generated, and a changed one regenerates it, keeping the chosen team. Team lists
+both conferences by division, each team with its colours, team overall, and
+outlook; the selected team's preview, in its colours, shows its crest, name,
+division, team overall, outlook, average age, key players, and forwards,
+defence, and goalie ratings. Manager takes the manager's name and the save name,
+which follows the team until edited, and sums up the league, seed, team, and
+manager. Start game, in the team's colours, starts the previewed world from the
+same seed. A rules step waits for
+[configurable match tuning](../future-features.md#configurable-match-tuning).
 
 Desktop wires a Management game manager at startup. After the new-game screen
 starts a game, a `GameSession` forwards commands (lineup changes, reading

@@ -18,10 +18,11 @@ commands).
 | `Domain/SkaterFit.cs`, `PositionFit.cs`, `SkaterSide.cs` | Out-of-position and off-hand rules for any-role lineups |
 | `Domain/SpecialSituation*.cs`, `SkaterRole.cs`, `DefaultSpecialSituationUnits.cs` | Special-situation units and their defaults |
 | `Management/NewGame/LeagueGenerator.cs` | Builds the league |
+| `Management/NewGame/NewGameCommand.cs`, `NewGamePreviewSnapshot.cs`, `TeamStrength.cs`, `TeamOutlook.cs` | The new-game command (season, world seed, team, manager name), the preview of the league a seed generates, team overall and its group ratings, and outlook |
 | `Management/NewGame/PlayerRatingGenerator.cs`, `PlayerBiographyGenerator.cs`, `PlayerOriginData.cs`, `FictionalLeagueData.cs` | Generated players, names, and teams with their arenas and colours |
 | `Management/Lineups/` | `SetLineupCommand` and its selections; `MatchDayLineup` (players who cannot play, AI teams' replacements) and `UnavailablePlayersException` |
 | `Management/Inbox/`, `Snapshots/InboxMessageSnapshot.cs` | Inbox messages: the new-game messages, and the head trainer's `InjuryMessages` and their phrasings (`InjuryWording`), and the champion's announcement (`ChampionMessages`) |
-| `Management/GameManagement/GameManager.cs` | Commands: new game, select team, set lineup, read message |
+| `Management/GameManagement/GameManager.cs` | Commands: preview a new game, new game, select team, set lineup, read message |
 | `Management/GameManagement/Snapshots/GameSnapshot.cs` | `PlayerSnapshot` with its injuries and rating reductions, team and lineup snapshots, and `PlayersToReplace` |
 
 Domain paths are under `src/HockeySim.Domain/`, Management paths under
@@ -36,6 +37,7 @@ Domain paths are under `src/HockeySim.Domain/`, Management paths under
 | `Domain.Tests/SkaterFitTests.cs` | Position fit, off-hand sides, unit slot sides |
 | `Domain.Tests/TeamColoursTests.cs` | Reading and writing colours, distinct team colours |
 | `Management.Tests/NewGameTests.cs` | Generated-world invariants, team colours and arenas, team selection, reproducibility |
+| `Management.Tests/NewGamePreviewTests.cs` | The preview against the started world, leaving the current game alone, team overall, outlook, key players, average age, the manager name |
 | `Management.Tests/PlayerRatingGenerationTests.cs`, `PlayerBiographyGenerationTests.cs` | Generated distributions over several seeds |
 | `Management.Tests/LineupTests.cs`, `SpecialSituationUnitTests.cs` | Lineup commands, rejected changes, snapshot isolation |
 | `Management.Tests/InboxTests.cs` | Inbox messages |
@@ -55,6 +57,21 @@ and secondary colours, distinct across the league and at least 4.5:1 apart in
 contrast, because Desktop writes primary-coloured text on the secondary colour.
 Arenas and colours come from fixed data rather than the random stream, so they
 change no seeded world. Team snapshots carry the arena and colours.
+
+A new game takes the season year, the world seed's random state (drawn
+unpredictably when the user gives none), the managed team, and the manager's
+name, which is trimmed, must not be blank, and is at most 40 characters; the
+snapshot carries it. Before a game starts, `PreviewNewGame` generates the league
+that a season year and random state would give and describes it without
+touching any game in progress: league generation is the stream's first draw, so
+starting the game with the same state builds the same players. For each team the
+preview gives its colours, division, team overall with its forwards, defence,
+and goalie ratings (the mean overall of the players in the forward-line slots,
+the defence-pair slots, and the starting goalie, weighted 40/30/30 before
+rounding), its outlook (team overall's rank in quarters of the league:
+contender, playoff bubble, middle, rebuild), its players' average age on opening
+day, and its key players: the best centre, best wing, two best defence by
+overall rating, and the starting goalie.
 
 Management also delivers inbox messages to the user. New-game messages are
 derived from the generated managed team, so they never describe state the game

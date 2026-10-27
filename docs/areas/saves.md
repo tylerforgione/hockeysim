@@ -41,7 +41,7 @@ version in `GameSaveFile`.
 
 Management saves and loads games through its own contracts in `Saves/`: the
 `GameSave` model and the `IGameSaveStore` interface. `SaveGame` copies the
-world, lineups (with their units and extra attackers; AI teams' preferred lineups, since their match-day
+manager's name, the world, lineups (with their units and extra attackers; AI teams' preferred lineups, since their match-day
 lineups are worked out from health), preseason and regular-season schedules,
 current date, completed preseason, regular-season, and playoff matches (with
 their full box scores, skater time on ice by situation, on-ice and team shot totals by situation, period totals,
@@ -51,7 +51,7 @@ saved. Save format version 4 added the event engine's box-score statistics,
 version 5 penalty minutes, power-play and shorthanded goals and assists, and
 power-play opportunities, version 6 empty-net goals, version 7 the shot
 totals and summaries, version 8 injuries and wear, version 9 each injury's cause, version 10 the
-preseason schedule and results, version 11 the playoff results, version 12 team colours, version 13 arenas and period totals, and version 14 skater time on ice by situation. The playoff
+preseason schedule and results, version 11 the playoff results, version 12 team colours, version 13 arenas and period totals, version 14 skater time on ice by situation, and version 15 the manager's name. The playoff
 bracket and its dates are not saved: the season derives them from the results
 (see [ADR 0011](../adr/0011-playoffs-derived-in-the-season.md)). The head trainer's sender role (#57) needed no new
 version: sender roles are saved by name, so older version 8 saves still load. The shot totals roughly triple a save's size: a complete
