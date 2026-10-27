@@ -514,6 +514,15 @@ penalized players returning to the ice only at the next change rather than at
 once, and awarded goals for a foul on a breakaway at an empty net (#52 calls an
 ordinary penalty there instead of a penalty shot). Each changes seeded results, so it is an engine version change.
 
+## Backup goalies in matches
+
+The starting goalie plays the whole match, apart from time pulled for an extra
+attacker, so only starters appear in box scores, goalie totals, and a goalie's
+game log. Later, the backup comes in when the starter is injured or pulled
+after conceding, and the box score, totals, and game log record each goalie's
+share of the match (time in net, shots and goals against, and the decision).
+This changes seeded results, so it is an engine version change.
+
 ## Full injury and health system
 
 v0.2.0 injures players only in matches (never in the preseason), keeps

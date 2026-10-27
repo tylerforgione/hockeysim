@@ -167,8 +167,9 @@ Each `PlayerSnapshot` lists the player's injuries that have not healed on the
 current date: type, body part, whether it can be played through, its match date,
 and the staff's `ExpectedReturn`, a range a quarter of the recovery time either
 side of the return date, kept within the injury's catalogue range. The range is
-worked out from the injury alone, so it uses no randomness. The exact recovery
-time and wear are hidden and never reach a snapshot.
+worked out from the injury alone, so it uses no randomness. The snapshot also
+carries `RatingReductions`, the player's summed reductions on the current date. The
+exact recovery time and wear are hidden and never reach a snapshot.
 
 A completed match keeps the box score, each team's period totals (shots, xG,
 and power-play opportunities in each period played; see
@@ -324,8 +325,9 @@ The regular season and the playoffs each accumulate every box-score statistic,
 excluding the shootout, in their own `SeasonTotals`. Each
 skater's totals sum their goals, assists, plus/minus, time on ice, shots, shot
 attempts, hits, blocks, faceoffs won and lost, takeaways, giveaways, xG, penalty
-minutes, power-play, shorthanded, and empty-net goals and assists, and their
-on-ice shot totals by strength situation. Each goalie's totals sum shots and
+minutes, power-play, shorthanded, and empty-net goals and assists, their
+time on ice by strength situation (five-on-five, power play, penalty kill,
+other), and their on-ice shot totals by strength situation. Each goalie's totals sum shots and
 goals against, xG against, time in net, and shutouts: starts in which the goalie
 was charged with no goal, so an empty-net goal or a shootout does not prevent
 one. Each team's `TeamSeasonStatistics` sum its power-play goals and
@@ -340,7 +342,7 @@ be calculated:
 | --- | --- | --- |
 | Corsi, Fenwick, shots, goals, xG percentage | for ÷ (for + against) of attempts, unblocked attempts, shots, goals, or xG | either side has one |
 | Faceoff percentage | won ÷ (won + lost) | a faceoff is taken |
-| Time on ice per game | total ÷ games, to the nearest second | a first appearance |
+| Time on ice per game, overall and in each strength situation | total ÷ games, to the nearest second (each situation rounded on its own) | a first appearance |
 | Save percentage | saves ÷ shots against | a shot is faced |
 | Goals-against average | goals against × 60 minutes ÷ time in net | time in net |
 | Goals saved above expected (GSAx) | xG against − goals against | always defined |
