@@ -12,7 +12,7 @@ namespace HockeySim.Desktop.Lines;
 /// special-situation units, and extra attackers. Edits stay local until saved, when Management
 /// validates and applies the whole lineup at once. Browsing another team keeps unsaved edits.
 /// </summary>
-public sealed partial class LinesPageViewModel : ShellPageViewModel
+public sealed partial class LinesPageViewModel : ShellPageViewModel, ISelectablePage
 {
     private readonly GameSession _session;
     private readonly Action<PlayerId>? _openPlayer;
@@ -54,6 +54,8 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel
         _lineup = _managedLineup;
     }
 
+    public event EventHandler? SelectionChanged;
+
     public override string Subtitle => SelectedTeam.Name;
 
     /// <summary>
@@ -77,9 +79,16 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel
 
     public bool IsOtherTab => Tab == LinesTab.Other;
 
+    object ISelectablePage.Selection => SelectedTeam.Id;
+
     public void SelectTeam(TeamId teamId)
     {
         SelectedTeam = Teams.Single(team => team.Id == teamId);
+    }
+
+    void ISelectablePage.Select(object selection)
+    {
+        SelectedTeam = Teams.FirstOrDefault(team => selection is TeamId id && team.Id == id) ?? Teams.Single(team => team.IsManaged);
     }
 
     public override void Refresh()
@@ -137,6 +146,7 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel
     partial void OnSelectedTeamChanged(TeamEntryViewModel value)
     {
         ShowSelectedTeam();
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void ReloadManagedLineup()

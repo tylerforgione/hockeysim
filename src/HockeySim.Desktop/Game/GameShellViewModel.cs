@@ -58,6 +58,15 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     private ShellPage _currentPageKind = ShellPage.Home;
 
+    private readonly NavigationHistory<ShellLocation> _history;
+
+    // Above zero while the shell applies a location or refreshes its pages, when pages announce
+    // selections that are not the user's own choices and so make no history entry.
+    private int _quietSelections;
+
+    // Above zero while a location is being applied, when the current entry is not yet the page shown.
+    private int _applying;
+
     private SeasonPhase? _simulateAheadPhase;
 
     private CancellationTokenSource? _simulation;
@@ -134,6 +143,12 @@ public sealed partial class GameShellViewModel : ObservableObject
 
         _currentPage = Home;
         _currentSection = Sections[0];
+        _history = new NavigationHistory<ShellLocation>(Capture());
+        foreach (var selectable in _pages.Values.OfType<ISelectablePage>().Distinct())
+        {
+            selectable.SelectionChanged += OnPageSelectionChanged;
+        }
+
         UpdateNavigationState();
         UpdateSimulateAheadOptions();
         session.PropertyChanged += OnSessionChanged;
@@ -381,33 +396,17 @@ public sealed partial class GameShellViewModel : ObservableObject
     /// <exception cref="ArgumentException">The page is not available yet.</exception>
     public void Navigate(ShellPage page)
     {
-        if (!_pages.TryGetValue(page, out var target))
+        if (!_pages.ContainsKey(page))
         {
             throw new ArgumentException($"The {page} page is not available yet.", nameof(page));
         }
 
-        if (page == ShellPage.TeamSchedule)
-        {
-            Schedule.ShowTeam(Session.Snapshot.ManagedTeamId);
-        }
-
-        _currentPageKind = page;
-
-        // A page in no section, such as a player's profile, keeps the section it was opened from.
-        if (Sections.SingleOrDefault(section => section.Items.Any(item => item.Page == page)) is { } section)
-        {
-            CurrentSection = section;
-        }
-
-        CurrentPage = target;
-        UpdateNavigationState();
-        OnPropertyChanged(nameof(CurrentPageKind));
+        Go(new ShellLocation(page, SectionOf(page)));
     }
 
     public void OpenInboxMessage(InboxMessageId messageId)
     {
-        Navigate(ShellPage.Inbox);
-        Inbox.OpenMessage(messageId);
+        Go(new ShellLocation(ShellPage.Inbox, SectionOf(ShellPage.Inbox), new InboxSelection(messageId)));
     }
 
     /// <summary>
@@ -417,16 +416,8 @@ public sealed partial class GameShellViewModel : ObservableObject
     public void OpenPlayer(PlayerId playerId, PlayerProfileTab tab = PlayerProfileTab.Overview, StatisticsSet? statistics = null)
     {
         var team = Session.TeamOf(playerId);
-        var profile = new PlayerProfilePageViewModel(
-            Session,
-            playerId,
-            tab,
-            statistics ?? HomeStatistics.For(Session.Snapshot, team.Id),
-            OpenTeam,
-            OpenMatch);
-        Profile = profile;
-        _pages[ShellPage.PlayerProfile] = profile;
-        Navigate(ShellPage.PlayerProfile);
+        var selection = new PlayerProfileSelection(playerId, tab, statistics ?? HomeStatistics.For(Session.Snapshot, team.Id));
+        Go(new ShellLocation(ShellPage.PlayerProfile, CurrentSection.Section, selection));
     }
 
     private void OpenPlayerFromRoster(PlayerId playerId, PlayerProfileTab tab, StatisticsSet statistics)
@@ -440,15 +431,13 @@ public sealed partial class GameShellViewModel : ObservableObject
     /// </summary>
     public void OpenTeam(TeamId teamId)
     {
-        Navigate(ShellPage.Teams);
-        Teams.SelectTeam(teamId);
+        Go(new ShellLocation(ShellPage.Teams, SectionOf(ShellPage.Teams), teamId));
     }
 
     /// <summary>Shows a team's lineup on the Lines page.</summary>
     public void OpenTeamLines(TeamId teamId)
     {
-        Navigate(ShellPage.Lines);
-        Lines.SelectTeam(teamId);
+        Go(new ShellLocation(ShellPage.Lines, SectionOf(ShellPage.Lines), teamId));
     }
 
     /// <summary>
@@ -457,8 +446,123 @@ public sealed partial class GameShellViewModel : ObservableObject
     /// </summary>
     public void OpenMatch(DateOnly date, TeamId teamId)
     {
-        Navigate(teamId == Session.Snapshot.ManagedTeamId ? ShellPage.TeamSchedule : ShellPage.LeagueSchedule);
-        Schedule.OpenMatch(date, teamId);
+        var page = teamId == Session.Snapshot.ManagedTeamId ? ShellPage.TeamSchedule : ShellPage.LeagueSchedule;
+        Go(new ShellLocation(page, SectionOf(page), new ScheduleSelection(teamId, date)));
+    }
+
+    /// <summary>Gets whether there is an earlier page or selection to return to.</summary>
+    public bool CanGoBack => _history.CanGoBack;
+
+    /// <summary>Gets whether going back has left a later page or selection to return to.</summary>
+    public bool CanGoForward => _history.CanGoForward;
+
+    /// <summary>Returns to the previous page or selection, as it was left.</summary>
+    [RelayCommand(CanExecute = nameof(CanGoBack))]
+    private void GoBack()
+    {
+        _history.ReplaceCurrent(Capture());
+        Apply(_history.GoBack());
+        UpdateHistoryCommands();
+    }
+
+    /// <summary>Returns to the page or selection that going back left.</summary>
+    [RelayCommand(CanExecute = nameof(CanGoForward))]
+    private void GoForward()
+    {
+        _history.ReplaceCurrent(Capture());
+        Apply(_history.GoForward());
+        UpdateHistoryCommands();
+    }
+
+    /// <summary>
+    /// Moves to a location and records it as one history entry, however many pages and selections
+    /// it takes. The entry being left is recorded first, as the user left it.
+    /// </summary>
+    private void Go(ShellLocation location)
+    {
+        _history.ReplaceCurrent(Capture());
+        Apply(location);
+
+        // What the page ended up showing, which may differ from the request, such as a team that
+        // is not there.
+        _history.Visit(Capture());
+        UpdateHistoryCommands();
+    }
+
+    /// <summary>Shows a location without touching the history.</summary>
+    private void Apply(ShellLocation location)
+    {
+        _quietSelections++;
+        _applying++;
+        try
+        {
+            if (location.Selection is PlayerProfileSelection profileSelection)
+            {
+                var profile = new PlayerProfilePageViewModel(
+                    Session,
+                    profileSelection.Player,
+                    profileSelection.Tab,
+                    profileSelection.Statistics,
+                    OpenTeam,
+                    OpenMatch);
+                Profile = profile;
+                _pages[ShellPage.PlayerProfile] = profile;
+            }
+            else if (location.Selection is { } selection && _pages[location.Page] is ISelectablePage selectable)
+            {
+                selectable.Select(selection);
+            }
+            else if (location.Page == ShellPage.TeamSchedule)
+            {
+                Schedule.ShowTeam(Session.Snapshot.ManagedTeamId);
+            }
+
+            _currentPageKind = location.Page;
+            CurrentSection = Sections.Single(section => section.Section == location.Section);
+            CurrentPage = _pages[location.Page];
+            UpdateNavigationState();
+            OnPropertyChanged(nameof(CurrentPageKind));
+        }
+        finally
+        {
+            _applying--;
+            _quietSelections--;
+        }
+    }
+
+    /// <summary>Reads where the shell is now, including what the current page has selected.</summary>
+    private ShellLocation Capture()
+    {
+        object? selection = CurrentPage switch
+        {
+            PlayerProfilePageViewModel profile => new PlayerProfileSelection(profile.Id, profile.Tab, profile.Statistics),
+            ISelectablePage selectable => selectable.Selection,
+            _ => null,
+        };
+        return new ShellLocation(_currentPageKind, CurrentSection.Section, selection);
+    }
+
+    /// <summary>Gets the page's section; a page in none, such as a profile, stays in the current one.</summary>
+    private ShellSection SectionOf(ShellPage page) =>
+        Sections.SingleOrDefault(section => section.Items.Any(item => item.Page == page))?.Section ?? CurrentSection.Section;
+
+    private void OnPageSelectionChanged(object? sender, EventArgs e)
+    {
+        if (_quietSelections > 0 || !ReferenceEquals(sender, CurrentPage))
+        {
+            return;
+        }
+
+        _history.Visit(Capture());
+        UpdateHistoryCommands();
+    }
+
+    private void UpdateHistoryCommands()
+    {
+        OnPropertyChanged(nameof(CanGoBack));
+        OnPropertyChanged(nameof(CanGoForward));
+        GoBackCommand.NotifyCanExecuteChanged();
+        GoForwardCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand(CanExecute = nameof(IsPageAvailable))]
@@ -699,10 +803,25 @@ public sealed partial class GameShellViewModel : ObservableObject
             return;
         }
 
-        // The schedule serves two tabs; refresh each page once.
-        foreach (var page in _pages.Values.Distinct())
+        // The schedule serves two tabs; refresh each page once. A page may settle on a different
+        // selection, which is not a choice of the user's.
+        _quietSelections++;
+        try
         {
-            page.Refresh();
+            foreach (var page in _pages.Values.Distinct())
+            {
+                page.Refresh();
+            }
+        }
+        finally
+        {
+            _quietSelections--;
+        }
+
+        // Unless a location is being applied, keep the current entry in step with what is shown.
+        if (_applying == 0)
+        {
+            _history.ReplaceCurrent(Capture());
         }
 
         TeamBanner.Refresh();

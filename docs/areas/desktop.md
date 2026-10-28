@@ -17,7 +17,7 @@ view model together.
 | `Program.cs`, `App.axaml*`, `AppVersion.cs` | Startup and composition |
 | `Main/` | The window and top-level screen choice, with discard confirmation |
 | `Startup/`, `NewGame/`, `Saves/` | The startup menu (`StartupViewModel`: Continue, the recent games, quit), new-game setup, save and load screens. `Saves/` holds `SavedGameLoader` (loading with the discard confirmation and failure wording, shared by the load screen and the menu), `SavedGameRowViewModel` (one save's details formatting), and the shared table pieces `SavedGameRowView`, `SavedGameHeaderView`, `SavedGameColumns`. `NewGame/NewGameViewModel.cs` holds the steps (`NewGameStep`, `NewGameStepViewModel`), the team list (`ConferenceOptionViewModel`, `DivisionOptionViewModel`, `TeamOptionViewModel`), and the team preview (`TeamPreviewViewModel`, `KeyPlayerViewModel`, `RatingBarViewModel`) |
-| `Game/` | `GameSession` (commands, snapshots, unsaved progress, runs of days) and the in-game shell: menu bar, Continue and its menu (`SimulateAheadOptionViewModel`), sections and page tabs (`ShellPage`, `NavigationItemViewModel`, `IPageTab`), the team banner (`TeamBannerViewModel`), and the status bar |
+| `Game/` | `GameSession` (commands, snapshots, unsaved progress, runs of days) and the in-game shell: menu bar, Continue and its menu (`SimulateAheadOptionViewModel`), sections and page tabs (`ShellPage`, `NavigationItemViewModel`, `IPageTab`), the navigation history (`NavigationHistory`, the UI-free back and forward stacks; `ShellLocation`, an entry: page, section, and selection; `ISelectablePage`, which the Teams, Lines, Schedule, Inbox, and Playoffs pages implement to announce and restore their entity selection), the team banner (`TeamBannerViewModel`), and the status bar |
 | `Home/`, `Inbox/`, `Roster/`, `Lines/`, `TeamStatistics/`, `Injuries/`, `Teams/`, `Standings/`, `Playoffs/`, `Schedule/` | The shell's pages. `Teams/TeamsPageViewModel.cs` also holds `TeamEntryViewModel.ForLeague`, the team picker list the Teams, Lines, and Schedule pages share |
 | `Home/` | The home page: `HomePageViewModel` builds five self-contained panels, each a view and view model that takes the `GameSession` and only the shortcuts it needs and refreshes itself: `UpcomingGamesPanel…`, `StandingsPanel…` (scope held across refreshes), `TaleOfTheTapePanel…` (the managed team against its next opponent), `RecentResultsPanel…`, `TeamLeadersPanel…` (with the minimum-games choice). `HomeStatistics` picks the statistics set the tape and leaders share and finds its figures |
 | `Roster/` | The roster shared by the Roster and Teams pages: `TeamRosterView`/`TeamRosterViewModel` (player groups, column views, selection, the links to a player's profile), `SkaterTableView` and `GoalieTableView` (each table's four column views, double-clicking a row opening the profile through `RosterRowActivation`), `PlayerStripView`/`PlayerStripViewModel` (the selected player's strip), `PlayerRowViewModel` (one row) |
@@ -41,6 +41,7 @@ games, plus a headless Avalonia walkthrough.
 | File | Covers |
 | --- | --- |
 | `MainWindowViewTests.cs` | Headless walkthrough of the menu bar, Continue's menu, and every page, team colours, the profile page and its tabs, saving, loading, closing |
+| `NavigationHistoryTests.cs`, `NavigationHistoryShellTests.cs` | The history model (visit, back, forward, truncation, replace, cap); the shell's entries for each kind (pages, profiles, team, schedule, inbox, and playoff selections), one entry per open, tabs not entries, a day's refresh adding none, and a new shell starting empty |
 | `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup: steps, the world seed and its preview, the team preview, the manager and save names, starting the previewed world; sections, tabs, planned pages, the banner, and the status bar; browsing teams |
 | `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings, dragging and dropping players, opening profiles |
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, the preseason labels, the schedule's phases and preseason results |
@@ -83,8 +84,7 @@ starts a game, a `GameSession` forwards commands (lineup changes, reading
 messages, advancing a league day) to Management and publishes each resulting
 snapshot to the in-game shell and its pages.
 
-The shell fills the window. The menu bar holds back, home, and forward buttons
-(back and forward stay disabled until [navigation history](https://github.com/tylerforgione/hockeysim/issues/62)),
+The shell fills the window. The menu bar holds back, home, and forward buttons,
 then text menus: Game (save, load, quit to menu), Team (roster, lines, schedule,
 team statistics, injuries), League (standings, teams, league leaders, playoff
 picture, schedule), Stats (player statistics, team statistics, league leaders),
@@ -106,7 +106,17 @@ section's pages are tabs, with the page's subtitle on the right.
 Home, Team, League, and Inbox are sections; the team and league schedules are
 one page, and opening it from Team shows the managed team. The player profile is
 a page in no section: while it is shown the menu bar keeps the section it was
-opened from. The status bar shows
+opened from. Back and forward move through the shell's navigation history, as
+do Alt+Left and Alt+Right (Cmd+[ and Cmd+] on macOS) and the mouse's back and
+forward buttons. Each page opened is an entry, and so is each choice of what a
+page shows: a player's profile, the team on the Teams, Lines, or schedule page,
+a match on the schedule, an inbox message, or a playoff series. How it is shown
+(tabs, scopes, column views, sorts) is not an entry, but going back returns to a
+profile on the tab and statistic set it was left on. A link that opens a page on
+a choice, such as a team's name, makes one entry. Going somewhere new after going
+back discards the entries ahead; at most 100 are kept behind. A refresh after a
+day adds none. The history belongs to the shell, so starting or loading a game
+begins it afresh. The status bar shows
 the game's name and save state, whether any dressed player is out injured
 (opening Lines), the newest unread message with how many more are unread
 (opening it), and the version.

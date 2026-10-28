@@ -13,7 +13,7 @@ namespace HockeySim.Desktop.Teams;
 /// Browses every team's roster. Rosters here are read-only; only the managed team's lineup is
 /// editable, and only from the Lines page.
 /// </summary>
-public sealed partial class TeamsPageViewModel : ShellPageViewModel
+public sealed partial class TeamsPageViewModel : ShellPageViewModel, ISelectablePage
 {
     private readonly GameSession _session;
     private readonly Action<TeamId>? _openLines;
@@ -40,6 +40,8 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
         _roster = new TeamRosterViewModel(session, _selectedTeam.Id, openLines: openLines, openPlayer: openPlayer);
     }
 
+    public event EventHandler? SelectionChanged;
+
     public override string Subtitle => $"{SelectedTeam.Name} · {SelectedTeam.Division}";
 
     /// <summary>
@@ -55,9 +57,16 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
         ? "Your team"
         : "Read-only";
 
+    object ISelectablePage.Selection => SelectedTeam.Id;
+
     public void SelectTeam(TeamId teamId)
     {
         SelectedTeam = Teams.Single(team => team.Id == teamId);
+    }
+
+    void ISelectablePage.Select(object selection)
+    {
+        SelectedTeam = Teams.FirstOrDefault(team => selection is TeamId id && team.Id == id) ?? Teams.Single(team => team.IsManaged);
     }
 
     public override void Refresh()
@@ -83,6 +92,7 @@ public sealed partial class TeamsPageViewModel : ShellPageViewModel
         OnPropertyChanged(nameof(IsSelectedTeamManaged));
         OnPropertyChanged(nameof(SelectedTeamInitials));
         OnPropertyChanged(nameof(OwnershipNote));
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>

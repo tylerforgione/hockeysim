@@ -15,7 +15,7 @@ namespace HockeySim.Desktop.Schedule;
 /// preseason, its regular season, and its playoff games as they are scheduled. Each row is
 /// labelled by phase. Selecting a completed match shows its box score.
 /// </summary>
-public sealed partial class SchedulePageViewModel : ShellPageViewModel
+public sealed partial class SchedulePageViewModel : ShellPageViewModel, ISelectablePage
 {
     private readonly GameSession _session;
 
@@ -52,6 +52,8 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
         Refresh();
     }
 
+    public event EventHandler? SelectionChanged;
+
     /// <summary>
     /// Counts the regular season's matches played; the preseason and playoffs are listed but
     /// vary in length.
@@ -79,6 +81,19 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
     public string SelectionHint => SelectedMatch is null
         ? string.Empty
         : $"{SelectedMatch.Matchup} · {MatchDisplay.LongDate(SelectedMatch.Date)}";
+
+    object ISelectablePage.Selection => new ScheduleSelection(SelectedTeam.Id, SelectedMatch?.Date);
+
+    /// <summary>
+    /// Shows a team's schedule and, if it still has one, the match on the date. A team that no longer
+    /// plays on that date shows no match.
+    /// </summary>
+    void ISelectablePage.Select(object selection)
+    {
+        var (teamId, date) = selection as ScheduleSelection ?? new ScheduleSelection(_session.Snapshot.ManagedTeamId, null);
+        SelectedTeam = Teams.FirstOrDefault(team => team.Id == teamId) ?? Teams.Single(team => team.IsManaged);
+        SelectedMatch = Matches.FirstOrDefault(match => match.Date == date);
+    }
 
     /// <summary>Shows a team's schedule, keeping the selected match when it is already shown.</summary>
     public void ShowTeam(TeamId teamId)
@@ -116,9 +131,16 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
     {
         Matches = CreateRows(value.Id);
         SelectedMatch = null;
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
     partial void OnSelectedMatchChanged(ScheduleMatchRowViewModel? value)
+    {
+        ShowResultOf(value);
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void ShowResultOf(ScheduleMatchRowViewModel? value)
     {
         var result = value is null ? null : FindResult(value.Date, value.HomeTeamId);
         if (result is null)
@@ -205,6 +227,9 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel
         return season.PreseasonResults.Concat(season.Results).Concat(season.Playoffs?.Results ?? []);
     }
 }
+
+/// <summary>The schedule's history selection: a team and the date of the match chosen, if any.</summary>
+public sealed record ScheduleSelection(TeamId Team, DateOnly? Match);
 
 /// <param name="PhaseLabel">"PRE", "REG", or a playoff game's round and number, such as "R1 G3".</param>
 /// <param name="Venue">"vs" for a home match, "@" for an away match.</param>
