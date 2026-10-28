@@ -1,3 +1,5 @@
+using System.Windows.Input;
+
 using HockeySim.Desktop.Players;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
@@ -55,6 +57,9 @@ public sealed class PlayerRowViewModel
     }
 
     public PlayerSnapshot Player { get; }
+
+    /// <summary>Opens the player's profile; absent where the name links nowhere.</summary>
+    public ICommand? OpenProfileCommand { get; init; }
 
     public int Number { get; }
 

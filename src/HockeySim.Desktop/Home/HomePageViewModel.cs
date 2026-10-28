@@ -31,10 +31,10 @@ public sealed class HomePageViewModel : ShellPageViewModel
         ArgumentNullException.ThrowIfNull(openMatch);
 
         _session = session;
-        UpcomingGames = new UpcomingGamesPanelViewModel(session, navigate, openMatch);
+        UpcomingGames = new UpcomingGamesPanelViewModel(session, navigate, openMatch, openTeam);
         Standings = new StandingsPanelViewModel(session, navigate, openTeam);
         TaleOfTheTape = new TaleOfTheTapePanelViewModel(session, navigate, openPlayer, openTeam);
-        RecentResults = new RecentResultsPanelViewModel(session, openMatch);
+        RecentResults = new RecentResultsPanelViewModel(session, openMatch, openTeam);
         TeamLeaders = new TeamLeadersPanelViewModel(session, openPlayer);
     }
 

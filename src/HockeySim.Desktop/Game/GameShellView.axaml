@@ -51,6 +51,9 @@
     <DataTemplate x:DataType="players:PlayerProfilePageViewModel">
       <players:PlayerProfilePageView />
     </DataTemplate>
+    <DataTemplate x:DataType="teams:TeamPageViewModel">
+      <teams:TeamPageView />
+    </DataTemplate>
     <DataTemplate x:DataType="saves:SaveGameViewModel">
       <saves:SaveGameView />
     </DataTemplate>
@@ -63,9 +66,14 @@
             <TextBlock Text="{Binding TeamInitials}" />
           </Border>
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-            <TextBlock x:Name="ShellTeamName"
-                       Classes="banner-title"
-                       Text="{Binding TeamName, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
+            <Button x:Name="ShellTeamLink"
+                    Classes="banner-title-link"
+                    HorizontalAlignment="Left"
+                    Command="{Binding OpenTeamCommand}">
+              <TextBlock x:Name="ShellTeamName"
+                         Classes="banner-title"
+                         Text="{Binding TeamName, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
+            </Button>
             <TextBlock x:Name="TeamSummaryText" Classes="banner-caption" Text="{Binding Summary}" />
           </StackPanel>
           <StackPanel Grid.Column="2" Orientation="Horizontal">
@@ -84,6 +92,59 @@
                     <StackPanel>
                       <TextBlock Classes="banner-figure-label" Text="{Binding Label}" />
                       <TextBlock Classes="banner-figure-value" Text="{Binding Value}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <!-- A team page's banner, in the colours of its own team rather than the managed team's. -->
+    <DataTemplate x:DataType="teams:TeamPageBannerViewModel">
+      <Border x:Name="TeamPageBanner"
+              Classes="banner"
+              Background="{Binding Colours.Primary, Converter={x:Static theme:ColourBrushConverter.Instance}}"
+              TextElement.Foreground="{Binding Colours.Primary, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+          <Border Classes="crest"
+                  VerticalAlignment="Center"
+                  Background="{Binding Colours.Secondary, Converter={x:Static theme:ColourBrushConverter.Instance}}">
+            <TextBlock Text="{Binding Team.TeamInitials}"
+                       Foreground="{Binding Colours.Secondary, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+          </Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock x:Name="TeamPageName"
+                       Classes="team-banner-title"
+                       Text="{Binding Team.TeamName, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
+            <TextBlock x:Name="TeamPageSummary"
+                       Classes="team-banner-caption"
+                       Text="{Binding Team.Summary}" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Orientation="Horizontal">
+            <Path Classes="banner-stripe"
+                  Data="M44,0 H86 L46,64 H4 Z"
+                  Opacity="0.9"
+                  Fill="{Binding Colours.Secondary, Converter={x:Static theme:ColourBrushConverter.Instance}}" />
+            <Path Classes="banner-stripe"
+                  Data="M8,0 H18 L-22,64 H-32 Z"
+                  Opacity="0.5"
+                  Margin="0,0,24,0"
+                  Fill="{Binding Colours.Secondary, Converter={x:Static theme:ColourBrushConverter.Instance}}" />
+            <ItemsControl x:Name="TeamPageFigures" ItemsSource="{Binding Team.Figures}" VerticalAlignment="Center">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="1" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="game:BannerFigureViewModel">
+                  <Border Classes="banner-figure">
+                    <StackPanel>
+                      <TextBlock Classes="team-banner-figure-label" Text="{Binding Label}" />
+                      <TextBlock Classes="team-banner-figure-value" Text="{Binding Value}" />
                     </StackPanel>
                   </Border>
                 </DataTemplate>
@@ -385,11 +446,29 @@
               Padding="12,6"
               IsVisible="{Binding HasPlayersToReplace}">
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-          <TextBlock x:Name="PlayersToReplaceText"
-                     Classes="warning"
-                     TextWrapping="Wrap"
-                     VerticalAlignment="Center"
-                     Text="{Binding PlayersToReplaceMessage}" />
+          <WrapPanel VerticalAlignment="Center">
+            <TextBlock x:Name="PlayersToReplaceText"
+                       Classes="warning"
+                       VerticalAlignment="Center"
+                       Text="{Binding PlayersToReplaceLead}" />
+            <ItemsControl x:Name="PlayersToReplaceLinks" ItemsSource="{Binding PlayersToReplaceLinks}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="players:PlayerLinkViewModel">
+                  <StackPanel Orientation="Horizontal">
+                    <Button Classes="cell-link" Command="{Binding OpenCommand}">
+                      <TextBlock Classes="warning" Text="{Binding Text}" />
+                    </Button>
+                    <TextBlock Classes="warning" Text="{Binding Separator}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </WrapPanel>
           <Button Grid.Column="1"
                   Classes="flat"
                   Content="Open Lines"

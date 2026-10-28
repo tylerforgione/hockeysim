@@ -19,6 +19,7 @@ public sealed partial class UpcomingGamesPanelViewModel : ObservableObject
     private readonly GameSession _session;
     private readonly Action<ShellPage> _navigate;
     private readonly Action<DateOnly, TeamId> _openMatch;
+    private readonly Action<TeamId>? _openTeam;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasRows))]
@@ -27,7 +28,8 @@ public sealed partial class UpcomingGamesPanelViewModel : ObservableObject
     [ObservableProperty]
     private string _emptyText = string.Empty;
 
-    public UpcomingGamesPanelViewModel(GameSession session, Action<ShellPage> navigate, Action<DateOnly, TeamId> openMatch)
+    /// <param name="openTeam">Opens an opponent's page; opponents are plain text without it.</param>
+    public UpcomingGamesPanelViewModel(GameSession session, Action<ShellPage> navigate, Action<DateOnly, TeamId> openMatch, Action<TeamId>? openTeam = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(navigate);
@@ -36,6 +38,7 @@ public sealed partial class UpcomingGamesPanelViewModel : ObservableObject
         _session = session;
         _navigate = navigate;
         _openMatch = openMatch;
+        _openTeam = openTeam;
         Refresh();
     }
 
@@ -64,7 +67,10 @@ public sealed partial class UpcomingGamesPanelViewModel : ObservableObject
                     _session.GetTeam(opponentId).Name,
                     detail,
                     phase == SeasonPhase.Preseason ? "PRE" : string.Empty,
-                    new RelayCommand(() => _openMatch(match.Date, teamId)));
+                    new RelayCommand(() => _openMatch(match.Date, teamId)))
+                {
+                    OpenOpponentCommand = NameLinks.Open(_openTeam, opponentId),
+                };
             })
             .ToList();
         EmptyText = snapshot.Season.IsComplete ? "Season complete" : "No matches scheduled";
@@ -86,4 +92,8 @@ public sealed record UpcomingGameRowViewModel(
     string Opponent,
     string Detail,
     string Phase,
-    System.Windows.Input.ICommand OpenCommand);
+    System.Windows.Input.ICommand OpenCommand)
+{
+    /// <summary>Opens the opponent's team page; absent where the name links nowhere.</summary>
+    public System.Windows.Input.ICommand? OpenOpponentCommand { get; init; }
+}

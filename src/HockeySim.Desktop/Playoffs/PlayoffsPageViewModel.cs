@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Windows.Input;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -6,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Schedule;
+using HockeySim.Desktop.Teams;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
 
@@ -20,6 +22,7 @@ public sealed partial class PlayoffsPageViewModel : ShellPageViewModel, ISelecta
 {
     private readonly GameSession _session;
     private readonly Action<DateOnly, TeamId> _openMatch;
+    private readonly Action<TeamId>? _openTeam;
 
     [ObservableProperty]
     private IReadOnlyList<PlayoffRoundViewModel> _rounds = [];
@@ -29,13 +32,15 @@ public sealed partial class PlayoffsPageViewModel : ShellPageViewModel, ISelecta
     private PlayoffSeriesViewModel? _selectedSeries;
 
     /// <param name="openMatch">Opens a game's box score, from the schedule of a team that plays in it.</param>
-    public PlayoffsPageViewModel(GameSession session, Action<DateOnly, TeamId> openMatch)
+    /// <param name="openTeam">Opens a team's page from its name; names are plain text without it.</param>
+    public PlayoffsPageViewModel(GameSession session, Action<DateOnly, TeamId> openMatch, Action<TeamId>? openTeam = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(openMatch);
 
         _session = session;
         _openMatch = openMatch;
+        _openTeam = openTeam;
         Refresh();
     }
 
@@ -98,7 +103,7 @@ public sealed partial class PlayoffsPageViewModel : ShellPageViewModel, ISelecta
     {
         var selected = SelectedSeries is { } current ? (current.Round, current.HigherRanked.TeamId) : default((PlayoffRound, TeamId)?);
         var series = (Playoffs?.Series ?? [])
-            .Select(snapshot => new PlayoffSeriesViewModel(snapshot, _session, _openMatch, Select))
+            .Select(snapshot => new PlayoffSeriesViewModel(snapshot, _session, _openMatch, Select, _openTeam))
             .ToList();
 
         Rounds = Enum.GetValues<PlayoffRound>()
@@ -164,7 +169,8 @@ public sealed partial class PlayoffSeriesViewModel : ObservableObject
         PlayoffSeriesSnapshot series,
         GameSession session,
         Action<DateOnly, TeamId> openMatch,
-        Action<PlayoffSeriesViewModel> select)
+        Action<PlayoffSeriesViewModel> select,
+        Action<TeamId>? openTeam = null)
     {
         ArgumentNullException.ThrowIfNull(series);
         ArgumentNullException.ThrowIfNull(session);
@@ -177,19 +183,22 @@ public sealed partial class PlayoffSeriesViewModel : ObservableObject
 
         Round = series.Round;
         RoundName = PlayoffDisplay.RoundName(series.Round);
-        HigherRanked = new PlayoffSeriesTeamViewModel(series.HigherRanked, Name(series.HigherRanked.TeamId), series.HigherRankedWins, series.WinnerId, managedTeamId);
-        LowerRanked = new PlayoffSeriesTeamViewModel(series.LowerRanked, Name(series.LowerRanked.TeamId), series.LowerRankedWins, series.WinnerId, managedTeamId);
+        HigherRanked = new PlayoffSeriesTeamViewModel(series.HigherRanked, Name(series.HigherRanked.TeamId), series.HigherRankedWins, series.WinnerId, managedTeamId, openTeam);
+        LowerRanked = new PlayoffSeriesTeamViewModel(series.LowerRanked, Name(series.LowerRanked.TeamId), series.LowerRankedWins, series.WinnerId, managedTeamId, openTeam);
         Status = PlayoffDisplay.SeriesStatus(series, Name);
         Title = $"{HigherRanked.Name} vs {LowerRanked.Name}";
 
         // The team listed first in a game's schedule is the one whose schedule opens; the
         // managed team's when it plays, so its own results stay in view.
+        TeamLinkViewModel Link(TeamId teamId) => new(Name(teamId), NameLinks.Open(openTeam, teamId));
         var scheduleTeamId = series.LowerRanked.TeamId == managedTeamId ? managedTeamId : series.HigherRanked.TeamId;
         Games = series.Games
             .Select((game, index) => new PlayoffGameRowViewModel(
                 $"Game {index + 1}",
                 MatchDisplay.ShortDate(game.Date),
                 $"{Name(game.Away.TeamId)} @ {Name(game.Home.TeamId)}",
+                Link(game.Away.TeamId),
+                Link(game.Home.TeamId),
                 ScoreLine(game, Name),
                 true,
                 () => openMatch(game.Date, scheduleTeamId)))
@@ -200,6 +209,8 @@ public sealed partial class PlayoffSeriesViewModel : ObservableObject
                         $"Game {series.Games.Count + 1}",
                         MatchDisplay.ShortDate(next.Date),
                         $"{Name(next.AwayTeamId)} @ {Name(next.HomeTeamId)}",
+                        Link(next.AwayTeamId),
+                        Link(next.HomeTeamId),
                         "Scheduled",
                         false,
                         () => openMatch(next.Date, scheduleTeamId)),
@@ -246,11 +257,12 @@ public sealed partial class PlayoffSeriesViewModel : ObservableObject
 /// <summary>One side of a series: how it qualified, its wins, and whether it advanced.</summary>
 public sealed class PlayoffSeriesTeamViewModel
 {
-    public PlayoffSeriesTeamViewModel(PlayoffSeedSnapshot seed, string name, int wins, TeamId? winnerId, TeamId managedTeamId)
+    public PlayoffSeriesTeamViewModel(PlayoffSeedSnapshot seed, string name, int wins, TeamId? winnerId, TeamId managedTeamId, Action<TeamId>? openTeam = null)
     {
         ArgumentNullException.ThrowIfNull(seed);
 
         TeamId = seed.TeamId;
+        OpenTeamCommand = NameLinks.Open(openTeam, seed.TeamId);
         Seed = PlayoffDisplay.SeedLabel(seed);
         SeedDescription = PlayoffDisplay.SeedDescription(seed);
         Name = name;
@@ -261,6 +273,9 @@ public sealed class PlayoffSeriesTeamViewModel
     }
 
     public TeamId TeamId { get; }
+
+    /// <summary>Opens the team's page; absent where the name links nowhere.</summary>
+    public ICommand? OpenTeamCommand { get; }
 
     /// <summary>"N1", "WC2", and so on.</summary>
     public string Seed { get; }
@@ -287,8 +302,12 @@ public sealed partial class PlayoffGameRowViewModel
     private readonly Action _open;
 
     /// <param name="result">The winner and score, or "Scheduled" before the game is played.</param>
-    public PlayoffGameRowViewModel(string game, string date, string matchup, string result, bool isPlayed, Action open)
+    /// <param name="away">The visiting team, linked to its page.</param>
+    /// <param name="home">The home team, linked to its page.</param>
+    public PlayoffGameRowViewModel(string game, string date, string matchup, TeamLinkViewModel away, TeamLinkViewModel home, string result, bool isPlayed, Action open)
     {
+        Away = away;
+        Home = home;
         Game = game;
         Date = date;
         Matchup = matchup;
@@ -302,6 +321,10 @@ public sealed partial class PlayoffGameRowViewModel
     public string Date { get; }
 
     public string Matchup { get; }
+
+    public TeamLinkViewModel Away { get; }
+
+    public TeamLinkViewModel Home { get; }
 
     public string Result { get; }
 

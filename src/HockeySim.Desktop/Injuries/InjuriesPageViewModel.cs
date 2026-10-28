@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 using HockeySim.Desktop.Game;
+using HockeySim.Domain;
 
 namespace HockeySim.Desktop.Injuries;
 
@@ -13,16 +14,19 @@ namespace HockeySim.Desktop.Injuries;
 public sealed partial class InjuriesPageViewModel : ShellPageViewModel
 {
     private readonly GameSession _session;
+    private readonly Action<PlayerId>? _openPlayer;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasInjuries), nameof(Subtitle))]
     private IReadOnlyList<InjuryReportRowViewModel> _injuries = [];
 
-    public InjuriesPageViewModel(GameSession session)
+    /// <param name="openPlayer">Opens a player's profile from the report; names are plain text without it.</param>
+    public InjuriesPageViewModel(GameSession session, Action<PlayerId>? openPlayer = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
+        _openPlayer = openPlayer;
         Refresh();
     }
 
@@ -45,7 +49,7 @@ public sealed partial class InjuriesPageViewModel : ShellPageViewModel
         Injuries = _session.ManagedTeam.Roster
             .SelectMany(player => player.Injuries.Select(injury => (Player: player, Injury: injury)))
             .OrderBy(entry => entry.Injury.CanPlayThrough)
-            .Select(entry => new InjuryReportRowViewModel(entry.Player, entry.Injury))
+            .Select(entry => new InjuryReportRowViewModel(entry.Player, entry.Injury, _openPlayer))
             .ToList();
     }
 }

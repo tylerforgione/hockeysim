@@ -69,22 +69,24 @@
                               <StackPanel Spacing="2">
                                 <Grid ColumnDefinitions="36,*,20" DataContext="{Binding HigherRanked}">
                                   <TextBlock Classes="cell muted" Text="{Binding Seed}" ToolTip.Tip="{Binding SeedDescription}" />
-                                  <TextBlock Grid.Column="1"
-                                             Classes="cell"
-                                             Classes.strong="{Binding IsEmphasized}"
-                                             Classes.muted="{Binding IsEliminated}"
-                                             TextTrimming="CharacterEllipsis"
-                                             Text="{Binding Name}" />
+                                  <Button Grid.Column="1" Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenTeamCommand}">
+                                    <TextBlock Classes="cell"
+                                               Classes.strong="{Binding IsEmphasized}"
+                                               Classes.muted="{Binding IsEliminated}"
+                                               TextTrimming="CharacterEllipsis"
+                                               Text="{Binding Name}" />
+                                  </Button>
                                   <TextBlock Grid.Column="2" Classes="cell-center strong" Text="{Binding Wins}" />
                                 </Grid>
                                 <Grid ColumnDefinitions="36,*,20" DataContext="{Binding LowerRanked}">
                                   <TextBlock Classes="cell muted" Text="{Binding Seed}" ToolTip.Tip="{Binding SeedDescription}" />
-                                  <TextBlock Grid.Column="1"
-                                             Classes="cell"
-                                             Classes.strong="{Binding IsEmphasized}"
-                                             Classes.muted="{Binding IsEliminated}"
-                                             TextTrimming="CharacterEllipsis"
-                                             Text="{Binding Name}" />
+                                  <Button Grid.Column="1" Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenTeamCommand}">
+                                    <TextBlock Classes="cell"
+                                               Classes.strong="{Binding IsEmphasized}"
+                                               Classes.muted="{Binding IsEliminated}"
+                                               TextTrimming="CharacterEllipsis"
+                                               Text="{Binding Name}" />
+                                  </Button>
                                   <TextBlock Grid.Column="2" Classes="cell-center strong" Text="{Binding Wins}" />
                                 </Grid>
                                 <TextBlock Classes="caption" TextTrimming="CharacterEllipsis" Text="{Binding Status}" />
@@ -130,7 +132,15 @@
                                          Classes.strong="{Binding IsPlayed}"
                                          Classes.muted="{Binding !IsPlayed}"
                                          Text="{Binding Result}" />
-                              <TextBlock Classes="caption" TextTrimming="CharacterEllipsis" Text="{Binding Matchup}" />
+                              <StackPanel Orientation="Horizontal">
+                                <Button Classes="cell-link" Command="{Binding Away.OpenCommand}">
+                                  <TextBlock Classes="caption" Text="{Binding Away.Name}" />
+                                </Button>
+                                <TextBlock Classes="caption" Text=" @ " />
+                                <Button Classes="cell-link" Command="{Binding Home.OpenCommand}">
+                                  <TextBlock Classes="caption" Text="{Binding Home.Name}" />
+                                </Button>
+                              </StackPanel>
                             </StackPanel>
                           </Grid>
                         </Button>

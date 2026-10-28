@@ -1,3 +1,5 @@
+using System.Windows.Input;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -18,6 +20,8 @@ namespace HockeySim.Desktop.Schedule;
 public sealed partial class SchedulePageViewModel : ShellPageViewModel, ISelectablePage
 {
     private readonly GameSession _session;
+    private readonly Action<TeamId>? _openTeam;
+    private readonly Action<PlayerId>? _openPlayer;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Subtitle))]
@@ -42,11 +46,15 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel, ISelecta
     // The box score's sort, which the next box score opened starts with.
     private TableSort? _boxScoreSort;
 
-    public SchedulePageViewModel(GameSession session)
+    /// <param name="openTeam">Opens a team's page from an opponent or box score team; names are plain text without it.</param>
+    /// <param name="openPlayer">Opens a player's profile from the box score; names are plain text without it.</param>
+    public SchedulePageViewModel(GameSession session, Action<TeamId>? openTeam = null, Action<PlayerId>? openPlayer = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
+        _openTeam = openTeam;
+        _openPlayer = openPlayer;
         Teams = TeamEntryViewModel.ForLeague(session.Snapshot);
         _selectedTeam = Teams.Single(team => team.IsManaged);
         Refresh();
@@ -149,7 +157,7 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel, ISelecta
             return;
         }
 
-        var detail = new MatchDetailViewModel(result, _session.PlayersById, _session.GetTeam, _boxScoreSort);
+        var detail = new MatchDetailViewModel(result, _session.PlayersById, _session.GetTeam, _boxScoreSort, _openPlayer, _openTeam);
         detail.PropertyChanged += (_, change) =>
         {
             if (change.PropertyName == nameof(MatchDetailViewModel.SkaterSort))
@@ -160,72 +168,16 @@ public sealed partial class SchedulePageViewModel : ShellPageViewModel, ISelecta
         SelectedResult = detail;
     }
 
-    /// <summary>Puts rows (in any order) into date order, then the table's sort.</summary>
+    private List<ScheduleMatchRowViewModel> CreateRows(TeamId teamId) =>
+        ScheduleRows.Create(_session, teamId, MatchesSort, _openTeam);
+
     private List<ScheduleMatchRowViewModel> SortedRows(IEnumerable<ScheduleMatchRowViewModel> rows) =>
-        TableSorting.Apply(rows.OrderBy(row => row.Date), ScheduleTableColumns.Matches, MatchesSort);
-
-    /// <summary>
-    /// Lists the team's matches in date order, then the table's sort. The phases follow one another and a team plays at
-    /// most once a day, so a date identifies a team's match in any phase.
-    /// </summary>
-    private List<ScheduleMatchRowViewModel> CreateRows(TeamId teamId)
-    {
-        var snapshot = _session.Snapshot;
-        var season = snapshot.Season;
-        var results = AllResults()
-            .Where(result => TeamResults.Involves(result, teamId))
-            .ToDictionary(result => result.Date);
-        var matches = snapshot.Schedule.PreseasonMatches.Select(match => (Match: match, Phase: SeasonPhase.Preseason))
-            .Concat(snapshot.Schedule.Matches.Select(match => (Match: match, Phase: SeasonPhase.RegularSeason)))
-            .Concat(snapshot.Schedule.PlayoffMatches.Select(match => (Match: match, Phase: SeasonPhase.Playoffs)))
-            .Where(entry => entry.Match.HomeTeamId == teamId || entry.Match.AwayTeamId == teamId)
-            .ToList();
-        var nextDate = season.IsComplete
-            ? (DateOnly?)null
-            : matches
-                .Where(entry => entry.Match.Date >= season.CurrentDate)
-                .Select(entry => (DateOnly?)entry.Match.Date)
-                .FirstOrDefault();
-
-        return SortedRows(matches
-            .Select(entry =>
-            {
-                var match = entry.Match;
-                var isHome = match.HomeTeamId == teamId;
-                var opponent = _session.GetTeam(isHome ? match.AwayTeamId : match.HomeTeamId);
-                results.TryGetValue(match.Date, out var result);
-                var (phaseLabel, phaseDescription) = MatchDisplay.PhaseOf(entry.Phase, season.Playoffs, match.Date, teamId);
-                return new ScheduleMatchRowViewModel(
-                    match.Date,
-                    match.HomeTeamId,
-                    entry.Phase,
-                    phaseLabel,
-                    phaseDescription,
-                    MatchDisplay.ShortDate(match.Date),
-                    isHome ? "vs" : "@",
-                    opponent.Name,
-                    $"{_session.GetTeam(match.AwayTeamId).Name} @ {_session.GetTeam(match.HomeTeamId).Name}",
-                    result is null ? string.Empty : MatchDisplay.ResultFor(result, teamId),
-                    result is not null && result.WinnerId == teamId,
-                    result is not null,
-                    match.Date == nextDate,
-                    result is null ? null : GoalDifferential(result, teamId));
-            }));
-    }
-
-    private static int GoalDifferential(CompletedMatchSnapshot result, TeamId teamId) =>
-        result.Home.TeamId == teamId
-            ? result.Home.Score - result.Away.Score
-            : result.Away.Score - result.Home.Score;
+        ScheduleRows.Sorted(rows, MatchesSort);
 
     private CompletedMatchSnapshot? FindResult(DateOnly date, TeamId homeTeamId) =>
         AllResults().FirstOrDefault(result => result.Date == date && result.Home.TeamId == homeTeamId);
 
-    private IEnumerable<CompletedMatchSnapshot> AllResults()
-    {
-        var season = _session.Snapshot.Season;
-        return season.PreseasonResults.Concat(season.Results).Concat(season.Playoffs?.Results ?? []);
-    }
+    private IEnumerable<CompletedMatchSnapshot> AllResults() => ScheduleRows.AllResults(_session.Snapshot);
 }
 
 /// <summary>The schedule's history selection: a team and the date of the match chosen, if any.</summary>
@@ -252,6 +204,9 @@ public sealed record ScheduleMatchRowViewModel(
     bool IsNext,
     int? GoalDifferential)
 {
+    /// <summary>Opens the opponent's team page; absent where the name links nowhere.</summary>
+    public ICommand? OpenOpponentCommand { get; init; }
+
     public bool IsLoss => IsCompleted && !IsWin;
 
     public bool IsPlayoff => Phase == SeasonPhase.Playoffs;

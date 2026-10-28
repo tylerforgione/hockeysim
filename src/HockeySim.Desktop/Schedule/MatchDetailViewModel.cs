@@ -1,8 +1,10 @@
 using System.Globalization;
+using System.Windows.Input;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Tables;
 using HockeySim.Desktop.Theme;
@@ -28,11 +30,15 @@ public sealed partial class MatchDetailViewModel : ObservableObject
     private TableSort? _skaterSort;
 
     /// <param name="skaterSort">The sort to open the Players tab with, to carry one box score's choice to the next.</param>
+    /// <param name="openPlayer">Opens a player's profile; player names are plain text without it.</param>
+    /// <param name="openTeam">Opens a team's page; team names are plain text without it.</param>
     public MatchDetailViewModel(
         CompletedMatchSnapshot result,
         IReadOnlyDictionary<PlayerId, PlayerSnapshot> players,
         Func<TeamId, TeamSnapshot> team,
-        TableSort? skaterSort = null)
+        TableSort? skaterSort = null,
+        Action<PlayerId>? openPlayer = null,
+        Action<TeamId>? openTeam = null)
     {
         ArgumentNullException.ThrowIfNull(result);
         ArgumentNullException.ThrowIfNull(players);
@@ -46,8 +52,8 @@ public sealed partial class MatchDetailViewModel : ObservableObject
         Arena = homeTeam.Arena;
         FinalLabel = MatchDisplay.FinalLabel(result.Decision);
         var (awayChartColour, homeChartColour) = TeamPalette.ChartColours(awayTeam.Colours, homeTeam.Colours);
-        Away = new MatchSideViewModel(result.Away, players, awayTeam, awayChartColour, result.Phase, result.WinnerId == result.Away.TeamId, skaterSort);
-        Home = new MatchSideViewModel(result.Home, players, homeTeam, homeChartColour, result.Phase, result.WinnerId == result.Home.TeamId, skaterSort);
+        Away = new MatchSideViewModel(result.Away, players, awayTeam, awayChartColour, result.Phase, result.WinnerId == result.Away.TeamId, skaterSort, openPlayer, openTeam);
+        Home = new MatchSideViewModel(result.Home, players, homeTeam, homeChartColour, result.Phase, result.WinnerId == result.Home.TeamId, skaterSort, openPlayer, openTeam);
         _skaterSort = skaterSort;
         Away.SortRequested += SortSkaters;
         Home.SortRequested += SortSkaters;
@@ -58,18 +64,21 @@ public sealed partial class MatchDetailViewModel : ObservableObject
             [result.Home.TeamId] = Home.TeamInitials,
         };
         PeriodTables = MatchSummaryTables.ByPeriod(result, Away.TeamInitials, Home.TeamInitials);
-        ScoringSummary = ScoringRows(result, players, initials);
+        ScoringSummary = ScoringRows(result, players, initials, openPlayer);
         PenaltySummary = result.Penalties
             .Select(penalty => new PenaltySummaryRowViewModel(
                 MatchDisplay.PeriodTime(penalty.Period, penalty.TimeInPeriod),
                 initials[penalty.TeamId],
                 PlayerDisplay.FullName(players[penalty.PlayerId]),
                 MatchDisplay.InfractionName(penalty.Infraction),
-                MatchDisplay.PenaltyDescription(penalty.Kind, penalty.Minutes)))
+                MatchDisplay.PenaltyDescription(penalty.Kind, penalty.Minutes))
+            {
+                OpenPlayerCommand = NameLinks.Open(openPlayer, penalty.PlayerId),
+            })
             .ToList();
         Comparison = MatchSummaryTables.Comparison(result);
         ThreeStars = result.ThreeStars
-            .Select((star, index) => MatchSummaryTables.Star(index + 1, star, result, players[star.PlayerId], initials[star.TeamId]))
+            .Select((star, index) => MatchSummaryTables.Star(index + 1, star, result, players[star.PlayerId], initials[star.TeamId], openPlayer))
             .ToList();
         Goalies =
         [
@@ -133,7 +142,8 @@ public sealed partial class MatchDetailViewModel : ObservableObject
     private static List<GoalSummaryRowViewModel> ScoringRows(
         CompletedMatchSnapshot result,
         IReadOnlyDictionary<PlayerId, PlayerSnapshot> players,
-        Dictionary<TeamId, string> initials)
+        Dictionary<TeamId, string> initials,
+        Action<PlayerId>? openPlayer)
     {
         var (awayGoals, homeGoals) = (0, 0);
         var rows = new List<GoalSummaryRowViewModel>();
@@ -148,9 +158,13 @@ public sealed partial class MatchDetailViewModel : ObservableObject
                 awayGoals++;
             }
 
-            var assists = new[] { goal.PrimaryAssistId, goal.SecondaryAssistId }
-                .OfType<PlayerId>()
-                .Select(id => PlayerDisplay.FullName(players[id]))
+            var assistIds = new[] { goal.PrimaryAssistId, goal.SecondaryAssistId }.OfType<PlayerId>().ToList();
+            var assists = assistIds.Select(id => PlayerDisplay.FullName(players[id])).ToList();
+            var assistLinks = assistIds
+                .Select((id, index) => new PlayerLinkViewModel(
+                    assists[index],
+                    NameLinks.Open(openPlayer, id),
+                    index < assistIds.Count - 1 ? ", " : string.Empty))
                 .ToList();
             rows.Add(new GoalSummaryRowViewModel(
                 MatchDisplay.PeriodTime(goal.Period, goal.TimeInPeriod),
@@ -158,7 +172,11 @@ public sealed partial class MatchDetailViewModel : ObservableObject
                 PlayerDisplay.FullName(players[goal.ScorerId]),
                 assists.Count == 0 ? "Unassisted" : string.Join(", ", assists),
                 MatchDisplay.GoalSituationLabel(goal.Situation, goal.IsEmptyNet),
-                $"{awayGoals}–{homeGoals}"));
+                $"{awayGoals}–{homeGoals}")
+            {
+                OpenScorerCommand = NameLinks.Open(openPlayer, goal.ScorerId),
+                AssistLinks = assistLinks,
+            });
         }
 
         return rows;
@@ -182,12 +200,16 @@ public sealed partial class MatchSideViewModel : ObservableObject
         Colour chartColour,
         SeasonPhase phase,
         bool isWinner,
-        TableSort? skaterSort = null)
+        TableSort? skaterSort = null,
+        Action<PlayerId>? openPlayer = null,
+        Action<TeamId>? openTeam = null)
     {
         ArgumentNullException.ThrowIfNull(side);
         ArgumentNullException.ThrowIfNull(players);
         ArgumentNullException.ThrowIfNull(team);
 
+        TeamId = side.TeamId;
+        OpenTeamCommand = NameLinks.Open(openTeam, side.TeamId);
         TeamName = team.Name;
         Colours = team.Colours;
         ChartColour = chartColour;
@@ -227,7 +249,10 @@ public sealed partial class MatchSideViewModel : ObservableObject
                         line.ExpectedGoals,
                         line.FaceoffsWon + line.FaceoffsLost == 0 ? null : line.FaceoffsWon * 100_000L - line.FaceoffsLost,
                         line.OnIce.FiveOnFive.CorsiPercentage,
-                        line.OnIce.FiveOnFive.ExpectedGoalsPercentage));
+                        line.OnIce.FiveOnFive.ExpectedGoalsPercentage))
+                {
+                    OpenPlayerCommand = NameLinks.Open(openPlayer, line.PlayerId),
+                };
             })
             .ToList();
         _sort = skaterSort;
@@ -242,8 +267,16 @@ public sealed partial class MatchSideViewModel : ObservableObject
             MatchDisplay.SavePercentage(side.Goalie.Saves, side.Goalie.ShotsAgainst),
             MatchDisplay.ExpectedGoals(side.Goalie.ExpectedGoalsAgainst),
             MatchDisplay.GoalsSavedAboveExpected(side.Goalie.ExpectedGoalsAgainst - side.Goalie.GoalsAgainst),
-            MatchDisplay.TimeOnIce(side.Goalie.TimeOnIce));
+            MatchDisplay.TimeOnIce(side.Goalie.TimeOnIce))
+        {
+            OpenPlayerCommand = NameLinks.Open(openPlayer, side.Goalie.PlayerId),
+        };
     }
+
+    public TeamId TeamId { get; }
+
+    /// <summary>Opens the team's page; absent where the name links nowhere.</summary>
+    public ICommand? OpenTeamCommand { get; }
 
     public string TeamName { get; }
 
@@ -332,7 +365,11 @@ public sealed record SkaterBoxScoreRowViewModel(
     int ShorthandedGoals,
     string CorsiPercentage,
     string ExpectedGoalsPercentage,
-    SkaterBoxScoreValues Values);
+    SkaterBoxScoreValues Values)
+{
+    /// <summary>Opens the player's profile; absent where the name links nowhere.</summary>
+    public ICommand? OpenPlayerCommand { get; init; }
+}
 
 /// <summary>
 /// The raw figures behind a box-score row's text, which its table sorts by.
@@ -359,7 +396,11 @@ public sealed record GoalieBoxScoreRowViewModel(
     string SavePercentage,
     string ExpectedGoalsAgainst,
     string GoalsSavedAboveExpected,
-    string TimeOnIce);
+    string TimeOnIce)
+{
+    /// <summary>Opens the goalie's profile; absent where the name links nowhere.</summary>
+    public ICommand? OpenPlayerCommand { get; init; }
+}
 
 /// <summary>A starting goalie on the summary, with the team's initials.</summary>
 public sealed record GoalieSummaryRowViewModel(string Team, GoalieBoxScoreRowViewModel Goalie);
@@ -375,7 +416,17 @@ public sealed record GoalSummaryRowViewModel(
     string Scorer,
     string Assists,
     string Situation,
-    string Score);
+    string Score)
+{
+    /// <summary>Opens the scorer's profile; absent where the name links nowhere.</summary>
+    public ICommand? OpenScorerCommand { get; init; }
+
+    /// <summary>The assisting players one by one, so each can open its profile; empty when unassisted.</summary>
+    public IReadOnlyList<PlayerLinkViewModel> AssistLinks { get; init; } = [];
+
+    public bool IsUnassisted => AssistLinks.Count == 0;
+}
+
 
 /// <param name="Time">The period and clock when play stopped for the penalty.</param>
 /// <param name="Team">The penalized team's initials.</param>
@@ -385,4 +436,8 @@ public sealed record PenaltySummaryRowViewModel(
     string Team,
     string Player,
     string Infraction,
-    string Penalty);
+    string Penalty)
+{
+    /// <summary>Opens the player's profile; absent where the name links nowhere.</summary>
+    public ICommand? OpenPlayerCommand { get; init; }
+}

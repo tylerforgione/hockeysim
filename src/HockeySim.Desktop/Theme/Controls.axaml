@@ -584,6 +584,39 @@
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
 
+  <!-- A team page's banner, whose text colour is set on the banner itself from its team's primary. -->
+  <Style Selector="TextBlock.team-banner-title">
+    <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}" />
+    <Setter Property="FontSize" Value="26" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LineHeight" Value="26" />
+  </Style>
+  <Style Selector="TextBlock.team-banner-caption">
+    <Setter Property="Opacity" Value="0.8" />
+  </Style>
+  <Style Selector="TextBlock.team-banner-figure-label">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <Style Selector="TextBlock.team-banner-figure-value">
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+
+  <!-- A banner's team name as a link: plain until hovered, then underlined. -->
+  <Style Selector="Button.banner-title-link">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.banner-title-link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.banner-title-link:pointerover TextBlock">
+    <Setter Property="TextDecorations" Value="Underline" />
+  </Style>
+
   <!-- Page tabs for the current section. -->
   <Style Selector="Border.tab-strip">
     <Setter Property="Background" Value="{DynamicResource TabStripBrush}" />

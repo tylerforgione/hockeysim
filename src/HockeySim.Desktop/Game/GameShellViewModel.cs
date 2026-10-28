@@ -36,6 +36,9 @@ public sealed partial class GameShellViewModel : ObservableObject
     private readonly ISavedGameLibrary? _saves;
     private readonly Dictionary<ShellPage, ShellPageViewModel> _pages;
 
+    // The managed team's unsaved lineup edits, shared by the Lines page and every team page.
+    private readonly ManagedLineupEdits _lineupEdits;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Banner), nameof(PageTabs))]
     private ShellPageViewModel _currentPage;
@@ -93,17 +96,18 @@ public sealed partial class GameShellViewModel : ObservableObject
         _saves = saves;
         Confirmation = confirmation ?? new ConfirmationViewModel();
 
-        TeamBanner = new TeamBannerViewModel(session);
+        TeamBanner = new TeamBannerViewModel(session, openTeam: OpenTeam);
+        _lineupEdits = new ManagedLineupEdits(session);
         Home = new HomePageViewModel(session, Navigate, playerId => OpenPlayer(playerId), OpenTeam, OpenMatch);
         Inbox = new InboxPageViewModel(session);
         Roster = new RosterPageViewModel(session, OpenTeamLines, OpenPlayerFromRoster);
-        Lines = new LinesPageViewModel(session, playerId => OpenPlayer(playerId));
-        Schedule = new SchedulePageViewModel(session);
+        Lines = new LinesPageViewModel(session, playerId => OpenPlayer(playerId), _lineupEdits);
+        Schedule = new SchedulePageViewModel(session, OpenTeam, playerId => OpenPlayer(playerId));
         TeamStatistics = new TeamStatisticsPageViewModel(session);
-        Injuries = new InjuriesPageViewModel(session);
-        Teams = new TeamsPageViewModel(session, OpenTeamLines, OpenPlayerFromRoster);
+        Injuries = new InjuriesPageViewModel(session, playerId => OpenPlayer(playerId));
+        Teams = new TeamsPageViewModel(session, OpenTeam);
         Standings = new StandingsPageViewModel(session, OpenTeam);
-        Playoffs = new PlayoffsPageViewModel(session, OpenMatch);
+        Playoffs = new PlayoffsPageViewModel(session, OpenMatch, OpenTeam);
         _pages = new Dictionary<ShellPage, ShellPageViewModel>
         {
             [ShellPage.Home] = Home,
@@ -177,6 +181,9 @@ public sealed partial class GameShellViewModel : ObservableObject
 
     /// <summary>Gets the player profile last opened, or null before any is.</summary>
     public PlayerProfilePageViewModel? Profile { get; private set; }
+
+    /// <summary>Gets the team page last opened, or null before any is.</summary>
+    public TeamPageViewModel? TeamPage { get; private set; }
 
     public TeamsPageViewModel Teams { get; }
 
@@ -320,17 +327,30 @@ public sealed partial class GameShellViewModel : ObservableObject
     public bool HasPlayersToReplace => Session.Snapshot.PlayersToReplace.Count > 0;
 
     /// <summary>Names the players to replace, or is empty when there are none.</summary>
-    public string PlayersToReplaceMessage
+    public string PlayersToReplaceMessage =>
+        HasPlayersToReplace
+            ? $"{PlayersToReplaceLead}{string.Concat(PlayersToReplaceLinks.Select(link => link.Text + link.Separator))}"
+            : string.Empty;
+
+    /// <summary>What precedes the players in <see cref="PlayersToReplaceMessage"/>.</summary>
+    public string PlayersToReplaceLead => "Injured players dressed: ";
+
+    /// <summary>The players to replace one by one, each opening its profile.</summary>
+    public IReadOnlyList<PlayerLinkViewModel> PlayersToReplaceLinks
     {
         get
         {
-            if (!HasPlayersToReplace)
-            {
-                return string.Empty;
-            }
-
-            var names = Session.Snapshot.PlayersToReplace.Select(id => Session.PlayersById[id]).Select(player => $"{PlayerDisplay.FullName(player)} (#{player.Number})");
-            return $"Injured players dressed: {string.Join(", ", names)}";
+            var ids = Session.Snapshot.PlayersToReplace;
+            return ids
+                .Select((id, index) =>
+                {
+                    var player = Session.PlayersById[id];
+                    return new PlayerLinkViewModel(
+                        $"{PlayerDisplay.FullName(player)} (#{player.Number})",
+                        new RelayCommand(() => OpenPlayer(id)),
+                        index < ids.Count - 1 ? ", " : string.Empty);
+                })
+                .ToList();
         }
     }
 
@@ -425,13 +445,10 @@ public sealed partial class GameShellViewModel : ObservableObject
         OpenPlayer(playerId, tab, statistics);
     }
 
-    /// <summary>
-    /// Shows a team on the Teams page, until <see href="https://github.com/tylerforgione/hockeysim/issues/63">team pages</see>
-    /// give each team its own.
-    /// </summary>
+    /// <summary>Shows a team's page, the managed team's included, on its Roster tab.</summary>
     public void OpenTeam(TeamId teamId)
     {
-        Go(new ShellLocation(ShellPage.Teams, SectionOf(ShellPage.Teams), teamId));
+        Go(new ShellLocation(ShellPage.TeamPage, CurrentSection.Section, new TeamPageSelection(teamId, TeamPageTab.Roster)));
     }
 
     /// <summary>Shows a team's lineup on the Lines page.</summary>
@@ -508,6 +525,20 @@ public sealed partial class GameShellViewModel : ObservableObject
                 Profile = profile;
                 _pages[ShellPage.PlayerProfile] = profile;
             }
+            else if (location.Selection is TeamPageSelection teamSelection)
+            {
+                TeamPage?.Dispose();
+                var teamPage = new TeamPageViewModel(
+                    Session,
+                    teamSelection.Team,
+                    teamSelection.Tab,
+                    _lineupEdits,
+                    OpenPlayerFromRoster,
+                    OpenMatch,
+                    OpenTeam);
+                TeamPage = teamPage;
+                _pages[ShellPage.TeamPage] = teamPage;
+            }
             else if (location.Selection is { } selection && _pages[location.Page] is ISelectablePage selectable)
             {
                 selectable.Select(selection);
@@ -536,6 +567,7 @@ public sealed partial class GameShellViewModel : ObservableObject
         object? selection = CurrentPage switch
         {
             PlayerProfilePageViewModel profile => new PlayerProfileSelection(profile.Id, profile.Tab, profile.Statistics),
+            TeamPageViewModel teamPage => new TeamPageSelection(teamPage.Id, teamPage.Tab),
             ISelectablePage selectable => selectable.Selection,
             _ => null,
         };
@@ -830,6 +862,7 @@ public sealed partial class GameShellViewModel : ObservableObject
         OnPropertyChanged(nameof(ContinueDescription));
         OnPropertyChanged(nameof(HasPlayersToReplace));
         OnPropertyChanged(nameof(PlayersToReplaceMessage));
+        OnPropertyChanged(nameof(PlayersToReplaceLinks));
         OnPropertyChanged(nameof(UnreadCount));
         OnPropertyChanged(nameof(InboxMenuLabel));
         OnPropertyChanged(nameof(LatestInboxItem));

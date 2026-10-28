@@ -23,7 +23,9 @@
           <DataTemplate x:DataType="injuries:InjuryReportRowViewModel">
             <Border Classes="standing-row" Height="24" Padding="8,0">
               <Grid ColumnDefinitions="220,48,180,140,*">
-                <TextBlock Classes="cell strong" Text="{Binding Name}" />
+                <Button Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenPlayerCommand}">
+                  <TextBlock Classes="cell strong" Text="{Binding Name}" />
+                </Button>
                 <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding Position}" />
                 <TextBlock Grid.Column="2" Classes="cell" Text="{Binding Injury}" />
                 <TextBlock Grid.Column="3"
