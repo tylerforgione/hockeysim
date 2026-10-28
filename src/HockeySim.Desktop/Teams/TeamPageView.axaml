@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lines="using:HockeySim.Desktop.Lines"
+             xmlns:roster="using:HockeySim.Desktop.Roster"
+             xmlns:schedule="using:HockeySim.Desktop.Schedule"
+             xmlns:tables="using:HockeySim.Desktop.Tables"
+             xmlns:teams="using:HockeySim.Desktop.Teams"
+             xmlns:teamStatistics="using:HockeySim.Desktop.TeamStatistics"
+             x:Class="HockeySim.Desktop.Teams.TeamPageView"
+             x:DataType="teams:TeamPageViewModel">
+  <Panel>
+    <roster:TeamRosterView x:Name="TeamRosterTab"
+                           DataContext="{Binding Roster}"
+                           IsVisible="{Binding $parent[UserControl].((teams:TeamPageViewModel)DataContext).ShowsRoster}" />
+    <lines:LinesPageView x:Name="TeamLinesTab"
+                         DataContext="{Binding Lines}"
+                         IsVisible="{Binding $parent[UserControl].((teams:TeamPageViewModel)DataContext).ShowsLines}" />
+    <Border x:Name="TeamScheduleTab"
+            Classes="panel"
+            Width="560"
+            HorizontalAlignment="Left"
+            DataContext="{Binding Schedule}"
+            IsVisible="{Binding $parent[UserControl].((teams:TeamPageViewModel)DataContext).ShowsSchedule}">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="panel-header">
+          <TextBlock Classes="panel-title" Text="SCHEDULE" VerticalAlignment="Center" />
+        </Border>
+        <Border DockPanel.Dock="Top" Classes="table-header" x:DataType="teams:TeamScheduleViewModel">
+          <Grid ColumnDefinitions="60,96,28,*,96">
+            <tables:SortHeader Column="phase" Label="PHASE" Sort="{Binding MatchesSort}" Command="{Binding SortMatchesCommand}" ToolTip.Tip="Preseason, regular season, or a playoff round and game" />
+            <tables:SortHeader Grid.Column="1" Column="date" Label="DATE" Sort="{Binding MatchesSort}" Command="{Binding SortMatchesCommand}" />
+            <tables:SortHeader Grid.Column="2" Column="venue" Label="@" Sort="{Binding MatchesSort}" Command="{Binding SortMatchesCommand}" ToolTip.Tip="Home or away" />
+            <tables:SortHeader Grid.Column="3" Column="opponent" Label="OPPONENT" Sort="{Binding MatchesSort}" Command="{Binding SortMatchesCommand}" />
+            <tables:SortHeader Grid.Column="4" Column="result" Label="RESULT" Sort="{Binding MatchesSort}" Command="{Binding SortMatchesCommand}" HorizontalContentAlignment="Right" />
+          </Grid>
+        </Border>
+        <ListBox x:Name="TeamScheduleList"
+                 Classes="table"
+                 x:DataType="teams:TeamScheduleViewModel"
+                 ItemsSource="{Binding Matches}"
+                 SelectedItem="{Binding SelectedMatch}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="schedule:ScheduleMatchRowViewModel">
+              <Grid ColumnDefinitions="60,96,28,*,96">
+                <TextBlock Classes="cell muted"
+                           Classes.strong="{Binding IsPlayoff}"
+                           Text="{Binding PhaseLabel}"
+                           ToolTip.Tip="{Binding PhaseDescription}" />
+                <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding DateLabel}" />
+                <TextBlock Grid.Column="2" Classes="cell muted" Text="{Binding Venue}" />
+                <Button Grid.Column="3" Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenOpponentCommand}">
+                  <TextBlock Classes="cell" Text="{Binding Opponent}" />
+                </Button>
+                <TextBlock Grid.Column="4"
+                           Classes="cell strong"
+                           Classes.success="{Binding IsWin}"
+                           Classes.error="{Binding IsLoss}"
+                           HorizontalAlignment="Right"
+                           Text="{Binding Result}" />
+                <Border Grid.Column="4"
+                        Classes="pill"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding IsNext}">
+                  <TextBlock Text="NEXT" />
+                </Border>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+    <teamStatistics:TeamStatisticsPageView x:Name="TeamStatisticsTab"
+                                           DataContext="{Binding Statistics}"
+                                           IsVisible="{Binding $parent[UserControl].((teams:TeamPageViewModel)DataContext).ShowsStatistics}" />
+  </Panel>
+</UserControl>

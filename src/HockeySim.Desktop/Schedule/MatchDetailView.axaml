@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:players="using:HockeySim.Desktop.Players"
              xmlns:schedule="using:HockeySim.Desktop.Schedule"
              xmlns:tables="using:HockeySim.Desktop.Tables"
              xmlns:theme="using:HockeySim.Desktop.Theme"
@@ -37,7 +38,9 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="schedule:SkaterBoxScoreRowViewModel">
               <Grid ColumnDefinitions="*,36,32,32,32,36,52,36,36,44,36,36,48,32,32,36,36,36,48,48" Height="22" Margin="8,0">
-                <TextBlock Classes="cell" Text="{Binding Name}" />
+                <Button Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenPlayerCommand}">
+                  <TextBlock Classes="cell" Text="{Binding Name}" />
+                </Button>
                 <TextBlock Grid.Column="1" Classes="cell-center muted" Text="{Binding Position}" />
                 <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Goals}" />
                 <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Assists}" />
@@ -74,7 +77,9 @@
           </Grid>
         </Border>
         <Grid ColumnDefinitions="*,40,40,40,48,48,52,52" Height="22" Margin="8,0">
-          <TextBlock Classes="cell" Text="{Binding Goalie.Name}" />
+          <Button Classes="cell-link" HorizontalAlignment="Left" Command="{Binding Goalie.OpenPlayerCommand}">
+            <TextBlock Classes="cell" Text="{Binding Goalie.Name}" />
+          </Button>
           <TextBlock Grid.Column="1" Classes="cell-center" Text="{Binding Goalie.ShotsAgainst}" />
           <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Goalie.Saves}" />
           <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Goalie.GoalsAgainst}" />
@@ -147,16 +152,20 @@
       </Viewbox>
       <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="16" Margin="16,0">
         <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-          <Border Classes="crest"
-                  Background="{Binding Away.Colours.Secondary, Converter={x:Static theme:ColourBrushConverter.Instance}}">
-            <TextBlock Text="{Binding Away.TeamInitials}"
-                       Foreground="{Binding Away.Colours.Primary, Converter={x:Static theme:ColourBrushConverter.Instance}}" />
-          </Border>
+          <Button Classes="banner-title-link" Command="{Binding Away.OpenTeamCommand}">
+            <Border Classes="crest"
+                    Background="{Binding Away.Colours.Secondary, Converter={x:Static theme:ColourBrushConverter.Instance}}">
+              <TextBlock Text="{Binding Away.TeamInitials}"
+                         Foreground="{Binding Away.Colours.Primary, Converter={x:Static theme:ColourBrushConverter.Instance}}" />
+            </Border>
+          </Button>
           <StackPanel VerticalAlignment="Center">
-            <TextBlock x:Name="AwayTeamName"
-                       Classes="match-team"
-                       Text="{Binding Away.TeamName, Converter={x:Static theme:UpperCaseConverter.Instance}}"
-                       Foreground="{Binding Away.Colours.Primary, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+            <Button x:Name="AwayTeamLink" Classes="banner-title-link" HorizontalAlignment="Left" Command="{Binding Away.OpenTeamCommand}">
+              <TextBlock x:Name="AwayTeamName"
+                         Classes="match-team"
+                         Text="{Binding Away.TeamName, Converter={x:Static theme:UpperCaseConverter.Instance}}"
+                         Foreground="{Binding Away.Colours.Primary, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+            </Button>
             <TextBlock Text="{Binding Away.Record}"
                        Opacity="0.8"
                        Foreground="{Binding Away.Colours.Primary, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
@@ -181,21 +190,24 @@
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center">
           <StackPanel VerticalAlignment="Center">
-            <TextBlock x:Name="HomeTeamName"
-                       Classes="match-team"
-                       HorizontalAlignment="Right"
-                       Text="{Binding Home.TeamName, Converter={x:Static theme:UpperCaseConverter.Instance}}"
-                       Foreground="{Binding Home.Colours.Primary, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+            <Button x:Name="HomeTeamLink" Classes="banner-title-link" HorizontalAlignment="Right" Command="{Binding Home.OpenTeamCommand}">
+              <TextBlock x:Name="HomeTeamName"
+                         Classes="match-team"
+                         Text="{Binding Home.TeamName, Converter={x:Static theme:UpperCaseConverter.Instance}}"
+                         Foreground="{Binding Home.Colours.Primary, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+            </Button>
             <TextBlock HorizontalAlignment="Right"
                        Text="{Binding Home.Record}"
                        Opacity="0.8"
                        Foreground="{Binding Home.Colours.Primary, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
           </StackPanel>
-          <Border Classes="crest"
-                  Background="{Binding Home.Colours.Secondary, Converter={x:Static theme:ColourBrushConverter.Instance}}">
-            <TextBlock Text="{Binding Home.TeamInitials}"
-                       Foreground="{Binding Home.Colours.Primary, Converter={x:Static theme:ColourBrushConverter.Instance}}" />
-          </Border>
+          <Button Classes="banner-title-link" Command="{Binding Home.OpenTeamCommand}">
+            <Border Classes="crest"
+                    Background="{Binding Home.Colours.Secondary, Converter={x:Static theme:ColourBrushConverter.Instance}}">
+              <TextBlock Text="{Binding Home.TeamInitials}"
+                         Foreground="{Binding Home.Colours.Primary, Converter={x:Static theme:ColourBrushConverter.Instance}}" />
+            </Border>
+          </Button>
         </StackPanel>
       </Grid>
     </Grid>
@@ -262,8 +274,27 @@
                   <Grid ColumnDefinitions="80,48,200,*,56,56" Height="22" Margin="8,0">
                     <TextBlock Classes="cell muted" Text="{Binding Time}" />
                     <TextBlock Grid.Column="1" Classes="cell-center" Text="{Binding Team}" />
-                    <TextBlock Grid.Column="2" Classes="cell strong" Text="{Binding Scorer}" />
-                    <TextBlock Grid.Column="3" Classes="cell muted" Text="{Binding Assists}" TextTrimming="CharacterEllipsis" />
+                    <Button Grid.Column="2" Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenScorerCommand}">
+                      <TextBlock Classes="cell strong" Text="{Binding Scorer}" />
+                    </Button>
+                    <TextBlock Grid.Column="3" Classes="cell muted" Text="Unassisted" IsVisible="{Binding IsUnassisted}" />
+                    <ItemsControl Grid.Column="3" ItemsSource="{Binding AssistLinks}" IsVisible="{Binding !IsUnassisted}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="players:PlayerLinkViewModel">
+                          <StackPanel Orientation="Horizontal">
+                            <Button Classes="cell-link" Command="{Binding OpenCommand}">
+                              <TextBlock Classes="cell muted" Text="{Binding Text}" />
+                            </Button>
+                            <TextBlock Classes="cell muted" Text="{Binding Separator}" />
+                          </StackPanel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                     <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Situation}" />
                     <TextBlock Grid.Column="5" Classes="cell-center" Text="{Binding Score}" />
                   </Grid>
@@ -289,7 +320,9 @@
                   <Grid ColumnDefinitions="80,48,200,*,160" Height="22" Margin="8,0">
                     <TextBlock Classes="cell muted" Text="{Binding Time}" />
                     <TextBlock Grid.Column="1" Classes="cell-center" Text="{Binding Team}" />
-                    <TextBlock Grid.Column="2" Classes="cell" Text="{Binding Player}" />
+                    <Button Grid.Column="2" Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenPlayerCommand}">
+                      <TextBlock Classes="cell" Text="{Binding Player}" />
+                    </Button>
                     <TextBlock Grid.Column="3" Classes="cell" Text="{Binding Infraction}" />
                     <TextBlock Grid.Column="4" Classes="cell muted" Text="{Binding Penalty}" />
                   </Grid>
@@ -345,7 +378,9 @@
                       <Grid ColumnDefinitions="64,*,36,40,44" Margin="8,3">
                         <TextBlock Classes="cell muted" Text="{Binding Star}" />
                         <StackPanel Grid.Column="1">
-                          <TextBlock Classes="cell strong" Text="{Binding Name}" />
+                          <Button Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenPlayerCommand}">
+                            <TextBlock Classes="cell strong" Text="{Binding Name}" />
+                          </Button>
                           <TextBlock Classes="caption" Text="{Binding Line}" />
                         </StackPanel>
                         <TextBlock Grid.Column="2" Classes="cell-center muted" Text="{Binding Position}" />
@@ -375,7 +410,9 @@
                     <DataTemplate x:DataType="schedule:GoalieSummaryRowViewModel">
                       <Grid ColumnDefinitions="40,*,32,32,32,44,44,48" Height="22" Margin="8,0">
                         <TextBlock Classes="cell" Text="{Binding Team}" />
-                        <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Goalie.Name}" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="1" Classes="cell-link" HorizontalAlignment="Left" Command="{Binding Goalie.OpenPlayerCommand}">
+                          <TextBlock Classes="cell" Text="{Binding Goalie.Name}" TextTrimming="CharacterEllipsis" />
+                        </Button>
                         <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Goalie.ShotsAgainst}" />
                         <TextBlock Grid.Column="3" Classes="cell-center" Text="{Binding Goalie.Saves}" />
                         <TextBlock Grid.Column="4" Classes="cell-center" Text="{Binding Goalie.GoalsAgainst}" />

@@ -176,8 +176,8 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         var shell = new GameShellViewModel(session);
         var playoffs = session.Snapshot.Season.Playoffs!;
         var qualifier = playoffs.Series[0].HigherRanked.TeamId;
-        shell.Teams.SelectTeam(qualifier);
-        var roster = shell.Teams.Roster;
+        shell.OpenTeam(qualifier);
+        var roster = shell.TeamPage!.Roster;
 
         Assert.True(roster.HasPlayoffStatistics);
         Assert.True(roster.ShowsRegularSeason);
@@ -206,11 +206,12 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         var gamesPlayed = playoffs.SkaterStatistics.Single(statistics => statistics.PlayerId == skater.Player.Id).GamesPlayed;
         Assert.Equal(gamesPlayed.ToString(System.Globalization.CultureInfo.CurrentCulture), profile.StatisticGroups[0].Statistics[0].Value);
 
-        // The choice holds across teams and refreshes. A team that missed the playoffs has none.
+        // The choice holds across refreshes. A team that missed the playoffs has none.
         var missed = session.Snapshot.League.Teams.First(team => !playoffs.Series.Any(series =>
             series.HigherRanked.TeamId == team.Id || series.LowerRanked.TeamId == team.Id));
-        shell.Teams.SelectTeam(missed.Id);
-        roster = shell.Teams.Roster;
+        shell.OpenTeam(missed.Id);
+        roster = shell.TeamPage!.Roster;
+        roster.ShowStatisticsSetCommand.Execute(StatisticsSet.Playoffs);
         Assert.True(roster.ShowsPlayoffs);
         Assert.All(roster.Skaters.Concat(roster.Goalies), row => Assert.Equal(PlayerSeasonTotals.None, row.Season));
         roster.SelectPlayer(roster.Skaters[0].Player.Id);
@@ -222,12 +223,12 @@ public sealed class PlayoffDisplayTests(PlayoffDisplayTests.PlayedSeason season)
         Assert.True(shell.Profile.IsGoalie);
         Assert.Equal("0", shell.Profile.StatisticGroups[0].Statistics[0].Value);
 
-        shell.Teams.Refresh();
-        Assert.True(shell.Teams.Roster.ShowsPlayoffs);
+        shell.TeamPage!.Refresh();
+        Assert.True(shell.TeamPage!.Roster.ShowsPlayoffs);
 
-        shell.Teams.Roster.ShowStatisticsSetCommand.Execute(StatisticsSet.RegularSeason);
-        Assert.Contains(shell.Teams.Roster.Skaters, row => row.Season.GamesPlayed > 10);
-        Assert.True(shell.Teams.Roster.ShowsRegularSeason);
+        shell.TeamPage!.Roster.ShowStatisticsSetCommand.Execute(StatisticsSet.RegularSeason);
+        Assert.Contains(shell.TeamPage!.Roster.Skaters, row => row.Season.GamesPlayed > 10);
+        Assert.True(shell.TeamPage!.Roster.ShowsRegularSeason);
 
         shell.Roster.Roster.ShowStatisticsSetCommand.Execute(StatisticsSet.Playoffs);
         shell.Roster.Refresh();

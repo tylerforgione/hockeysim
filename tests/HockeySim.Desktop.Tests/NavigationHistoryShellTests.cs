@@ -163,30 +163,96 @@ public sealed class NavigationHistoryShellTests(PlayoffDisplayTests.PlayedSeason
     }
 
     [Fact]
-    public void ChoosingATeamOnTheTeamsPageIsAnEntryAndBackRestoresTheTeam()
+    public void OpeningTeamsFromTheDirectoryAndTheBannerEachMakeOneEntryAndBackRestoresTheTeam()
     {
         var shell = NewShell();
+        var managed = shell.Session.Snapshot.ManagedTeamId;
+        var other = OtherTeam(shell);
         shell.Navigate(ShellPage.Teams);
-        var managed = shell.Teams.SelectedTeam;
-        var other = shell.Teams.Teams.First(team => !team.IsManaged);
 
-        shell.Teams.SelectedTeam = other;
-        shell.Teams.ShowNextTeamCommand.Execute(null);
-        var next = shell.Teams.SelectedTeam;
+        shell.Teams.Conferences[0].Divisions[0].Teams.Single(row => row.Id == other).OpenTeamCommand.Execute(null);
+        Assert.Equal(ShellPage.TeamPage, shell.CurrentPageKind);
+        Assert.Equal(ShellSection.League, shell.CurrentSection.Section);
+        shell.TeamBanner.OpenTeamCommand.Execute(null);
+        Assert.Equal(managed, shell.TeamPage!.Id);
 
         shell.GoBackCommand.Execute(null);
-        Assert.Equal(other, shell.Teams.SelectedTeam);
-        Assert.Equal(ShellPage.Teams, shell.CurrentPageKind);
+        Assert.Equal(other, shell.TeamPage!.Id);
         shell.GoBackCommand.Execute(null);
-        Assert.Equal(managed, shell.Teams.SelectedTeam);
         Assert.Equal(ShellPage.Teams, shell.CurrentPageKind);
         shell.GoBackCommand.Execute(null);
         Assert.Equal(ShellPage.Home, shell.CurrentPageKind);
         shell.GoForwardCommand.Execute(null);
         shell.GoForwardCommand.Execute(null);
         shell.GoForwardCommand.Execute(null);
-        Assert.Equal(next, shell.Teams.SelectedTeam);
+        Assert.Equal(managed, shell.TeamPage!.Id);
         AssertHistory(shell, canGoBack: true, canGoForward: false);
+    }
+
+    [Fact]
+    public void ATeamPagesTabIsNotAnEntryButBackAndForwardRestoreIt()
+    {
+        var shell = NewShell();
+        var first = OtherTeam(shell);
+        var second = shell.Session.Snapshot.League.Teams.Where(team => team.Id != first && team.Id != shell.Session.Snapshot.ManagedTeamId).First().Id;
+        shell.OpenTeam(first);
+        Assert.Equal(TeamPageTab.Roster, shell.TeamPage!.Tab);
+
+        shell.TeamPage.Tabs![2].Command.Execute(null);
+        Assert.Equal(TeamPageTab.Schedule, shell.TeamPage.Tab);
+        shell.OpenTeam(second);
+        shell.TeamPage!.Tabs![3].Command.Execute(null);
+
+        shell.GoBackCommand.Execute(null);
+        Assert.Equal(first, shell.TeamPage!.Id);
+        Assert.Equal(TeamPageTab.Schedule, shell.TeamPage.Tab);
+        shell.GoBackCommand.Execute(null);
+        Assert.Equal(ShellPage.Home, shell.CurrentPageKind);
+        AssertHistory(shell, canGoBack: false, canGoForward: true);
+        shell.GoForwardCommand.Execute(null);
+        shell.GoForwardCommand.Execute(null);
+        Assert.Equal(second, shell.TeamPage!.Id);
+        Assert.Equal(TeamPageTab.Statistics, shell.TeamPage.Tab);
+        AssertHistory(shell, canGoBack: true, canGoForward: false);
+    }
+
+    [Fact]
+    public async Task ARefreshAfterADayKeepsTheTeamPageAndItsTabAndAddsNoEntry()
+    {
+        var shell = NewShell();
+        var other = OtherTeam(shell);
+        shell.OpenTeam(other);
+        shell.TeamPage!.Tabs![1].Command.Execute(null);
+
+        await shell.AdvanceDayCommand.ExecuteAsync(null);
+
+        Assert.Equal(other, shell.TeamPage!.Id);
+        Assert.Equal(TeamPageTab.Lines, shell.TeamPage.Tab);
+        shell.GoBackCommand.Execute(null);
+        Assert.Equal(ShellPage.Home, shell.CurrentPageKind);
+        AssertHistory(shell, canGoBack: false, canGoForward: true);
+    }
+
+    [Fact]
+    public async Task ChoosingAResultOnATeamPageOpensItsBoxScoreAsOneEntryAndBackReturnsToTheTab()
+    {
+        var shell = NewShell();
+        await shell.AdvanceDayCommand.ExecuteAsync(null);
+        var snapshot = shell.Session.Snapshot.Season;
+        var result = snapshot.PreseasonResults.Concat(snapshot.Results).First();
+        var teamId = result.Home.TeamId;
+        shell.OpenTeam(teamId);
+        shell.TeamPage!.Tabs![2].Command.Execute(null);
+
+        shell.TeamPage.Schedule.SelectedMatch = shell.TeamPage.Schedule.Matches.Single(row => row.Date == result.Date);
+
+        Assert.Equal(shell.Session.Snapshot.ManagedTeamId == teamId ? ShellPage.TeamSchedule : ShellPage.LeagueSchedule, shell.CurrentPageKind);
+        Assert.Equal(result.Date, shell.Schedule.SelectedMatch?.Date);
+        Assert.NotNull(shell.Schedule.SelectedResult);
+        shell.GoBackCommand.Execute(null);
+        Assert.Equal(ShellPage.TeamPage, shell.CurrentPageKind);
+        Assert.Equal(teamId, shell.TeamPage!.Id);
+        Assert.Equal(TeamPageTab.Schedule, shell.TeamPage.Tab);
     }
 
     [Fact]
@@ -197,8 +263,8 @@ public sealed class NavigationHistoryShellTests(PlayoffDisplayTests.PlayedSeason
 
         shell.OpenTeam(other);
 
-        Assert.Equal(ShellPage.Teams, shell.CurrentPageKind);
-        Assert.Equal(other, shell.Teams.SelectedTeam.Id);
+        Assert.Equal(ShellPage.TeamPage, shell.CurrentPageKind);
+        Assert.Equal(other, shell.TeamPage!.Id);
         shell.GoBackCommand.Execute(null);
         Assert.Equal(ShellPage.Home, shell.CurrentPageKind);
         AssertHistory(shell, canGoBack: false, canGoForward: true);
@@ -376,21 +442,10 @@ public sealed class NavigationHistoryShellTests(PlayoffDisplayTests.PlayedSeason
         AssertHistory(shell, canGoBack: false, canGoForward: true);
     }
 
-    [Fact]
-    public void BackToASelectionThatNoLongerExistsFallsBackToThePagesDefault()
-    {
-        var shell = NewShell();
-        shell.OpenTeam(OtherTeam(shell));
-
-        ((ISelectablePage)shell.Teams).Select(new TeamId(Guid.NewGuid()));
-
-        Assert.True(shell.Teams.SelectedTeam.IsManaged);
-    }
-
     private static GameShellViewModel NewShell() => new(GameTestData.StartSession());
 
     private static TeamId OtherTeam(GameShellViewModel shell) =>
-        shell.Teams.Teams.First(team => !team.IsManaged).Id;
+        shell.Session.Snapshot.League.Teams.First(team => team.Id != shell.Session.Snapshot.ManagedTeamId).Id;
 
     private static void AssertHistory(GameShellViewModel shell, bool canGoBack, bool canGoForward)
     {

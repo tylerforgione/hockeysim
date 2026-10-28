@@ -267,6 +267,7 @@
                     VerticalAlignment="Center"
                     ItemsSource="{Binding Teams}"
                     SelectedItem="{Binding SelectedTeam}"
+                    IsVisible="{Binding ShowsTeamChoice}"
                     MaxDropDownHeight="520">
             <ComboBox.ItemTemplate>
               <DataTemplate x:DataType="teams:TeamEntryViewModel">

@@ -156,11 +156,25 @@ public sealed class MainWindowViewTests
         AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
         Assert.Equal(5, Named<ItemsControl>(shellView, "PageTabs").ItemCount);
         AssertNavigationRenders<TeamsPageView>(window, ShellPage.Teams);
+        Assert.Equal(2, Named<ItemsControl>(shellView, "TeamDirectoryColumns").ItemCount);
+        Assert.Equal(32, Single<TeamsPageView>(window).GetVisualDescendants().OfType<Button>().Count(button => button.Classes.Contains("cell-link")));
         AssertNavigationRenders<StandingsPageView>(window, ShellPage.Standings);
         AssertNavigationRenders<PlayoffsPageView>(window, ShellPage.PlayoffPicture);
         Assert.True(Single<PlayoffsPageView>(window).FindControl<TextBlock>("PlayoffsNotStarted")?.IsEffectivelyVisible);
         AssertNavigationRenders<SchedulePageView>(window, ShellPage.LeagueSchedule);
         AssertNavigationRenders<SchedulePageView>(window, ShellPage.TeamSchedule);
+
+        // An opponent opens its team page, and Back returns to the schedule.
+        var scheduleView = Single<SchedulePageView>(window);
+        var opponentLink = scheduleView.GetVisualDescendants().OfType<Button>()
+            .First(button => button.Classes.Contains("cell-link") && button.DataContext is ScheduleMatchRowViewModel);
+        var opponentRow = Assert.IsType<ScheduleMatchRowViewModel>(opponentLink.DataContext);
+        Click(opponentLink);
+        var opponentPage = Assert.IsType<TeamPageViewModel>(Single<TeamPageView>(window).DataContext);
+        Assert.Equal(opponentRow.Opponent, viewModel.Game!.Session.GetTeam(opponentPage.Id).Name);
+        Click(Named<Button>(shellView, "BackButton"));
+        Assert.Equal(ShellPage.TeamSchedule, viewModel.Game!.CurrentPageKind);
+
         AssertNavigationRenders<TeamStatisticsPageView>(window, ShellPage.TeamStatistics);
         Assert.Equal(7, Named<ItemsControl>(window, "TeamStatisticsList").ItemCount);
         AssertNavigationRenders<InjuriesPageView>(window, ShellPage.Injuries);
@@ -358,7 +372,7 @@ public sealed class MainWindowViewTests
         var homeView = Single<HomePageView>(window);
         var resultButtons = homeView.GetVisualDescendants()
             .OfType<Button>()
-            .Where(button => button.DataContext is RecentResultRowViewModel)
+            .Where(button => button.DataContext is RecentResultRowViewModel row && ReferenceEquals(button.Command, row.OpenCommand))
             .ToList();
         Assert.Equal(6, resultButtons.Count);
         Click(resultButtons[0]);
@@ -387,6 +401,24 @@ public sealed class MainWindowViewTests
         Click(Named<Button>(matchDetail, "SummaryTabButton"));
         Assert.True(matchDetail.FindControl<ScrollViewer>("SummaryTab")?.IsVisible);
 
+        // A box score's scorer and assists open their profiles, and Back returns to the box score.
+        var goalWithAssist = detailViewModel.ScoringSummary.First(goal => !goal.IsUnassisted);
+        var goalButtons = matchDetail.GetVisualDescendants().OfType<Button>()
+            .Where(button => button.Classes.Contains("cell-link") && ReferenceEquals(button.DataContext, goalWithAssist))
+            .ToList();
+        var boxScoreBack = Named<Button>(shellView, "BackButton");
+        Click(Assert.Single(goalButtons));
+        Assert.Equal(goalWithAssist.Scorer, PlayerDisplay.FullName(viewModel.Game!.Session.PlayersById[Assert.IsType<PlayerProfilePageViewModel>(Single<PlayerProfilePageView>(window).DataContext).Id]));
+        Click(boxScoreBack);
+        matchDetail = Single<MatchDetailView>(window);
+        var assistButton = matchDetail.GetVisualDescendants().OfType<Button>()
+            .First(button => ReferenceEquals(button.DataContext, goalWithAssist.AssistLinks[0]));
+        Click(assistButton);
+        Assert.Equal(goalWithAssist.AssistLinks[0].Text, PlayerDisplay.FullName(viewModel.Game!.Session.PlayersById[Assert.IsType<PlayerProfilePageViewModel>(Single<PlayerProfilePageView>(window).DataContext).Id]));
+        Click(boxScoreBack);
+        matchDetail = Single<MatchDetailView>(window);
+        Assert.True(matchDetail.FindControl<ScrollViewer>("SummaryTab")?.IsVisible);
+
         // Standings: the conferences side by side, four division tables by default with the marker
         // legend, then the wild-card view's four division leader tables and two races, then the
         // single league table in one column.
@@ -411,8 +443,34 @@ public sealed class MainWindowViewTests
         var teamLink = standingsView.GetVisualDescendants().OfType<Button>().First(button => button.Classes.Contains("cell-link"));
         var linkedTeam = Assert.IsType<StandingsRowViewModel>(teamLink.DataContext).TeamId;
         Click(teamLink);
-        Single<TeamsPageView>(window);
-        Assert.Equal(linkedTeam, viewModel.Game!.Teams.SelectedTeam.Id);
+
+        // A team opens its page: its own banner in its colours replaces the managed team's, and its
+        // own tabs replace the section's, in the League section it was opened from.
+        var teamPageView = Single<TeamPageView>(window);
+        var teamPage = Assert.IsType<TeamPageViewModel>(teamPageView.DataContext);
+        Assert.Equal(linkedTeam, teamPage.Id);
+        var linkedTeamSnapshot = viewModel.Game!.Session.GetTeam(linkedTeam);
+        Assert.Equal(
+            TeamPalette.ToColor(linkedTeamSnapshot.Colours.Primary),
+            Assert.IsAssignableFrom<ISolidColorBrush>(Named<Border>(shellView, "TeamPageBanner").Background).Color);
+        Assert.Equal(linkedTeamSnapshot.Name.ToUpperInvariant(), Named<TextBlock>(shellView, "TeamPageName").Text);
+        Assert.Equal(3, Named<ItemsControl>(shellView, "TeamPageFigures").ItemCount);
+        Assert.DoesNotContain(shellView.GetVisualDescendants().OfType<TextBlock>(), text => text.Name == "ShellTeamName");
+        var teamTabs = Named<ItemsControl>(shellView, "PageTabs").GetVisualDescendants().OfType<Button>().ToList();
+        Assert.Equal(["Roster", "Lines", "Schedule", "Statistics"], teamTabs.Select(button => button.Content));
+        Assert.True(Named<TeamRosterView>(teamPageView, "TeamRosterTab").IsEffectivelyVisible);
+        Assert.False(Named<LinesPageView>(teamPageView, "TeamLinesTab").IsEffectivelyVisible);
+        Click(teamTabs[1]);
+        Assert.True(Named<LinesPageView>(teamPageView, "TeamLinesTab").IsEffectivelyVisible);
+        Assert.False(Named<ComboBox>(teamPageView, "LinesTeamSelector").IsVisible);
+        Click(teamTabs[2]);
+        Assert.True(Named<Border>(teamPageView, "TeamScheduleTab").IsEffectivelyVisible);
+        Assert.Equal(teamPage.Schedule.Matches.Count, Named<ListBox>(teamPageView, "TeamScheduleList").ItemCount);
+        Click(teamTabs[3]);
+        Assert.True(Named<TeamStatisticsPageView>(teamPageView, "TeamStatisticsTab").IsEffectivelyVisible);
+        Assert.Equal(7, Named<ItemsControl>(teamPageView, "TeamStatisticsList").ItemCount);
+        Click(teamTabs[0]);
+        Assert.True(Named<TeamRosterView>(teamPageView, "TeamRosterTab").IsEffectivelyVisible);
 
         // Roster: the tables switched to basic and advanced statistics; the detail panel always
         // shows the full line.
@@ -432,6 +490,17 @@ public sealed class MainWindowViewTests
         Assert.False(basicTable.IsEffectivelyVisible);
         Assert.True(advancedTable.IsEffectivelyVisible);
         Assert.True(Named<ListBox>(rosterView, "GoalieAdvancedTable").IsEffectivelyVisible);
+
+        // A player's name opens the profile, with the roster's statistics, and Back returns to the roster.
+        var nameLink = rosterView.GetVisualDescendants().OfType<Button>()
+            .First(button => button.Classes.Contains("cell-link") && button.IsEffectivelyVisible && button.DataContext is PlayerRowViewModel);
+        var linkedPlayer = Assert.IsType<PlayerRowViewModel>(nameLink.DataContext).Player;
+        Click(nameLink);
+        Assert.Equal(linkedPlayer.Id, Assert.IsType<PlayerProfilePageViewModel>(Single<PlayerProfilePageView>(window).DataContext).Id);
+        Click(Named<Button>(shellView, "BackButton"));
+        rosterView = Single<TeamRosterView>(window);
+        advancedTable = Named<ListBox>(rosterView, "SkaterAdvancedTable");
+        Assert.True(advancedTable.IsEffectivelyVisible);
 
         // A header sorts its table and shows the direction beside its label.
         var corsiHeader = rosterView.GetVisualDescendants().OfType<SortHeader>().Single(header => header.Column == "corsi-percentage");
@@ -577,7 +646,7 @@ public sealed class MainWindowViewTests
 
         // The team link opens the team; the roster's Game log link opens the profile on its game log.
         Click(Named<Button>(shellView, "PlayerTeamLink"));
-        Assert.Single(window.GetVisualDescendants().OfType<TeamsPageView>());
+        Assert.Single(window.GetVisualDescendants().OfType<TeamPageView>());
         AssertNavigationRenders<RosterPageView>(window, ShellPage.Roster);
         Click(Named<Button>(Single<RosterPageView>(window), "StripGameLogLink"));
         profileView = Single<PlayerProfilePageView>(window);

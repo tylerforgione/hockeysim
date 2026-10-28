@@ -1,56 +1,72 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:roster="using:HockeySim.Desktop.Roster"
              xmlns:teams="using:HockeySim.Desktop.Teams"
+             xmlns:theme="using:HockeySim.Desktop.Theme"
              x:Class="HockeySim.Desktop.Teams.TeamsPageView"
              x:DataType="teams:TeamsPageViewModel">
-  <DockPanel>
-    <Border DockPanel.Dock="Top" Classes="panel" Margin="0,0,0,6" Padding="12,8">
-      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-        <Border Classes="badge" Width="44" Height="44">
-          <TextBlock Text="{Binding SelectedTeamInitials}" FontSize="14" />
-        </Border>
-        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <TextBlock x:Name="SelectedTeamName"
-                       Text="{Binding SelectedTeam.Name}"
-                       FontSize="17"
-                       FontWeight="SemiBold" />
-            <Border Classes="pill" IsVisible="{Binding IsSelectedTeamManaged}">
-              <TextBlock Text="YOU" />
-            </Border>
+  <!-- Conferences side by side, each column stacking its divisions. -->
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <ItemsControl x:Name="TeamDirectoryColumns" ItemsSource="{Binding Conferences}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <UniformGrid Rows="1" ColumnSpacing="6" VerticalAlignment="Top" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="teams:TeamDirectoryConferenceViewModel">
+          <StackPanel Spacing="6">
+            <TextBlock Classes="label" Margin="2,0" Text="{Binding Name, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
+            <ItemsControl ItemsSource="{Binding Divisions}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="6" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="teams:TeamDirectoryDivisionViewModel">
+                  <Border Classes="panel">
+                    <StackPanel>
+                      <Border Classes="panel-header">
+                        <TextBlock Classes="panel-title" Text="{Binding Name, Converter={x:Static theme:UpperCaseConverter.Instance}}" />
+                      </Border>
+                      <Border Classes="table-header">
+                        <Grid ColumnDefinitions="14,*,64,40">
+                          <TextBlock Grid.Column="1" Text="TEAM" />
+                          <TextBlock Grid.Column="2" Text="W-L-OTL" HorizontalAlignment="Center" />
+                          <TextBlock Grid.Column="3" Text="PTS" HorizontalAlignment="Center" />
+                        </Grid>
+                      </Border>
+                      <ItemsControl Classes="table" ItemsSource="{Binding Teams}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="teams:TeamDirectoryRowViewModel">
+                            <Border Classes="standing-row"
+                                    Classes.managed="{Binding IsManaged}"
+                                    Height="26"
+                                    Padding="8,0">
+                              <Grid ColumnDefinitions="14,*,64,40">
+                                <Border Classes="team-swatch"
+                                        Background="{Binding Colour, Converter={x:Static theme:ColourBrushConverter.Instance}}" />
+                                <Button Grid.Column="1"
+                                        Classes="cell-link"
+                                        HorizontalAlignment="Left"
+                                        Command="{Binding OpenTeamCommand}">
+                                  <TextBlock Classes="cell" Classes.strong="{Binding IsManaged}" Text="{Binding Name}" />
+                                </Button>
+                                <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Record}" />
+                                <TextBlock Grid.Column="3" Classes="cell-center strong" Text="{Binding Points}" />
+                              </Grid>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
           </StackPanel>
-          <TextBlock Classes="caption">
-            <Run Text="{Binding SelectedTeam.Division}" />
-            <Run Text="·" />
-            <Run Text="{Binding OwnershipNote}" />
-          </TextBlock>
-        </StackPanel>
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-          <Button Classes="secondary"
-                  Content="‹"
-                  Padding="10,4"
-                  ToolTip.Tip="Previous team"
-                  Command="{Binding ShowPreviousTeamCommand}" />
-          <ComboBox x:Name="TeamSelector"
-                    Width="220"
-                    ItemsSource="{Binding Teams}"
-                    SelectedItem="{Binding SelectedTeam}"
-                    MaxDropDownHeight="520">
-            <ComboBox.ItemTemplate>
-              <DataTemplate x:DataType="teams:TeamEntryViewModel">
-                <TextBlock Classes="cell" Text="{Binding Name}" />
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
-          <Button Classes="secondary"
-                  Content="›"
-                  Padding="10,4"
-                  ToolTip.Tip="Next team"
-                  Command="{Binding ShowNextTeamCommand}" />
-        </StackPanel>
-      </Grid>
-    </Border>
-    <roster:TeamRosterView DataContext="{Binding Roster}" />
-  </DockPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </ScrollViewer>
 </UserControl>

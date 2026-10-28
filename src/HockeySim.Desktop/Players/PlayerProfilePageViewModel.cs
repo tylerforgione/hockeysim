@@ -57,6 +57,7 @@ public sealed partial class PlayerProfilePageViewModel : ShellPageViewModel
     private readonly GameSession _session;
     private readonly PlayerId _playerId;
     private readonly Action<DateOnly, TeamId> _openMatch;
+    private readonly Action<TeamId> _openTeam;
     private readonly PlayerBannerViewModel _banner;
     private readonly IReadOnlyList<PlayerProfileTabViewModel> _tabs;
 
@@ -95,6 +96,7 @@ public sealed partial class PlayerProfilePageViewModel : ShellPageViewModel
         _session = session;
         _playerId = playerId;
         _openMatch = openMatch;
+        _openTeam = openTeam;
         _banner = new PlayerBannerViewModel(openTeam);
         _tab = tab;
         _statistics = statistics.OrRegularSeason(HasPlayoffStatistics);
@@ -329,7 +331,7 @@ public sealed partial class PlayerProfilePageViewModel : ShellPageViewModel
         InjuredUntil = InjuryDisplay.InjuredUntil(player.Injuries);
 
         GameLogColumns = isGoalie ? PlayerGameLog.GoalieColumns : PlayerGameLog.SkaterColumns;
-        GameLog = PlayerGameLog.For(_session, player, team);
+        GameLog = PlayerGameLog.For(_session, player, team, _openTeam);
         LastFiveGames = GameLog.Take(LastGames).ToList();
 
         // Everything may have changed; the properties above have no change notification of their own.

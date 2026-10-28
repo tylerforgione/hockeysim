@@ -707,9 +707,8 @@ public sealed class PlayerProfileTests(PlayoffDisplayTests.PlayedSeason season)
         var shell = new GameShellViewModel(session);
         var playoffs = session.Snapshot.Season.Playoffs!;
         var skater = playoffs.SkaterStatistics.First(statistics => statistics.GamesPlayed >= 2);
-        shell.OpenPageCommand.Execute(ShellPage.Teams);
-        shell.Teams.SelectTeam(skater.TeamId);
-        var roster = shell.Teams.Roster;
+        shell.OpenTeam(skater.TeamId);
+        var roster = shell.TeamPage!.Roster;
         roster.SelectPlayer(skater.PlayerId);
 
         Assert.True(roster.OpenProfileCommand.CanExecute(null));
@@ -728,16 +727,16 @@ public sealed class PlayerProfileTests(PlayoffDisplayTests.PlayedSeason season)
         Assert.NotEqual(session.ManagedTeam.Colours.Primary, banner.Colours.Primary);
         shell.OpenPageCommand.Execute(ShellPage.Standings);
         banner.OpenTeamCommand.Execute(null);
-        Assert.Equal(ShellPage.Teams, shell.CurrentPageKind);
-        Assert.Equal(team.Id, shell.Teams.SelectedTeam.Id);
+        Assert.Equal(ShellPage.TeamPage, shell.CurrentPageKind);
+        Assert.Equal(team.Id, shell.TeamPage!.Id);
 
-        shell.Teams.Roster.ShowStatisticsSetCommand.Execute(StatisticsSet.Playoffs);
-        shell.Teams.Roster.OpenGameLogCommand.Execute(null);
+        shell.TeamPage!.Roster.ShowStatisticsSetCommand.Execute(StatisticsSet.Playoffs);
+        shell.TeamPage!.Roster.OpenGameLogCommand.Execute(null);
 
         profile = Assert.IsType<PlayerProfilePageViewModel>(shell.CurrentPage);
         Assert.Equal(PlayerProfileTab.GameLog, profile.Tab);
         Assert.Equal(StatisticsSet.Playoffs, profile.Statistics);
-        Assert.Equal(shell.Teams.Roster.SelectedStrip!.PlayerId, profile.Id);
+        Assert.Equal(shell.TeamPage!.Roster.SelectedStrip!.PlayerId, profile.Id);
     }
 
     [Fact]

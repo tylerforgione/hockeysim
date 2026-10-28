@@ -95,7 +95,12 @@
       <Grid ColumnDefinitions="40,88,*,78,Auto" ColumnSpacing="4">
         <TextBlock Classes="cell muted" Text="{Binding PhaseLabel}" ToolTip.Tip="{Binding PhaseDescription}" />
         <TextBlock Grid.Column="1" Classes="cell" Foreground="{DynamicResource SecondaryTextBrush}" Text="{Binding DateLabel}" />
-        <TextBlock Grid.Column="2" Classes="cell" Text="{Binding Opponent}" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+          <TextBlock Classes="cell" Text="{Binding Venue}" />
+          <Button Classes="cell-link" Command="{Binding OpenOpponentCommand}">
+            <TextBlock Classes="cell" Text="{Binding OpponentName}" />
+          </Button>
+        </StackPanel>
         <TextBlock Grid.Column="3"
                    Classes="cell"
                    Classes.success="{Binding IsWin}"

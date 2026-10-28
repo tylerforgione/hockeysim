@@ -47,7 +47,9 @@
                            ToolTip.Tip="{Binding PhaseDescription}" />
                 <TextBlock Grid.Column="1" Classes="cell muted" Text="{Binding DateLabel}" />
                 <TextBlock Grid.Column="2" Classes="cell muted" Text="{Binding Venue}" />
-                <TextBlock Grid.Column="3" Classes="cell" Text="{Binding Opponent}" />
+                <Button Grid.Column="3" Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenOpponentCommand}">
+                  <TextBlock Classes="cell" Text="{Binding Opponent}" />
+                </Button>
                 <TextBlock Grid.Column="4"
                            Classes="cell strong"
                            Classes.success="{Binding IsWin}"

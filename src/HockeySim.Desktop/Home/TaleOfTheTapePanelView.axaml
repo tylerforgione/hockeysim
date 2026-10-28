@@ -30,13 +30,16 @@
               <ContentControl.ContentTemplate>
                 <DataTemplate x:DataType="home:TapeTeamViewModel">
                   <StackPanel HorizontalAlignment="Center" Spacing="2">
-                    <Border Classes="crest"
-                            HorizontalAlignment="Center"
-                            Background="{Binding Colour, Converter={x:Static theme:ColourBrushConverter.Instance}}">
-                      <TextBlock Text="{Binding Initials}"
-                                 Foreground="{Binding Colour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
-                    </Border>
-                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
+                    <Button Classes="banner-title-link" HorizontalAlignment="Center" Command="{Binding OpenCommand}">
+                      <Border Classes="crest"
+                              Background="{Binding Colour, Converter={x:Static theme:ColourBrushConverter.Instance}}">
+                        <TextBlock Text="{Binding Initials}"
+                                   Foreground="{Binding Colour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                      </Border>
+                    </Button>
+                    <Button Classes="cell-link" HorizontalAlignment="Center" Command="{Binding OpenCommand}">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
+                    </Button>
                     <TextBlock Classes="cell-center strong" Text="{Binding Record}" />
                     <TextBlock Classes="caption" TextAlignment="Center" Text="{Binding Standing}" />
                   </StackPanel>
@@ -47,13 +50,16 @@
               <ContentControl.ContentTemplate>
                 <DataTemplate x:DataType="home:TapeTeamViewModel">
                   <StackPanel HorizontalAlignment="Center" Spacing="2">
-                    <Border Classes="crest"
-                            HorizontalAlignment="Center"
-                            Background="{Binding Colour, Converter={x:Static theme:ColourBrushConverter.Instance}}">
-                      <TextBlock Text="{Binding Initials}"
-                                 Foreground="{Binding Colour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
-                    </Border>
-                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
+                    <Button Classes="banner-title-link" HorizontalAlignment="Center" Command="{Binding OpenCommand}">
+                      <Border Classes="crest"
+                              Background="{Binding Colour, Converter={x:Static theme:ColourBrushConverter.Instance}}">
+                        <TextBlock Text="{Binding Initials}"
+                                   Foreground="{Binding Colour, Converter={x:Static theme:ReadableTextBrushConverter.Instance}}" />
+                      </Border>
+                    </Button>
+                    <Button Classes="cell-link" HorizontalAlignment="Center" Command="{Binding OpenCommand}">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
+                    </Button>
                     <TextBlock Classes="cell-center strong" Text="{Binding Record}" />
                     <TextBlock Classes="caption" TextAlignment="Center" Text="{Binding Standing}" />
                   </StackPanel>

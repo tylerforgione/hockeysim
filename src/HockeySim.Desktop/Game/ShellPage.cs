@@ -2,7 +2,7 @@ namespace HockeySim.Desktop.Game;
 
 /// <summary>
 /// A page the shell can show. Each belongs to one <see cref="ShellSection"/>, except the player
-/// profile; the team and league schedules are the same page opened from different sections.
+/// profile and the team page; the team and league schedules are the same page opened from different sections.
 /// </summary>
 public enum ShellPage
 {
@@ -24,6 +24,9 @@ public enum ShellPage
 
     /// <summary>A player's profile, which belongs to no section: it keeps the one it was opened from.</summary>
     PlayerProfile,
+
+    /// <summary>A team's page, which belongs to no section: it keeps the one it was opened from.</summary>
+    TeamPage,
 }
 
 /// <summary>A group of pages shown together as tabs under the team banner.</summary>

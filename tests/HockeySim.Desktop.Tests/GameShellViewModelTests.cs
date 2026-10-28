@@ -258,8 +258,8 @@ public sealed class GameShellViewModelTests
         Assert.Equal(ShellPage.Lines, shell.CurrentPageKind);
 
         shell.Home.TaleOfTheTape.OpenOpponentCommand.Execute(null);
-        Assert.Equal(ShellPage.Teams, shell.CurrentPageKind);
-        Assert.Equal(opponent.TeamId, shell.Teams.SelectedTeam.Id);
+        Assert.Equal(ShellPage.TeamPage, shell.CurrentPageKind);
+        Assert.Equal(opponent.TeamId, shell.TeamPage!.Id);
 
         shell.Home.TaleOfTheTape.OpenContextCommand.Execute(null);
         Assert.Equal(ShellPage.TeamSchedule, shell.CurrentPageKind);

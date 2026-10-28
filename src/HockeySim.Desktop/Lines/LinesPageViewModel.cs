@@ -10,13 +10,14 @@ namespace HockeySim.Desktop.Lines;
 /// <summary>
 /// Shows any team's lineup and edits the managed team's: forward lines, defence pairs, goalies,
 /// special-situation units, and extra attackers. Edits stay local until saved, when Management
-/// validates and applies the whole lineup at once. Browsing another team keeps unsaved edits.
+/// validates and applies the whole lineup at once. Browsing another team keeps unsaved edits. The
+/// same view model, fixed to one team, is the Lines tab of a team page.
 /// </summary>
-public sealed partial class LinesPageViewModel : ShellPageViewModel, ISelectablePage
+public sealed partial class LinesPageViewModel : ShellPageViewModel, ISelectablePage, IDisposable
 {
     private readonly GameSession _session;
     private readonly Action<PlayerId>? _openPlayer;
-    private LineupEditorViewModel _managedLineup;
+    private readonly ManagedLineupEdits _edits;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Subtitle), nameof(IsEditable), nameof(OwnershipNote))]
@@ -29,29 +30,25 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel, ISelectable
     [NotifyPropertyChangedFor(nameof(IsEvenStrengthTab), nameof(IsPowerPlayTab), nameof(IsPenaltyKillTab), nameof(IsOtherTab))]
     private LinesTab _tab = LinesTab.EvenStrength;
 
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
-    [NotifyCanExecuteChangedFor(nameof(RevertCommand))]
-    private bool _hasChanges;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasError))]
-    private string? _errorMessage;
-
-    [ObservableProperty]
-    private string? _statusMessage;
-
     /// <param name="openPlayer">Opens a player's profile; without it the profile cannot be opened from here.</param>
-    public LinesPageViewModel(GameSession session, Action<PlayerId>? openPlayer = null)
+    /// <param name="edits">
+    /// The managed team's edits, shared with other pages showing them; the page keeps its own without it.
+    /// </param>
+    /// <param name="fixedTeam">
+    /// The one team to show, with no team choice, as on a team page; the managed team is shown, with a choice, without it.
+    /// </param>
+    public LinesPageViewModel(GameSession session, Action<PlayerId>? openPlayer = null, ManagedLineupEdits? edits = null, TeamId? fixedTeam = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
         _openPlayer = openPlayer;
+        _edits = edits ?? new ManagedLineupEdits(session);
         Teams = TeamEntryViewModel.ForLeague(session.Snapshot);
-        _selectedTeam = Teams.Single(team => team.IsManaged);
-        _managedLineup = CreateManagedLineup();
-        _lineup = _managedLineup;
+        ShowsTeamChoice = fixedTeam is null;
+        _selectedTeam = fixedTeam is { } team ? Teams.Single(entry => entry.Id == team) : Teams.Single(entry => entry.IsManaged);
+        _lineup = SelectedLineup();
+        _edits.Changed += OnEditsChanged;
     }
 
     public event EventHandler? SelectionChanged;
@@ -63,7 +60,16 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel, ISelectable
     /// </summary>
     public IReadOnlyList<TeamEntryViewModel> Teams { get; }
 
+    /// <summary>Gets whether any team can be chosen; a team page shows its own team only.</summary>
+    public bool ShowsTeamChoice { get; }
+
     public bool IsEditable => SelectedTeam.IsManaged;
+
+    public bool HasChanges => _edits.HasChanges;
+
+    public string? ErrorMessage => _edits.ErrorMessage;
+
+    public string? StatusMessage => _edits.StatusMessage;
 
     public string OwnershipNote => IsEditable
         ? "Your team"
@@ -94,11 +100,7 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel, ISelectable
     public override void Refresh()
     {
         // Keep unsaved edits when unrelated game state changes, such as reading a message.
-        if (!HasChanges)
-        {
-            _managedLineup = CreateManagedLineup();
-        }
-
+        _edits.Refresh();
         ShowSelectedTeam();
     }
 
@@ -119,28 +121,19 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel, ISelectable
     [RelayCommand(CanExecute = nameof(HasChanges))]
     private void Save()
     {
-        ErrorMessage = null;
-        StatusMessage = null;
-
-        try
-        {
-            _session.SetLineup(_managedLineup.CreateCommand());
-        }
-        catch (ArgumentException exception)
-        {
-            ErrorMessage = $"The lineup was not saved. {exception.Message}";
-            return;
-        }
-
-        ReloadManagedLineup();
-        StatusMessage = "Lineup saved.";
+        _edits.Save();
     }
 
     [RelayCommand(CanExecute = nameof(HasChanges))]
     private void Revert()
     {
-        ReloadManagedLineup();
-        StatusMessage = "Changes discarded.";
+        _edits.Revert();
+    }
+
+    /// <summary>Stops following the shared edits, once a team page showing this page is replaced.</summary>
+    public void Dispose()
+    {
+        _edits.Changed -= OnEditsChanged;
     }
 
     partial void OnSelectedTeamChanged(TeamEntryViewModel value)
@@ -149,32 +142,29 @@ public sealed partial class LinesPageViewModel : ShellPageViewModel, ISelectable
         SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private void ReloadManagedLineup()
-    {
-        _managedLineup = CreateManagedLineup();
-        ErrorMessage = null;
-        ShowSelectedTeam();
-    }
-
     private void ShowSelectedTeam()
     {
-        Lineup = SelectedTeam.IsManaged
-            ? _managedLineup
+        Lineup = SelectedLineup();
+    }
+
+    private LineupEditorViewModel SelectedLineup() =>
+        SelectedTeam.IsManaged
+            ? _edits.Editor
             : new LineupEditorViewModel(_session.GetTeam(SelectedTeam.Id), isEditable: false, () => { });
-    }
 
-    private LineupEditorViewModel CreateManagedLineup()
+    private void OnEditsChanged(object? sender, EventArgs e)
     {
-        var lineup = new LineupEditorViewModel(_session.ManagedTeam, isEditable: true, OnManagedLineupEdited);
-        HasChanges = false;
-        return lineup;
-    }
+        if (SelectedTeam.IsManaged)
+        {
+            ShowSelectedTeam();
+        }
 
-    private void OnManagedLineupEdited()
-    {
-        StatusMessage = null;
-        ErrorMessage = null;
-        HasChanges = _managedLineup.HasChanges;
+        OnPropertyChanged(nameof(HasChanges));
+        OnPropertyChanged(nameof(ErrorMessage));
+        OnPropertyChanged(nameof(HasError));
+        OnPropertyChanged(nameof(StatusMessage));
+        SaveCommand.NotifyCanExecuteChanged();
+        RevertCommand.NotifyCanExecuteChanged();
     }
 }
 

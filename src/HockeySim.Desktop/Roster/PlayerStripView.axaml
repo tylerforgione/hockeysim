@@ -12,7 +12,9 @@
       <StackPanel Spacing="6">
         <StackPanel Orientation="Horizontal" Spacing="8">
           <TextBlock x:Name="StripNumberText" Classes="caption" VerticalAlignment="Center" Text="{Binding SelectedStrip.Number}" />
-          <TextBlock x:Name="StripNameText" FontSize="15" FontWeight="SemiBold" Text="{Binding SelectedStrip.Name}" />
+          <Button Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenProfileCommand}">
+            <TextBlock x:Name="StripNameText" FontSize="15" FontWeight="SemiBold" Text="{Binding SelectedStrip.Name}" />
+          </Button>
           <Border x:Name="StripInjuryMarker"
                   Classes="pill"
                   Classes.injury-out="{Binding SelectedStrip.IsOut}"

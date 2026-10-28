@@ -16,18 +16,21 @@ public sealed partial class RecentResultsPanelViewModel : ObservableObject
 
     private readonly GameSession _session;
     private readonly Action<DateOnly, TeamId> _openMatch;
+    private readonly Action<TeamId>? _openTeam;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasRows))]
     private IReadOnlyList<RecentResultRowViewModel> _rows = [];
 
-    public RecentResultsPanelViewModel(GameSession session, Action<DateOnly, TeamId> openMatch)
+    /// <param name="openTeam">Opens an opponent's page; opponents are plain text without it.</param>
+    public RecentResultsPanelViewModel(GameSession session, Action<DateOnly, TeamId> openMatch, Action<TeamId>? openTeam = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(openMatch);
 
         _session = session;
         _openMatch = openMatch;
+        _openTeam = openTeam;
         Refresh();
     }
 
@@ -48,13 +51,17 @@ public sealed partial class RecentResultsPanelViewModel : ObservableObject
             .Select(result =>
             {
                 var isHome = result.Home.TeamId == teamId;
+                var opponent = _session.GetTeam(isHome ? result.Away.TeamId : result.Home.TeamId);
                 return new RecentResultRowViewModel(
                     MatchDisplay.ShortDate(result.Date),
                     isHome ? "vs" : "@",
-                    _session.GetTeam(isHome ? result.Away.TeamId : result.Home.TeamId).Name,
+                    opponent.Name,
                     MatchDisplay.ResultFor(result, teamId),
                     result.WinnerId == teamId,
-                    new RelayCommand(() => _openMatch(result.Date, teamId)));
+                    new RelayCommand(() => _openMatch(result.Date, teamId)))
+                {
+                    OpenOpponentCommand = NameLinks.Open(_openTeam, opponent.Id),
+                };
             })
             .ToList();
     }
@@ -70,5 +77,8 @@ public sealed record RecentResultRowViewModel(
     bool IsWin,
     System.Windows.Input.ICommand OpenCommand)
 {
+    /// <summary>Opens the opponent's team page; absent where the name links nowhere.</summary>
+    public System.Windows.Input.ICommand? OpenOpponentCommand { get; init; }
+
     public bool IsLoss => !IsWin;
 }

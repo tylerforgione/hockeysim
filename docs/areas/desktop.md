@@ -17,19 +17,22 @@ view model together.
 | `Program.cs`, `App.axaml*`, `AppVersion.cs` | Startup and composition |
 | `Main/` | The window and top-level screen choice, with discard confirmation |
 | `Startup/`, `NewGame/`, `Saves/` | The startup menu (`StartupViewModel`: Continue, the recent games, quit), new-game setup, save and load screens. `Saves/` holds `SavedGameLoader` (loading with the discard confirmation and failure wording, shared by the load screen and the menu), `SavedGameRowViewModel` (one save's details formatting), and the shared table pieces `SavedGameRowView`, `SavedGameHeaderView`, `SavedGameColumns`. `NewGame/NewGameViewModel.cs` holds the steps (`NewGameStep`, `NewGameStepViewModel`), the team list (`ConferenceOptionViewModel`, `DivisionOptionViewModel`, `TeamOptionViewModel`), and the team preview (`TeamPreviewViewModel`, `KeyPlayerViewModel`, `RatingBarViewModel`) |
-| `Game/` | `GameSession` (commands, snapshots, unsaved progress, runs of days) and the in-game shell: menu bar, Continue and its menu (`SimulateAheadOptionViewModel`), sections and page tabs (`ShellPage`, `NavigationItemViewModel`, `IPageTab`), the navigation history (`NavigationHistory`, the UI-free back and forward stacks; `ShellLocation`, an entry: page, section, and selection; `ISelectablePage`, which the Teams, Lines, Schedule, Inbox, and Playoffs pages implement to announce and restore their entity selection), the team banner (`TeamBannerViewModel`), and the status bar |
-| `Home/`, `Inbox/`, `Roster/`, `Lines/`, `TeamStatistics/`, `Injuries/`, `Teams/`, `Standings/`, `Playoffs/`, `Schedule/` | The shell's pages. `Teams/TeamsPageViewModel.cs` also holds `TeamEntryViewModel.ForLeague`, the team picker list the Teams, Lines, and Schedule pages share |
+| `Game/` | `GameSession` (commands, snapshots, unsaved progress, runs of days) and the in-game shell: menu bar, Continue and its menu (`SimulateAheadOptionViewModel`), sections and page tabs (`ShellPage`, `NavigationItemViewModel`, `IPageTab`), the navigation history (`NavigationHistory`, the UI-free back and forward stacks; `ShellLocation`, an entry: page, section, and selection; `ISelectablePage`, which the Lines, Schedule, Inbox, and Playoffs pages implement to announce and restore their entity selection), the team banner (`TeamBannerViewModel`, any team's figures: the managed team's under the menu bar, or a team page's), and the status bar |
+| `Home/`, `Inbox/`, `Roster/`, `Lines/`, `TeamStatistics/`, `Injuries/`, `Teams/`, `Standings/`, `Playoffs/`, `Schedule/` | The shell's pages. `Teams/TeamsPageViewModel.cs` is the League › Teams directory and also holds `TeamEntryViewModel.ForLeague`, the league-ordered team list the directory and the Lines and Schedule pickers share |
+| `Teams/` | The team page: `TeamPageView`/`TeamPageViewModel` (the shell page: banner, tabs, roster, hosted lines, schedule, statistics; also `TeamPageSelection` and `TeamPageBannerViewModel`), `TeamPageTab`, and `TeamScheduleViewModel` (the Schedule tab's rows and sort, opening a result's box score) |
 | `Home/` | The home page: `HomePageViewModel` builds five self-contained panels, each a view and view model that takes the `GameSession` and only the shortcuts it needs and refreshes itself: `UpcomingGamesPanel…`, `StandingsPanel…` (scope held across refreshes), `TaleOfTheTapePanel…` (the managed team against its next opponent), `RecentResultsPanel…`, `TeamLeadersPanel…` (with the minimum-games choice). `HomeStatistics` picks the statistics set the tape and leaders share and finds its figures |
 | `Roster/` | The roster shared by the Roster and Teams pages: `TeamRosterView`/`TeamRosterViewModel` (player groups, column views, selection, the links to a player's profile), `SkaterTableView` and `GoalieTableView` (each table's four column views, double-clicking a row opening the profile through `RosterRowActivation`), `PlayerStripView`/`PlayerStripViewModel` (the selected player's strip), `PlayerRowViewModel` (one row) |
-| `Lines/` | The Lines page: `LinesPageViewModel` (team, tabs, save and revert, opening a profile), `LineupEditorViewModel` (one team's slots, swap rules, scratches, and the drag: `BeginDrag`, `CanDrop`, `Drop`, `EndDrag`), `LineupSlotViewModel` (one slot's choice and warnings), `PlayerOptionViewModel`, and `LineupDragDrop`, the in-page drag: a press on a grip, the ghost that follows the pointer, and the hit test that drops on a slot. The view's code-behind opens profiles from the name links |
+| `Lines/` | The Lines page: `LinesPageViewModel` (team, tabs, save and revert, opening a profile; fixed to one team, it is a team page's Lines tab), `ManagedLineupEdits` (the managed team's unsaved lineup edits, shared by the Lines page and team pages), `LineupEditorViewModel` (one team's slots, swap rules, scratches, and the drag: `BeginDrag`, `CanDrop`, `Drop`, `EndDrag`), `LineupSlotViewModel` (one slot's choice and warnings), `PlayerOptionViewModel`, and `LineupDragDrop`, the in-page drag: a press on a grip, the ghost that follows the pointer, and the hit test that drops on a slot. The view's code-behind opens profiles from the name links |
 | `Players/` | The player profile and what it shows: `PlayerProfilePageView`/`PlayerProfilePageViewModel` (the shell page: tabs, statistic set, biography, usage, ratings, health), `PlayerProfileTab`, `PlayerBannerViewModel` (the banner, painted in the player's team colours), `PlayerGameLog` (the game log's rows), `RatingViewModels.cs`, `PlayerInjuryViewModel`; regular-season or playoff totals as displayed (`PlayerSeasonTotals`, chosen by `StatisticsSet`, which falls back to the regular season before the playoffs); and shared player and injury formatting (`PlayerDisplay`, `InjuryDisplay`) |
 | `Standings/StandingsTableBuilder.cs` | Builds the standings tables per scope from Management's rankings, for the Standings page and the home page's standings panel |
 | `Standings/TeamForm.cs`, `Standings/PlayoffStatusDisplay.cs` | A team's last ten games (and the points they earned) and streak (also on the banner), and the playoff-status letters and legend |
 | `Playoffs/PlayoffDisplay.cs` | Shared round, seed, and series-status formatting, and finding a team's playoff game by date |
 | `TeamStatistics/TeamStatisticsDisplay.cs`, `Injuries/InjuryReportRowViewModel.cs` | Team statistic and injury report formatting |
 | `Schedule/MatchDetail*`, `MatchSummaryTables.cs`, `MatchDisplay.cs` | The box score: its banner, Summary and Players tabs, the summary's tables, and shared match and statistic formatting (including ordinals and the PRE, REG, and playoff game labels) |
+| `Schedule/ScheduleRows.cs` | Building and sorting a team's schedule rows, for the schedule page and a team page's Schedule tab |
 | `Schedule/TeamResults.cs` | Picking a team's results: whether a result involves a team, and each team's results oldest first |
 | `Tables/` | Sortable tables: `TableSort` (column key and direction), `TableColumn` (a column's raw sort key and first direction), `TableSorting` (click and ordering, ties keep default order, dashes last), and the `SortHeader` header button. Per-table column sets: `Roster/RosterTableColumns.cs` (with `RosterSorts`, a roster's remembered skater and goalie sorts), `Schedule/ScheduleTableColumns.cs`, `Schedule/BoxScoreTableColumns.cs` |
+| `Game/NameLinks.cs`, `Players/PlayerLinkViewModel.cs`, `Teams/TeamLinkViewModel.cs` | Name links: the command behind a player or team name (none when a page has no way to open it), and one name among several on a line, such as a goal's assists or a playoff game's teams |
 | `Confirmation/` | The confirmation shown over every screen |
 | `Theme/` | Palette, control styles (including the menu bar, banners, tabs, and status bar), menu-bar icons, the bundled PT Sans fonts and their licence (`Fonts/`), `TeamPalette`, which colours the window with the managed team, `ColourBrushConverter`, which paints a team's colour, and `ReadableTextBrushConverter`, which picks text that reads on it |
 
@@ -41,8 +44,10 @@ games, plus a headless Avalonia walkthrough.
 | File | Covers |
 | --- | --- |
 | `MainWindowViewTests.cs` | Headless walkthrough of the menu bar, Continue's menu, and every page, team colours, the profile page and its tabs, saving, loading, closing |
-| `NavigationHistoryTests.cs`, `NavigationHistoryShellTests.cs` | The history model (visit, back, forward, truncation, replace, cap); the shell's entries for each kind (pages, profiles, team, schedule, inbox, and playoff selections), one entry per open, tabs not entries, a day's refresh adding none, and a new shell starting empty |
-| `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup: steps, the world seed and its preview, the team preview, the manager and save names, starting the previewed world; sections, tabs, planned pages, the banner, and the status bar; browsing teams |
+| `NavigationHistoryTests.cs`, `NavigationHistoryShellTests.cs` | The history model (visit, back, forward, truncation, replace, cap); the shell's entries for each kind (pages, profiles, team pages and their tabs, Lines and schedule teams, schedule, inbox, and playoff selections), one entry per open, tabs not entries, a day's refresh adding none, and a new shell starting empty |
+| `NewGameViewModelTests.cs`, `GameShellViewModelTests.cs`, `TeamBrowsingTests.cs` | Setup: steps, the world seed and its preview, the team preview, the manager and save names, starting the previewed world; sections, tabs, planned pages, the banner, and the status bar; the Teams directory |
+| `NameLinksTests.cs` | Player and team name links on every page: their targets, one history entry each, back to where they were clicked, and plain names without a callback |
+| `TeamPageViewModelTests.cs` | The team page: banner, tabs, roster, read-only and editable lines and their shared edits, schedule and box scores, statistics, refresh |
 | `LinesPageViewModelTests.cs` | Lineup and unit editing, any-role choices, out-of-position warnings, dragging and dropping players, opening profiles |
 | `SeasonAdvancementTests.cs` | Continue, refresh after a day, failures, box scores, the preseason labels, the schedule's phases and preseason results |
 | `MatchDetailViewModelTests.cs` | The box score for regulation, overtime, and shootout matches: periods, totals, records, the comparison, stars, goalies, and tabs |
@@ -97,22 +102,24 @@ days to opening day in the preseason, to the end of the regular season, or the
 playoff round under way (once the champion is crowned, the champion instead of
 both), and Continue, a split button: Continue plays one day, and its arrow opens
 a menu of runs for the current phase (see below). Under
-the menu bar is the managed team's banner in its colours: crest, name, record,
+the menu bar is the managed team's banner in its colours: crest, name (opening
+its team page), record,
 points, division and conference rank, and the next match and last result,
 which cover the preseason, regular season, and playoffs, and the streak, which
 counts regular-season results only. A page may show its own banner instead, and
 its own tabs: the player profile does both. Below the banner, the current
 section's pages are tabs, with the page's subtitle on the right.
 Home, Team, League, and Inbox are sections; the team and league schedules are
-one page, and opening it from Team shows the managed team. The player profile is
-a page in no section: while it is shown the menu bar keeps the section it was
-opened from. Back and forward move through the shell's navigation history, as
+one page, and opening it from Team shows the managed team. The player profile and
+the team page are pages in no section: while one is shown the menu bar keeps the
+section it was opened from. Back and forward move through the shell's navigation history, as
 do Alt+Left and Alt+Right (Cmd+[ and Cmd+] on macOS) and the mouse's back and
 forward buttons. Each page opened is an entry, and so is each choice of what a
-page shows: a player's profile, the team on the Teams, Lines, or schedule page,
-a match on the schedule, an inbox message, or a playoff series. How it is shown
-(tabs, scopes, column views, sorts) is not an entry, but going back returns to a
-profile on the tab and statistic set it was left on. A link that opens a page on
+page shows: a player's profile, a team's page, the team on the Lines or schedule
+page, a match on the schedule, an inbox message, or a playoff series. How it is
+shown (tabs, scopes, column views, sorts) is not an entry, but going back returns
+to a profile on the tab and statistic set it was left on, and to a team page on
+its tab. A link that opens a page on
 a choice, such as a team's name, makes one entry. Going somewhere new after going
 back discards the entries ahead; at most 100 are kept behind. A refresh after a
 day adds none. The history belongs to the shell, so starting or loading a game
@@ -235,25 +242,24 @@ rule in the managed team's secondary colour under the second wild card. Each row
 shows rank, the team's colour swatch and name, GP, W, L, OTL, PTS, P%, ROW, DIFF
 (goals for and against in its tooltip), the last ten games (wins-losses-overtime
 losses), and the current streak, both from regular-season results. The managed
-team's row is highlighted. A team's name opens it on the Teams page until
-[team pages](https://github.com/tylerforgione/hockeysim/issues/63) exist. Every
+team's row is highlighted. A team's name opens its team page. Every
 table marks each team's playoff status with the NHL's letter (x, y, z, p, or e)
 before its name, with the meaning in a tooltip and a one-line legend beneath the
 tables. The team statistics page lists the managed
 team's power-play, penalty-kill, and faceoff percentages and its five-on-five
 Corsi, Fenwick, shot, and xG shares; once the playoffs start it switches between
-the regular season's and the playoffs', showing dashes if the team missed them. The injuries page is the managed team's
-injury report: each injury that has not healed, players who cannot play first,
-with its status and expected return. Other teams' figures wait for
-[team pages](https://github.com/tylerforgione/hockeysim/issues/63). Roster tables mark an injured player OUT or INJ beside
+the regular season's and the playoffs', showing dashes if the team missed them;
+a team page's Statistics tab shows the same for any team. The injuries page is
+the managed team's injury report: each injury that has not healed, players who
+cannot play first, with its status and expected return. Roster tables mark an injured player OUT or INJ beside
 their name, with the details in a tooltip, and the player profile shows the
 player's health (see below). The exact recovery time, wear, and durability are
 never shown. Once the playoffs start, each roster switches between regular-season
 and playoff statistics from the skaters panel's header; the choice changes both
 tables, is the set a profile opened from the roster starts on, holds across teams
 and days like the column choice, and shows zeros and dashes for a team or player
-without playoff games. Every team's roster (the Roster page and the
-Teams page) has a toolbar of player groups (All players, Skaters, Forwards,
+without playoff games. Every team's roster (the Roster page and a team
+page's Roster tab) has a toolbar of player groups (All players, Skaters, Forwards,
 Defence, Goalies, with a filter for all forwards, centres, or wingers under
 Forwards) and column views (Basic, Advanced, Ratings, Bio; Ratings at first).
 All players shows a skater table above a goalie table; the other groups show
@@ -272,20 +278,21 @@ to All players. Under the tables a strip shows the selected player: number,
 name, position, injury marker and summary, handedness, age, height, weight,
 nationality, overall, and the player's ratings, with Profile and Game log links,
 which open the player's profile on its Overview or Game log tab with the roster's
-statistic set, and Lines, which opens the Lines page on that team. Double-clicking
+statistic set, and Lines, which opens the Lines page from the Roster page and
+the Lines tab on a team page. Double-clicking
 a row opens the profile too, and the tables take the full width. A player who has
 not appeared shows zeros, and every percentage, average, and rate is a dash until
 it is defined. Advanced figures are five-on-five only; views by
 situation are a [future feature](../future-features.md#situational-statistics-views).
-The player profile is a shell page opened from the roster strip's links, a roster
-row's double-click, or the home page's team leaders and tale of the tape (the
-latter two on the statistic set the home page shows for the player's team: the
-playoffs once the team has a series). It shows any team's player, and brings its
+The player profile is a shell page opened from any player's name, the roster
+strip's links, or a roster row's double-click. From a roster it starts on the
+roster's statistic set; from elsewhere, on the set the home page shows for the
+player's team (the playoffs once the team has a series). It shows any team's player, and brings its
 own banner and tabs: Overview, Ratings, Statistics, Game log, Health, and
 Career, which is disabled until [career history](../future-features.md#career-history-and-league-leaders).
 Its subtitle is the player's team. The banner is painted in the player's team
 colours rather than the managed team's: the jersey number, name, position,
-handedness, and age, a link to the team (opening it on the Teams page), an
+handedness, and age, a link to the team (opening its team page), an
 injury badge when injured (OUT or INJ, the injury, and whether the player is out
 or playing through), and figure tiles: a skater's overall, points, and
 five-on-five xGF%, or a goalie's overall, save percentage, and goals saved above
@@ -339,6 +346,31 @@ days; one box-score sort applies to both teams and carries to the next box score
 opened. Sorts are not saved, so a started or loaded game opens unsorted. The
 selected player or match stays selected. Standings, the team statistics page,
 and the box score's goalies do not sort.
+Every player's name in the game opens their profile and every team's name opens
+its team page, each one history entry: on rosters and the player strip, the
+Lines page, the schedule's opponents, the box score (both teams, each scorer and
+assisting player, penalised players, the three stars, the goalies, and the
+Players tab), the playoff bracket and a series' games, the home panels, the
+injury report, a profile's game log and last five games, the banner naming
+injured players to replace, the standings, and the banners. A link inside a row
+opens only its own target; the rest of the row does what it did. Names inside
+sentences, such as a series status or the champion's announcement, are not
+links, and nor are inbox messages until
+[linked names in inbox messages](../future-features.md#linked-names-in-inbox-messages).
+A team page, opened from any team's name, shows one team, the managed team
+included. Its own banner, in the team's colours, has the managed team's banner's
+figures for that team: crest, name, record, points, division and conference
+rank, next match, last result, and streak. Its subtitle is the division and
+conference. Its tabs are Roster (the shared roster, its statistic set starting on
+the regular season), Lines (the lineup as the Lines page shows it, without the
+team choice: read-only for other clubs, and for the managed team editable with
+the Lines page's own unsaved edits, so an edit made on either shows on both and
+either saves or reverts it), Schedule (the team's matches as the schedule page
+lists them, sortable; a result opens its box score on the schedule page), and
+Statistics (the team statistics page's figures for that team). It opens on
+Roster. League › Teams is a directory of every team by conference and division,
+each with its colour, name, record, and points, the managed team highlighted; a
+team's name opens its page.
 Pages rebuild from whichever snapshot the session last published.
 The look is a dense "front office": square panels with 1 px dark borders and
 6 px gutters on a slate palette, PT Sans for body text (its digits are

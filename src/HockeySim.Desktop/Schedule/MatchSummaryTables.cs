@@ -1,5 +1,7 @@
 using System.Globalization;
+using System.Windows.Input;
 
+using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Players;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement.Snapshots;
@@ -117,7 +119,8 @@ public static class MatchSummaryTables
         PlayerGameScore star,
         CompletedMatchSnapshot result,
         PlayerSnapshot player,
-        string teamInitials)
+        string teamInitials,
+        Action<PlayerId>? openPlayer = null)
     {
         ArgumentNullException.ThrowIfNull(star);
         ArgumentNullException.ThrowIfNull(result);
@@ -146,7 +149,10 @@ public static class MatchSummaryTables
             PlayerDisplay.PositionAbbreviation(player.Position),
             teamInitials,
             line,
-            star.Score.ToString("0.00", CultureInfo.CurrentCulture));
+            star.Score.ToString("0.00", CultureInfo.CurrentCulture))
+        {
+            OpenPlayerCommand = NameLinks.Open(openPlayer, star.PlayerId),
+        };
     }
 
     private static ComparisonRowViewModel Amounts(string label, double awayValue, double homeValue, Func<double, string> format) =>
@@ -174,4 +180,8 @@ public sealed record ComparisonRowViewModel(string Label, string AwayValue, stri
 /// <param name="Star">The star's place, such as "1st star".</param>
 /// <param name="Line">What the player did: points, shots, and ice time, or saves.</param>
 /// <param name="GameScore">The game score that ranked the player, to two decimals.</param>
-public sealed record StarRowViewModel(string Star, string Name, string Position, string Team, string Line, string GameScore);
+public sealed record StarRowViewModel(string Star, string Name, string Position, string Team, string Line, string GameScore)
+{
+    /// <summary>Opens the player's profile; absent where the name links nowhere.</summary>
+    public ICommand? OpenPlayerCommand { get; init; }
+}

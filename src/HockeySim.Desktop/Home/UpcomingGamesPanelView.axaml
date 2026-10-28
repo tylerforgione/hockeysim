@@ -26,7 +26,9 @@
                       <TextBlock Classes="cell muted" Text="{Binding Date}" />
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
                         <TextBlock Classes="cell muted" Text="{Binding Venue}" />
-                        <TextBlock Classes="cell" Text="{Binding Opponent}" />
+                        <Button Classes="cell-link" Command="{Binding OpenOpponentCommand}">
+                          <TextBlock Classes="cell" Text="{Binding Opponent}" />
+                        </Button>
                       </StackPanel>
                       <TextBlock Grid.Column="2" Classes="cell-center" Text="{Binding Detail}" />
                       <TextBlock Grid.Column="3" Classes="cell muted" HorizontalAlignment="Right" Text="{Binding Phase}" />

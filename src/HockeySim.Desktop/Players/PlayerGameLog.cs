@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Windows.Input;
 
 using HockeySim.Desktop.Game;
 using HockeySim.Desktop.Schedule;
@@ -14,6 +15,8 @@ namespace HockeySim.Desktop.Players;
 /// <param name="TeamId">The player's team, whose schedule holds the match.</param>
 /// <param name="PhaseLabel">"PRE", "REG", or a playoff game's round and number, such as "R1 G3".</param>
 /// <param name="Opponent">"vs" or "@" and the opponent's name.</param>
+/// <param name="Venue">The "vs" or "@" that begins <paramref name="Opponent"/>.</param>
+/// <param name="OpponentName">What follows the venue in <paramref name="Opponent"/>.</param>
 /// <param name="Result">The result from the player's team's side, such as "W 4–2" or "L 2–3 OT".</param>
 public sealed record PlayerGameRowViewModel(
     DateOnly Date,
@@ -22,10 +25,15 @@ public sealed record PlayerGameRowViewModel(
     string PhaseDescription,
     string DateLabel,
     string Opponent,
+    string Venue,
+    string OpponentName,
     string Result,
     bool IsWin,
     IReadOnlyList<string> Cells)
 {
+    /// <summary>Opens the opponent's team page; absent where the name links nowhere.</summary>
+    public ICommand? OpenOpponentCommand { get; init; }
+
     public bool IsLoss => !IsWin;
 }
 
@@ -40,7 +48,7 @@ public static class PlayerGameLog
     /// Lists every completed match of the season in which the player appeared, in any phase, newest
     /// first. Only a team's starting goalie appears in a match.
     /// </summary>
-    public static List<PlayerGameRowViewModel> For(GameSession session, PlayerSnapshot player, TeamSnapshot team)
+    public static List<PlayerGameRowViewModel> For(GameSession session, PlayerSnapshot player, TeamSnapshot team, Action<TeamId>? openTeam = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(player);
@@ -63,6 +71,8 @@ public static class PlayerGameLog
                 continue;
             }
 
+            var venue = isHome ? "vs" : "@";
+            var opponentName = session.GetTeam(opponent.TeamId).Name;
             var (phaseLabel, phaseDescription) = MatchDisplay.PhaseOf(result.Phase, season.Playoffs, result.Date, team.Id);
             rows.Add(new PlayerGameRowViewModel(
                 result.Date,
@@ -70,10 +80,15 @@ public static class PlayerGameLog
                 phaseLabel,
                 phaseDescription,
                 MatchDisplay.ShortDate(result.Date),
-                $"{(isHome ? "vs" : "@")} {session.GetTeam(opponent.TeamId).Name}",
+                $"{venue} {opponentName}",
+                venue,
+                opponentName,
                 MatchDisplay.ResultFor(result, team.Id),
                 result.WinnerId == team.Id,
-                cells));
+                cells)
+            {
+                OpenOpponentCommand = NameLinks.Open(openTeam, opponent.TeamId),
+            });
         }
 
         // The phases follow one another and a team plays once a day, so the order played is date order.

@@ -1,4 +1,3 @@
-using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Teams;
 using HockeySim.Domain;
@@ -10,48 +9,57 @@ namespace HockeySim.Desktop.Tests;
 public sealed class TeamBrowsingTests
 {
     [Fact]
-    public void TeamsPageListsEveryTeamAndStartsOnTheManagedTeam()
+    public void TeamsPageListsEveryTeamByConferenceAndDivisionInLeagueOrder()
     {
         var session = GameTestData.StartSession();
-        var teams = new TeamsPageViewModel(session);
+        var teams = new TeamsPageViewModel(session, _ => { });
 
-        Assert.Equal(32, teams.Teams.Count);
-        Assert.Equal(GameTestData.ManagedTeamName, teams.SelectedTeam.Name);
-        Assert.True(teams.IsSelectedTeamManaged);
-        Assert.Single(teams.Teams, team => team.IsManaged);
-    }
-
-    [Fact]
-    public void SelectingAnotherTeamShowsItsFullRosterReadOnly()
-    {
-        var session = GameTestData.StartSession();
-        var teams = new TeamsPageViewModel(session);
-        var other = session.Snapshot.League.Teams.First(team => team.Id != session.Snapshot.ManagedTeamId);
-
-        teams.SelectTeam(other.Id);
-
-        Assert.Equal(other.Name, teams.SelectedTeam.Name);
-        Assert.False(teams.IsSelectedTeamManaged);
-        Assert.Contains("Read-only", teams.OwnershipNote);
-        Assert.Equal(20, teams.Roster.Skaters.Count);
-        Assert.Equal(3, teams.Roster.Goalies.Count);
+        var rows = teams.Conferences.SelectMany(conference => conference.Divisions).SelectMany(division => division.Teams).ToList();
+        Assert.Equal(32, rows.Count);
+        Assert.Equal(session.Snapshot.League.Teams.Select(team => team.Id), rows.Select(row => row.Id));
+        Assert.Equal(session.Snapshot.League.Conferences.Select(conference => conference.Name), teams.Conferences.Select(conference => conference.Name));
         Assert.Equal(
-            other.Roster.Select(player => player.Id.Value).Order(),
-            teams.Roster.Skaters.Concat(teams.Roster.Goalies).Select(row => row.Player.Id.Value).Order());
-        Assert.Contains(other.Roster, player => player.Id == teams.Roster.SelectedStrip?.PlayerId);
+            session.Snapshot.League.Conferences.SelectMany(conference => conference.Divisions).Select(division => division.Name),
+            teams.Conferences.SelectMany(conference => conference.Divisions).Select(division => division.Name));
+        Assert.Equal("32 teams", teams.Subtitle);
+        var managed = Assert.Single(rows, row => row.IsManaged);
+        Assert.Equal(GameTestData.ManagedTeamName, managed.Name);
     }
 
     [Fact]
-    public void PreviousAndNextWrapAroundTheLeague()
+    public async Task TeamsPageRowsShowTheRecordAndPointsAndFollowADay()
     {
-        var teams = new TeamsPageViewModel(GameTestData.StartSession());
-        teams.SelectTeam(teams.Teams[0].Id);
+        var session = GameTestData.StartSession();
+        var teams = new TeamsPageViewModel(session, _ => { });
+        Assert.All(teams.Conferences.SelectMany(conference => conference.Divisions).SelectMany(division => division.Teams), row =>
+        {
+            Assert.Equal("0-0-0", row.Record);
+            Assert.Equal(0, row.Points);
+        });
 
-        teams.ShowPreviousTeamCommand.Execute(null);
-        Assert.Equal(teams.Teams[^1], teams.SelectedTeam);
+        await session.AdvanceDayAsync();
+        teams.Refresh();
 
-        teams.ShowNextTeamCommand.Execute(null);
-        Assert.Equal(teams.Teams[0], teams.SelectedTeam);
+        var rows = teams.Conferences.SelectMany(conference => conference.Divisions).SelectMany(division => division.Teams).ToDictionary(row => row.Id);
+        var records = session.Snapshot.Season.Standings.Conferences.SelectMany(conference => conference.Divisions).SelectMany(division => division.Teams).Select(entry => entry.Record);
+        Assert.All(records, record =>
+        {
+            Assert.Equal($"{record.Wins}-{record.RegulationLosses}-{record.OvertimeLosses + record.ShootoutLosses}", rows[record.TeamId].Record);
+            Assert.Equal(record.Points, rows[record.TeamId].Points);
+        });
+    }
+
+    [Fact]
+    public void ChoosingATeamOnTheTeamsPageOpensIt()
+    {
+        var session = GameTestData.StartSession();
+        var opened = new List<TeamId>();
+        var teams = new TeamsPageViewModel(session, opened.Add);
+        var row = teams.Conferences[1].Divisions[1].Teams[2];
+
+        row.OpenTeamCommand.Execute(null);
+
+        Assert.Equal([row.Id], opened);
     }
 
     [Fact]

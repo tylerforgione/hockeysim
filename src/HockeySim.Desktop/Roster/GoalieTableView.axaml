@@ -28,7 +28,9 @@
             <Grid ColumnDefinitions="36,*,58,32,32,32,32">
               <TextBlock Classes="cell muted" Text="{Binding Number}" />
               <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
-                <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                <Button Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenProfileCommand}">
+                  <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                </Button>
                 <Border Grid.Column="1"
                         Classes="pill"
                         Classes.injury-out="{Binding IsOut}"
@@ -75,7 +77,9 @@
             <Grid ColumnDefinitions="36,*,58,32,34,36,44,44,44,50,48,36">
               <TextBlock Classes="cell muted" Text="{Binding Number}" />
               <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
-                <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                <Button Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenProfileCommand}">
+                  <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                </Button>
                 <Border Grid.Column="1"
                         Classes="pill"
                         Classes.injury-out="{Binding IsOut}"
@@ -126,7 +130,9 @@
             <Grid ColumnDefinitions="36,*,58,36,58,44,40,48,54,50,54">
               <TextBlock Classes="cell muted" Text="{Binding Number}" />
               <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
-                <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                <Button Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenProfileCommand}">
+                  <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                </Button>
                 <Border Grid.Column="1"
                         Classes="pill"
                         Classes.injury-out="{Binding IsOut}"
@@ -175,7 +181,9 @@
             <Grid ColumnDefinitions="36,*,58,32,30,44,56,90,220,42">
               <TextBlock Classes="cell muted" Text="{Binding Number}" />
               <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,6,0">
-                <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                <Button Classes="cell-link" HorizontalAlignment="Left" Command="{Binding OpenProfileCommand}">
+                  <TextBlock Classes="cell" Text="{Binding Name}" FontWeight="SemiBold" />
+                </Button>
                 <Border Grid.Column="1"
                         Classes="pill"
                         Classes.injury-out="{Binding IsOut}"

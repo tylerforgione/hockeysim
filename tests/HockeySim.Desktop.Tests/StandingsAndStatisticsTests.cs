@@ -180,8 +180,8 @@ public sealed class StandingsAndStatisticsTests
         Assert.NotNull(row.OpenTeamCommand);
         row.OpenTeamCommand.Execute(null);
 
-        Assert.Equal(ShellPage.Teams, shell.CurrentPageKind);
-        Assert.Equal(row.TeamId, shell.Teams.SelectedTeam.Id);
+        Assert.Equal(ShellPage.TeamPage, shell.CurrentPageKind);
+        Assert.Equal(row.TeamId, shell.TeamPage!.Id);
     }
 
     [Theory]
@@ -277,8 +277,8 @@ public sealed class StandingsAndStatisticsTests
             team.Id != session.Snapshot.ManagedTeamId && team.Roster.All(player => player.Injuries.Count == 0));
         var season = session.Snapshot.Season;
 
-        shell.Teams.SelectTeam(other.Id);
-        var roster = shell.Teams.Roster;
+        shell.OpenTeam(other.Id);
+        var roster = shell.TeamPage!.Roster;
 
         Assert.All(roster.Skaters, row =>
         {
@@ -307,21 +307,19 @@ public sealed class StandingsAndStatisticsTests
     }
 
     [Fact]
-    public async Task StatisticColumnsStayChosenAcrossTeamsAndDays()
+    public async Task StatisticColumnsStayChosenAcrossDays()
     {
         var shell = new GameShellViewModel(GameTestData.StartSession());
-        shell.Teams.Roster.ShowColumnsCommand.Execute(RosterColumns.Advanced);
+        shell.OpenTeam(shell.Session.Snapshot.ManagedTeamId);
+        shell.TeamPage!.Roster.ShowColumnsCommand.Execute(RosterColumns.Advanced);
         shell.Roster.Roster.ShowColumnsCommand.Execute(RosterColumns.Basic);
 
-        Assert.True(shell.Teams.Roster.ShowsAdvanced);
-        Assert.False(shell.Teams.Roster.ShowsBasic);
-        Assert.False(shell.Teams.Roster.ShowsRatings);
-
-        shell.Teams.ShowNextTeamCommand.Execute(null);
-        Assert.True(shell.Teams.Roster.ShowsAdvanced);
+        Assert.True(shell.TeamPage!.Roster.ShowsAdvanced);
+        Assert.False(shell.TeamPage!.Roster.ShowsBasic);
+        Assert.False(shell.TeamPage!.Roster.ShowsRatings);
 
         await shell.AdvanceDayCommand.ExecuteAsync(null);
-        Assert.True(shell.Teams.Roster.ShowsAdvanced);
+        Assert.True(shell.TeamPage!.Roster.ShowsAdvanced);
         Assert.True(shell.Roster.Roster.ShowsBasic);
         Assert.Contains(shell.Roster.Roster.Skaters, row => row.Season.GamesPlayed == 1);
     }
@@ -344,7 +342,7 @@ public sealed class StandingsAndStatisticsTests
         Assert.Equal("2026–27 regular season · no matches played yet", shell.Standings.Subtitle);
         Assert.All(shell.Standings.Tables.SelectMany(table => table.Rows), row => Assert.Equal(0, row.GamesPlayed));
         Assert.All(shell.Roster.Roster.Skaters, row => Assert.Equal(PlayerSeasonTotals.None, row.Season));
-        Assert.All(shell.Teams.Roster.Goalies, row => Assert.Equal("—", row.Season.SavePercentage));
+        Assert.All(shell.Roster.Roster.Goalies, row => Assert.Equal("—", row.Season.SavePercentage));
         Assert.Equal("0", shell.Profile!.StatisticGroups[0].Statistics[0].Value);
         Assert.DoesNotContain(shell.Profile.GameLog, row => row.PhaseLabel == "REG");
     }

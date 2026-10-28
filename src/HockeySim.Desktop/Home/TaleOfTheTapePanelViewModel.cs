@@ -177,7 +177,10 @@ public sealed partial class TaleOfTheTapePanelViewModel : ObservableObject
             standing = record is { GamesPlayed: > 0 } ? DivisionStanding(team) : MatchDisplay.Undefined;
         }
 
-        return new TapeTeamViewModel(team.Id, team.Name, PlayerDisplay.TeamInitials(team.Name), team.Colours.Primary, recordText, standing);
+        return new TapeTeamViewModel(team.Id, team.Name, PlayerDisplay.TeamInitials(team.Name), team.Colours.Primary, recordText, standing)
+        {
+            OpenCommand = new RelayCommand(() => _openTeam(team.Id)),
+        };
     }
 
     /// <summary>The team's rank in its division and the division's name, such as "2nd · Northern".</summary>
@@ -336,7 +339,11 @@ public sealed partial class TaleOfTheTapePanelViewModel : ObservableObject
 }
 
 /// <param name="Standing">Division rank and name, or the playoff seed.</param>
-public sealed record TapeTeamViewModel(TeamId TeamId, string Name, string Initials, Colour Colour, string Record, string Standing);
+public sealed record TapeTeamViewModel(TeamId TeamId, string Name, string Initials, Colour Colour, string Record, string Standing)
+{
+    /// <summary>Opens the team's page, from its crest or name.</summary>
+    public ICommand? OpenCommand { get; init; }
+}
 
 /// <summary>
 /// One figure compared between the teams.

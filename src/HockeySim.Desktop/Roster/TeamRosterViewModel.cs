@@ -274,7 +274,10 @@ public sealed partial class TeamRosterViewModel : ObservableObject
         _rows = _team.Roster
             .OrderBy(player => player.Position)
             .ThenBy(player => player.LastName, StringComparer.Ordinal)
-            .Select(player => new PlayerRowViewModel(player, _team.Lineup, _session.GetSeasonTotals(player.Id, Statistics)))
+            .Select(player => new PlayerRowViewModel(player, _team.Lineup, _session.GetSeasonTotals(player.Id, Statistics))
+            {
+                OpenProfileCommand = NameLinks.Open<PlayerId>(_openPlayer is null ? null : id => _openPlayer(id, PlayerProfileTab.Overview, Statistics), player.Id),
+            })
             .ToList();
         SelectedSkater = null;
         SelectedGoalie = null;

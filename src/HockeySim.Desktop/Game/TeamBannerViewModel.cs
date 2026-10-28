@@ -1,6 +1,8 @@
 using System.Globalization;
+using System.Windows.Input;
 
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Schedule;
@@ -11,14 +13,15 @@ using HockeySim.Management.GameManagement.Snapshots;
 namespace HockeySim.Desktop.Game;
 
 /// <summary>
-/// The managed team's banner under the menu bar: its identity, record and standing, and the next
-/// match, last result, and current streak.
+/// A team's banner: its identity, record and standing, and the next match, last result, and
+/// current streak. The managed team's sits under the menu bar; a team page shows its own team's.
 /// </summary>
 public sealed partial class TeamBannerViewModel : ObservableObject
 {
     private const string None = "—";
 
     private readonly GameSession _session;
+    private readonly TeamId _teamId;
 
     [ObservableProperty]
     private string _summary = string.Empty;
@@ -26,22 +29,41 @@ public sealed partial class TeamBannerViewModel : ObservableObject
     [ObservableProperty]
     private IReadOnlyList<BannerFigureViewModel> _figures = [];
 
-    public TeamBannerViewModel(GameSession session)
+    /// <param name="teamId">The team to show; the managed team without it.</param>
+    /// <param name="openTeam">Opens the team's page from its name; the name is not a link without it.</param>
+    public TeamBannerViewModel(GameSession session, TeamId? teamId = null, Action<TeamId>? openTeam = null)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         _session = session;
+        _teamId = teamId ?? session.Snapshot.ManagedTeamId;
+        OpenTeamCommand = new RelayCommand(() => openTeam?.Invoke(_teamId), () => openTeam is not null);
         Refresh();
     }
 
-    public string TeamName => _session.ManagedTeam.Name;
+    /// <summary>Shows the team's page.</summary>
+    public ICommand OpenTeamCommand { get; }
+
+    public string TeamName => _session.GetTeam(_teamId).Name;
+
+    public TeamColours Colours => _session.GetTeam(_teamId).Colours;
+
+    /// <summary>The team's division and conference, such as "Atlantic · Eastern".</summary>
+    public string Division
+    {
+        get
+        {
+            var (conference, division) = _session.FindDivision(_session.GetTeam(_teamId));
+            return $"{division.Name} · {conference.Name}";
+        }
+    }
 
     public string TeamInitials => PlayerDisplay.TeamInitials(TeamName);
 
     public void Refresh()
     {
         var snapshot = _session.Snapshot;
-        var team = _session.ManagedTeam;
+        var team = _session.GetTeam(_teamId);
         var (conference, division) = _session.FindDivision(team);
         var conferenceStandings = snapshot.Season.Standings.Conferences.Single(standings => standings.Name == conference.Name);
         var divisionEntry = conferenceStandings.Divisions
