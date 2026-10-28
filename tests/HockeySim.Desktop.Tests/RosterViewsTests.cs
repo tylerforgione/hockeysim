@@ -3,6 +3,7 @@ using HockeySim.Desktop.Players;
 using HockeySim.Desktop.Roster;
 using HockeySim.Desktop.Schedule;
 using HockeySim.Desktop.Tables;
+using HockeySim.Desktop.Teams;
 using HockeySim.Domain;
 using HockeySim.Management.GameManagement;
 
@@ -171,21 +172,22 @@ public sealed class RosterViewsTests
     }
 
     [Fact]
-    public async Task TheSortCarriesAcrossTeamsAndDaysWithTheGroupAndFilter()
+    public async Task TheSortCarriesAcrossDaysWithTheGroupAndFilter()
     {
-        var (_, shell) = await PlayDays(1);
-        var teams = shell.Teams;
-        teams.Roster.ShowGroupCommand.Execute(RosterGroup.Forwards);
-        teams.Roster.ForwardFilterIndex = 2;
-        teams.Roster.SortSkatersCommand.Execute("overall");
+        var (session, shell) = await PlayDays(1);
+        shell.OpenTeam(session.Snapshot.League.Teams.First(team => team.Id != session.Snapshot.ManagedTeamId).Id);
+        var roster = shell.TeamPage!.Roster;
+        roster.ShowGroupCommand.Execute(RosterGroup.Forwards);
+        roster.ForwardFilterIndex = 2;
+        roster.SortSkatersCommand.Execute("overall");
 
-        teams.ShowNextTeamCommand.Execute(null);
         await shell.AdvanceDayCommand.ExecuteAsync(null);
 
-        Assert.Equal(RosterGroup.Forwards, teams.Roster.Group);
-        Assert.Equal(ForwardFilter.Wingers, teams.Roster.ForwardPosition);
-        Assert.Equal(new TableSort("overall", SortDirection.Descending), teams.Roster.SkaterSort);
-        Assert.All(teams.Roster.Skaters, row => Assert.Equal(Position.Wing, row.Player.Position));
+        roster = shell.TeamPage!.Roster;
+        Assert.Equal(RosterGroup.Forwards, roster.Group);
+        Assert.Equal(ForwardFilter.Wingers, roster.ForwardPosition);
+        Assert.Equal(new TableSort("overall", SortDirection.Descending), roster.SkaterSort);
+        Assert.All(roster.Skaters, row => Assert.Equal(Position.Wing, row.Player.Position));
     }
 
     [Fact]
@@ -386,16 +388,17 @@ public sealed class RosterViewsTests
     public async Task TheLinesLinkOpensTheRosterTeamsLines()
     {
         var (session, shell) = await PlayDays(1);
-        var other = shell.Teams.Teams.First(team => !team.IsManaged);
-        shell.Teams.SelectTeam(other.Id);
-        shell.OpenPageCommand.Execute(ShellPage.Teams);
-        Assert.Equal(ShellPage.Teams, shell.CurrentPageKind);
+        var other = session.Snapshot.League.Teams.First(team => team.Id != session.Snapshot.ManagedTeamId);
+        shell.OpenTeam(other.Id);
+        Assert.Equal(ShellPage.TeamPage, shell.CurrentPageKind);
 
-        Assert.True(shell.Teams.Roster.OpenLinesCommand.CanExecute(null));
-        shell.Teams.Roster.OpenLinesCommand.Execute(null);
+        // On a team page the link shows its Lines tab.
+        Assert.True(shell.TeamPage!.Roster.OpenLinesCommand.CanExecute(null));
+        shell.TeamPage!.Roster.OpenLinesCommand.Execute(null);
 
-        Assert.Equal(ShellPage.Lines, shell.CurrentPageKind);
-        Assert.Equal(other.Id, shell.Lines.SelectedTeam.Id);
+        Assert.Equal(ShellPage.TeamPage, shell.CurrentPageKind);
+        Assert.Equal(TeamPageTab.Lines, shell.TeamPage.Tab);
+        Assert.Equal(other.Id, shell.TeamPage.Lines.SelectedTeam.Id);
 
         shell.OpenPageCommand.Execute(ShellPage.Roster);
         shell.Roster.Roster.OpenLinesCommand.Execute(null);

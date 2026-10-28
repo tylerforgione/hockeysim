@@ -258,16 +258,16 @@ public sealed class TableSortingTests
     }
 
     [Fact]
-    public async Task TheRosterSortSurvivesSwitchingTeams()
+    public async Task TheTeamPageRosterSortSurvivesADay()
     {
         var (_, shell) = await PlayDays(1);
-        shell.Teams.Roster.SortSkatersCommand.Execute("overall");
-        shell.Teams.Roster.SortGoaliesCommand.Execute("overall");
+        shell.OpenTeam(shell.Session.Snapshot.League.Teams.First(team => team.Id != shell.Session.Snapshot.ManagedTeamId).Id);
+        shell.TeamPage!.Roster.SortSkatersCommand.Execute("overall");
+        shell.TeamPage!.Roster.SortGoaliesCommand.Execute("overall");
 
-        shell.Teams.ShowNextTeamCommand.Execute(null);
+        await shell.AdvanceDayCommand.ExecuteAsync(null);
 
-        var roster = shell.Teams.Roster;
-        Assert.NotEqual(shell.Teams.Teams.Single(team => team.IsManaged).Id, shell.Teams.SelectedTeam.Id);
+        var roster = shell.TeamPage!.Roster;
         Assert.Equal(new TableSort("overall", SortDirection.Descending), roster.SkaterSort);
         Assert.Equal(roster.Skaters.Select(row => row.Overall).OrderDescending(), roster.Skaters.Select(row => row.Overall));
         Assert.Equal(roster.Goalies.Select(row => row.Overall).OrderDescending(), roster.Goalies.Select(row => row.Overall));
