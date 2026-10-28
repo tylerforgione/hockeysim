@@ -16,7 +16,7 @@ namespace HockeySim.Desktop.Playoffs;
 /// selected series' games, each opening its box score. Management forms the series and schedules
 /// their games; this page only presents them. A round not yet formed is shown waiting.
 /// </summary>
-public sealed partial class PlayoffsPageViewModel : ShellPageViewModel
+public sealed partial class PlayoffsPageViewModel : ShellPageViewModel, ISelectablePage
 {
     private readonly GameSession _session;
     private readonly Action<DateOnly, TeamId> _openMatch;
@@ -38,6 +38,8 @@ public sealed partial class PlayoffsPageViewModel : ShellPageViewModel
         _openMatch = openMatch;
         Refresh();
     }
+
+    public event EventHandler? SelectionChanged;
 
     public override string Subtitle
     {
@@ -77,6 +79,15 @@ public sealed partial class PlayoffsPageViewModel : ShellPageViewModel
 
     public bool HasSelectedSeries => SelectedSeries is not null;
 
+    object ISelectablePage.Selection => new PlayoffSeriesSelection(SelectedSeries is { } series ? (series.Round, series.HigherRanked.TeamId) : null);
+
+    /// <summary>Chooses the series, or the page's default when it no longer exists.</summary>
+    void ISelectablePage.Select(object selection)
+    {
+        var selected = (selection as PlayoffSeriesSelection)?.Series;
+        Select(FindSeries(selected) ?? DefaultSeries());
+    }
+
     private PlayoffsSnapshot? Playoffs => _session.Snapshot.Season.Playoffs;
 
     /// <summary>
@@ -96,16 +107,24 @@ public sealed partial class PlayoffsPageViewModel : ShellPageViewModel
                 series.Where(candidate => candidate.Round == round).ToList()))
             .ToList();
 
-        var managedTeamId = _session.Snapshot.ManagedTeamId;
-        Select(series.FirstOrDefault(candidate => (candidate.Round, candidate.HigherRanked.TeamId) == selected)
-            ?? series.LastOrDefault(candidate => candidate.Involves(managedTeamId))
-            ?? series.FirstOrDefault());
+        Select(FindSeries(selected) ?? DefaultSeries());
 
         OnPropertyChanged(nameof(Subtitle));
         OnPropertyChanged(nameof(HasPlayoffs));
         OnPropertyChanged(nameof(HasChampion));
         OnPropertyChanged(nameof(ChampionAnnouncement));
         OnPropertyChanged(nameof(IsManagedTeamChampion));
+    }
+
+    private IEnumerable<PlayoffSeriesViewModel> AllSeries => Rounds.SelectMany(round => round.Series);
+
+    private PlayoffSeriesViewModel? FindSeries((PlayoffRound Round, TeamId HigherRanked)? identity) =>
+        AllSeries.FirstOrDefault(candidate => (candidate.Round, candidate.HigherRanked.TeamId) == identity);
+
+    private PlayoffSeriesViewModel? DefaultSeries()
+    {
+        var managedTeamId = _session.Snapshot.ManagedTeamId;
+        return AllSeries.LastOrDefault(candidate => candidate.Involves(managedTeamId)) ?? AllSeries.FirstOrDefault();
     }
 
     private void Select(PlayoffSeriesViewModel? series)
@@ -117,7 +136,15 @@ public sealed partial class PlayoffsPageViewModel : ShellPageViewModel
 
         SelectedSeries = series;
     }
+
+    partial void OnSelectedSeriesChanged(PlayoffSeriesViewModel? value)
+    {
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+    }
 }
+
+/// <summary>The bracket's history selection: a series by its round and higher-ranked team, or none.</summary>
+public sealed record PlayoffSeriesSelection((PlayoffRound Round, TeamId HigherRanked)? Series);
 
 /// <param name="Series">The round's series in bracket order; empty until the round starts.</param>
 public sealed record PlayoffRoundViewModel(string Title, IReadOnlyList<PlayoffSeriesViewModel> Series)

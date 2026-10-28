@@ -391,3 +391,6 @@ public sealed partial class PlayerProfilePageViewModel : ShellPageViewModel
 
 /// <summary>A label and its value, such as one line of the biography.</summary>
 public sealed record ProfileFactViewModel(string Label, string Value);
+
+/// <summary>A player's profile as a history entry: the player, and the tab and statistics set shown.</summary>
+public sealed record PlayerProfileSelection(PlayerId Player, PlayerProfileTab Tab, StatisticsSet Statistics);

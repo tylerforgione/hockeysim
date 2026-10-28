@@ -166,6 +166,36 @@ public sealed class MainWindowViewTests
         AssertNavigationRenders<InjuriesPageView>(window, ShellPage.Injuries);
         AssertNavigationRenders<LinesPageView>(window, ShellPage.Lines);
 
+        // Back and forward step through the pages visited, by button and by keyboard.
+        var backButton = Named<Button>(shellView, "BackButton");
+        var forwardButton = Named<Button>(shellView, "ForwardButton");
+        Assert.True(backButton.IsEffectivelyEnabled);
+        Assert.False(forwardButton.IsEffectivelyEnabled);
+        Click(backButton);
+        Assert.Equal(ShellPage.Injuries, viewModel.Game!.CurrentPageKind);
+        Assert.True(forwardButton.IsEffectivelyEnabled);
+        Click(forwardButton);
+        Assert.Equal(ShellPage.Lines, viewModel.Game!.CurrentPageKind);
+        var (backKey, backPhysical, forwardKey, forwardPhysical, modifier) = OperatingSystem.IsMacOS()
+            ? (Key.OemOpenBrackets, PhysicalKey.BracketLeft, Key.OemCloseBrackets, PhysicalKey.BracketRight, RawInputModifiers.Meta)
+            : (Key.Left, PhysicalKey.ArrowLeft, Key.Right, PhysicalKey.ArrowRight, RawInputModifiers.Alt);
+        backButton.Focus();
+        window.KeyPress(backKey, modifier, backPhysical, null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(ShellPage.Injuries, viewModel.Game!.CurrentPageKind);
+        window.KeyPress(forwardKey, modifier, forwardPhysical, null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(ShellPage.Lines, viewModel.Game!.CurrentPageKind);
+
+        // The mouse's side buttons do the same, wherever the pointer is.
+        var sidePoint = CentreIn(window, Single<LinesPageView>(window));
+        window.MouseDown(sidePoint, MouseButton.XButton1);
+        window.MouseUp(sidePoint, MouseButton.XButton1);
+        Assert.Equal(ShellPage.Injuries, viewModel.Game!.CurrentPageKind);
+        window.MouseDown(sidePoint, MouseButton.XButton2);
+        window.MouseUp(sidePoint, MouseButton.XButton2);
+        Assert.Equal(ShellPage.Lines, viewModel.Game!.CurrentPageKind);
+
         var linesView = Single<LinesPageView>(window);
         var saveButton = Assert.IsType<Button>(linesView.FindControl<Button>("SaveLineupButton"));
         Assert.False(saveButton.IsEffectivelyEnabled);

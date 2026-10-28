@@ -8,7 +8,7 @@ namespace HockeySim.Desktop.Inbox;
 /// <summary>
 /// Lists messages and shows the selected one in a reading pane. Opening a message marks it read.
 /// </summary>
-public sealed partial class InboxPageViewModel : ShellPageViewModel
+public sealed partial class InboxPageViewModel : ShellPageViewModel, ISelectablePage
 {
     private readonly GameSession _session;
     private bool _isRefreshing;
@@ -28,6 +28,8 @@ public sealed partial class InboxPageViewModel : ShellPageViewModel
         Refresh();
     }
 
+    public event EventHandler? SelectionChanged;
+
     public override string Subtitle
     {
         get
@@ -38,6 +40,14 @@ public sealed partial class InboxPageViewModel : ShellPageViewModel
     }
 
     public bool HasSelectedMessage => SelectedMessage is not null;
+
+    object ISelectablePage.Selection => new InboxSelection(SelectedMessage?.Id);
+
+    void ISelectablePage.Select(object selection)
+    {
+        var messageId = (selection as InboxSelection)?.Message;
+        SelectedMessage = Messages.FirstOrDefault(message => message.Id == messageId);
+    }
 
     public void OpenMessage(InboxMessageId messageId)
     {
@@ -63,9 +73,19 @@ public sealed partial class InboxPageViewModel : ShellPageViewModel
 
     partial void OnSelectedMessageChanged(InboxMessageViewModel? value)
     {
-        if (!_isRefreshing && value is { IsUnread: true })
+        if (_isRefreshing)
+        {
+            return;
+        }
+
+        // Announced before the message is marked read, which refreshes the shell's pages.
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+        if (value is { IsUnread: true })
         {
             _session.MarkInboxMessageRead(value.Id);
         }
     }
 }
+
+/// <summary>The inbox's history selection: the message open, or none.</summary>
+public sealed record InboxSelection(InboxMessageId? Message);

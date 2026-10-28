@@ -173,6 +173,8 @@
   <UserControl.KeyBindings>
     <KeyBinding Gesture="{OnPlatform Ctrl+S, macOS=Cmd+S}" Command="{Binding SaveGameCommand}" />
     <KeyBinding Gesture="{OnPlatform Ctrl+O, macOS=Cmd+O}" Command="{Binding LoadGameCommand}" />
+    <KeyBinding Gesture="{OnPlatform Alt+Left, macOS=Cmd+OemOpenBrackets}" Command="{Binding GoBackCommand}" />
+    <KeyBinding Gesture="{OnPlatform Alt+Right, macOS=Cmd+OemCloseBrackets}" Command="{Binding GoForwardCommand}" />
   </UserControl.KeyBindings>
 
   <Grid>
@@ -181,11 +183,11 @@
       <Border DockPanel.Dock="Top" Classes="menu-bar">
         <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
           <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-            <!-- Back and forward wait for navigation history (#62). -->
             <Button x:Name="BackButton"
                     Classes="menu-icon"
-                    IsEnabled="False"
-                    AutomationProperties.Name="Back">
+                    AutomationProperties.Name="Back"
+                    ToolTip.Tip="Back"
+                    Command="{Binding GoBackCommand}">
               <Path Data="{x:Static theme:Icons.Back}" />
             </Button>
             <Button x:Name="HomeButton"
@@ -199,8 +201,9 @@
             </Button>
             <Button x:Name="ForwardButton"
                     Classes="menu-icon"
-                    IsEnabled="False"
-                    AutomationProperties.Name="Forward">
+                    AutomationProperties.Name="Forward"
+                    ToolTip.Tip="Forward"
+                    Command="{Binding GoForwardCommand}">
               <Path Data="{x:Static theme:Icons.Forward}" />
             </Button>
           </StackPanel>
