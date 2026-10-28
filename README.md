@@ -3,33 +3,23 @@
 [![Validate](https://github.com/tylerforgione/hockeysim/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/tylerforgione/hockeysim/actions/workflows/build-and-test.yml)
 [![CodeQL](https://github.com/tylerforgione/hockeysim/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/tylerforgione/hockeysim/actions/workflows/codeql-analysis.yml)
 
-HockeySim is a single-player hockey management game, designed to run fully
-offline. The desktop application uses Avalonia on Windows, macOS, and Linux. Matches are simulated independently of their presentation.
+
+[![C#](https://img.shields.io/badge/C%23-14-239120)](https://learn.microsoft.com/dotnet/csharp/whats-new/csharp-14)
+[![.NET](https://img.shields.io/badge/.NET-10.0.401-512BD4)](global.json)
+[![Avalonia](https://img.shields.io/badge/Avalonia-12.1.4-8B44AC)](Directory.Packages.props)
+
+HockeySim is an offline single-player hockey management sim for Windows, macOS,
+and Linux. Be the GM of a team in a completely fictional league; control of your
+favourite NHL team is planned.
 
 ## Status
 
-The repository contains a headless new-game workflow that creates a reproducible
-32-team fictional league, protects Domain invariants, and exposes read-only
-Management snapshots. The Avalonia desktop application provides new-game setup
-and an in-game shell with a home dashboard, an inbox, the managed team's roster
-and lineup editor, and read-only browsing of every team's roster. A new game
-also generates a reproducible, balanced 84-match regular-season schedule. A headless
-Simulation project plays matches as play-by-play hockey events (shifts, faceoffs,
-shot attempts with expected goals, hits, turnovers, penalties, and fights) from
-two teams' lineups, playing power plays, penalty kills, and every other strength
-state with the lineup's units, pulling the goalie for an extra attacker late in
-close matches, with three-on-three overtime and a shootout, and
-derives every skater and goalie statistic from the events. Management advances the
-season one league day at a time, playing every scheduled match and accumulating
-results, team records, and player season statistics through to a completed
-season, with league, conference, and division standings ranked by the NHL
-tie-breaking procedure. Desktop advances the season one league day at a time,
-shows each team's schedule and results with single-match box scores, summarises
-the latest league day and division table on the home page, presents division,
-conference, and league standings, and shows every player's current-season totals
-on roster tables and player profiles. Games are saved under names the user
-chooses and loaded from the startup menu, resuming exactly where they were
-saved; the app asks before overwriting a save or discarding unsaved progress.
+- **Current release:** [v0.1.0](https://github.com/tylerforgione/hockeysim/releases/tag/v0.1.0)
+  (pre-release). Play a full fictional-league season with saves.
+- **Next release:** [v0.2.0](https://github.com/tylerforgione/hockeysim/milestone/1)
+  adds a deeper match engine with special teams and advanced statistics,
+  in-match injuries, preseason and playoffs, and easier navigation.
+- **After that:** v0.3.0 adds season rollover.
 
 ## Download and run
 
@@ -113,14 +103,3 @@ the archives and generated notes; `0.x` versions are marked as pre-releases.
 Run the workflow manually for a dry run that only uploads the archives as
 workflow artifacts. See [ADR 0005](docs/adr/0005-self-contained-desktop-builds.md)
 for the build and versioning decisions.
-
-## Engineering guide
-
-- [Architecture and repository structure](docs/architecture.md), with an [area document](docs/areas/) for each part of the game
-- [Technology stack and deferred choices](docs/tech-stack.md)
-- [Coding conventions](docs/conventions.md)
-- [Testing and validation](docs/testing.md)
-- [Git, issue, and PR workflow](docs/git-workflow.md)
-- [Future features](docs/future-features.md)
-- [Domain vocabulary](CONTEXT.md) and [architecture decisions](docs/adr/)
-- [Agent instructions](AGENTS.md)
